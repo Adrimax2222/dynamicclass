@@ -57,16 +57,16 @@ export default function CalendarPage() {
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
-      <header className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <header className="mb-8 flex flex-col items-start gap-4">
         <div>
             <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
                 Calendar
             </h1>
             <p className="text-muted-foreground">Manage your tasks and events.</p>
         </div>
-        <div className="flex w-full items-center gap-2 sm:w-auto">
+        <div className="flex w-full items-center gap-2">
           <Select onValueChange={(value: CalendarType) => setCalendarType(value)} defaultValue="all">
-            <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Select calendar" />
             </SelectTrigger>
             <SelectContent>
@@ -79,8 +79,8 @@ export default function CalendarPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-        <div className="md:col-span-2">
+      <div className="flex flex-col gap-8">
+        <div>
           <Card>
             <CardContent className="p-0">
               <Calendar
@@ -99,11 +99,11 @@ export default function CalendarPage() {
           </Card>
         </div>
 
-        <div className="md:col-span-1">
+        <div>
           <h2 className="mb-4 text-lg font-semibold">
             Events on {date ? format(date, "MMMM d") : "selected date"}
           </h2>
-          <Card className="h-[433px]">
+          <Card className="min-h-[200px]">
             <CardContent className="p-4">
               {eventsOnSelectedDate.length > 0 ? (
                 <ul className="space-y-3">
@@ -116,7 +116,7 @@ export default function CalendarPage() {
                   ))}
                 </ul>
               ) : (
-                <div className="flex h-full flex-col items-center justify-center text-center">
+                <div className="flex h-full flex-col items-center justify-center text-center p-8">
                   <CalendarIcon className="h-12 w-12 text-muted-foreground/50" />
                   <p className="mt-4 text-muted-foreground">No events for this day.</p>
                 </div>

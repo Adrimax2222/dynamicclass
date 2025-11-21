@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { achievements } from "@/lib/data";
 import type { SummaryCardData } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -39,17 +38,26 @@ export default function ProfilePage() {
 
       <Card className="mb-8 overflow-hidden shadow-lg">
         <div className="bg-muted/40 h-24" />
-        <CardContent className="p-6 text-center -mt-16">
+        <CardContent className="p-4 text-center -mt-16">
           <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
             <AvatarImage src={user.avatar} alt={user.name} />
             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
           </Avatar>
           <h2 className="mt-4 text-2xl font-bold">{user.name}</h2>
           <p className="text-muted-foreground">{user.center}</p>
+          <Button variant="outline" size="sm" className="mt-4">
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Profile
+          </Button>
         </CardContent>
-        <Separator />
-        <div className="grid grid-cols-2 sm:grid-cols-4 p-4 text-center text-sm">
-            <div>
+      </Card>
+      
+      <Card className="mb-8">
+        <CardHeader>
+            <CardTitle className="text-base">Details</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-4 text-sm">
+             <div>
                 <p className="font-bold">{user.role}</p>
                 <p className="text-muted-foreground">Role</p>
             </div>
@@ -57,22 +65,16 @@ export default function ProfilePage() {
                 <p className="font-bold">{user.ageRange}</p>
                 <p className="text-muted-foreground">Age</p>
             </div>
-            <div>
-                 <p className="font-bold">{user.email}</p>
+            <div className="col-span-2">
+                 <p className="font-bold break-words">{user.email}</p>
                 <p className="text-muted-foreground">Email</p>
             </div>
-            <div className="flex justify-center items-center">
-                <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Profile
-                </Button>
-            </div>
-        </div>
+        </CardContent>
       </Card>
       
       <section>
         <h3 className="text-xl font-semibold font-headline mb-4">Achievements</h3>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4">
             {achievements.map(card => (
                 <AchievementCard key={card.title} {...card} />
             ))}

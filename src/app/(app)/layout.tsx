@@ -40,10 +40,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex justify-center">
-      <div className="relative flex min-h-screen w-full max-w-sm flex-col border-x bg-background">
-        <main className="flex-1 pb-24">{children}</main>
-        <BottomNav />
+    <div className="flex justify-center bg-muted/20">
+      <div className="relative flex min-h-screen w-full max-w-md flex-col border-x bg-background shadow-2xl">
+        <main className="flex-1 pb-20">{children}</main>
+        <div className="fixed bottom-0 left-0 right-0 z-10 mx-auto max-w-md">
+            <BottomNav />
+        </div>
         <ChatBubble />
         <ChatDrawer />
       </div>

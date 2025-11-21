@@ -8,13 +8,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { summaryCards, upcomingClasses } from "@/lib/data";
 import type { SummaryCardData, UpcomingClass } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ArrowRight, Trophy } from "lucide-react";
 import Link from "next/link";
-import { Logo } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
 
@@ -28,7 +26,7 @@ export default function HomePage() {
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
       <header className="mb-8 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div>
           <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
             Dynamic Class
           </h1>
@@ -50,7 +48,7 @@ export default function HomePage() {
         <p className="text-muted-foreground">Here's your summary for today.</p>
       </div>
 
-      <div className="mb-10 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="mb-10 grid grid-cols-2 gap-4">
         {summaryCards.map((card) => (
           <SummaryCard key={card.title} {...card} />
         ))}
@@ -87,18 +85,18 @@ function UpcomingClassCard(item: UpcomingClass) {
         <Card className="overflow-hidden transition-all hover:shadow-md">
             <Link href="#" className="block hover:bg-muted/50">
                 <CardContent className="p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                        <div className="md:col-span-2">
-                            <div className="flex items-start justify-between">
-                                <h4 className="font-semibold">{item.subject}</h4>
-                                {item.grade && <Badge variant="secondary">{item.grade}</Badge>}
-                            </div>
-                            <p className="text-sm text-muted-foreground">{item.teacher}</p>
-                            <p className="text-sm text-muted-foreground">{item.time}</p>
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-start justify-between">
+                            <h4 className="font-semibold">{item.subject}</h4>
+                            {item.grade && <Badge variant="secondary">{item.grade}</Badge>}
                         </div>
-                        <div className="flex items-center justify-between md:flex-col md:items-end md:justify-center md:text-right">
-                           <p className="text-sm italic text-muted-foreground line-clamp-2 md:mt-2">{item.notes}</p>
-                           <ArrowRight className="h-5 w-5 text-primary shrink-0 ml-4 md:hidden" />
+                        <div className="text-sm text-muted-foreground space-y-1">
+                            <p>{item.teacher}</p>
+                            <p>{item.time}</p>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                           <p className="text-sm italic text-muted-foreground line-clamp-2">{item.notes}</p>
+                           <ArrowRight className="h-5 w-5 text-primary shrink-0 ml-4" />
                         </div>
                     </div>
                 </CardContent>

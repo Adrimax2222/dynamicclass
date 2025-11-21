@@ -85,23 +85,22 @@ export default function RegistrationForm() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-muted/20 p-4">
        <div className="absolute top-8 left-8 flex items-center gap-2">
          <Logo className="h-8 w-8 text-primary" />
          <h1 className="text-xl font-bold tracking-tight">Dynamic Class</h1>
        </div>
-      <Card className="w-full max-w-2xl shadow-2xl">
+      <Card className="w-full max-w-md shadow-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl font-headline md:text-3xl">Join Dynamic Class</CardTitle>
+          <CardTitle className="text-2xl font-headline">Join Dynamic Class</CardTitle>
           <CardDescription>
-            Create your account to connect with your class and start learning.
+            Create your account to connect with your class.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <FormField
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+               <FormField
                   control={form.control}
                   name="fullName"
                   render={({ field }) => (
@@ -127,9 +126,7 @@ export default function RegistrationForm() {
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                  <FormField
                   control={form.control}
                   name="center"
@@ -166,7 +163,6 @@ export default function RegistrationForm() {
                     </FormItem>
                   )}
                 />
-              </div>
 
               <FormField
                 control={form.control}
@@ -178,15 +174,15 @@ export default function RegistrationForm() {
                       <RadioGroup
                         onValueChange={field.onChange}
                         defaultValue={field.value}
-                        className="flex flex-col space-y-1"
+                        className="flex items-center space-x-4"
                       >
-                        <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormItem className="flex items-center space-x-2 space-y-0">
                           <FormControl>
                             <RadioGroupItem value="student" />
                           </FormControl>
                           <FormLabel className="font-normal">Student</FormLabel>
                         </FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormItem className="flex items-center space-x-2 space-y-0">
                           <FormControl>
                             <RadioGroupItem value="teacher" />
                           </FormControl>
@@ -230,9 +226,9 @@ export default function RegistrationForm() {
                     <RadioGroup
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4"
+                      className="grid grid-cols-3 sm:grid-cols-4 gap-4"
                     >
-                      {PlaceHolderImages.map((img, index) => (
+                      {PlaceHolderImages.slice(0,5).map((img) => (
                         <FormItem key={img.id} className="relative">
                           <FormControl>
                             <RadioGroupItem value={img.imageUrl} className="sr-only" />
@@ -241,8 +237,8 @@ export default function RegistrationForm() {
                             <Image
                               src={img.imageUrl}
                               alt={img.description}
-                              width={100}
-                              height={100}
+                              width={80}
+                              height={80}
                               className={`rounded-full aspect-square object-cover transition-all ${
                                 field.value === img.imageUrl
                                   ? 'ring-4 ring-primary ring-offset-2'
@@ -253,14 +249,13 @@ export default function RegistrationForm() {
                         </FormItem>
                       ))}
                       <FormItem className="relative">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="h-[100px] w-[100px] rounded-full flex-col gap-2"
-                        >
-                          <Camera className="h-6 w-6" />
-                          <span>Upload</span>
-                        </Button>
+                         <FormLabel className="cursor-pointer">
+                            <div
+                            className="h-[80px] w-[80px] rounded-full flex flex-col items-center justify-center gap-1 border-2 border-dashed bg-muted hover:bg-muted/80">
+                            <Camera className="h-6 w-6" />
+                            <span className="text-xs">Upload</span>
+                            </div>
+                        </FormLabel>
                       </FormItem>
                     </RadioGroup>
                     <FormMessage />

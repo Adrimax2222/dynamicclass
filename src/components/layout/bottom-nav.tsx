@@ -17,10 +17,10 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/80 backdrop-blur-sm">
+    <nav className="border-t bg-card/95 backdrop-blur-sm">
       <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center">
         {navItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const isActive = pathname === item.href || (item.href !== '/home' && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}

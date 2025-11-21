@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -121,7 +121,7 @@ function ChatMessage({ user, text, avatarSeed, isCurrentUser = false }: { user: 
   return (
     <div className={`flex items-end gap-2 ${isCurrentUser ? "justify-end" : ""}`}>
       {!isCurrentUser && <Avatar className="h-8 w-8"><AvatarImage src={`https://picsum.photos/seed/${avatarSeed}/100`} /></Avatar>}
-      <div className={`rounded-lg px-3 py-2 max-w-sm ${isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+      <div className={`rounded-lg px-3 py-2 max-w-[80%] ${isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
         {!isCurrentUser && <p className="text-xs font-semibold mb-1">{user}</p>}
         <p className="text-sm">{text}</p>
       </div>

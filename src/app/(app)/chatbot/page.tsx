@@ -120,8 +120,8 @@ export default function ChatbotPage() {
           <Select value={aiMode} onValueChange={(v: AiMode) => setAiMode(v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="text"><div className="flex items-center gap-2"><MessageSquare /> Text</div></SelectItem>
-              <SelectItem value="image"><div className="flex items-center gap-2"><FileImage /> Image</div></SelectItem>
+              <SelectItem value="text"><div className="flex items-center gap-2"><MessageSquare className="h-4 w-4"/> Text</div></SelectItem>
+              <SelectItem value="image"><div className="flex items-center gap-2"><FileImage className="h-4 w-4"/> Image</div></SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -148,7 +148,7 @@ export default function ChatbotPage() {
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="space-y-6 p-4">
             {messages.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
                     <Sparkles className="h-12 w-12 mb-4" />
                     <p className="text-lg font-semibold">Start a conversation!</p>
                     {isTextMode ? (
@@ -173,11 +173,11 @@ export default function ChatbotPage() {
               )}
               <div
                 className={cn(
-                  "max-w-md rounded-lg p-3",
+                  "max-w-[80%] rounded-lg p-3",
                   message.role === "user" && "bg-primary text-primary-foreground",
                   message.role === "assistant" && "bg-muted",
                   message.role === 'system' && "bg-destructive text-destructive-foreground",
-                  message.type === 'image' && 'p-2'
+                  message.type === 'image' && 'p-2 bg-muted'
                 )}
               >
                 {message.type === 'image' ? (
@@ -206,11 +206,11 @@ export default function ChatbotPage() {
           )}
         </div>
       </ScrollArea>
-      <div className="mt-4 border-t pt-4">
+      <div className="mt-auto border-t pt-4">
         <div className="relative">
           <Textarea
             placeholder={isTextMode ? "Send a message..." : "Describe an image to generate..."}
-            className="pr-32"
+            className="pr-28"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -220,12 +220,9 @@ export default function ChatbotPage() {
               }
             }}
           />
-          <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
+          <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
             <Button variant="ghost" size="icon" aria-label="Attach file">
               <Paperclip className="h-5 w-5" />
-            </Button>
-             <Button variant="ghost" size="icon" aria-label="Use microphone">
-              <Mic className="h-5 w-5" />
             </Button>
             <Button size="icon" onClick={handleSend} disabled={isLoading || !input.trim()}>
               <Send className="h-5 w-5" />
