@@ -27,7 +27,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [theme, setThemeState] = useState<Theme>('light');
-  const [isChatBubbleVisible, setIsChatBubbleVisible] = useState(false);
+  const [isChatBubbleVisible, setIsChatBubbleVisible] = useState(true);
   const [isChatDrawerOpen, setChatDrawerOpen] = useState(false);
   
   const auth = useAuth();

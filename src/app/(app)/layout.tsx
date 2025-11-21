@@ -29,11 +29,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         setAuthStatus('authed');
       } else {
         setAuthStatus('unauthed');
-        router.replace("/");
+        // Redirect to login only if not already on the login/register page
+        if (pathname !== '/') {
+            router.replace("/");
+        }
       }
     });
     return () => unsubscribe();
-  }, [auth, router]);
+  }, [auth, router, pathname]);
   
   // Show a loading screen while checking auth status
   if (authStatus === 'loading' || (authStatus === 'authed' && !user)) {
