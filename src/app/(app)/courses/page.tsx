@@ -7,7 +7,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -47,7 +46,7 @@ export default function CoursesPage() {
         <p className="text-muted-foreground">
           Discover new courses and connect with your classmates.
         </p>
-      header>
+      </header>
 
       <Tabs defaultValue="courses" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
