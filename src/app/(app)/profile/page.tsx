@@ -30,7 +30,7 @@ export default function ProfilePage() {
           Mi Perfil
         </h1>
         <Button variant="ghost" size="icon" asChild>
-          <Link href="#" aria-label="Ajustes">
+          <Link href="/settings" aria-label="Ajustes">
             <Settings />
           </Link>
         </Button>
