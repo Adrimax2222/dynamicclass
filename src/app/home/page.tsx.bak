@@ -1,0 +1,5 @@
+// This file was renamed from page.tsx to resolve a routing conflict with src/app/(app)/home/page.tsx.
+// It is intentionally left blank.
+export default function ConflictingHomePage() {
+  return null;
+}
