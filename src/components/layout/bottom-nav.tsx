@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, CalendarDays, BookOpenText, Bot, UserCircle } from "lucide-react";
+import { Home, CalendarDays, BookOpenText, Bot, UserCircle, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/courses", label: "Courses", icon: BookOpenText },
   { href: "/chatbot", label: "Chatbot", icon: Bot },
+  { href: "/image-generator", label: "Images", icon: ImageIcon },
   { href: "/profile", label: "Profile", icon: UserCircle },
 ];
 
@@ -18,7 +19,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/80 backdrop-blur-sm">
-      <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center">
+      <div className="mx-auto grid h-16 max-w-md grid-cols-6 items-center">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
