@@ -45,7 +45,7 @@ export default function HomePage() {
         <h2 className="text-xl font-semibold sm:text-2xl">
           ¡Bienvenido de nuevo, {user.name}!
         </h2>
-        <p className="text-muted-foreground">Este es tu resumen para hoy.</p>
+        <p className="text-muted-foreground">Este es tu Panel Dinámico para hoy.</p>
       </div>
 
       <div className="mb-10 grid grid-cols-2 gap-4">
