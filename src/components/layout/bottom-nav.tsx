@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, CalendarDays, BookOpenText, Bot, UserCircle } from "lucide-react";
+import { Home, CalendarDays, Info, Bot, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/home", label: "Inicio", icon: Home },
   { href: "/calendar", label: "Calendario", icon: CalendarDays },
-  { href: "/courses", label: "Cursos", icon: BookOpenText },
+  { href: "/courses", label: "Info", icon: Info },
   { href: "/chatbot", label: "IA", icon: Bot },
   { href: "/profile", label: "Perfil", icon: UserCircle },
 ];
