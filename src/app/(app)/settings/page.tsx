@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -9,13 +8,19 @@ import { useApp } from "@/lib/hooks/use-app";
 import { Moon, Sun, Bell, LogOut, ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
 
 export default function SettingsPage() {
-  const { theme, setTheme, logout } = useApp();
+  const { theme, setTheme, logout: contextLogout } = useApp();
   const router = useRouter();
+  const auth = useAuth();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    if (auth) {
+      await signOut(auth);
+    }
+    contextLogout(); // This clears the user from React context and localStorage
     router.push("/");
   };
 

@@ -6,6 +6,11 @@ import * as z from "zod";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Camera, Loader2 } from "lucide-react";
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,10 +43,14 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Logo } from "@/components/icons";
 import { useState } from "react";
 import { Separator } from "@/components/ui/separator";
+import { useAuth, useFirestore } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
+
 
 const formSchema = z.object({
   fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
   email: z.string().email({ message: "Por favor, introduce una dirección de correo electrónico válida." }),
+  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
   center: z.string().min(1, { message: "El centro educativo es obligatorio." }),
   ageRange: z.string().min(1, { message: "Por favor, selecciona un rango de edad." }),
   role: z.enum(["student", "teacher"], { required_error: "Debes seleccionar un rol." }),
@@ -53,12 +62,16 @@ export default function RegistrationForm() {
   const router = useRouter();
   const { login } = useApp();
   const [isLoading, setIsLoading] = useState(false);
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       fullName: "",
       email: "",
+      password: "",
       center: "",
       role: "student",
       classCode: "",
@@ -66,22 +79,54 @@ export default function RegistrationForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      login({
+    if (!auth || !firestore) {
+        toast({ title: "Error", description: "Firebase no está inicializado.", variant: "destructive"});
+        setIsLoading(false);
+        return;
+    }
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const firebaseUser = userCredential.user;
+
+      await updateProfile(firebaseUser, {
+        displayName: values.fullName,
+        photoURL: values.avatar,
+      });
+
+      const userData = {
+        uid: firebaseUser.uid,
         name: values.fullName,
         email: values.email,
         center: values.center,
         ageRange: values.ageRange,
         role: values.role,
         avatar: values.avatar,
-        trophies: Math.floor(Math.random() * 100),
-      });
-      setIsLoading(false);
+        trophies: 0,
+        tasks: 0,
+        exams: 0,
+        pending: 0,
+        activities: 0,
+      };
+
+      await setDoc(doc(firestore, "users", firebaseUser.uid), userData);
+
+      // This login is for the app's context, not Firebase auth
+      login(userData);
+      
       router.push("/home");
-    }, 1500);
+    } catch (error: any) {
+      console.error("Registration Error:", error);
+      toast({
+        title: "Error de Registro",
+        description: error.message || "No se pudo crear la cuenta. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -120,7 +165,21 @@ export default function RegistrationForm() {
                     <FormItem>
                       <FormLabel>Correo Electrónico</FormLabel>
                       <FormControl>
-                        <Input placeholder="tu@ejemplo.com" {...field} />
+                        <Input type="email" placeholder="tu@ejemplo.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contraseña</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

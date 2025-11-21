@@ -8,10 +8,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { summaryCards, upcomingClasses } from "@/lib/data";
+import { upcomingClasses } from "@/lib/data";
 import type { SummaryCardData, UpcomingClass } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
@@ -22,6 +22,13 @@ export default function HomePage() {
   if (!user) {
     return null; // Or a loading spinner
   }
+
+  const summaryCards: SummaryCardData[] = [
+    { title: 'Tareas', value: user.tasks, icon: NotebookText, color: 'text-blue-500' },
+    { title: 'Exámenes', value: user.exams, icon: FileCheck2, color: 'text-red-500' },
+    { title: 'Pendientes', value: user.pending, icon: Clock, color: 'text-yellow-500' },
+    { title: 'Actividades', value: user.activities, icon: ListChecks, color: 'text-green-500' },
+  ];
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">

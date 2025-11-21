@@ -3,6 +3,7 @@ import './globals.css';
 import { AppProvider } from '@/context/app-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
+import { FirebaseProvider } from '@/firebase/provider';
 
 export const metadata: Metadata = {
   title: 'Dynamic Class',
@@ -25,10 +26,12 @@ export default function RootLayout({
         />
       </head>
       <body className={cn('font-body antialiased')}>
-        <AppProvider>
-          {children}
-          <Toaster />
-        </AppProvider>
+        <FirebaseProvider>
+            <AppProvider>
+            {children}
+            <Toaster />
+            </AppProvider>
+        </FirebaseProvider>
       </body>
     </html>
   );

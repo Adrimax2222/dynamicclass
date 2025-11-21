@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { format } from "date-fns";
+import { useState, useMemo } from "react";
+import { format, toDate } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon, PlusCircle } from "lucide-react";
+import { addDoc, collection, serverTimestamp, Timestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -33,18 +33,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { calendarEvents as initialEvents } from "@/lib/data";
 import type { CalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useApp } from "@/lib/hooks/use-app";
+import { useFirestore, useCollection } from "@/firebase";
+import { useMemoFirebase } from "@/firebase/hooks";
 
 type CalendarType = "personal" | "class" | "all";
 
+const normalizeEventDate = (event: CalendarEvent): Date => {
+  if (event.date instanceof Date) {
+    return event.date;
+  }
+  // It's a Firestore Timestamp
+  if (event.date && typeof event.date === 'object' && 'seconds' in event.date) {
+     return toDate(event.date.seconds * 1000);
+  }
+  return new Date();
+};
+
+
 export default function CalendarPage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [calendarType, setCalendarType] = useState<CalendarType>("all");
+  const { user } = useApp();
+  const firestore = useFirestore();
 
-  const filteredEvents = events.filter(
+  const eventsCollection = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return collection(firestore, `users/${user.uid}/events`);
+  }, [firestore, user]);
+
+  const { data: events = [], isLoading } = useCollection<CalendarEvent>(eventsCollection);
+
+  const processedEvents = useMemo(() => {
+    return events.map(e => ({...e, date: normalizeEventDate(e) }))
+  }, [events]);
+
+  const filteredEvents = processedEvents.filter(
     (event) => calendarType === "all" || event.type === calendarType
   );
 
@@ -52,8 +78,13 @@ export default function CalendarPage() {
     (event) => date && format(event.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
   );
 
-  const addEvent = (newEvent: Omit<CalendarEvent, "id">) => {
-    setEvents([...events, { ...newEvent, id: Date.now().toString() }]);
+  const addEvent = async (newEvent: Omit<CalendarEvent, "id">) => {
+    if (!eventsCollection) return;
+    await addDoc(eventsCollection, {
+      ...newEvent,
+      date: Timestamp.fromDate(newEvent.date as Date),
+      createdAt: serverTimestamp(),
+    });
   };
 
   return (
@@ -91,7 +122,7 @@ export default function CalendarPage() {
                 className="w-full"
                 locale={es}
                 modifiers={{
-                  hasEvent: filteredEvents.map((event) => event.date),
+                  hasEvent: filteredEvents.map((event) => event.date as Date),
                 }}
                 modifiersClassNames={{
                   hasEvent: "bg-primary/20 rounded-full",
@@ -107,7 +138,8 @@ export default function CalendarPage() {
           </h2>
           <Card className="min-h-[200px]">
             <CardContent className="p-4">
-              {eventsOnSelectedDate.length > 0 ? (
+              {isLoading ? <p>Cargando eventos...</p> : 
+              eventsOnSelectedDate.length > 0 ? (
                 <ul className="space-y-3">
                   {eventsOnSelectedDate.map((event) => (
                     <li key={event.id} className="rounded-lg border bg-background p-3">

@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 
 export type User = {
+  uid: string;
   name: string;
   email: string;
   center: string;
@@ -8,6 +9,10 @@ export type User = {
   role: 'student' | 'teacher';
   avatar: string;
   trophies: number;
+  tasks: number;
+  exams: number;
+  pending: number;
+  activities: number;
 };
 
 export type SummaryCardData = {
@@ -29,7 +34,7 @@ teacher: string;
 export type CalendarEvent = {
   id: string;
   title: string;
-  date: Date;
+  date: Date | { seconds: number, nanoseconds: number };
   description: string;
   type: 'personal' | 'class';
 };

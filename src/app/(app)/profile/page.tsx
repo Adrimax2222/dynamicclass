@@ -15,12 +15,35 @@ import { cn } from "@/lib/utils";
 import { Edit, Settings } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfilePage() {
   const { user } = useApp();
 
   if (!user) {
-    return null; // Or a loading spinner
+    return (
+        <div className="container mx-auto max-w-4xl p-4 sm:p-6 space-y-8">
+            <Skeleton className="h-8 w-1/2" />
+            <Card className="mb-8 overflow-hidden shadow-lg">
+                <Skeleton className="h-24 w-full" />
+                <CardContent className="p-4 text-center -mt-16">
+                    <Skeleton className="mx-auto h-24 w-24 rounded-full" />
+                    <Skeleton className="mt-4 h-8 w-1/3 mx-auto" />
+                    <Skeleton className="mt-2 h-4 w-1/2 mx-auto" />
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-1/4" />
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full col-span-2" />
+                </CardContent>
+            </Card>
+        </div>
+    );
   }
 
   return (
