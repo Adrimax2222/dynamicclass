@@ -5,8 +5,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
-  title: 'Clase Dinámica',
-  description: 'Tu asistente de clase dinámico.',
+  title: 'Dynamic Class',
+  description: 'Tu asistente para Dynamic Class.',
 };
 
 export default function RootLayout({

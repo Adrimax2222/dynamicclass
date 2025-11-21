@@ -88,11 +88,11 @@ export default function RegistrationForm() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-muted/20 p-4">
        <div className="absolute top-8 left-8 flex items-center gap-2">
          <Logo className="h-8 w-8 text-primary" />
-         <h1 className="text-xl font-bold tracking-tight">Clase Dinámica</h1>
+         <h1 className="text-xl font-bold tracking-tight">Dynamic Class</h1>
        </div>
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl font-headline">Únete a Clase Dinámica</CardTitle>
+          <CardTitle className="text-2xl font-headline">Únete a Dynamic Class</CardTitle>
           <CardDescription>
             Crea tu cuenta para conectarte con tu clase.
           </CardDescription>
