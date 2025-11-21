@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -34,11 +35,8 @@ const generateImageFlow = ai.defineFlow(
   },
   async ({prompt}) => {
     const {media} = await ai.generate({
-      model: googleAI.model('gemini-1.5-flash'),
-      prompt: `Generate an image based on the following prompt: ${prompt}`,
-      config: {
-        responseModalities: ['IMAGE'],
-      },
+      model: googleAI.model('imagen-4.0-fast-generate-001'),
+      prompt: prompt,
     });
 
     if (!media.url) {
