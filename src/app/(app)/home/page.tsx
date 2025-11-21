@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -8,24 +10,20 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { summaryCards, upcomingClasses } from "@/lib/data";
-import type { SummaryCardData, UpcomingClass } from "@/liby/types";
+import type { SummaryCardData, UpcomingClass } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ArrowRight, Trophy } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useApp } from "@/lib/hooks/use-app";
 
-// This is a server component, but it could fetch real user data
-async function getUser() {
-  // In a real app, this would fetch from your database
-  return {
-    name: "Alex",
-    trophies: 78,
-  };
-}
+export default function HomePage() {
+  const { user } = useApp();
 
-export default async function HomePage() {
-  const user = await getUser();
+  if (!user) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
