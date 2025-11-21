@@ -40,11 +40,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col">
-      <main className="flex-1 pb-24">{children}</main>
-      <BottomNav />
-      <ChatBubble />
-      <ChatDrawer />
+    <div className="flex justify-center">
+      <div className="relative flex min-h-screen w-full max-w-sm flex-col border-x bg-background">
+        <main className="flex-1 pb-24">{children}</main>
+        <BottomNav />
+        <ChatBubble />
+        <ChatDrawer />
+      </div>
     </div>
   );
 }
