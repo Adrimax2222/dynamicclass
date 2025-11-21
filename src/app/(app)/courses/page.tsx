@@ -1,6 +1,6 @@
+
 "use client"
 
-import { useState } from "react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,119 +12,79 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lightbulb, Loader2, Send } from "lucide-react";
-import { getCourseRecommendations } from "@/ai/flows/personalized-course-recommendations";
-import { currentStudentCourses } from "@/lib/data";
+import { Send, Megaphone } from "lucide-react";
 
-export default function CoursesPage() {
-  const [recommendations, setRecommendations] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleGetRecs = async () => {
-    setIsLoading(true);
-    setRecommendations([]);
-    try {
-      const result = await getCourseRecommendations({
-        currentClasses: currentStudentCourses,
-      });
-      setRecommendations(result.recommendedCourses);
-    } catch (error) {
-      console.error("Failed to get recommendations:", error);
-      // Optionally, set an error message to display to the user
-    } finally {
-      setIsLoading(false);
-    }
-  };
+export default function AnnouncementsPage() {
+  // Simulación de un usuario administrador. En una app real, esto vendría del estado de autenticación.
+  const isAdmin = true; 
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
       <header className="mb-8">
-        <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-          Centro de Aprendizaje
+        <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl flex items-center gap-2">
+          <Megaphone className="h-6 w-6"/>
+          Punto de Información
         </h1>
         <p className="text-muted-foreground">
-          Descubre nuevos cursos y conecta con tus compañeros.
+          Anuncios y actualizaciones importantes del centro.
         </p>
       </header>
 
-      <Tabs defaultValue="courses" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="courses">Cursos</TabsTrigger>
-          <TabsTrigger value="chat">Chat de Clase</TabsTrigger>
-        </TabsList>
-        <TabsContent value="courses" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recomendaciones de Cursos Personalizadas</CardTitle>
-              <CardDescription>
-                Basado en tus clases actuales, aquí tienes algunos cursos que podrían interesarte.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-sm mb-2">Tus Cursos Actuales:</h4>
-                <div className="flex flex-wrap gap-2">
-                    {currentStudentCourses.map(course => (
-                        <div key={course} className="text-xs rounded-full bg-muted px-3 py-1">{course}</div>
-                    ))}
-                </div>
-              </div>
-              <Button onClick={handleGetRecs} disabled={isLoading}>
-                {isLoading ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...</>
-                ) : (
-                  <><Lightbulb className="mr-2 h-4 w-4" /> Obtener Recomendaciones</>
-                )}
-              </Button>
-              {recommendations.length > 0 && (
-                <div className="space-y-2 pt-4">
-                    <h4 className="font-semibold text-sm">Recomendado para ti:</h4>
-                    <ul className="list-disc list-inside space-y-1">
-                        {recommendations.map((rec, i) => (
-                            <li key={i}>{rec}</li>
-                        ))}
-                    </ul>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="chat" className="mt-6">
-          <Card className="h-[calc(100vh-18rem)]">
-            <CardHeader>
-              <CardTitle>Chat de Clase de Física 101</CardTitle>
-            </CardHeader>
-            <CardContent className="h-full flex flex-col">
-              <ScrollArea className="flex-1 pr-4">
-                <div className="space-y-4">
-                  <ChatMessage user="Emily" text="Hola chicos, ¿alguien entendió la última parte de la clase sobre relatividad?" avatarSeed="avatar2" />
-                  <ChatMessage user="Tú" text="¡Yo también estaba un poco perdido! Especialmente la parte de la dilatación del tiempo." avatarSeed="avatar1" isCurrentUser />
-                  <ChatMessage user="Sr. Davison" text="¡Buena pregunta! La dilatación del tiempo es un concepto clave. ¿Recuerdan el experimento mental de la paradoja de los gemelos que discutimos? Repasémoslo." avatarSeed="avatar4" />
-                  <ChatMessage user="Sam" text="Ah, claro, ahora tiene más sentido. ¡Gracias!" avatarSeed="avatar3" />
-                </div>
-              </ScrollArea>
-              <div className="mt-4 flex w-full items-center space-x-2 pt-4 border-t">
-                <Input placeholder="Escribe un mensaje..." />
-                <Button><Send className="h-4 w-4" /></Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <Card className="h-[calc(100vh-16rem)]">
+        <CardHeader>
+          <CardTitle>Últimos Anuncios</CardTitle>
+          <CardDescription>Solo los administradores pueden publicar aquí.</CardDescription>
+        </CardHeader>
+        <CardContent className="h-full flex flex-col">
+          <ScrollArea className="flex-1 pr-4">
+            <div className="space-y-6">
+              <Announcement
+                user="@Adrià Navarro"
+                text="Recordatorio: El próximo viernes hay huelga general de estudiantes. No habrá clases."
+                avatarSeed="avatar1"
+                timestamp="Hace 2 horas"
+              />
+              <Announcement
+                user="@Luc Rota"
+                text="Se necesita la autorización para la salida al museo de ciencias antes del día 25. Podéis descargar el documento desde la web del centro."
+                avatarSeed="avatar2"
+                timestamp="Hace 1 día"
+              />
+              <Announcement
+                user="@Adrià Navarro"
+                text="Debido a una indisposición del profesor de matemáticas, la clase de mañana se cancela. Se recuperará la próxima semana."
+                avatarSeed="avatar1"
+                timestamp="Hace 3 días"
+              />
+            </div>
+          </ScrollArea>
+          {isAdmin && (
+            <div className="mt-4 flex w-full items-center space-x-2 pt-4 border-t">
+              <Input placeholder="Escribir un nuevo anuncio..." />
+              <Button aria-label="Enviar anuncio"><Send className="h-4 w-4" /></Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
-function ChatMessage({ user, text, avatarSeed, isCurrentUser = false }: { user: string, text: string, avatarSeed: string, isCurrentUser?: boolean }) {
+function Announcement({ user, text, avatarSeed, timestamp }: { user: string, text: string, avatarSeed: string, timestamp: string }) {
   return (
-    <div className={`flex items-end gap-2 ${isCurrentUser ? "justify-end" : ""}`}>
-      {!isCurrentUser && <Avatar className="h-8 w-8"><AvatarImage src={`https://picsum.photos/seed/${avatarSeed}/100`} /></Avatar>}
-      <div className={`rounded-lg px-3 py-2 max-w-[80%] ${isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-        {!isCurrentUser && <p className="text-xs font-semibold mb-1">{user}</p>}
-        <p className="text-sm">{text}</p>
+    <div className="flex items-start gap-3">
+      <Avatar className="h-9 w-9 border-2 border-primary/50">
+        <AvatarImage src={`https://picsum.photos/seed/${avatarSeed}/100`} />
+      </Avatar>
+      <div className="w-full">
+        <div className="flex items-baseline gap-2">
+           <p className="font-bold text-sm">{user}</p>
+           <p className="text-xs text-muted-foreground">{timestamp}</p>
+        </div>
+        <div className="rounded-lg px-4 py-3 bg-muted mt-1">
+          <p className="text-sm">{text}</p>
+        </div>
       </div>
-      {isCurrentUser && <Avatar className="h-8 w-8"><AvatarImage src="https://picsum.photos/seed/myavatar/100" /></Avatar>}
     </div>
   );
 }
