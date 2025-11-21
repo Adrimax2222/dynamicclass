@@ -1,3 +1,5 @@
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,22 +15,14 @@ import type { SummaryCardData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Edit, Settings } from "lucide-react";
 import Link from "next/link";
+import { useApp } from "@/lib/hooks/use-app";
 
-// Mock user data fetch
-async function getUserProfile() {
-  return {
-    name: "Alex Johnson",
-    avatar: "https://picsum.photos/seed/myavatar/200",
-    course: "Computer Science, Year 2",
-    class: "CS201 - Data Structures",
-    age: "19-22",
-    year: 2024,
-    bio: "Aspiring software engineer with a passion for AI and creative coding. Loves coffee and open-source.",
-  };
-}
+export default function ProfilePage() {
+  const { user } = useApp();
 
-export default async function ProfilePage() {
-  const user = await getUserProfile();
+  if (!user) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
@@ -51,22 +45,21 @@ export default async function ProfilePage() {
             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
           </Avatar>
           <h2 className="mt-4 text-2xl font-bold">{user.name}</h2>
-          <p className="text-muted-foreground">{user.course}</p>
-          <p className="mt-4 mx-auto max-w-md text-sm">{user.bio}</p>
+          <p className="text-muted-foreground">{user.center}</p>
         </CardContent>
         <Separator />
         <div className="grid grid-cols-2 sm:grid-cols-4 p-4 text-center text-sm">
             <div>
-                <p className="font-bold">{user.class}</p>
-                <p className="text-muted-foreground">Class</p>
+                <p className="font-bold">{user.role}</p>
+                <p className="text-muted-foreground">Role</p>
             </div>
             <div>
-                <p className="font-bold">{user.age}</p>
+                <p className="font-bold">{user.ageRange}</p>
                 <p className="text-muted-foreground">Age</p>
             </div>
             <div>
-                <p className="font-bold">{user.year}</p>
-                <p className="text-muted-foreground">Year</p>
+                 <p className="font-bold">{user.email}</p>
+                <p className="text-muted-foreground">Email</p>
             </div>
             <div className="flex justify-center items-center">
                 <Button variant="outline" size="sm">
