@@ -106,7 +106,7 @@ export default function ChatbotPage() {
   const isTextMode = aiMode === 'text';
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-[calc(100vh-4rem)] flex-col">
       <header className="border-b p-4">
         <h1 className="text-xl font-bold font-headline tracking-tighter flex items-center gap-2">
           <Bot className="h-6 w-6 text-primary" /> ADRIMAX AI
@@ -208,7 +208,7 @@ export default function ChatbotPage() {
           )}
         </div>
       </ScrollArea>
-      <div className="border-t bg-background p-4">
+      <div className="mt-auto border-t bg-background p-4">
         <div className="relative">
           <Textarea
             placeholder={isTextMode ? "Send a message..." : "Describe an image to generate..."}

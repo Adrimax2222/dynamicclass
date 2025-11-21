@@ -1,0 +1,3 @@
+'use server';
+
+export const GEMINI_API_KEY = 'AIzaSyBFwVWLcQ7JixIDTI1OmJ5D76w-kiEEHGE';
