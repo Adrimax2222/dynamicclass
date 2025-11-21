@@ -8,6 +8,8 @@ import {
   Send,
   Sparkles,
   Mic,
+  FileImage,
+  MessageSquare,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -21,28 +23,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/lib/types";
 import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance";
+import { generateImage } from "@/ai/flows/image-generator-flow";
 import { useApp } from "@/lib/hooks/use-app";
+import Image from "next/image";
 
-type ResponseLength = "short" | "medium" | "long";
+type AiMode = "text" | "image";
 type Subject = "general" | "mathematics" | "physics" | "chemistry" | "language" | "biology" | "music" | "programming" | "social_sciences" | "geography";
 
 export default function ChatbotPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [responseLength, setResponseLength] = useState<ResponseLength>("medium");
+  const [aiMode, setAiMode] = useState<AiMode>("text");
   const [subject, setSubject] = useState<Subject>("general");
-  const { isChatBubbleVisible, toggleChatBubble, user } = useApp();
+  const { user } = useApp();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
-        // This is a bit of a hack to get the viewport. 
-        // Shadcn's ScrollArea doesn't expose the viewport ref directly.
         const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
         if (viewport) {
             viewport.scrollTop = viewport.scrollHeight;
@@ -65,24 +66,35 @@ export default function ChatbotPage() {
     setIsLoading(true);
 
     try {
-      const result = await aiChatbotAssistance({
-        query: currentInput,
-        subject: subject === 'general' ? undefined : subject.replace('_', ' '),
-        responseLength,
-      });
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: result.response,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
+        if (aiMode === 'text') {
+            const result = await aiChatbotAssistance({
+                query: currentInput,
+                subject: subject === 'general' ? undefined : subject.replace('_', ' '),
+            });
+            const assistantMessage: ChatMessage = {
+                id: (Date.now() + 1).toString(),
+                role: "assistant",
+                content: result.response,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            };
+            setMessages((prev) => [...prev, assistantMessage]);
+        } else { // aiMode === 'image'
+            const result = await generateImage({ prompt: currentInput });
+            const assistantMessage: ChatMessage = {
+                id: (Date.now() + 1).toString(),
+                role: "assistant",
+                content: result.imageDataUri,
+                type: 'image',
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            };
+            setMessages((prev) => [...prev, assistantMessage]);
+        }
     } catch (error) {
-      console.error("AI Chatbot Error:", error);
+      console.error("AI Error:", error);
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "system",
-        content: "Sorry, I ran into a problem. Please try again.",
+        content: `Sorry, I ran into a problem. Please try again. Mode: ${aiMode}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -91,30 +103,31 @@ export default function ChatbotPage() {
     }
   };
 
+  const isTextMode = aiMode === 'text';
+
   return (
     <div className="container mx-auto flex h-[calc(100vh-8rem)] max-w-4xl flex-col p-4 sm:p-6">
       <header className="mb-4">
         <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl flex items-center gap-2">
           <Bot className="h-7 w-7 text-primary" /> ADRIMAX AI
         </h1>
-        <p className="text-muted-foreground">Your enthusiastic educational partner.</p>
+        <p className="text-muted-foreground">Your enthusiastic creative and educational partner.</p>
       </header>
 
-      <div className="mb-4 grid grid-cols-1 gap-4 rounded-lg border bg-card p-4 sm:grid-cols-3">
+      <div className="mb-4 grid grid-cols-1 gap-4 rounded-lg border bg-card p-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Response Length</Label>
-          <Select value={responseLength} onValueChange={(v: ResponseLength) => setResponseLength(v)}>
+          <Label>AI Mode</Label>
+          <Select value={aiMode} onValueChange={(v: AiMode) => setAiMode(v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="short">Short</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="long">Long</SelectItem>
+              <SelectItem value="text"><div className="flex items-center gap-2"><MessageSquare /> Text</div></SelectItem>
+              <SelectItem value="image"><div className="flex items-center gap-2"><FileImage /> Image</div></SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
           <Label>Subject/Topic</Label>
-          <Select value={subject} onValueChange={(v: Subject) => setSubject(v)}>
+          <Select value={subject} onValueChange={(v: Subject) => setSubject(v)} disabled={!isTextMode}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="general">General</SelectItem>
@@ -130,15 +143,6 @@ export default function ChatbotPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-end">
-            <div className="flex w-full items-center justify-between space-x-2 rounded-md border p-3">
-                <div className="flex flex-col">
-                    <Label htmlFor="chat-bubble-switch">Chat Bubble</Label>
-                    <span className="text-xs text-muted-foreground">Access AI from anywhere</span>
-                </div>
-                <Switch id="chat-bubble-switch" checked={isChatBubbleVisible} onCheckedChange={toggleChatBubble} />
-            </div>
-        </div>
       </div>
 
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
@@ -147,7 +151,11 @@ export default function ChatbotPage() {
                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
                     <Sparkles className="h-12 w-12 mb-4" />
                     <p className="text-lg font-semibold">Start a conversation!</p>
-                    <p>Ask me about {subject === 'general' ? 'anything' : subject.replace('_', ' ')}, and I'll do my best to help.</p>
+                    {isTextMode ? (
+                        <p>Ask me about {subject === 'general' ? 'anything' : subject.replace('_', ' ')}, and I'll do my best to help.</p>
+                    ) : (
+                        <p>Describe an image and I'll generate it for you.</p>
+                    )}
                 </div>
             )}
           {messages.map((message) => (
@@ -166,13 +174,17 @@ export default function ChatbotPage() {
               <div
                 className={cn(
                   "max-w-md rounded-lg p-3",
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted",
-                  message.role === 'system' && "bg-destructive text-destructive-foreground"
+                  message.role === "user" && "bg-primary text-primary-foreground",
+                  message.role === "assistant" && "bg-muted",
+                  message.role === 'system' && "bg-destructive text-destructive-foreground",
+                  message.type === 'image' && 'p-2'
                 )}
               >
-                <p className="whitespace-pre-wrap">{message.content}</p>
+                {message.type === 'image' ? (
+                    <Image src={message.content} alt="Generated image" width={256} height={256} className="rounded-md" />
+                ) : (
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                )}
                 <p className="mt-1 text-right text-xs opacity-60">{message.timestamp}</p>
               </div>
                {message.role === "user" && user && (
@@ -197,7 +209,7 @@ export default function ChatbotPage() {
       <div className="mt-4 border-t pt-4">
         <div className="relative">
           <Textarea
-            placeholder="Send a message..."
+            placeholder={isTextMode ? "Send a message..." : "Describe an image to generate..."}
             className="pr-32"
             value={input}
             onChange={(e) => setInput(e.target.value)}

@@ -14,7 +14,7 @@ import {z} from 'genkit';
 const AIChatbotAssistanceInputSchema = z.object({
   query: z.string().describe('The query for the AI chatbot.'),
   subject: z.string().optional().describe('Optional subject or topic.'),
-  responseLength: z.enum(['short', 'medium', 'long']).default('medium').describe('Desired response length (short, medium, or long).'),
+  responseLength: z.enum(['short', 'medium', 'long']).optional().describe('Desired response length (short, medium, or long).'),
   uploadedFiles: z.array(z.string()).optional().describe('List of data URIs of uploaded files.'),
   uploadedAudios: z.array(z.string()).optional().describe('List of data URIs of uploaded audios.'),
 });
@@ -53,7 +53,7 @@ You have been provided with the following audio files:
   {{/each}}
 {% endif %}
 
-Respond to the following query with a {{responseLength}} response:
+Respond to the following query with a {{responseLength || 'medium'}} response:
 
 Query: {{{query}}}`,
 });
