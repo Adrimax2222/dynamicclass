@@ -28,7 +28,7 @@ export default function HomePage() {
       <header className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-            Dynamic Class
+            Clase Dinámica
           </h1>
           <Badge variant="outline">V3.0</Badge>
         </div>
@@ -43,9 +43,9 @@ export default function HomePage() {
 
       <div className="mb-8">
         <h2 className="text-xl font-semibold sm:text-2xl">
-          Welcome back, {user.name}!
+          ¡Bienvenido de nuevo, {user.name}!
         </h2>
-        <p className="text-muted-foreground">Here's your summary for today.</p>
+        <p className="text-muted-foreground">Este es tu resumen para hoy.</p>
       </div>
 
       <div className="mb-10 grid grid-cols-2 gap-4">
@@ -55,7 +55,7 @@ export default function HomePage() {
       </div>
 
       <section>
-        <h3 className="text-xl font-semibold font-headline mb-4">Upcoming Classes</h3>
+        <h3 className="text-xl font-semibold font-headline mb-4">Próximas Clases</h3>
         <div className="space-y-4">
           {upcomingClasses.map((item) => (
             <UpcomingClassCard key={item.id} {...item} />

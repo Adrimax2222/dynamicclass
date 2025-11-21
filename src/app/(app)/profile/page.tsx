@@ -27,10 +27,10 @@ export default function ProfilePage() {
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
       <header className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-          My Profile
+          Mi Perfil
         </h1>
         <Button variant="ghost" size="icon" asChild>
-          <Link href="#" aria-label="Settings">
+          <Link href="#" aria-label="Ajustes">
             <Settings />
           </Link>
         </Button>
@@ -47,33 +47,33 @@ export default function ProfilePage() {
           <p className="text-muted-foreground">{user.center}</p>
           <Button variant="outline" size="sm" className="mt-4">
             <Edit className="h-4 w-4 mr-2" />
-            Edit Profile
+            Editar Perfil
           </Button>
         </CardContent>
       </Card>
       
       <Card className="mb-8">
         <CardHeader>
-            <CardTitle className="text-base">Details</CardTitle>
+            <CardTitle className="text-base">Detalles</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 text-sm">
              <div>
-                <p className="font-bold">{user.role}</p>
-                <p className="text-muted-foreground">Role</p>
+                <p className="font-bold">{user.role === 'student' ? 'Estudiante' : 'Profesor'}</p>
+                <p className="text-muted-foreground">Rol</p>
             </div>
             <div>
                 <p className="font-bold">{user.ageRange}</p>
-                <p className="text-muted-foreground">Age</p>
+                <p className="text-muted-foreground">Edad</p>
             </div>
             <div className="col-span-2">
                  <p className="font-bold break-words">{user.email}</p>
-                <p className="text-muted-foreground">Email</p>
+                <p className="text-muted-foreground">Correo Electrónico</p>
             </div>
         </CardContent>
       </Card>
       
       <section>
-        <h3 className="text-xl font-semibold font-headline mb-4">Achievements</h3>
+        <h3 className="text-xl font-semibold font-headline mb-4">Logros</h3>
         <div className="grid grid-cols-2 gap-4">
             {achievements.map(card => (
                 <AchievementCard key={card.title} {...card} />

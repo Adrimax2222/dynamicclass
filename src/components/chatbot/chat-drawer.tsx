@@ -52,7 +52,7 @@ export default function ChatDrawer() {
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "system",
-        content: "Sorry, I encountered an error. Please try again.",
+        content: "Lo siento, he encontrado un problema. Por favor, inténtalo de nuevo.",
         timestamp: new Date().toLocaleTimeString(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -70,7 +70,7 @@ export default function ChatDrawer() {
             ADRIMAX AI
           </SheetTitle>
           <SheetDescription>
-            Your personal educational assistant.
+            Tu asistente educativo personal.
           </SheetDescription>
         </SheetHeader>
         <ScrollArea className="flex-1 px-6">
@@ -121,7 +121,7 @@ export default function ChatDrawer() {
         <div className="border-t p-4">
           <div className="relative">
             <Textarea
-              placeholder="Ask me anything..."
+              placeholder="Pregúntame cualquier cosa..."
               className="pr-24"
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -133,10 +133,10 @@ export default function ChatDrawer() {
               }}
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
-              <Button variant="ghost" size="icon" aria-label="Attach file">
+              <Button variant="ghost" size="icon" aria-label="Adjuntar archivo">
                 <Paperclip className="h-5 w-5" />
               </Button>
-              <Button size="icon" onClick={handleSend} disabled={isLoading || !input.trim()} aria-label="Send message">
+              <Button size="icon" onClick={handleSend} disabled={isLoading || !input.trim()} aria-label="Enviar mensaje">
                 <Send className="h-5 w-5" />
               </Button>
             </div>

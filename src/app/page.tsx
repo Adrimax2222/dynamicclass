@@ -40,13 +40,13 @@ import { useState } from "react";
 import { Separator } from "@/components/ui/separator";
 
 const formSchema = z.object({
-  fullName: z.string().min(2, { message: "Full name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  center: z.string().min(1, { message: "Educational center is required." }),
-  ageRange: z.string().min(1, { message: "Please select an age range." }),
-  role: z.enum(["student", "teacher"], { required_error: "You need to select a role." }),
+  fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
+  email: z.string().email({ message: "Por favor, introduce una dirección de correo electrónico válida." }),
+  center: z.string().min(1, { message: "El centro educativo es obligatorio." }),
+  ageRange: z.string().min(1, { message: "Por favor, selecciona un rango de edad." }),
+  role: z.enum(["student", "teacher"], { required_error: "Debes seleccionar un rol." }),
   classCode: z.string().optional(),
-  avatar: z.string().min(1, { message: "Please select a profile picture." }),
+  avatar: z.string().min(1, { message: "Por favor, selecciona una foto de perfil." }),
 });
 
 export default function RegistrationForm() {
@@ -88,13 +88,13 @@ export default function RegistrationForm() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-muted/20 p-4">
        <div className="absolute top-8 left-8 flex items-center gap-2">
          <Logo className="h-8 w-8 text-primary" />
-         <h1 className="text-xl font-bold tracking-tight">Dynamic Class</h1>
+         <h1 className="text-xl font-bold tracking-tight">Clase Dinámica</h1>
        </div>
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl font-headline">Join Dynamic Class</CardTitle>
+          <CardTitle className="text-2xl font-headline">Únete a Clase Dinámica</CardTitle>
           <CardDescription>
-            Create your account to connect with your class.
+            Crea tu cuenta para conectarte con tu clase.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -105,7 +105,7 @@ export default function RegistrationForm() {
                   name="fullName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name</FormLabel>
+                      <FormLabel>Nombre Completo</FormLabel>
                       <FormControl>
                         <Input placeholder="John Doe" {...field} />
                       </FormControl>
@@ -118,9 +118,9 @@ export default function RegistrationForm() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Correo Electrónico</FormLabel>
                       <FormControl>
-                        <Input placeholder="you@example.com" {...field} />
+                        <Input placeholder="tu@ejemplo.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -132,9 +132,9 @@ export default function RegistrationForm() {
                   name="center"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Educational Center</FormLabel>
+                      <FormLabel>Centro Educativo</FormLabel>
                       <FormControl>
-                        <Input placeholder="Springfield University" {...field} />
+                        <Input placeholder="Universidad de Springfield" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -145,18 +145,18 @@ export default function RegistrationForm() {
                   name="ageRange"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Age Range</FormLabel>
+                      <FormLabel>Rango de Edad</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select your age range" />
+                            <SelectValue placeholder="Selecciona tu rango de edad" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="12-15">12-15 years</SelectItem>
-                          <SelectItem value="16-18">16-18 years</SelectItem>
-                          <SelectItem value="19-22">19-22 years</SelectItem>
-                          <SelectItem value="23+">23+ years</SelectItem>
+                          <SelectItem value="12-15">12-15 años</SelectItem>
+                          <SelectItem value="16-18">16-18 años</SelectItem>
+                          <SelectItem value="19-22">19-22 años</SelectItem>
+                          <SelectItem value="23+">23+ años</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -169,7 +169,7 @@ export default function RegistrationForm() {
                 name="role"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel>Your Role</FormLabel>
+                    <FormLabel>Tu Rol</FormLabel>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
@@ -180,13 +180,13 @@ export default function RegistrationForm() {
                           <FormControl>
                             <RadioGroupItem value="student" />
                           </FormControl>
-                          <FormLabel className="font-normal">Student</FormLabel>
+                          <FormLabel className="font-normal">Estudiante</FormLabel>
                         </FormItem>
                         <FormItem className="flex items-center space-x-2 space-y-0">
                           <FormControl>
                             <RadioGroupItem value="teacher" />
                           </FormControl>
-                          <FormLabel className="font-normal">Teacher</FormLabel>
+                          <FormLabel className="font-normal">Profesor</FormLabel>
                         </FormItem>
                       </RadioGroup>
                     </FormControl>
@@ -200,12 +200,12 @@ export default function RegistrationForm() {
                 name="classCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Class Code (Optional)</FormLabel>
+                    <FormLabel>Código de Clase (Opcional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter code to join a class" {...field} />
+                      <Input placeholder="Introduce el código para unirte a una clase" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Your teacher will provide this code.
+                      Tu profesor te proporcionará este código.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -219,9 +219,9 @@ export default function RegistrationForm() {
                 name="avatar"
                 render={({ field }) => (
                   <FormItem className="space-y-4">
-                    <FormLabel>Profile Picture</FormLabel>
+                    <FormLabel>Foto de Perfil</FormLabel>
                     <FormDescription>
-                      Choose a default avatar or upload your own.
+                      Elige un avatar predeterminado o sube el tuyo.
                     </FormDescription>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -253,7 +253,7 @@ export default function RegistrationForm() {
                             <div
                             className="h-[80px] w-[80px] rounded-full flex flex-col items-center justify-center gap-1 border-2 border-dashed bg-muted hover:bg-muted/80">
                             <Camera className="h-6 w-6" />
-                            <span className="text-xs">Upload</span>
+                            <span className="text-xs">Subir</span>
                             </div>
                         </FormLabel>
                       </FormItem>
@@ -267,10 +267,10 @@ export default function RegistrationForm() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating Account...
+                    Creando Cuenta...
                   </>
                 ) : (
-                  "Create Account & Login"
+                  "Crear Cuenta e Iniciar Sesión"
                 )}
               </Button>
             </form>

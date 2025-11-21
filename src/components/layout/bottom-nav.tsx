@@ -6,11 +6,11 @@ import { Home, CalendarDays, BookOpenText, Bot, UserCircle } from "lucide-react"
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/home", label: "Home", icon: Home },
-  { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/courses", label: "Courses", icon: BookOpenText },
+  { href: "/home", label: "Inicio", icon: Home },
+  { href: "/calendar", label: "Calendario", icon: CalendarDays },
+  { href: "/courses", label: "Cursos", icon: BookOpenText },
   { href: "/chatbot", label: "Chatbot", icon: Bot },
-  { href: "/profile", label: "Profile", icon: UserCircle },
+  { href: "/profile", label: "Perfil", icon: UserCircle },
 ];
 
 export default function BottomNav() {

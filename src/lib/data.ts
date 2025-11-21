@@ -2,72 +2,72 @@ import type { SummaryCardData, UpcomingClass, CalendarEvent } from './types';
 import { NotebookText, FileCheck2, Clock, ListChecks, Trophy, Medal, Star } from 'lucide-react';
 
 export const summaryCards: SummaryCardData[] = [
-  { title: 'Homework', value: 3, icon: NotebookText, color: 'text-blue-500' },
-  { title: 'Exams', value: 1, icon: FileCheck2, color: 'text-red-500' },
-  { title: 'Pending', value: 5, icon: Clock, color: 'text-yellow-500' },
-  { title: 'Tasks', value: 8, icon: ListChecks, color: 'text-green-500' },
+  { title: 'Tareas', value: 3, icon: NotebookText, color: 'text-blue-500' },
+  { title: 'Exámenes', value: 1, icon: FileCheck2, color: 'text-red-500' },
+  { title: 'Pendientes', value: 5, icon: Clock, color: 'text-yellow-500' },
+  { title: 'Actividades', value: 8, icon: ListChecks, color: 'text-green-500' },
 ];
 
 export const upcomingClasses: UpcomingClass[] = [
   {
     id: '1',
-    subject: 'Quantum Physics',
+    subject: 'Física Cuántica',
     teacher: 'Dr. Evelyn Reed',
     time: '10:00 AM - 11:30 AM',
-    notes: 'Chapter 4 review. Prepare questions.',
+    notes: 'Repaso del capítulo 4. Prepara tus preguntas.',
     grade: 'A-',
   },
   {
     id: '2',
-    subject: 'Advanced Algorithms',
+    subject: 'Algoritmos Avanzados',
     teacher: 'Prof. Ken Thompson',
     time: '1:00 PM - 2:30 PM',
-    notes: 'Discussion on P vs NP problem.',
+    notes: 'Discusión sobre el problema P vs NP.',
     grade: 'B+',
   },
   {
     id: '3',
-    subject: 'Creative Writing',
-    teacher: 'Ms. Olivia Chen',
+    subject: 'Escritura Creativa',
+    teacher: 'Sra. Olivia Chen',
     time: '3:00 PM - 4:00 PM',
-    notes: 'Peer review session for short stories.',
+    notes: 'Sesión de revisión por pares para cuentos.',
   },
 ];
 
 export const calendarEvents: CalendarEvent[] = [
     {
         id: '1',
-        title: 'Math Mid-term Exam',
+        title: 'Examen Parcial de Matemáticas',
         date: new Date(new Date().setDate(new Date().getDate() + 2)),
-        description: 'Covers chapters 1-5. Bring a calculator.',
+        description: 'Cubre los capítulos 1-5. Traer calculadora.',
         type: 'class',
     },
     {
         id: '2',
-        title: 'Project Group Meeting',
+        title: 'Reunión de Grupo de Proyecto',
         date: new Date(),
-        description: 'Finalize the project presentation. Meet at the library.',
+        description: 'Finalizar la presentación del proyecto. Reunión en la biblioteca.',
         type: 'personal',
     },
     {
         id: '3',
-        title: 'Submit History Essay',
+        title: 'Entregar Ensayo de Historia',
         date: new Date(new Date().setDate(new Date().getDate() + 5)),
-        description: 'Essay on the impact of the printing press. 2000 words.',
+        description: 'Ensayo sobre el impacto de la imprenta. 2000 palabras.',
         type: 'class',
     },
 ];
 
 export const achievements: SummaryCardData[] = [
-  { title: 'Trophies Won', value: 12, icon: Trophy, color: 'text-yellow-400' },
-  { title: 'Homework Done', value: 128, icon: NotebookText, color: 'text-blue-400' },
-  { title: 'Exams Passed', value: 34, icon: Medal, color: 'text-green-400' },
-  { title: 'Top Grades', value: 15, icon: Star, color: 'text-purple-400' },
+  { title: 'Trofeos Ganados', value: 12, icon: Trophy, color: 'text-yellow-400' },
+  { title: 'Tareas Hechas', value: 128, icon: NotebookText, color: 'text-blue-400' },
+  { title: 'Exámenes Aprobados', value: 34, icon: Medal, color: 'text-green-400' },
+  { title: 'Notas Altas', value: 15, icon: Star, color: 'text-purple-400' },
 ];
 
 export const currentStudentCourses = [
-    'Introduction to Python',
-    'Calculus I',
-    'World History: 1500-Present',
-    'English Composition',
+    'Introducción a Python',
+    'Cálculo I',
+    'Historia Mundial: 1500-Presente',
+    'Composición en Español',
 ];

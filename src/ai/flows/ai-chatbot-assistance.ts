@@ -12,16 +12,16 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const AIChatbotAssistanceInputSchema = z.object({
-  query: z.string().describe('The query for the AI chatbot.'),
-  subject: z.string().optional().describe('Optional subject or topic.'),
-  responseLength: z.enum(['short', 'medium', 'long']).optional().describe('Desired response length (short, medium, or long).'),
-  uploadedFiles: z.array(z.string()).optional().describe('List of data URIs of uploaded files.'),
-  uploadedAudios: z.array(z.string()).optional().describe('List of data URIs of uploaded audios.'),
+  query: z.string().describe('La consulta para el chatbot de IA.'),
+  subject: z.string().optional().describe('Materia o tema opcional.'),
+  responseLength: z.enum(['short', 'medium', 'long']).optional().describe('Longitud de respuesta deseada (corta, media o larga).'),
+  uploadedFiles: z.array(z.string()).optional().describe('Lista de URIs de datos de archivos subidos.'),
+  uploadedAudios: z.array(z.string()).optional().describe('Lista de URIs de datos de audios subidos.'),
 });
 export type AIChatbotAssistanceInput = z.infer<typeof AIChatbotAssistanceInputSchema>;
 
 const AIChatbotAssistanceOutputSchema = z.object({
-  response: z.string().describe('The response from the AI chatbot.'),
+  response: z.string().describe('La respuesta del chatbot de IA.'),
 });
 export type AIChatbotAssistanceOutput = z.infer<typeof AIChatbotAssistanceOutputSchema>;
 
@@ -33,29 +33,29 @@ const prompt = ai.definePrompt({
   name: 'aiChatbotAssistancePrompt',
   input: {schema: AIChatbotAssistanceInputSchema},
   output: {schema: AIChatbotAssistanceOutputSchema},
-  prompt: `You are an AI chatbot assistant, proficient in education.
+  prompt: `Eres un asistente de chatbot de IA, competente en educación.
 
-You are enthusiastic about helping students learn.
+Eres entusiasta por ayudar a los estudiantes a aprender.
 
-{% if subject %}You are currently specialized in the subject of {{subject}}.{% endif %}
+{% if subject %}Actualmente estás especializado en el tema de {{subject}}.{% endif %}
 
 {% if uploadedFiles.length > 0 %}
-You have been provided with the following files:
+Se te han proporcionado los siguientes archivos:
   {{#each uploadedFiles}}
     - {{this}}
   {{/each}}
 {% endif %}
 
 {% if uploadedAudios.length > 0 %}
-You have been provided with the following audio files:
+Se te han proporcionado los siguientes archivos de audio:
   {{#each uploadedAudios}}
     - {{this}}
   {{/each}}
 {% endif %}
 
-Respond to the following query with a {{responseLength || 'medium'}} response:
+Responde a la siguiente consulta con una respuesta de longitud {{responseLength || 'media'}}:
 
-Query: {{{query}}}`,
+Consulta: {{{query}}}`,
 });
 
 const aiChatbotAssistanceFlow = ai.defineFlow(

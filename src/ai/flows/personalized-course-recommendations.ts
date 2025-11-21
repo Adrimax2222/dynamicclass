@@ -12,12 +12,12 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const CourseRecommendationsInputSchema = z.object({
-  currentClasses: z.array(z.string()).describe('List of the student\'s current classes.'),
+  currentClasses: z.array(z.string()).describe('Lista de las clases actuales del estudiante.'),
 });
 export type CourseRecommendationsInput = z.infer<typeof CourseRecommendationsInputSchema>;
 
 const CourseRecommendationsOutputSchema = z.object({
-  recommendedCourses: z.array(z.string()).describe('List of recommended courses based on the student\'s current classes.'),
+  recommendedCourses: z.array(z.string()).describe('Lista de cursos recomendados basada en las clases actuales del estudiante.'),
 });
 export type CourseRecommendationsOutput = z.infer<typeof CourseRecommendationsOutputSchema>;
 
@@ -29,15 +29,15 @@ const prompt = ai.definePrompt({
   name: 'personalizedCourseRecommendationsPrompt',
   input: {schema: CourseRecommendationsInputSchema},
   output: {schema: CourseRecommendationsOutputSchema},
-  prompt: `You are an AI assistant designed to provide personalized course recommendations to students based on their current classes.
+  prompt: `Eres un asistente de IA diseñado para proporcionar recomendaciones de cursos personalizadas a estudiantes en función de sus clases actuales.
 
-  Given the following list of current classes:
+  Dada la siguiente lista de clases actuales:
   {{#each currentClasses}}
   - {{this}}
   {{/each}}
 
-  Recommend courses that would be relevant and helpful for the student to expand their knowledge.
-  Format the output as a list of course names.
+  Recomienda cursos que serían relevantes y útiles para que el estudiante amplíe sus conocimientos.
+  Formatea la salida como una lista de nombres de cursos.
   `,
 });
 

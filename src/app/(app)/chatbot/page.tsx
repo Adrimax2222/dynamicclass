@@ -94,7 +94,7 @@ export default function ChatbotPage() {
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "system",
-        content: `Sorry, I ran into a problem. Please try again. Mode: ${aiMode}`,
+        content: `Lo siento, he encontrado un problema. Por favor, inténtalo de nuevo. Modo: ${aiMode}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -105,42 +105,48 @@ export default function ChatbotPage() {
 
   const isTextMode = aiMode === 'text';
 
+  const subjectMap: Record<Subject, string> = {
+    general: 'General',
+    mathematics: 'Matemáticas',
+    physics: 'Física',
+    chemistry: 'Química',
+    language: 'Lenguaje',
+    biology: 'Biología',
+    music: 'Música',
+    programming: 'Programación',
+    social_sciences: 'Ciencias Sociales',
+    geography: 'Geografía',
+  }
+
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
       <header className="border-b p-4">
         <h1 className="text-xl font-bold font-headline tracking-tighter flex items-center gap-2">
           <Bot className="h-6 w-6 text-primary" /> ADRIMAX AI
         </h1>
-        <p className="text-sm text-muted-foreground">Your enthusiastic creative and educational partner.</p>
+        <p className="text-sm text-muted-foreground">Tu entusiasta compañero creativo y educativo.</p>
       </header>
 
       <div className="border-b p-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>AI Mode</Label>
+              <Label>Modo IA</Label>
               <Select value={aiMode} onValueChange={(v: AiMode) => setAiMode(v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="text"><div className="flex items-center gap-2"><MessageSquare className="h-4 w-4"/> Text</div></SelectItem>
-                  <SelectItem value="image"><div className="flex items-center gap-2"><FileImage className="h-4 w-4"/> Image</div></SelectItem>
+                  <SelectItem value="text"><div className="flex items-center gap-2"><MessageSquare className="h-4 w-4"/> Texto</div></SelectItem>
+                  <SelectItem value="image"><div className="flex items-center gap-2"><FileImage className="h-4 w-4"/> Imagen</div></SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Subject/Topic</Label>
+              <Label>Materia/Tema</Label>
               <Select value={subject} onValueChange={(v: Subject) => setSubject(v)} disabled={!isTextMode}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="general">General</SelectItem>
-                  <SelectItem value="mathematics">Mathematics</SelectItem>
-                  <SelectItem value="physics">Physics</SelectItem>
-                  <SelectItem value="chemistry">Chemistry</SelectItem>
-                  <SelectItem value="language">Language</SelectItem>
-                  <SelectItem value="biology">Biology</SelectItem>
-                  <SelectItem value="music">Music</SelectItem>
-                  <SelectItem value="programming">Programming</SelectItem>
-                  <SelectItem value="social_sciences">Social Sciences</SelectItem>
-                  <SelectItem value="geography">Geography</SelectItem>
+                  {Object.entries(subjectMap).map(([key, value]) => (
+                    <SelectItem key={key} value={key}>{value}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -152,11 +158,11 @@ export default function ChatbotPage() {
             {messages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 mt-16">
                     <Sparkles className="h-12 w-12 mb-4" />
-                    <p className="text-lg font-semibold">Start a conversation!</p>
+                    <p className="text-lg font-semibold">¡Comienza una conversación!</p>
                     {isTextMode ? (
-                        <p>Ask me about {subject === 'general' ? 'anything' : subject.replace('_', ' ')}, and I'll do my best to help.</p>
+                        <p>Pregúntame sobre {subject === 'general' ? 'cualquier cosa' : subjectMap[subject].toLowerCase()}, y haré mi mejor esfuerzo para ayudar.</p>
                     ) : (
-                        <p>Describe an image and I'll generate it for you.</p>
+                        <p>Describe una imagen y la generaré para ti.</p>
                     )}
                 </div>
             )}
@@ -183,7 +189,7 @@ export default function ChatbotPage() {
                 )}
               >
                 {message.type === 'image' ? (
-                    <Image src={message.content} alt="Generated image" width={256} height={256} className="rounded-md" />
+                    <Image src={message.content} alt="Imagen generada" width={256} height={256} className="rounded-md" />
                 ) : (
                     <p className="whitespace-pre-wrap">{message.content}</p>
                 )}
@@ -211,7 +217,7 @@ export default function ChatbotPage() {
       <div className="mt-auto border-t bg-background p-4">
         <div className="relative">
           <Textarea
-            placeholder={isTextMode ? "Send a message..." : "Describe an image to generate..."}
+            placeholder={isTextMode ? "Enviar un mensaje..." : "Describe una imagen para generar..."}
             className="pr-28"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -223,7 +229,7 @@ export default function ChatbotPage() {
             }}
           />
           <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
-            <Button variant="ghost" size="icon" aria-label="Attach file">
+            <Button variant="ghost" size="icon" aria-label="Adjuntar archivo">
               <Paperclip className="h-5 w-5" />
             </Button>
             <Button size="icon" onClick={handleSend} disabled={isLoading || !input.trim()}>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon, PlusCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -60,19 +61,19 @@ export default function CalendarPage() {
       <header className="mb-8 flex flex-col items-start gap-4">
         <div>
             <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-                Calendar
+                Calendario
             </h1>
-            <p className="text-muted-foreground">Manage your tasks and events.</p>
+            <p className="text-muted-foreground">Gestiona tus tareas y eventos.</p>
         </div>
         <div className="flex w-full items-center gap-2">
           <Select onValueChange={(value: CalendarType) => setCalendarType(value)} defaultValue="all">
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select calendar" />
+              <SelectValue placeholder="Seleccionar calendario" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Calendars</SelectItem>
+              <SelectItem value="all">Todos los Calendarios</SelectItem>
               <SelectItem value="personal">Personal</SelectItem>
-              <SelectItem value="class">Class</SelectItem>
+              <SelectItem value="class">Clase</SelectItem>
             </SelectContent>
           </Select>
           <AddEventDialog onAddEvent={addEvent} />
@@ -88,6 +89,7 @@ export default function CalendarPage() {
                 selected={date}
                 onSelect={setDate}
                 className="w-full"
+                locale={es}
                 modifiers={{
                   hasEvent: filteredEvents.map((event) => event.date),
                 }}
@@ -101,7 +103,7 @@ export default function CalendarPage() {
 
         <div>
           <h2 className="mb-4 text-lg font-semibold">
-            Events on {date ? format(date, "MMMM d") : "selected date"}
+            Eventos del {date ? format(date, "d 'de' MMMM", {locale: es}) : "día seleccionado"}
           </h2>
           <Card className="min-h-[200px]">
             <CardContent className="p-4">
@@ -111,14 +113,14 @@ export default function CalendarPage() {
                     <li key={event.id} className="rounded-lg border bg-background p-3">
                         <p className="font-semibold">{event.title}</p>
                         <p className="text-sm text-muted-foreground">{event.description}</p>
-                        <span className={cn("mt-2 inline-block px-2 py-0.5 text-xs rounded-full", event.type === 'class' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800')}>{event.type}</span>
+                        <span className={cn("mt-2 inline-block px-2 py-0.5 text-xs rounded-full", event.type === 'class' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800')}>{event.type === 'class' ? 'Clase' : 'Personal'}</span>
                     </li>
                   ))}
                 </ul>
               ) : (
                 <div className="flex h-full flex-col items-center justify-center text-center p-8">
                   <CalendarIcon className="h-12 w-12 text-muted-foreground/50" />
-                  <p className="mt-4 text-muted-foreground">No events for this day.</p>
+                  <p className="mt-4 text-muted-foreground">No hay eventos para este día.</p>
                 </div>
               )}
             </CardContent>
@@ -149,45 +151,45 @@ function AddEventDialog({ onAddEvent }: { onAddEvent: (event: Omit<CalendarEvent
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button size="icon" aria-label="Add Event">
+        <Button size="icon" aria-label="Añadir Evento">
           <PlusCircle className="h-5 w-5" />
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add New Event</DialogTitle>
+          <DialogTitle>Añadir Nuevo Evento</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">Título</Label>
             <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Descripción</Label>
             <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
            <div className="space-y-2">
-            <Label>Date</Label>
-            <Calendar mode="single" selected={date} onSelect={setDate} className="rounded-md border" />
+            <Label>Fecha</Label>
+            <Calendar mode="single" selected={date} onSelect={setDate} className="rounded-md border" locale={es}/>
           </div>
           <div className="space-y-2">
-            <Label>Type</Label>
+            <Label>Tipo</Label>
             <Select onValueChange={(v: "personal"|"class") => setType(v)} defaultValue={type}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="personal">Personal</SelectItem>
-                <SelectItem value="class">Class</SelectItem>
+                <SelectItem value="class">Clase</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">Cancelar</Button>
           </DialogClose>
-          <Button onClick={handleSubmit}>Add Event</Button>
+          <Button onClick={handleSubmit}>Añadir Evento</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

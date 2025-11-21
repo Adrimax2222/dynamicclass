@@ -41,30 +41,29 @@ export default function CoursesPage() {
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
       <header className="mb-8">
         <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-          Learning Hub
+          Centro de Aprendizaje
         </h1>
         <p className="text-muted-foreground">
-          Discover new courses and connect with your classmates.
+          Descubre nuevos cursos y conecta con tus compañeros.
         </p>
       </header>
 
       <Tabs defaultValue="courses" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="courses">Courses</TabsTrigger>
-          <TabsTrigger value="chat">Class Chat</TabsTrigger>
+          <TabsTrigger value="courses">Cursos</TabsTrigger>
+          <TabsTrigger value="chat">Chat de Clase</TabsTrigger>
         </TabsList>
         <TabsContent value="courses" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Personalized Course Recommendations</CardTitle>
+              <CardTitle>Recomendaciones de Cursos Personalizadas</CardTitle>
               <CardDescription>
-                Based on your current classes, here are some courses you might
-                be interested in.
+                Basado en tus clases actuales, aquí tienes algunos cursos que podrían interesarte.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h4 className="font-semibold text-sm mb-2">Your Current Courses:</h4>
+                <h4 className="font-semibold text-sm mb-2">Tus Cursos Actuales:</h4>
                 <div className="flex flex-wrap gap-2">
                     {currentStudentCourses.map(course => (
                         <div key={course} className="text-xs rounded-full bg-muted px-3 py-1">{course}</div>
@@ -73,14 +72,14 @@ export default function CoursesPage() {
               </div>
               <Button onClick={handleGetRecs} disabled={isLoading}>
                 {isLoading ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...</>
                 ) : (
-                  <><Lightbulb className="mr-2 h-4 w-4" /> Get Recommendations</>
+                  <><Lightbulb className="mr-2 h-4 w-4" /> Obtener Recomendaciones</>
                 )}
               </Button>
               {recommendations.length > 0 && (
                 <div className="space-y-2 pt-4">
-                    <h4 className="font-semibold text-sm">Recommended for you:</h4>
+                    <h4 className="font-semibold text-sm">Recomendado para ti:</h4>
                     <ul className="list-disc list-inside space-y-1">
                         {recommendations.map((rec, i) => (
                             <li key={i}>{rec}</li>
@@ -94,19 +93,19 @@ export default function CoursesPage() {
         <TabsContent value="chat" className="mt-6">
           <Card className="h-[calc(100vh-18rem)]">
             <CardHeader>
-              <CardTitle>Physics 101 Class Chat</CardTitle>
+              <CardTitle>Chat de Clase de Física 101</CardTitle>
             </CardHeader>
             <CardContent className="h-full flex flex-col">
               <ScrollArea className="flex-1 pr-4">
                 <div className="space-y-4">
-                  <ChatMessage user="Emily" text="Hey guys, did anyone understand the last part of the lecture on relativity?" avatarSeed="avatar2" />
-                  <ChatMessage user="You" text="I was a bit lost too! Especially the time dilation part." avatarSeed="avatar1" isCurrentUser />
-                  <ChatMessage user="Mr. Davison" text="Good question! Time dilation is a core concept. Remember the twin paradox thought experiment we discussed? Let's go over it again." avatarSeed="avatar4" />
-                  <ChatMessage user="Sam" text="Oh right, that makes more sense now. Thanks!" avatarSeed="avatar3" />
+                  <ChatMessage user="Emily" text="Hola chicos, ¿alguien entendió la última parte de la clase sobre relatividad?" avatarSeed="avatar2" />
+                  <ChatMessage user="Tú" text="¡Yo también estaba un poco perdido! Especialmente la parte de la dilatación del tiempo." avatarSeed="avatar1" isCurrentUser />
+                  <ChatMessage user="Sr. Davison" text="¡Buena pregunta! La dilatación del tiempo es un concepto clave. ¿Recuerdan el experimento mental de la paradoja de los gemelos que discutimos? Repasémoslo." avatarSeed="avatar4" />
+                  <ChatMessage user="Sam" text="Ah, claro, ahora tiene más sentido. ¡Gracias!" avatarSeed="avatar3" />
                 </div>
               </ScrollArea>
               <div className="mt-4 flex w-full items-center space-x-2 pt-4 border-t">
-                <Input placeholder="Type a message..." />
+                <Input placeholder="Escribe un mensaje..." />
                 <Button><Send className="h-4 w-4" /></Button>
               </div>
             </CardContent>

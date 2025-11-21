@@ -13,12 +13,12 @@ import { z } from 'genkit';
 import { ai } from '@/ai/genkit';
 
 const GenerateImageInputSchema = z.object({
-  prompt: z.string().describe('The text prompt for image generation.'),
+  prompt: z.string().describe('El texto para la generación de la imagen.'),
 });
 export type GenerateImageInput = z.infer<typeof GenerateImageInputSchema>;
 
 const GenerateImageOutputSchema = z.object({
-  imageDataUri: z.string().describe('The data URI of the generated image.'),
+  imageDataUri: z.string().describe('La URI de datos de la imagen generada.'),
 });
 export type GenerateImageOutput = z.infer<typeof GenerateImageOutputSchema>;
 
@@ -31,20 +31,17 @@ export const generateImageFlow = ai.defineFlow(
   },
   async ({ prompt }) => {
     try {
-      // Use Genkit's built-in generate function with the correct model and configuration
-      // to explicitly request an image.
       const { media } = await ai.generate({
         model: 'googleai/gemini-1.5-flash',
-        prompt: `Generate a high-quality, photorealistic image of: ${prompt}`,
+        prompt: `Genera una imagen fotorrealista de alta calidad de: ${prompt}`,
         config: {
-            // This is the critical part: it tells the model to output an image.
             responseModalities: ['IMAGE'],
         }
       });
       
       if (!media || !media.url) {
-        console.error('Image generation failed: The AI response did not contain a media URL.');
-        throw new Error('Image generation failed to produce a data URI.');
+        console.error('La generación de imágenes falló: La respuesta de la IA no contenía una URL de medios.');
+        throw new Error('La generación de imágenes no pudo producir una URI de datos.');
       }
 
       return {
@@ -52,9 +49,8 @@ export const generateImageFlow = ai.defineFlow(
       };
 
     } catch (error) {
-      console.error('Error during image generation flow:', error);
-      // It's better to throw a more generic error to the user for security.
-      throw new Error('Failed to generate image due to an internal error.');
+      console.error('Error durante el flujo de generación de imágenes:', error);
+      throw new Error('No se pudo generar la imagen debido a un error interno.');
     }
   }
 );
