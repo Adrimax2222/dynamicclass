@@ -28,7 +28,7 @@ export default function HomePage() {
       <header className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-            Clase Dinámica
+            Dynamic Class
           </h1>
           <Badge variant="outline">V3.0</Badge>
         </div>
@@ -45,7 +45,7 @@ export default function HomePage() {
         <h2 className="text-xl font-semibold sm:text-2xl">
           ¡Bienvenido de nuevo, {user.name}!
         </h2>
-        <p className="text-muted-foreground">Este es tu Panel Dinámico para hoy.</p>
+        <p className="text-muted-foreground">Este es tu Dynamic Panel para hoy.</p>
       </div>
 
       <div className="mb-10 grid grid-cols-2 gap-4">
