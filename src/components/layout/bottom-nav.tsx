@@ -9,7 +9,7 @@ const navItems = [
   { href: "/home", label: "Inicio", icon: Home },
   { href: "/calendar", label: "Calendario", icon: CalendarDays },
   { href: "/courses", label: "Cursos", icon: BookOpenText },
-  { href: "/chatbot", label: "Chatbot", icon: Bot },
+  { href: "/chatbot", label: "IA", icon: Bot },
   { href: "/profile", label: "Perfil", icon: UserCircle },
 ];
 
