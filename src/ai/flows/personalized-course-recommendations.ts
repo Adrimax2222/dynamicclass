@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const CourseRecommendationsInputSchema = z.object({
   currentClasses: z.array(z.string()).describe('Lista de las clases actuales del estudiante.'),
