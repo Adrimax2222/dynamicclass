@@ -106,49 +106,51 @@ export default function ChatbotPage() {
   const isTextMode = aiMode === 'text';
 
   return (
-    <div className="container mx-auto flex h-[calc(100vh-8rem)] max-w-4xl flex-col p-4 sm:p-6">
-      <header className="mb-4">
-        <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl flex items-center gap-2">
-          <Bot className="h-7 w-7 text-primary" /> ADRIMAX AI
+    <div className="flex h-full flex-col">
+      <header className="border-b p-4">
+        <h1 className="text-xl font-bold font-headline tracking-tighter flex items-center gap-2">
+          <Bot className="h-6 w-6 text-primary" /> ADRIMAX AI
         </h1>
-        <p className="text-muted-foreground">Your enthusiastic creative and educational partner.</p>
+        <p className="text-sm text-muted-foreground">Your enthusiastic creative and educational partner.</p>
       </header>
 
-      <div className="mb-4 grid grid-cols-1 gap-4 rounded-lg border bg-card p-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label>AI Mode</Label>
-          <Select value={aiMode} onValueChange={(v: AiMode) => setAiMode(v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="text"><div className="flex items-center gap-2"><MessageSquare className="h-4 w-4"/> Text</div></SelectItem>
-              <SelectItem value="image"><div className="flex items-center gap-2"><FileImage className="h-4 w-4"/> Image</div></SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Subject/Topic</Label>
-          <Select value={subject} onValueChange={(v: Subject) => setSubject(v)} disabled={!isTextMode}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="general">General</SelectItem>
-              <SelectItem value="mathematics">Mathematics</SelectItem>
-              <SelectItem value="physics">Physics</SelectItem>
-              <SelectItem value="chemistry">Chemistry</SelectItem>
-              <SelectItem value="language">Language</SelectItem>
-              <SelectItem value="biology">Biology</SelectItem>
-              <SelectItem value="music">Music</SelectItem>
-              <SelectItem value="programming">Programming</SelectItem>
-              <SelectItem value="social_sciences">Social Sciences</SelectItem>
-              <SelectItem value="geography">Geography</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="border-b p-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>AI Mode</Label>
+              <Select value={aiMode} onValueChange={(v: AiMode) => setAiMode(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="text"><div className="flex items-center gap-2"><MessageSquare className="h-4 w-4"/> Text</div></SelectItem>
+                  <SelectItem value="image"><div className="flex items-center gap-2"><FileImage className="h-4 w-4"/> Image</div></SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Subject/Topic</Label>
+              <Select value={subject} onValueChange={(v: Subject) => setSubject(v)} disabled={!isTextMode}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="mathematics">Mathematics</SelectItem>
+                  <SelectItem value="physics">Physics</SelectItem>
+                  <SelectItem value="chemistry">Chemistry</SelectItem>
+                  <SelectItem value="language">Language</SelectItem>
+                  <SelectItem value="biology">Biology</SelectItem>
+                  <SelectItem value="music">Music</SelectItem>
+                  <SelectItem value="programming">Programming</SelectItem>
+                  <SelectItem value="social_sciences">Social Sciences</SelectItem>
+                  <SelectItem value="geography">Geography</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
       </div>
 
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="space-y-6 p-4">
             {messages.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
+                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 mt-16">
                     <Sparkles className="h-12 w-12 mb-4" />
                     <p className="text-lg font-semibold">Start a conversation!</p>
                     {isTextMode ? (
@@ -206,7 +208,7 @@ export default function ChatbotPage() {
           )}
         </div>
       </ScrollArea>
-      <div className="mt-auto border-t pt-4">
+      <div className="border-t bg-background p-4">
         <div className="relative">
           <Textarea
             placeholder={isTextMode ? "Send a message..." : "Describe an image to generate..."}
