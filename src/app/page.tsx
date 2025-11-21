@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Loader2, ArrowLeft } from "lucide-react";
 import {
   createUserWithEmailAndPassword,
   updateProfile,
@@ -42,10 +42,10 @@ import { useApp } from "@/lib/hooks/use-app";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Logo } from "@/components/icons";
 import { useState } from "react";
-import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-
+import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 const formSchema = z.object({
   fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
@@ -58,15 +58,25 @@ const formSchema = z.object({
   avatar: z.string().min(1, { message: "Por favor, selecciona una foto de perfil." }),
 });
 
+type FormSchemaType = z.infer<typeof formSchema>;
+
+const steps = [
+    { id: 1, fields: ['fullName', 'email', 'password'] },
+    { id: 2, fields: ['center', 'ageRange', 'role', 'classCode'] },
+    { id: 3, fields: ['avatar'] },
+];
+
 export default function RegistrationForm() {
   const router = useRouter();
   const { login } = useApp();
   const [isLoading, setIsLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward'>('forward');
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       fullName: "",
@@ -79,7 +89,25 @@ export default function RegistrationForm() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function goToNextStep() {
+    const fieldsToValidate = steps[currentStep].fields as (keyof FormSchemaType)[];
+    const isValid = await form.trigger(fieldsToValidate);
+    if (isValid) {
+      setAnimationDirection('forward');
+      setCurrentStep(prev => prev + 1);
+    }
+  }
+
+  function goToPreviousStep() {
+    setAnimationDirection('backward');
+    setCurrentStep(prev => prev - 1);
+  }
+
+  async function onSubmit(values: FormSchemaType) {
+    if (currentStep !== steps.length - 1) {
+        return goToNextStep();
+    }
+    
     setIsLoading(true);
     if (!auth || !firestore) {
         toast({ title: "Error", description: "Firebase no está inicializado.", variant: "destructive"});
@@ -113,7 +141,6 @@ export default function RegistrationForm() {
 
       await setDoc(doc(firestore, "users", firebaseUser.uid), userData);
 
-      // This login is for the app's context, not Firebase auth
       login(userData);
       
       router.push("/home");
@@ -129,209 +156,189 @@ export default function RegistrationForm() {
     }
   }
 
+  const progress = ((currentStep + 1) / steps.length) * 100;
+  const isFirstStep = currentStep === 0;
+  const isLastStep = currentStep === steps.length - 1;
+
+  const animationClass = animationDirection === 'forward' 
+    ? 'animate-slide-in'
+    : 'animate-slide-in-reverse';
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-muted/20 p-4">
-       <div className="absolute top-8 left-8 flex items-center gap-2">
-         <Logo className="h-8 w-8 text-primary" />
-         <h1 className="text-xl font-bold tracking-tight">Dynamic Class</h1>
-       </div>
-      <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader>
-          <CardTitle className="text-2xl font-headline">Únete a Dynamic Class</CardTitle>
-          <CardDescription>
-            Crea tu cuenta para conectarte con tu clase.
-          </CardDescription>
+      <Card className="w-full max-w-md shadow-2xl overflow-hidden">
+        <CardHeader className="text-center">
+            <div className="mx-auto mb-2 flex items-center gap-2">
+                <Logo className="h-8 w-8 text-primary" />
+                <h1 className="text-xl font-bold tracking-tight">Dynamic Class</h1>
+            </div>
+            <CardTitle className="text-2xl font-headline">Únete a la Clase</CardTitle>
+            <CardDescription>
+                Crea tu cuenta para empezar a conectar.
+            </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-               <FormField
-                  control={form.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nombre Completo</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Correo Electrónico</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="tu@ejemplo.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contraseña</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                 <FormField
-                  control={form.control}
-                  name="center"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Centro Educativo</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Universidad de Springfield" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="ageRange"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Rango de Edad</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona tu rango de edad" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="12-15">12-15 años</SelectItem>
-                          <SelectItem value="16-18">16-18 años</SelectItem>
-                          <SelectItem value="19-22">19-22 años</SelectItem>
-                          <SelectItem value="23+">23+ años</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>Tu Rol</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex items-center space-x-4"
-                      >
-                        <FormItem className="flex items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="student" />
-                          </FormControl>
-                          <FormLabel className="font-normal">Estudiante</FormLabel>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <div key={currentStep} className={animationClass}>
+                {currentStep === 0 && (
+                  <div className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="fullName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nombre Completo</FormLabel>
+                          <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
+                          <FormMessage />
                         </FormItem>
-                        <FormItem className="flex items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="teacher" />
-                          </FormControl>
-                          <FormLabel className="font-normal">Profesor</FormLabel>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Correo Electrónico</FormLabel>
+                          <FormControl><Input type="email" placeholder="tu@ejemplo.com" {...field} /></FormControl>
+                          <FormMessage />
                         </FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Contraseña</FormLabel>
+                          <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 )}
-              />
-
-              <FormField
-                control={form.control}
-                name="classCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Código de Clase (Opcional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Introduce el código para unirte a una clase" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Tu profesor te proporcionará este código.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <Separator />
-
-              <FormField
-                control={form.control}
-                name="avatar"
-                render={({ field }) => (
-                  <FormItem className="space-y-4">
-                    <FormLabel>Foto de Perfil</FormLabel>
-                    <FormDescription>
-                      Elige un avatar predeterminado o sube el tuyo.
-                    </FormDescription>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="grid grid-cols-3 sm:grid-cols-4 gap-4"
-                    >
-                      {PlaceHolderImages.slice(0,5).map((img) => (
-                        <FormItem key={img.id} className="relative">
-                          <FormControl>
-                            <RadioGroupItem value={img.imageUrl} className="sr-only" />
-                          </FormControl>
-                          <FormLabel className="cursor-pointer">
-                            <Image
-                              src={img.imageUrl}
-                              alt={img.description}
-                              width={80}
-                              height={80}
-                              className={`rounded-full aspect-square object-cover transition-all ${
-                                field.value === img.imageUrl
-                                  ? 'ring-4 ring-primary ring-offset-2'
-                                  : 'opacity-60 hover:opacity-100'
-                              }`}
-                            />
-                          </FormLabel>
+                
+                {currentStep === 1 && (
+                  <div className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="center"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Centro Educativo</FormLabel>
+                          <FormControl><Input placeholder="Universidad de Springfield" {...field} /></FormControl>
+                          <FormMessage />
                         </FormItem>
-                      ))}
-                      <FormItem className="relative">
-                         <FormLabel className="cursor-pointer">
-                            <div
-                            className="h-[80px] w-[80px] rounded-full flex flex-col items-center justify-center gap-1 border-2 border-dashed bg-muted hover:bg-muted/80">
-                            <Camera className="h-6 w-6" />
-                            <span className="text-xs">Subir</span>
-                            </div>
-                        </FormLabel>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="ageRange"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Rango de Edad</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              <SelectItem value="12-15">12-15 años</SelectItem>
+                              <SelectItem value="16-18">16-18 años</SelectItem>
+                              <SelectItem value="19-22">19-22 años</SelectItem>
+                              <SelectItem value="23+">23+ años</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="role"
+                      render={({ field }) => (
+                        <FormItem className="space-y-3">
+                          <FormLabel>Tu Rol</FormLabel>
+                          <FormControl>
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex items-center space-x-4">
+                              <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="student" /></FormControl><FormLabel className="font-normal">Estudiante</FormLabel></FormItem>
+                              <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="teacher" /></FormControl><FormLabel className="font-normal">Profesor</FormLabel></FormItem>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="classCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Código de Clase (Opcional)</FormLabel>
+                          <FormControl><Input placeholder="Introduce el código para unirte" {...field} /></FormControl>
+                          <FormDescription>Tu profesor te proporcionará este código.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
+                {currentStep === 2 && (
+                   <FormField
+                    control={form.control}
+                    name="avatar"
+                    render={({ field }) => (
+                      <FormItem className="space-y-4 text-center">
+                        <FormLabel className="text-base">Elige tu Foto de Perfil</FormLabel>
+                        <FormDescription>Selecciona un avatar o sube el tuyo.</FormDescription>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="grid grid-cols-3 gap-4 pt-4"
+                        >
+                          {PlaceHolderImages.slice(0,5).map((img) => (
+                            <FormItem key={img.id} className="relative">
+                              <FormControl><RadioGroupItem value={img.imageUrl} className="sr-only" /></FormControl>
+                              <FormLabel className="cursor-pointer">
+                                <Image
+                                  src={img.imageUrl} alt={img.description} width={80} height={80}
+                                  className={`rounded-full aspect-square object-cover transition-all mx-auto ${field.value === img.imageUrl ? 'ring-4 ring-primary ring-offset-2' : 'opacity-60 hover:opacity-100'}`}
+                                />
+                              </FormLabel>
+                            </FormItem>
+                          ))}
+                          <FormItem className="relative">
+                            <FormLabel className="cursor-pointer">
+                                <div className="h-[80px] w-[80px] rounded-full flex flex-col items-center justify-center gap-1 border-2 border-dashed bg-muted hover:bg-muted/80 mx-auto">
+                                    <Camera className="h-6 w-6" />
+                                    <span className="text-xs">Subir</span>
+                                </div>
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                        <FormMessage className="pt-2" />
                       </FormItem>
-                    </RadioGroup>
-                    <FormMessage />
-                  </FormItem>
+                    )}
+                  />
                 )}
-              />
-
-              <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creando Cuenta...
-                  </>
-                ) : (
-                  "Crear Cuenta e Iniciar Sesión"
-                )}
-              </Button>
+              </div>
+              
+              <div className="pt-6">
+                <Progress value={progress} className="h-2 mb-6" />
+                <div className="flex items-center gap-4">
+                  <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isFirstStep || isLoading} className={cn(isFirstStep && 'opacity-0')}>
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
+                  </Button>
+                  <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                    {isLoading ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creando Cuenta...</>
+                    ) : isLastStep ? (
+                      "Crear Cuenta e Iniciar Sesión"
+                    ) : (
+                      "Siguiente"
+                    )}
+                  </Button>
+                </div>
+              </div>
             </form>
           </Form>
         </CardContent>
