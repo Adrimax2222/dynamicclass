@@ -34,7 +34,7 @@ const generateImageFlow = ai.defineFlow(
   },
   async ({prompt}) => {
     const {media} = await ai.generate({
-      model: googleAI.model('imagen-4.0-fast-generate-001'),
+      model: googleAI.model('imagen-4.0-generate-001'),
       prompt: prompt,
     });
 
