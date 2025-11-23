@@ -41,7 +41,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useApp } from "@/lib/hooks/use-app";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Logo } from "@/components/icons";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth, useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -72,9 +72,11 @@ export default function RegistrationForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward'>('forward');
+  const [uploadedAvatarPreview, setUploadedAvatarPreview] = useState<string | null>(null);
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
@@ -103,6 +105,19 @@ export default function RegistrationForm() {
     setCurrentStep(prev => prev - 1);
   }
 
+  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        setUploadedAvatarPreview(dataUrl);
+        form.setValue("avatar", dataUrl); 
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   async function onSubmit(values: FormSchemaType) {
     setIsLoading(true);
     if (!auth || !firestore) {
@@ -115,6 +130,9 @@ export default function RegistrationForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
 
+      // Here you would typically upload the image to Firebase Storage if it's a data URL
+      // For now, we'll just pass the (potentially very long) data URL.
+      // In a real app, this should be handled by uploading the file and getting a storage URL.
       await updateProfile(firebaseUser, {
         displayName: values.fullName,
         photoURL: values.avatar,
@@ -127,7 +145,7 @@ export default function RegistrationForm() {
         center: values.center,
         ageRange: values.ageRange,
         role: values.role,
-        avatar: values.avatar,
+        avatar: values.avatar, // Saving the URL (or data URL)
         trophies: 0,
         tasks: 0,
         exams: 0,
@@ -287,7 +305,10 @@ export default function RegistrationForm() {
                         <FormLabel className="text-base">Elige tu Foto de Perfil</FormLabel>
                         <FormDescription>Selecciona un avatar o sube el tuyo.</FormDescription>
                         <RadioGroup
-                          onValueChange={field.onChange}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            setUploadedAvatarPreview(null);
+                          }}
                           defaultValue={field.value}
                           className="grid grid-cols-3 gap-4 pt-4"
                         >
@@ -303,11 +324,21 @@ export default function RegistrationForm() {
                             </FormItem>
                           ))}
                           <FormItem className="relative">
-                            <FormLabel className="cursor-pointer">
-                                <div className="h-[80px] w-[80px] rounded-full flex flex-col items-center justify-center gap-1 border-2 border-dashed bg-muted hover:bg-muted/80 mx-auto">
-                                    <Camera className="h-6 w-6" />
-                                    <span className="text-xs">Subir</span>
-                                </div>
+                            <FormControl>
+                                <input type="file" accept="image/*" className="sr-only" ref={fileInputRef} onChange={handleAvatarUpload} />
+                            </FormControl>
+                            <FormLabel className="cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                                {uploadedAvatarPreview ? (
+                                    <Image
+                                      src={uploadedAvatarPreview} alt="Avatar subido" width={80} height={80}
+                                      className="rounded-full aspect-square object-cover transition-all mx-auto ring-4 ring-primary ring-offset-2"
+                                    />
+                                ) : (
+                                    <div className="h-[80px] w-[80px] rounded-full flex flex-col items-center justify-center gap-1 border-2 border-dashed bg-muted hover:bg-muted/80 mx-auto">
+                                        <Camera className="h-6 w-6" />
+                                        <span className="text-xs">Subir</span>
+                                    </div>
+                                )}
                             </FormLabel>
                           </FormItem>
                         </RadioGroup>
