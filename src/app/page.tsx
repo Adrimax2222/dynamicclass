@@ -44,7 +44,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useApp } from "@/lib/hooks/use-app";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Logo } from "@/components/icons";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth, useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -79,7 +79,7 @@ const steps = [
 export default function AuthPage() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const router = useRouter();
-  const { login } = useApp();
+  const { user } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward'>('forward');
@@ -89,6 +89,14 @@ export default function AuthPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      router.replace('/home');
+    }
+  }, [user, router]);
+
 
   const form = useForm<RegistrationSchemaType>({
     resolver: zodResolver(registrationSchema),
@@ -142,21 +150,27 @@ export default function AuthPage() {
   async function uploadAvatar(userId: string): Promise<string> {
     const storage = getStorage();
     const selectedAvatar = form.getValues("avatar");
-  
-    // Case 1: User uploaded a new file
-    if (avatarFile) {
+
+    if (avatarFile) { // Case 1: User uploaded a new file
         const filePath = `avatars/${userId}/${avatarFile.name}`;
         const fileRef = storageRef(storage, filePath);
         await uploadBytes(fileRef, avatarFile);
         return getDownloadURL(fileRef);
-    }
-    
-    // Case 2: User selected a placeholder URL
-    if (selectedAvatar.startsWith('http')) {
+    } else if (selectedAvatar.startsWith('https://placehold.co')) { // Case 2: User selected a placeholder
         return selectedAvatar;
     }
+
+    // Fallback: This case should ideally not be reached if validation is correct
+    // and a default value is set. It means user selected a placeholder that is NOT from placehold.co
+    // which shouldn't happen. As a safe fallback, upload the data URL if it is one.
+    if (selectedAvatar.startsWith('data:image')) {
+        const filePath = `avatars/${userId}/uploaded_avatar.png`;
+        const fileRef = storageRef(storage, filePath);
+        await uploadBytes(fileRef, await(await fetch(selectedAvatar)).blob());
+        return getDownloadURL(fileRef);
+    }
     
-    // Case 3: Fallback (should not happen with validation)
+    // Final fallback
     return PlaceHolderImages[0].imageUrl;
   }
   
@@ -180,25 +194,8 @@ export default function AuthPage() {
         photoURL: finalAvatarUrl,
       });
 
-      const userData: User = {
-        uid: firebaseUser.uid,
-        name: values.fullName,
-        email: values.email,
-        center: values.center,
-        ageRange: values.ageRange,
-        role: values.role,
-        avatar: finalAvatarUrl,
-        trophies: 0,
-        tasks: 0,
-        exams: 0,
-        pending: 0,
-        activities: 0,
-      };
-
-      await setDoc(doc(firestore, "users", firebaseUser.uid), userData);
-
-      login(userData);
-      router.push("/home");
+      // The AppProvider's onAuthStateChanged listener will now handle creating the Firestore doc.
+      // We don't need to call login() or router.push() here, as the provider and layout will handle it.
 
     } catch (error: any) {
       console.error("Registration Error:", error);
@@ -223,7 +220,7 @@ export default function AuthPage() {
 
   async function onLoginSubmit(values: LoginSchemaType) {
     setIsLoading(true);
-    if (!auth || !firestore) {
+    if (!auth) {
       toast({
         title: "Error de inicialización",
         description: "Firebase no está disponible. Por favor, recarga la página.",
@@ -234,43 +231,13 @@ export default function AuthPage() {
     }
   
     try {
-      const userCredential = await signInWithEmailAndPassword(
+      await signInWithEmailAndPassword(
         auth,
         values.email,
         values.password
       );
-      const firebaseUser = userCredential.user;
-  
-      const userDocRef = doc(firestore, "users", firebaseUser.uid);
-      const userDocSnap = await getDoc(userDocRef);
-  
-      if (userDocSnap.exists()) {
-        // User document exists, login is successful
-        login(userDocSnap.data() as User);
-        router.push("/home");
-      } else {
-        // User exists in Auth but not in Firestore - create the document now
-        console.warn("User document not found in Firestore, creating one...");
-        
-        const newUser: User = {
-          uid: firebaseUser.uid,
-          name: firebaseUser.displayName || 'Usuario',
-          email: firebaseUser.email || '',
-          avatar: firebaseUser.photoURL || PlaceHolderImages[0].imageUrl,
-          center: 'Centro no especificado',
-          ageRange: 'No especificado',
-          role: 'student',
-          trophies: 0,
-          tasks: 0,
-          exams: 0,
-          pending: 0,
-          activities: 0,
-        };
-  
-        await setDoc(userDocRef, newUser);
-        login(newUser);
-        router.push("/home");
-      }
+      // Successful login will trigger onAuthStateChanged in AppProvider,
+      // which handles fetching/creating user data and redirection via the layout.
     } catch (error: any) {
       console.error("Login Error:", error);
       let errorMessage = "No se pudo iniciar sesión. Por favor, intenta de nuevo.";
@@ -357,7 +324,7 @@ export default function AuthPage() {
                                     </FormItem>
                                 ))}
                                 <FormItem className="relative">
-                                    <FormControl><input type="file" accept="image/*" className="sr-only" ref={fileInputRef} onChange={handleAvatarUpload} /></FormControl>
+                                    <FormControl><input type="file" accept="image/*" className="sr-only" ref={fileInputref} onChange={handleAvatarUpload} /></FormControl>
                                     <FormLabel className="cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                                         {uploadedAvatarPreview ? (
                                             <Image src={uploadedAvatarPreview} alt="Avatar subido" width={80} height={80} className="rounded-full aspect-square object-cover transition-all mx-auto ring-4 ring-primary ring-offset-2" />

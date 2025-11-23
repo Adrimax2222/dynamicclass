@@ -4,7 +4,8 @@ import { createContext, useState, useEffect, useCallback, type ReactNode } from 
 import type { User } from '@/lib/types';
 import { useAuth, useFirestore } from '@/firebase';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export type Theme = 'light' | 'dark';
 
@@ -48,15 +49,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const userDocRef = doc(firestore, 'users', fbUser.uid);
         
         // Use onSnapshot to listen for real-time updates
-        const unsubSnapshot = onSnapshot(userDocRef, (docSnap) => {
+        const unsubSnapshot = onSnapshot(userDocRef, async (docSnap) => {
           if (docSnap.exists()) {
             const userData = docSnap.data() as User;
             setUser(userData);
             localStorage.setItem('classconnect-user', JSON.stringify(userData));
           } else {
-            console.log("No such user document!");
-            setUser(null);
-            localStorage.removeItem('classconnect-user');
+            // User is authenticated but doesn't have a Firestore document.
+            // This can happen if registration was interrupted. Let's create it.
+            console.warn("User document not found for authenticated user. Creating one now.");
+            const newUser: User = {
+                uid: fbUser.uid,
+                name: fbUser.displayName || 'Usuario',
+                email: fbUser.email || '',
+                avatar: fbUser.photoURL || PlaceHolderImages[0].imageUrl,
+                center: 'Centro no especificado',
+                ageRange: 'No especificado',
+                role: 'student',
+                trophies: 0,
+                tasks: 0,
+                exams: 0,
+                pending: 0,
+                activities: 0,
+            };
+            try {
+                await setDoc(userDocRef, newUser);
+                setUser(newUser); // Set user in context after creation
+                localStorage.setItem('classconnect-user', JSON.stringify(newUser));
+            } catch (error) {
+                console.error("Failed to create user document:", error);
+                // If we can't create the doc, log them out to prevent being stuck.
+                auth.signOut();
+            }
           }
         });
         
@@ -80,6 +104,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // This login function is now primarily for the initial registration step
+  // and for manual login to update the context immediately.
   const login = (userData: User) => {
     setUser(userData);
     localStorage.setItem('classconnect-user', JSON.stringify(userData));
@@ -87,6 +112,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     // Firebase onAuthStateChanged will handle setting user to null
+    if (auth) {
+      auth.signOut();
+    }
     localStorage.removeItem('classconnect-user');
     setUser(null);
     setFirebaseUser(null);

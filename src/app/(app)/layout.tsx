@@ -4,42 +4,40 @@ import { useApp } from "@/lib/hooks/use-app";
 import BottomNav from "@/components/layout/bottom-nav";
 import ChatBubble from "@/components/chatbot/chat-bubble";
 import ChatDrawer from "@/components/chatbot/chat-drawer";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/firebase";
-import { onAuthStateChanged } from "firebase/auth";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, theme } = useApp();
+  const { user, theme, firebaseUser } = useApp();
   const router = useRouter();
-  const auth = useAuth();
   const pathname = usePathname();
-  const [authStatus, setAuthStatus] = useState<'loading' | 'authed' | 'unauthed'>('loading');
-
+  
+  // Handles theme changes
   useEffect(() => {
     const storedTheme = localStorage.getItem('classconnect-theme') || 'light';
     document.documentElement.classList.toggle('dark', storedTheme === 'dark');
   }, [theme]);
   
+  // Auth status check
   useEffect(() => {
-    if (!auth) return;
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setAuthStatus('authed');
-      } else {
-        setAuthStatus('unauthed');
-        // Redirect to login only if not already on the login/register page
-        if (pathname !== '/') {
-            router.replace("/");
+    // If firebaseUser is null after auth state has been checked, redirect to login
+    // but give it a moment in case it's just initializing
+    const timer = setTimeout(() => {
+        if (firebaseUser === null) {
+            if (pathname !== '/') {
+                router.replace("/");
+            }
         }
-      }
-    });
-    return () => unsubscribe();
-  }, [auth, router, pathname]);
+    }, 200); // 200ms delay to prevent flash on initial load
+
+    return () => clearTimeout(timer);
+
+  }, [firebaseUser, pathname, router]);
   
-  // Show a loading screen while checking auth status
-  if (authStatus === 'loading' || (authStatus === 'authed' && !user)) {
+  // While user or firebaseUser is being determined, show a loader.
+  // This covers the initial load time for auth state and Firestore doc fetch.
+  if (!firebaseUser || !user) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -47,16 +45,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If unauthenticated, we've already started the redirect, so we can render null
-  // or a minimal layout to prevent flashing the main app layout.
-  if (authStatus === 'unauthed') {
-      return (
-        <div className="flex h-screen items-center justify-center">
-            <p>Redirigiendo...</p>
-        </div>
-      );
-  }
-
+  // If we reach here, user is authenticated and user data is available
   return (
     <div className="flex justify-center bg-muted/20">
       <div className="relative flex min-h-screen w-full max-w-md flex-col border-x bg-background shadow-2xl">
