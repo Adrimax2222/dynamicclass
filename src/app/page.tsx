@@ -104,10 +104,6 @@ export default function RegistrationForm() {
   }
 
   async function onSubmit(values: FormSchemaType) {
-    if (currentStep !== steps.length - 1) {
-        return goToNextStep();
-    }
-    
     setIsLoading(true);
     if (!auth || !firestore) {
         toast({ title: "Error", description: "Firebase no está inicializado.", variant: "destructive"});
@@ -180,7 +176,7 @@ export default function RegistrationForm() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <div key={currentStep} className={animationClass}>
+              <div key={currentStep} className={cn("min-h-[380px]", animationClass)}>
                 {currentStep === 0 && (
                   <div className="space-y-6">
                     <FormField
@@ -328,7 +324,7 @@ export default function RegistrationForm() {
                   <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isFirstStep || isLoading} className={cn(isFirstStep && 'opacity-0')}>
                       <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
                   </Button>
-                  <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                  <Button type={isLastStep ? 'submit' : 'button'} className="w-full" size="lg" disabled={isLoading} onClick={!isLastStep ? goToNextStep : undefined}>
                     {isLoading ? (
                       <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creando Cuenta...</>
                     ) : isLastStep ? (
