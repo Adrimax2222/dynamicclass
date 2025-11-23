@@ -16,12 +16,12 @@ export const useCollection = <T>(
     listen?: boolean;
   } = { listen: true }
 ): {
-  data: T[] | null;
+  data: T[];
   isLoading: boolean;
   error: Error | null;
 } => {
   const firestore = useFirestore();
-  const [data, setData] = useState<T[] | null>(null);
+  const [data, setData] = useState<T[]>([]);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 

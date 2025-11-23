@@ -67,6 +67,7 @@ export default function CalendarPage() {
   const { data: events = [], isLoading } = useCollection<CalendarEvent>(eventsCollection);
 
   const processedEvents = useMemo(() => {
+    if (!events) return [];
     return events.map(e => ({...e, date: normalizeEventDate(e) }))
   }, [events]);
 
