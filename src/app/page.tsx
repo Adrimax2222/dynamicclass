@@ -142,7 +142,8 @@ export default function AuthPage() {
   async function uploadAvatar(userId: string): Promise<string> {
     const storage = getStorage();
     const selectedAvatar = form.getValues("avatar");
-
+  
+    // Case 1: User uploaded a new file
     if (avatarFile) {
         const filePath = `avatars/${userId}/${avatarFile.name}`;
         const fileRef = storageRef(storage, filePath);
@@ -150,13 +151,15 @@ export default function AuthPage() {
         return getDownloadURL(fileRef);
     }
     
+    // Case 2: User selected a placeholder URL
     if (selectedAvatar.startsWith('http')) {
         return selectedAvatar;
     }
     
+    // Case 3: Fallback (should not happen with validation)
     return PlaceHolderImages[0].imageUrl;
-}
-
+  }
+  
 
   async function onRegisterSubmit(values: RegistrationSchemaType) {
     setIsLoading(true);
@@ -177,7 +180,7 @@ export default function AuthPage() {
         photoURL: finalAvatarUrl,
       });
 
-      const userData = {
+      const userData: User = {
         uid: firebaseUser.uid,
         name: values.fullName,
         email: values.email,
@@ -194,7 +197,7 @@ export default function AuthPage() {
 
       await setDoc(doc(firestore, "users", firebaseUser.uid), userData);
 
-      login(userData as User);
+      login(userData);
       router.push("/home");
 
     } catch (error: any) {
@@ -221,29 +224,62 @@ export default function AuthPage() {
   async function onLoginSubmit(values: LoginSchemaType) {
     setIsLoading(true);
     if (!auth || !firestore) {
-        toast({ title: "Error", description: "Firebase no está inicializado.", variant: "destructive"});
-        setIsLoading(false);
-        return;
+      toast({
+        title: "Error de inicialización",
+        description: "Firebase no está disponible. Por favor, recarga la página.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
     }
+  
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-        const firebaseUser = userCredential.user;
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        values.email,
+        values.password
+      );
+      const firebaseUser = userCredential.user;
+  
+      const userDocRef = doc(firestore, "users", firebaseUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
+  
+      if (userDocSnap.exists()) {
+        // User document exists, login is successful
+        login(userDocSnap.data() as User);
+        router.push("/home");
+      } else {
+        // User exists in Auth but not in Firestore - create the document now
+        console.warn("User document not found in Firestore, creating one...");
         
-        const userDocRef = doc(firestore, "users", firebaseUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
-
-        if (userDocSnap.exists()) {
-            login(userDocSnap.data() as User);
-            router.push("/home");
-        } else {
-             throw new Error("No se encontraron datos de usuario en Firestore.");
-        }
-
+        const newUser: User = {
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || 'Usuario',
+          email: firebaseUser.email || '',
+          avatar: firebaseUser.photoURL || PlaceHolderImages[0].imageUrl,
+          center: 'Centro no especificado',
+          ageRange: 'No especificado',
+          role: 'student',
+          trophies: 0,
+          tasks: 0,
+          exams: 0,
+          pending: 0,
+          activities: 0,
+        };
+  
+        await setDoc(userDocRef, newUser);
+        login(newUser);
+        router.push("/home");
+      }
     } catch (error: any) {
       console.error("Login Error:", error);
-      let errorMessage = "No se pudo iniciar sesión. Revisa tu correo y contraseña.";
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-          errorMessage = "Correo electrónico o contraseña incorrectos.";
+      let errorMessage = "No se pudo iniciar sesión. Por favor, intenta de nuevo.";
+      if (
+        error.code === "auth/user-not-found" ||
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/invalid-credential"
+      ) {
+        errorMessage = "El correo electrónico o la contraseña son incorrectos.";
       }
       toast({
         title: "Error de Inicio de Sesión",
@@ -251,7 +287,7 @@ export default function AuthPage() {
         variant: "destructive",
       });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   }
 
@@ -265,11 +301,12 @@ export default function AuthPage() {
     
   const handleAuthModeChange = (mode: 'login' | 'register') => {
     setAuthMode(mode);
-    // Reset forms when switching
     loginForm.reset();
     form.reset();
     setCurrentStep(0);
     setIsLoading(false);
+    setUploadedAvatarPreview(null);
+    setAvatarFile(null);
   }
 
   return (
@@ -372,5 +409,3 @@ export default function AuthPage() {
     </main>
   );
 }
-
-    
