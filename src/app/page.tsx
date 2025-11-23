@@ -11,6 +11,8 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import { getStorage, ref as storageRef, uploadString, getDownloadURL, uploadBytes } from "firebase/storage";
+
 
 import { Button } from "@/components/ui/button";
 import {
@@ -73,6 +75,7 @@ export default function RegistrationForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward'>('forward');
   const [uploadedAvatarPreview, setUploadedAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -108,15 +111,40 @@ export default function RegistrationForm() {
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setAvatarFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setUploadedAvatarPreview(dataUrl);
+        // We set a temporary value. The real value will be the storage URL
         form.setValue("avatar", dataUrl); 
       };
       reader.readAsDataURL(file);
     }
   };
+
+  async function uploadAvatar(userId: string): Promise<string> {
+    const storage = getStorage();
+    let avatarUrl = form.getValues("avatar");
+
+    // If an avatar file was uploaded by the user
+    if (avatarFile) {
+        const filePath = `avatars/${userId}/${avatarFile.name}`;
+        const fileRef = storageRef(storage, filePath);
+        await uploadBytes(fileRef, avatarFile);
+        avatarUrl = await getDownloadURL(fileRef);
+    } 
+    // If the user selected a default placeholder that is a data URI
+    else if (avatarUrl.startsWith('data:')) {
+        const filePath = `avatars/${userId}/default-avatar.png`;
+        const fileRef = storageRef(storage, filePath);
+        await uploadString(fileRef, avatarUrl, 'data_url');
+        avatarUrl = await getDownloadURL(fileRef);
+    }
+    // Otherwise, it's a regular URL from placeholder-images.json, so we use it directly
+
+    return avatarUrl;
+}
 
   async function onSubmit(values: FormSchemaType) {
     setIsLoading(true);
@@ -129,10 +157,12 @@ export default function RegistrationForm() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
+      
+      const finalAvatarUrl = await uploadAvatar(firebaseUser.uid);
 
       await updateProfile(firebaseUser, {
         displayName: values.fullName,
-        photoURL: values.avatar,
+        photoURL: finalAvatarUrl,
       });
 
       const userData = {
@@ -142,7 +172,7 @@ export default function RegistrationForm() {
         center: values.center,
         ageRange: values.ageRange,
         role: values.role,
-        avatar: values.avatar,
+        avatar: finalAvatarUrl,
         trophies: 0,
         tasks: 0,
         exams: 0,
@@ -164,6 +194,8 @@ export default function RegistrationForm() {
           errorMessage = 'La contraseña es demasiado débil. Debe tener al menos 6 caracteres.';
       } else if (error.code === 'auth/identity-toolkit-api-has-not-been-used-before-or-it-is-disabled') {
           errorMessage = "La API de autenticación no está habilitada. Por favor, actívala en la consola de Google Cloud.";
+      } else if (error.code?.includes('storage')) {
+          errorMessage = "No se pudo subir la imagen de perfil. Revisa la configuración de Firebase Storage."
       }
       
       toast({
@@ -314,6 +346,7 @@ export default function RegistrationForm() {
                           onValueChange={(value) => {
                             field.onChange(value);
                             setUploadedAvatarPreview(null);
+                            setAvatarFile(null);
                           }}
                           defaultValue={field.value}
                           className="grid grid-cols-3 gap-4 pt-4"
@@ -333,7 +366,7 @@ export default function RegistrationForm() {
                               <FormControl>
                                   <input type="file" accept="image/*" className="sr-only" ref={fileInputRef} onChange={handleAvatarUpload} />
                               </FormControl>
-                              <FormLabel htmlFor={fileInputRef.current?.id} className="cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                              <FormLabel className="cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                                   {uploadedAvatarPreview ? (
                                       <Image
                                         src={uploadedAvatarPreview} alt="Avatar subido" width={80} height={80}
@@ -379,3 +412,5 @@ export default function RegistrationForm() {
     </main>
   );
 }
+
+    
