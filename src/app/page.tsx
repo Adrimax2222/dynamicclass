@@ -77,7 +77,7 @@ const steps = [
 ];
 
 export default function AuthPage() {
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const router = useRouter();
   const { login } = useApp();
   const [isLoading, setIsLoading] = useState(false);
@@ -210,7 +210,7 @@ export default function AuthPage() {
       
       toast({
         title: "Error de Registro",
-        description: `${errorMessage} (Código: ${error.code})`,
+        description: `${errorMessage}`,
         variant: "destructive",
       });
     } finally {
@@ -262,6 +262,15 @@ export default function AuthPage() {
   const animationClass = animationDirection === 'forward' 
     ? 'animate-slide-in'
     : 'animate-slide-in-reverse';
+    
+  const handleAuthModeChange = (mode: 'login' | 'register') => {
+    setAuthMode(mode);
+    // Reset forms when switching
+    loginForm.reset();
+    form.reset();
+    setCurrentStep(0);
+    setIsLoading(false);
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-muted/20 p-4">
@@ -352,9 +361,9 @@ export default function AuthPage() {
 
             <div className="mt-6 text-center text-sm">
                 {authMode === 'register' ? (
-                    <>¿Ya tienes una cuenta? <Button variant="link" className="p-0 h-auto" onClick={() => setAuthMode('login')}>Inicia Sesión</Button></>
+                    <>¿Ya tienes una cuenta? <Button variant="link" className="p-0 h-auto" onClick={() => handleAuthModeChange('login')}>Inicia Sesión</Button></>
                 ) : (
-                    <>¿No tienes una cuenta? <Button variant="link" className="p-0 h-auto" onClick={() => setAuthMode('register')}>Crea una</Button></>
+                    <>¿No tienes una cuenta? <Button variant="link" className="p-0 h-auto" onClick={() => handleAuthModeChange('register')}>Crea una</Button></>
                 )}
             </div>
 
@@ -363,3 +372,5 @@ export default function AuthPage() {
     </main>
   );
 }
+
+    
