@@ -130,9 +130,6 @@ export default function RegistrationForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
 
-      // Here you would typically upload the image to Firebase Storage if it's a data URL
-      // For now, we'll just pass the (potentially very long) data URL.
-      // In a real app, this should be handled by uploading the file and getting a storage URL.
       await updateProfile(firebaseUser, {
         displayName: values.fullName,
         photoURL: values.avatar,
@@ -145,7 +142,7 @@ export default function RegistrationForm() {
         center: values.center,
         ageRange: values.ageRange,
         role: values.role,
-        avatar: values.avatar, // Saving the URL (or data URL)
+        avatar: values.avatar,
         trophies: 0,
         tasks: 0,
         exams: 0,
@@ -160,9 +157,18 @@ export default function RegistrationForm() {
       router.push("/home");
     } catch (error: any) {
       console.error("Registration Error:", error);
+      let errorMessage = "No se pudo crear la cuenta. Inténtalo de nuevo.";
+      if (error.code === 'auth/email-already-in-use') {
+          errorMessage = "Esta dirección de correo electrónico ya está en uso.";
+      } else if (error.code === 'auth/weak-password') {
+          errorMessage = 'La contraseña es demasiado débil. Debe tener al menos 6 caracteres.';
+      } else if (error.code === 'auth/identity-toolkit-api-has-not-been-used-before-or-it-is-disabled') {
+          errorMessage = "La API de autenticación no está habilitada. Por favor, actívala en la consola de Google Cloud.";
+      }
+      
       toast({
         title: "Error de Registro",
-        description: error.message || "No se pudo crear la cuenta. Inténtalo de nuevo.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -324,22 +330,22 @@ export default function RegistrationForm() {
                             </FormItem>
                           ))}
                           <FormItem className="relative">
-                            <FormControl>
-                                <input type="file" accept="image/*" className="sr-only" ref={fileInputRef} onChange={handleAvatarUpload} />
-                            </FormControl>
-                            <FormLabel className="cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                                {uploadedAvatarPreview ? (
-                                    <Image
-                                      src={uploadedAvatarPreview} alt="Avatar subido" width={80} height={80}
-                                      className="rounded-full aspect-square object-cover transition-all mx-auto ring-4 ring-primary ring-offset-2"
-                                    />
-                                ) : (
-                                    <div className="h-[80px] w-[80px] rounded-full flex flex-col items-center justify-center gap-1 border-2 border-dashed bg-muted hover:bg-muted/80 mx-auto">
-                                        <Camera className="h-6 w-6" />
-                                        <span className="text-xs">Subir</span>
-                                    </div>
-                                )}
-                            </FormLabel>
+                              <FormControl>
+                                  <input type="file" accept="image/*" className="sr-only" ref={fileInputRef} onChange={handleAvatarUpload} />
+                              </FormControl>
+                              <FormLabel htmlFor={fileInputRef.current?.id} className="cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                                  {uploadedAvatarPreview ? (
+                                      <Image
+                                        src={uploadedAvatarPreview} alt="Avatar subido" width={80} height={80}
+                                        className="rounded-full aspect-square object-cover transition-all mx-auto ring-4 ring-primary ring-offset-2"
+                                      />
+                                  ) : (
+                                      <div className="h-[80px] w-[80px] rounded-full flex flex-col items-center justify-center gap-1 border-2 border-dashed bg-muted hover:bg-muted/80 mx-auto">
+                                          <Camera className="h-6 w-6" />
+                                          <span className="text-xs">Subir</span>
+                                      </div>
+                                  )}
+                              </FormLabel>
                           </FormItem>
                         </RadioGroup>
                         <FormMessage className="pt-2" />
