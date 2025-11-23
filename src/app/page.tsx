@@ -11,7 +11,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { getStorage, ref as storageRef, uploadString, getDownloadURL, uploadBytes } from "firebase/storage";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 
 
 import { Button } from "@/components/ui/button";
@@ -125,26 +125,26 @@ export default function RegistrationForm() {
 
   async function uploadAvatar(userId: string): Promise<string> {
     const storage = getStorage();
-    let avatarUrl = form.getValues("avatar");
+    const selectedAvatar = form.getValues("avatar");
 
-    // If an avatar file was uploaded by the user
+    // Case 1: User uploaded a new file
     if (avatarFile) {
         const filePath = `avatars/${userId}/${avatarFile.name}`;
         const fileRef = storageRef(storage, filePath);
         await uploadBytes(fileRef, avatarFile);
-        avatarUrl = await getDownloadURL(fileRef);
-    } 
-    // If the user selected a default placeholder that is a data URI
-    else if (avatarUrl.startsWith('data:')) {
-        const filePath = `avatars/${userId}/default-avatar.png`;
-        const fileRef = storageRef(storage, filePath);
-        await uploadString(fileRef, avatarUrl, 'data_url');
-        avatarUrl = await getDownloadURL(fileRef);
+        return getDownloadURL(fileRef);
     }
-    // Otherwise, it's a regular URL from placeholder-images.json, so we use it directly
 
-    return avatarUrl;
+    // Case 2: User selected a default avatar (which is a URL)
+    // We just return the URL directly, no upload needed.
+    if (selectedAvatar && (selectedAvatar.startsWith('http') || selectedAvatar.startsWith('https'))) {
+        return selectedAvatar;
+    }
+    
+    // Fallback case (should not happen if form has a default)
+    return PlaceHolderImages[0].imageUrl;
 }
+
 
   async function onSubmit(values: FormSchemaType) {
     setIsLoading(true);
@@ -412,5 +412,3 @@ export default function RegistrationForm() {
     </main>
   );
 }
-
-    
