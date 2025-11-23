@@ -79,7 +79,7 @@ const steps = [
 export default function AuthPage() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const router = useRouter();
-  const { user } = useApp();
+  const { firebaseUser } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward'>('forward');
@@ -92,10 +92,10 @@ export default function AuthPage() {
 
   // Redirect if user is already logged in
   useEffect(() => {
-    if (user) {
+    if (firebaseUser) {
       router.replace('/home');
     }
-  }, [user, router]);
+  }, [firebaseUser, router]);
 
 
   const form = useForm<RegistrationSchemaType>({
@@ -107,7 +107,7 @@ export default function AuthPage() {
       center: "",
       role: "student",
       classCode: "",
-      avatar: PlaceHolderImages[0].imageUrl,
+      avatar: PlaceHolderImages?.[0]?.imageUrl ?? '',
     },
   });
 
@@ -167,7 +167,7 @@ export default function AuthPage() {
     
     // Fallback: This case should not be reached with proper validation,
     // but as a safeguard, we return a default image.
-    return PlaceHolderImages[0].imageUrl;
+    return PlaceHolderImages?.[0]?.imageUrl ?? '';
   }
   
 
@@ -180,13 +180,6 @@ export default function AuthPage() {
     }
 
     try {
-      // Check if email already exists
-      const userDocRef = doc(firestore, 'users', values.email);
-      const docSnap = await getDoc(userDocRef);
-      if (docSnap.exists()) {
-        throw { code: 'auth/email-already-in-use' };
-      }
-
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
       
@@ -198,7 +191,7 @@ export default function AuthPage() {
       });
 
       // The user object that will be stored in Firestore
-      const newUser: Omit<User, 'uid'> = {
+       const newUser: Omit<User, 'uid'> = {
           name: values.fullName,
           email: values.email,
           avatar: finalAvatarUrl,
@@ -213,9 +206,6 @@ export default function AuthPage() {
       };
 
       await setDoc(doc(firestore, 'users', firebaseUser.uid), newUser);
-
-      // Successful registration will trigger onAuthStateChanged in AppProvider,
-      // which will handle the rest.
 
     } catch (error: any) {
       console.error("Registration Error:", error);
@@ -256,8 +246,6 @@ export default function AuthPage() {
         values.email,
         values.password
       );
-      // Successful login will trigger onAuthStateChanged in AppProvider,
-      // which handles fetching/creating user data and redirection via the layout.
     } catch (error: any) {
       console.error("Login Error:", error);
       let errorMessage = "No se pudo iniciar sesión. Por favor, intenta de nuevo.";
@@ -337,7 +325,7 @@ export default function AuthPage() {
                                 <FormLabel className="text-base">Elige tu Foto de Perfil</FormLabel>
                                 <FormDescription>Selecciona un avatar o sube el tuyo.</FormDescription>
                                 <RadioGroup onValueChange={(value) => { field.onChange(value); setUploadedAvatarPreview(null); setAvatarFile(null); }} defaultValue={field.value} className="grid grid-cols-3 gap-4 pt-4">
-                                {PlaceHolderImages.slice(0,5).map((img) => (
+                                {PlaceHolderImages?.slice(0,5).map((img) => (
                                     <FormItem key={img.id} className="relative">
                                         <FormControl><RadioGroupItem value={img.imageUrl} className="sr-only" /></FormControl>
                                         <FormLabel className="cursor-pointer"><Image src={img.imageUrl} alt={img.description} width={80} height={80} className={`rounded-full aspect-square object-cover transition-all mx-auto ${field.value === img.imageUrl ? 'ring-4 ring-primary ring-offset-2' : 'opacity-60 hover:opacity-100'}`} /></FormLabel>
