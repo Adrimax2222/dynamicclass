@@ -11,7 +11,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getStorage, ref as storageRef, uploadString, getDownloadURL, uploadBytes } from "firebase/storage";
 
 
 import { Button } from "@/components/ui/button";
@@ -126,6 +126,7 @@ export default function RegistrationForm() {
     const storage = getStorage();
     const selectedAvatar = form.getValues("avatar");
 
+    // Case 1: User uploaded a new file. `avatarFile` is set.
     if (avatarFile) {
         const filePath = `avatars/${userId}/${avatarFile.name}`;
         const fileRef = storageRef(storage, filePath);
@@ -133,10 +134,12 @@ export default function RegistrationForm() {
         return getDownloadURL(fileRef);
     }
 
+    // Case 2: User selected a default avatar. This is a URL.
     if (selectedAvatar && (selectedAvatar.startsWith('http') || selectedAvatar.startsWith('https'))) {
         return selectedAvatar;
     }
     
+    // Case 3: Fallback (should not happen if validation is correct)
     return PlaceHolderImages[0].imageUrl;
 }
 
@@ -150,23 +153,20 @@ export default function RegistrationForm() {
     }
 
     try {
-      // Step 1: Just create the user. Nothing else.
+      // Step 1: Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
-
-      toast({
-        title: "¡Éxito Parcial!",
-        description: "El usuario ha sido creado. Ahora completando el perfil...",
-      });
       
-      // Step 2: Now try to do the rest.
+      // Step 2: Upload avatar to Firebase Storage and get URL
       const finalAvatarUrl = await uploadAvatar(firebaseUser.uid);
 
+      // Step 3: Update Firebase Auth profile
       await updateProfile(firebaseUser, {
         displayName: values.fullName,
         photoURL: finalAvatarUrl,
       });
 
+      // Step 4: Create user document in Firestore
       const userData = {
         uid: firebaseUser.uid,
         name: values.fullName,
@@ -184,8 +184,8 @@ export default function RegistrationForm() {
 
       await setDoc(doc(firestore, "users", firebaseUser.uid), userData);
 
+      // Step 5: Update local state and navigate
       login(userData);
-      
       router.push("/home");
 
     } catch (error: any) {
@@ -196,9 +196,11 @@ export default function RegistrationForm() {
       } else if (error.code === 'auth/weak-password') {
           errorMessage = 'La contraseña es demasiado débil. Debe tener al menos 6 caracteres.';
       } else if (error.code === 'auth/invalid-credential') {
-          errorMessage = "Error de credencial inválida. Esto puede ser un problema de configuración del proyecto de Firebase. Revisa que todas las APIs necesarias estén activas."
+          errorMessage = "Error de credencial inválida. Revisa tu conexión y la configuración de Firebase."
       } else if (error.code?.includes('storage')) {
           errorMessage = "No se pudo subir la imagen de perfil. Revisa la configuración de Firebase Storage."
+      } else if (error.code === 'auth/requests-to-this-api-identitytoolkit-method-google.cloud.identitytoolkit.v1.authenticationservice.signup-are-blocked') {
+          errorMessage = 'El registro por correo electrónico está desactivado en la configuración de Firebase.'
       }
       
       toast({
