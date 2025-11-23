@@ -116,8 +116,7 @@ export default function RegistrationForm() {
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setUploadedAvatarPreview(dataUrl);
-        // We set a temporary value. The real value will be the storage URL
-        form.setValue("avatar", dataUrl); 
+        form.setValue("avatar", dataUrl, { shouldValidate: true }); 
       };
       reader.readAsDataURL(file);
     }
@@ -127,7 +126,6 @@ export default function RegistrationForm() {
     const storage = getStorage();
     const selectedAvatar = form.getValues("avatar");
 
-    // Case 1: User uploaded a new file
     if (avatarFile) {
         const filePath = `avatars/${userId}/${avatarFile.name}`;
         const fileRef = storageRef(storage, filePath);
@@ -135,13 +133,10 @@ export default function RegistrationForm() {
         return getDownloadURL(fileRef);
     }
 
-    // Case 2: User selected a default avatar (which is a URL)
-    // We just return the URL directly, no upload needed.
     if (selectedAvatar && (selectedAvatar.startsWith('http') || selectedAvatar.startsWith('https'))) {
         return selectedAvatar;
     }
     
-    // Fallback case (should not happen if form has a default)
     return PlaceHolderImages[0].imageUrl;
 }
 
@@ -155,9 +150,16 @@ export default function RegistrationForm() {
     }
 
     try {
+      // Step 1: Just create the user. Nothing else.
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
+
+      toast({
+        title: "¡Éxito Parcial!",
+        description: "El usuario ha sido creado. Ahora completando el perfil...",
+      });
       
+      // Step 2: Now try to do the rest.
       const finalAvatarUrl = await uploadAvatar(firebaseUser.uid);
 
       await updateProfile(firebaseUser, {
@@ -185,6 +187,7 @@ export default function RegistrationForm() {
       login(userData);
       
       router.push("/home");
+
     } catch (error: any) {
       console.error("Registration Error:", error);
       let errorMessage = "No se pudo crear la cuenta. Inténtalo de nuevo.";
@@ -192,15 +195,15 @@ export default function RegistrationForm() {
           errorMessage = "Esta dirección de correo electrónico ya está en uso.";
       } else if (error.code === 'auth/weak-password') {
           errorMessage = 'La contraseña es demasiado débil. Debe tener al menos 6 caracteres.';
-      } else if (error.code === 'auth/identity-toolkit-api-has-not-been-used-before-or-it-is-disabled') {
-          errorMessage = "La API de autenticación no está habilitada. Por favor, actívala en la consola de Google Cloud.";
+      } else if (error.code === 'auth/invalid-credential') {
+          errorMessage = "Error de credencial inválida. Esto puede ser un problema de configuración del proyecto de Firebase. Revisa que todas las APIs necesarias estén activas."
       } else if (error.code?.includes('storage')) {
           errorMessage = "No se pudo subir la imagen de perfil. Revisa la configuración de Firebase Storage."
       }
       
       toast({
         title: "Error de Registro",
-        description: errorMessage,
+        description: `${errorMessage} (Código: ${error.code})`,
         variant: "destructive",
       });
     } finally {
@@ -391,18 +394,18 @@ export default function RegistrationForm() {
               <div className="pt-6">
                 <Progress value={progress} className="h-2 mb-6" />
                 <div className="flex items-center gap-4">
-                  <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isFirstStep || isLoading} className={cn(isFirstStep && 'opacity-0')}>
-                      <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
-                  </Button>
-                  <Button type={isLastStep ? 'submit' : 'button'} className="w-full" size="lg" disabled={isLoading} onClick={!isLastStep ? goToNextStep : undefined}>
-                    {isLoading ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creando Cuenta...</>
-                    ) : isLastStep ? (
-                      "Crear Cuenta e Iniciar Sesión"
-                    ) : (
-                      "Siguiente"
-                    )}
-                  </Button>
+                    <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isFirstStep || isLoading} className={cn(isFirstStep && 'opacity-0', 'transition-opacity')}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
+                    </Button>
+                    <Button type={!isLastStep ? 'button' : 'submit'} onClick={!isLastStep ? goToNextStep : undefined} className="w-full" size="lg" disabled={isLoading}>
+                        {isLoading ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creando Cuenta...</>
+                        ) : isLastStep ? (
+                            "Crear Cuenta e Iniciar Sesión"
+                        ) : (
+                            "Siguiente"
+                        )}
+                    </Button>
                 </div>
               </div>
             </form>
