@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Logo } from "@/components/icons";
 import { BookOpenCheck, FlaskConical, GraduationCap, PencilRuler } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 const loadingMessages = [
   "Preparando tu aula virtual...",
@@ -25,17 +26,31 @@ const icons = [
 
 export default function LoadingScreen() {
   const [messageIndex, setMessageIndex] = useState(0);
+  const [progress, setProgress] = useState(10);
 
   useEffect(() => {
     const messageInterval = setInterval(() => {
       setMessageIndex((prevIndex) => (prevIndex + 1) % loadingMessages.length);
     }, 2500);
 
-    return () => clearInterval(messageInterval);
+    const progressTimer = setInterval(() => {
+        setProgress(prev => {
+            if (prev >= 95) {
+                clearInterval(progressTimer);
+                return 95;
+            }
+            return prev + 5;
+        })
+    }, 400);
+
+    return () => {
+        clearInterval(messageInterval)
+        clearInterval(progressTimer)
+    };
   }, []);
 
   return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-background text-center">
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-background text-center p-4">
       <div className="relative mb-8 flex h-40 w-40 items-center justify-center">
         {icons.map((item, index) => {
             const Icon = item.icon;
@@ -55,7 +70,7 @@ export default function LoadingScreen() {
         <Logo className="h-20 w-20 animate-pulse-slow text-primary" />
       </div>
 
-      <div className="relative h-6 w-64 overflow-hidden">
+      <div className="relative h-6 w-full max-w-sm overflow-hidden mb-4">
         <div
           className="absolute w-full transition-transform duration-500"
           style={{ transform: `translateY(-${messageIndex * 100}%)` }}
@@ -70,6 +85,7 @@ export default function LoadingScreen() {
           ))}
         </div>
       </div>
+      <Progress value={progress} className="w-full max-w-xs h-2" />
     </div>
   );
 }
