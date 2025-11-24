@@ -30,7 +30,6 @@ export default function HomePage() {
 
   const formattedDate = new Date().toLocaleDateString('es-ES', {
     weekday: 'long',
-    year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
@@ -67,7 +66,7 @@ export default function HomePage() {
               ¡Bienvenido de nuevo, {getFirstName(user.name)}!
             </h2>
             <p className="text-muted-foreground">Este es tu Dynamic Panel para hoy.</p>
-            <p className="text-sm text-muted-foreground/80 mt-1">{capitalizedDate}</p>
+            <p className="text-xs text-muted-foreground/80 mt-1">{capitalizedDate}</p>
         </div>
       </div>
 
