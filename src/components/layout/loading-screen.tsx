@@ -58,7 +58,7 @@ export default function LoadingScreen() {
             }
             return prev + 5;
         })
-    }, 400);
+    }, 600); // Increased from 400ms to 600ms to make it ~4s slower
 
     return () => clearInterval(progressTimer);
   }, []);
