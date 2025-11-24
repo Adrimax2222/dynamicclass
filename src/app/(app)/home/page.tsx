@@ -11,10 +11,11 @@ import {
 import { upcomingClasses } from "@/lib/data";
 import type { SummaryCardData, UpcomingClass } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
+import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
   const { user } = useApp();
@@ -64,13 +65,37 @@ export default function HomePage() {
         ))}
       </div>
 
-      <section>
+      <section className="mb-10">
         <h3 className="text-xl font-semibold font-headline mb-4">Próximas Clases</h3>
         <div className="space-y-4">
           {upcomingClasses.map((item) => (
             <UpcomingClassCard key={item.id} {...item} />
           ))}
         </div>
+      </section>
+
+      <section>
+        <Card className="bg-muted/50">
+            <CardHeader className="flex-row items-center gap-4 space-y-0">
+                <div className="p-3 rounded-full bg-primary/10 border border-primary/20">
+                    <LifeBuoy className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                    <CardTitle className="text-base">¿Necesitas ayuda?</CardTitle>
+                    <CardDescription>Nuestro equipo está aquí para ayudarte.</CardDescription>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                    Si encuentras algún error o tienes alguna sugerencia para mejorar la aplicación, no dudes en contactarnos.
+                </p>
+                <Button asChild className="w-full" variant="outline">
+                    <Link href="/settings">
+                        Ir a Soporte
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
       </section>
     </div>
   );
