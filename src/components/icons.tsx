@@ -3,60 +3,49 @@ import type { SVGProps } from 'react';
 export function Logo(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      {...props}
       xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 512 512"
+      width="500"
+      height="500"
+      viewBox="0 0 500 500"
       fill="none"
+      {...props}
     >
+      <g clipPath="url(#clip0_401_80)">
+        <path
+          d="M250 500C388.071 500 500 388.071 500 250C500 111.929 388.071 0 250 0C111.929 0 0 111.929 0 250C0 388.071 111.929 500 250 500Z"
+          fill="url(#paint0_linear_401_80)"
+        ></path>
+        <path
+          d="M250 464.286C368.512 464.286 464.286 368.512 464.286 250C464.286 131.488 368.512 35.7144 250 35.7144C131.488 35.7144 35.7144 131.488 35.7144 250C35.7144 368.512 131.488 464.286 250 464.286Z"
+          stroke="#F1F1F1"
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        ></path>
+        <path
+          d="M178.571 160.714H321.429L267.857 250L321.429 339.286H178.571L232.143 250L178.571 160.714Z"
+          stroke="#F1F1F1"
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        ></path>
+      </g>
       <defs>
         <linearGradient
-          id="paint0_linear_101_2"
-          x1="126.5"
-          y1="23"
-          x2="392"
-          y2="492.5"
+          id="paint0_linear_401_80"
+          x1="250"
+          y1="0"
+          x2="250"
+          y2="500"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="#38B2AC" />
-          <stop offset="1" stopColor="#4A5568" />
+          <stop stopColor="#2962FF"></stop>
+          <stop offset="1" stopColor="#7C4DFF"></stop>
         </linearGradient>
-        <linearGradient
-          id="paint1_linear_101_2"
-          x1="126.5"
-          y1="23"
-          x2="392"
-          y2="492.5"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop stopColor="#4FD1C5" />
-          <stop offset="1" stopColor="#718096" />
-        </linearGradient>
-        <linearGradient
-          id="paint2_linear_101_2"
-          x1="22"
-          y1="24.5"
-          x2="487.5"
-          y2="490"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop stopColor="#319795" />
-          <stop offset="1" stopColor="#2D3748" />
-        </linearGradient>
+        <clipPath id="clip0_401_80">
+          <rect width="500" height="500" fill="white"></rect>
+        </clipPath>
       </defs>
-      <path
-        d="M106.661 46.4276C121.536 31.4276 141.383 21.425 162.593 18.57C233.568 7.99497 295.333 32.77 348.083 85.52C400.833 138.27 425.608 200.035 415.033 271.01C404.458 341.985 358.558 403.75 287.583 414.325C216.608 424.9 154.843 400.125 102.093 347.375C49.3433 294.625 24.5683 232.86 35.1433 161.885C45.7183 90.9101 82.2109 29.1451 153.186 18.57"
-        fill="url(#paint0_linear_101_2)"
-      />
-      <path
-        d="M106.661 46.4276C121.536 31.4276 141.383 21.425 162.593 18.57C233.568 7.99497 295.333 32.77 348.083 85.52C400.833 138.27 425.608 200.035 415.033 271.01C404.458 341.985 358.558 403.75 287.583 414.325C216.608 424.9 154.843 400.125 102.093 347.375C49.3433 294.625 24.5683 232.86 35.1433 161.885C45.7183 90.9101 82.2109 29.1451 153.186 18.57"
-        fill="url(#paint1_linear_101_2)"
-      />
-      <path
-        d="M158.411 414.325C210.151 405.015 253.911 377.34 290.796 333.15C327.681 288.96 348.611 233.58 353.481 173.355C358.351 113.13 346.746 54.09 318.666 0C274.966 58.07 232.451 98.415 178.691 111.45C124.931 124.485 64.9563 109.53 0 76.2C22.0813 157.065 72.0363 226.695 141.516 261.27C210.996 295.845 292.011 292.455 358.836 254.91L355.851 256.4C308.576 283.02 256.646 296.4 204.036 296.535C151.426 296.67 99.4513 283.425 54.8613 257.535C62.0663 322.99 97.4313 381.825 158.411 414.325Z"
-        fill="url(#paint2_linear_101_2)"
-      />
     </svg>
   );
 }
