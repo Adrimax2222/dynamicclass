@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import {
-  Bot,
   Loader2,
   Paperclip,
   Send,
@@ -122,7 +121,7 @@ export default function ChatbotPage() {
     <div className="flex h-[calc(100vh-4rem)] flex-col">
       <header className="border-b p-4">
         <h1 className="text-xl font-bold font-headline tracking-tighter flex items-center gap-2">
-          <Bot className="h-6 w-6 text-primary" /> ADRIMAX AI
+          <Sparkles className="h-6 w-6 text-primary" /> ADRIMAX AI
         </h1>
         <p className="text-sm text-muted-foreground">Tu entusiasta compañero creativo y educativo.</p>
       </header>
@@ -176,7 +175,7 @@ export default function ChatbotPage() {
             >
               {(message.role === "assistant" || message.role === 'system') && (
                 <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-                  <AvatarFallback><Bot className="h-5 w-5" /></AvatarFallback>
+                  <AvatarFallback><Sparkles className="h-5 w-5" /></AvatarFallback>
                 </Avatar>
               )}
               <div
@@ -205,7 +204,7 @@ export default function ChatbotPage() {
           {isLoading && (
             <div className="flex items-end gap-3 justify-start">
               <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-                <AvatarFallback><Bot className="h-5 w-5" /></AvatarFallback>
+                <AvatarFallback><Sparkles className="h-5 w-5" /></AvatarFallback>
               </Avatar>
               <div className="max-w-md rounded-lg p-3 bg-muted flex items-center">
                 <Loader2 className="h-5 w-5 animate-spin" />

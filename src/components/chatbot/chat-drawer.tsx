@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bot, Loader2, Paperclip, Send, X } from "lucide-react";
+import { Sparkles, Loader2, Paperclip, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +11,6 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-  SheetClose
 } from "@/components/ui/sheet";
 import { useApp } from "@/lib/hooks/use-app";
 import type { ChatMessage } from "@/lib/types";
@@ -66,7 +65,7 @@ export default function ChatDrawer() {
       <SheetContent className="flex flex-col p-0">
         <SheetHeader className="p-6">
           <SheetTitle className="flex items-center gap-2 font-headline">
-            <Bot className="h-6 w-6 text-primary" />
+            <Sparkles className="h-6 w-6 text-primary" />
             ADRIMAX AI
           </SheetTitle>
           <SheetDescription>
@@ -86,7 +85,7 @@ export default function ChatDrawer() {
                 {message.role === "assistant" && (
                   <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
                     <AvatarFallback>
-                      <Bot className="h-5 w-5" />
+                      <Sparkles className="h-5 w-5" />
                     </AvatarFallback>
                   </Avatar>
                 )}
@@ -108,7 +107,7 @@ export default function ChatDrawer() {
               <div className="flex items-start gap-3 justify-start">
                 <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
                   <AvatarFallback>
-                    <Bot className="h-5 w-5" />
+                    <Sparkles className="h-5 w-5" />
                   </AvatarFallback>
                 </Avatar>
                 <div className="max-w-xs rounded-lg p-3 text-sm bg-muted flex items-center">

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/lib/hooks/use-app";
-import { Bot, MessageCircle } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 export default function ChatBubble() {
   const { isChatBubbleVisible, setChatDrawerOpen } = useApp();
@@ -18,7 +18,7 @@ export default function ChatBubble() {
       onClick={() => setChatDrawerOpen(true)}
       aria-label="Abrir Chat de IA"
     >
-      <Bot className="h-7 w-7" />
+      <Sparkles className="h-7 w-7" />
     </Button>
   );
 }
