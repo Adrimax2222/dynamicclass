@@ -133,12 +133,14 @@ function EditProfileDialog({ user }: { user: User }) {
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
 
-    const updatedData: Partial<User> = {};
-    if (name !== user.name) updatedData.name = name;
-    if (center !== user.center) updatedData.center = center;
-    if (ageRange !== user.ageRange) updatedData.ageRange = ageRange;
-
-    if (Object.keys(updatedData).length === 0) {
+    const updatedData = {
+        name: name,
+        center: center,
+        ageRange: ageRange,
+    };
+    
+    // Check if there are any actual changes to be made
+    if (name === user.name && center === user.center && ageRange === user.ageRange) {
       toast({ title: "Sin cambios", description: "No has realizado ningún cambio." });
       setIsOpen(false);
       return;
