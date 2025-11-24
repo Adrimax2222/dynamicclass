@@ -29,19 +29,23 @@ export default function LoadingScreen() {
   const [progress, setProgress] = useState(10);
 
   useEffect(() => {
+    // Timer for the cycling messages
     const messageInterval = setInterval(() => {
       setMessageIndex((prevIndex) => (prevIndex + 1) % loadingMessages.length);
-    }, 2500);
+    }, 2500); // Change message every 2.5 seconds
 
+    // Timer for the progress bar to simulate loading
     const progressTimer = setInterval(() => {
         setProgress(prev => {
+            // Stop incrementing just before the end to wait for real load
             if (prev >= 95) {
                 clearInterval(progressTimer);
                 return 95;
             }
+            // Increment slowly
             return prev + 5;
         })
-    }, 400);
+    }, 400); // Slower progress update
 
     return () => {
         clearInterval(messageInterval)
@@ -72,7 +76,7 @@ export default function LoadingScreen() {
 
       <div className="relative h-6 w-full max-w-sm overflow-hidden mb-4">
         <div
-          className="absolute w-full transition-transform duration-500"
+          className="absolute w-full transition-transform duration-500 ease-in-out"
           style={{ transform: `translateY(-${messageIndex * 100}%)` }}
         >
           {loadingMessages.map((msg, index) => (
