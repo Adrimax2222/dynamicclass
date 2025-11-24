@@ -132,14 +132,14 @@ function EditProfileDialog({ user }: { user: User }) {
 
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
-    
+
     const updatedData: Partial<User> = {};
     if (name !== user.name) updatedData.name = name;
     if (center !== user.center) updatedData.center = center;
     if (ageRange !== user.ageRange) updatedData.ageRange = ageRange;
 
     if (Object.keys(updatedData).length === 0) {
-      toast({ title: "Sin cambios", description: "No has realizado ningún cambio."});
+      toast({ title: "Sin cambios", description: "No has realizado ningún cambio." });
       setIsOpen(false);
       return;
     }
@@ -237,7 +237,3 @@ function AchievementCard({ title, value, icon: Icon, color }: SummaryCardData) {
       </Card>
     );
   }
-
-    
-
-    
