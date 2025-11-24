@@ -76,25 +76,22 @@ export default function HomePage() {
 
       <section>
         <Card className="bg-muted/50">
-            <CardHeader className="flex-row items-center gap-4 space-y-0">
-                <div className="p-3 rounded-full bg-primary/10 border border-primary/20">
-                    <LifeBuoy className="h-6 w-6 text-primary" />
+            <CardHeader className="flex-row items-center justify-between space-y-0">
+                <div className="space-y-1">
+                    <CardTitle className="text-base flex items-center gap-2">
+                        <LifeBuoy className="h-5 w-5 text-primary" />
+                        ¿Necesitas ayuda?
+                    </CardTitle>
+                    <CardDescription className="text-xs pl-7">
+                        Contacta con el equipo de soporte.
+                    </CardDescription>
                 </div>
-                <div>
-                    <CardTitle className="text-base">¿Necesitas ayuda?</CardTitle>
-                    <CardDescription>Nuestro equipo está aquí para ayudarte.</CardDescription>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                    Si encuentras algún error o tienes alguna sugerencia para mejorar la aplicación, no dudes en contactarnos.
-                </p>
-                <Button asChild className="w-full" variant="outline">
+                <Button asChild size="sm" variant="outline">
                     <Link href="/settings">
-                        Ir a Soporte
+                        Contactar
                     </Link>
                 </Button>
-            </CardContent>
+            </CardHeader>
         </Card>
       </section>
     </div>
