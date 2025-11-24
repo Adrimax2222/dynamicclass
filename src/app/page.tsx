@@ -106,6 +106,7 @@ export default function AuthPage() {
       password: "",
       center: "",
       role: "student",
+      ageRange: "",
       classCode: "",
       avatar: PlaceHolderImages?.[0]?.imageUrl ?? '',
     },
@@ -278,7 +279,16 @@ export default function AuthPage() {
   const handleAuthModeChange = (mode: 'login' | 'register') => {
     setAuthMode(mode);
     loginForm.reset();
-    form.reset();
+    form.reset({
+      fullName: "",
+      email: "",
+      password: "",
+      center: "",
+      role: "student",
+      ageRange: "",
+      classCode: "",
+      avatar: PlaceHolderImages?.[0]?.imageUrl ?? '',
+    });
     setCurrentStep(0);
     setIsLoading(false);
     setUploadedAvatarPreview(null);
@@ -290,7 +300,7 @@ export default function AuthPage() {
       <Card className="w-full max-w-md shadow-2xl overflow-hidden">
         <CardHeader className="text-center">
             <div className="mx-auto mb-2 flex items-center justify-center gap-3">
-                <Logo className="h-10 w-10 text-primary fill-primary" />
+                <Logo className="h-10 w-10 text-primary" />
                 <h1 className="text-xl font-bold tracking-tight">Dynamic Class</h1>
             </div>
             <CardTitle className="text-2xl font-headline">
