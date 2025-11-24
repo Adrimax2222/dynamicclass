@@ -145,7 +145,6 @@ function EditProfileDialog({ user }: { user: User }) {
       const userDocRef = doc(firestore, 'users', user.uid);
       await updateDoc(userDocRef, updatedData);
       
-      // Update user in the context to reflect changes immediately
       updateUser(updatedData);
 
       toast({
