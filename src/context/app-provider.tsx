@@ -104,8 +104,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.add(newTheme);
   }, []);
 
-  // This login function is now primarily for the initial registration step
-  // and for manual login to update the context immediately.
   const login = (userData: User) => {
     setUser(userData);
     localStorage.setItem('classconnect-user', JSON.stringify(userData));
@@ -121,7 +119,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    // Firebase onAuthStateChanged will handle setting user to null
     if (auth) {
       auth.signOut();
     }

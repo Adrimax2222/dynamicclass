@@ -129,24 +129,27 @@ function EditProfileDialog({ user }: { user: User }) {
   const [ageRange, setAgeRange] = useState(user.ageRange);
   const firestore = useFirestore();
   const { toast } = useToast();
-  const { updateUser } = useApp();
 
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
     setIsLoading(true);
 
-    const updatedData = {
-        name,
-        center,
-        ageRange,
-    };
+    const updatedData: Partial<User> = {};
+    if (name !== user.name) updatedData.name = name;
+    if (center !== user.center) updatedData.center = center;
+    if (ageRange !== user.ageRange) updatedData.ageRange = ageRange;
+
+    if (Object.keys(updatedData).length === 0) {
+      toast({ title: "Sin cambios", description: "No has realizado ningún cambio."});
+      setIsOpen(false);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const userDocRef = doc(firestore, 'users', user.uid);
       await updateDoc(userDocRef, updatedData);
       
-      updateUser(updatedData);
-
       toast({
         title: "¡Perfil actualizado!",
         description: "Tu información ha sido guardada correctamente.",
