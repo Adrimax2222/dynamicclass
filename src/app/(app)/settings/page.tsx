@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/firebase";
@@ -65,7 +65,7 @@ export default function SettingsPage() {
             <CardDescription>
               Gestiona cómo y cuándo recibes notificaciones.
             </CardDescription>
-          </CardHeader>
+          </Header>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <Label htmlFor="push-notifications" className="flex items-center gap-2">
@@ -91,19 +91,21 @@ export default function SettingsPage() {
                 ¿Necesitas ayuda o tienes alguna sugerencia? Contáctanos.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-                <Button asChild variant="outline">
-                    <Link href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer">
-                        <Globe className="mr-2 h-4 w-4" />
-                        Web Oficial
-                    </Link>
-                </Button>
-                <Button asChild>
-                     <Link href="https://form.jotform.com/230622014643040" target="_blank" rel="noopener noreferrer">
-                        <FileText className="mr-2 h-4 w-4" />
-                        Formulario de Asistencia
-                    </Link>
-                </Button>
+            <CardContent className="space-y-4">
+                <a href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
+                    <div className="flex items-center gap-3">
+                        <Globe className="h-5 w-5 text-primary" />
+                        <span className="font-medium">Web Oficial</span>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                </a>
+                <a href="https://form.jotform.com/230622014643040" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
+                    <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-primary" />
+                        <span className="font-medium">Formulario de Asistencia</span>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                </a>
             </CardContent>
         </Card>
 
