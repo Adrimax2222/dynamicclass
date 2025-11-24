@@ -289,8 +289,8 @@ export default function AuthPage() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-muted/20 p-4">
       <Card className="w-full max-w-md shadow-2xl overflow-hidden">
         <CardHeader className="text-center">
-            <div className="mx-auto mb-2 flex items-center gap-2">
-                <Logo className="h-8 w-8 text-primary" />
+            <div className="mx-auto mb-2 flex items-center justify-center gap-3">
+                <Logo className="h-10 w-10 text-primary fill-primary" />
                 <h1 className="text-xl font-bold tracking-tight">Dynamic Class</h1>
             </div>
             <CardTitle className="text-2xl font-headline">
