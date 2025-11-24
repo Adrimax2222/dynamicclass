@@ -58,7 +58,7 @@ export default function LoadingScreen() {
             }
             return prev + 5;
         })
-    }, 600); // Increased from 400ms to 600ms to make it ~4s slower
+    }, 600); 
 
     return () => clearInterval(progressTimer);
   }, []);
@@ -81,7 +81,7 @@ export default function LoadingScreen() {
                 </div>
             )
         })}
-        <Logo className="h-20 w-20 animate-pulse-slow text-primary" />
+        <Logo className="h-20 w-20 animate-float-logo text-primary" />
       </div>
 
       <div className="h-12 w-full max-w-sm mb-4 flex items-center justify-center">

@@ -134,6 +134,15 @@
         transform: translateY(10px) scale(1);
     }
   }
+  
+  @keyframes float-logo {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+  }
 
   @keyframes pulse-slow {
       0%, 100% {
@@ -160,6 +169,9 @@
   }
   .animate-float-icons {
     animation: float-icons 4s ease-in-out infinite;
+  }
+  .animate-float-logo {
+    animation: float-logo 2s ease-in-out infinite;
   }
   .animate-pulse-slow {
       animation: pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;

@@ -118,6 +118,14 @@ export default {
                 transform: 'translateY(10px) scale(1)',
             },
         },
+        'float-logo': {
+          '0%, 100%': {
+              transform: 'translateY(0px)',
+          },
+          '50%': {
+              transform: 'translateY(-10px)',
+          },
+        },
         'pulse-slow': {
           '0%, 100%': {
             transform: 'scale(1)',
@@ -137,6 +145,7 @@ export default {
         'slide-in-reverse': 'slide-in-reverse 0.3s ease-out forwards',
         'slide-out-reverse': 'slide-out-reverse 0.3s ease-out forwards',
         'float-icons': 'float-icons 4s ease-in-out infinite',
+        'float-logo': 'float-logo 2s ease-in-out infinite',
         'pulse-slow': 'pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
     },
