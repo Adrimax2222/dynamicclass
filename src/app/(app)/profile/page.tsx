@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { achievements } from "@/lib/data";
-import type { SummaryCardData, User } from "@/lib/types";
+import type { SummaryCardData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Edit, Settings, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -122,7 +122,7 @@ export default function ProfilePage() {
 }
 
 function EditProfileDialog() {
-  const { user } = useApp(); // Use the global, updated user state
+  const { user } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState(user?.name || "");
@@ -131,21 +131,20 @@ function EditProfileDialog() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  // Effect to sync local state if global user state changes
   useEffect(() => {
-    if (user) {
+    if (user && isOpen) {
       setName(user.name);
       setCenter(user.center);
       setAgeRange(user.ageRange);
     }
-  }, [user]);
+  }, [user, isOpen]);
   
   if (!user) return null;
 
   const handleSaveChanges = async () => {
     if (!firestore) return;
-
-    // Use the up-to-date user from context for comparison
+    
+    // Check for changes
     if (name === user.name && center === user.center && ageRange === user.ageRange) {
       toast({ title: "Sin cambios", description: "No has realizado ningún cambio." });
       setIsOpen(false);
@@ -251,3 +250,5 @@ function AchievementCard({ title, value, icon: Icon, color }: SummaryCardData) {
       </Card>
     );
   }
+
+    
