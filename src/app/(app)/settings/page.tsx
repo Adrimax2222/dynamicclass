@@ -12,6 +12,17 @@ import { useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { Logo } from "@/components/icons";
 import Link from "next/link";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function SettingsPage() {
   const { theme, setTheme, logout: contextLogout } = useApp();
@@ -115,10 +126,31 @@ export default function SettingsPage() {
             <CardTitle>Cuenta</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button variant="destructive" className="w-full" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Cerrar Sesión
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="w-full">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Cerrar Sesión
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <div className="mx-auto mb-2">
+                    <Logo className="h-14 w-14 text-primary" />
+                  </div>
+                  <AlertDialogTitle className="text-center">¿Estás seguro?</AlertDialogTitle>
+                  <AlertDialogDescription className="text-center">
+                    Esta acción cerrará tu sesión actual en este dispositivo.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="sm:justify-center">
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
+                    Cerrar Sesión
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </CardContent>
         </Card>
       </div>
