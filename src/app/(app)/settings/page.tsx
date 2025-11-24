@@ -91,7 +91,7 @@ export default function SettingsPage() {
                 ¿Necesitas ayuda o tienes alguna sugerencia? Contáctanos.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-2">
                 <a href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
                     <div className="flex items-center gap-3">
                         <Globe className="h-5 w-5 text-primary" />
