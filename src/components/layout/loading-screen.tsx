@@ -75,13 +75,15 @@ export default function LoadingScreen() {
                         "absolute animate-float-icons text-primary",
                         item.position
                     )}
-                    style={{ animationDelay: `${index * 250}ms`}}
+                    style={{ animationDelay: `${index * 500}ms`}}
                 >
                     <Icon className="h-8 w-8" />
                 </div>
             )
         })}
-        <Logo className="h-20 w-20 animate-float-logo text-primary" />
+        <div className="animate-float-icons" style={{ animationDelay: '1000ms' }}>
+            <Logo className="h-20 w-20 text-primary" />
+        </div>
       </div>
 
       <div className="h-12 w-full max-w-sm mb-4 flex items-center justify-center">
