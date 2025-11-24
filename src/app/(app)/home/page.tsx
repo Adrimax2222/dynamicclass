@@ -24,6 +24,18 @@ export default function HomePage() {
     return null; // Or a loading spinner
   }
 
+  const getFirstName = (fullName: string) => {
+    return fullName.split(" ")[0];
+  };
+
+  const formattedDate = new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+
   const summaryCards: SummaryCardData[] = [
     { title: 'Tareas', value: user.tasks, icon: NotebookText, color: 'text-blue-500' },
     { title: 'Exámenes', value: user.exams, icon: FileCheck2, color: 'text-red-500' },
@@ -52,9 +64,10 @@ export default function HomePage() {
       <div className="mb-8 space-y-4">
         <div>
             <h2 className="text-xl font-semibold sm:text-2xl">
-              ¡Bienvenido de nuevo, {user.name}!
+              ¡Bienvenido de nuevo, {getFirstName(user.name)}!
             </h2>
             <p className="text-muted-foreground">Este es tu Dynamic Panel para hoy.</p>
+            <p className="text-sm text-muted-foreground/80 mt-1">{capitalizedDate}</p>
         </div>
       </div>
 
