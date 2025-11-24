@@ -64,7 +64,7 @@ export default function SettingsPage() {
             <CardDescription>
               Gestiona cómo y cuándo recibes notificaciones.
             </CardDescription>
-          </Header>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <Label htmlFor="push-notifications" className="flex items-center gap-2">
