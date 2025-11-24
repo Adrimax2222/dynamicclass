@@ -49,7 +49,7 @@ export default function HomePage() {
           <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
             Dynamic Class
           </h1>
-          <Badge variant="outline">V3.0</Badge>
+          <Badge variant="outline">V3.0 - Beta</Badge>
         </div>
         <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 rounded-full border bg-card p-2 shadow-sm">
