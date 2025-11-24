@@ -144,13 +144,13 @@ function EditProfileDialog() {
   const handleSaveChanges = async () => {
     if (!firestore) return;
     
-    // Check for changes
+    // Check for changes to avoid unnecessary writes
     if (name === user.name && center === user.center && ageRange === user.ageRange) {
       toast({ title: "Sin cambios", description: "No has realizado ningún cambio." });
       setIsOpen(false);
       return;
     }
-
+    
     setIsLoading(true);
 
     const updatedData = {
@@ -167,7 +167,7 @@ function EditProfileDialog() {
         title: "¡Perfil actualizado!",
         description: "Tu información ha sido guardada correctamente.",
       });
-      setIsOpen(false);
+      setIsOpen(false); // Close dialog on success
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({
@@ -176,7 +176,7 @@ function EditProfileDialog() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Always stop loading, whether success or failure
     }
   };
 
@@ -250,5 +250,3 @@ function AchievementCard({ title, value, icon: Icon, color }: SummaryCardData) {
       </Card>
     );
   }
-
-    

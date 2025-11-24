@@ -4,7 +4,7 @@ import { createContext, useState, useEffect, useCallback, type ReactNode } from 
 import type { User } from '@/lib/types';
 import { useAuth, useFirestore } from '@/firebase';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export type Theme = 'light' | 'dark';
@@ -49,18 +49,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setFirebaseUser(fbUser);
         const userDocRef = doc(firestore, 'users', fbUser.uid);
         
-        // Use onSnapshot to listen for real-time updates
+        // Use onSnapshot to listen for real-time updates from Firestore.
+        // This is the single source of truth for user data.
         const unsubSnapshot = onSnapshot(userDocRef, async (docSnap) => {
           if (docSnap.exists()) {
             const userData = { uid: docSnap.id, ...docSnap.data() } as User;
             setUser(userData);
-            localStorage.setItem('classconnect-user', JSON.stringify(userData));
           } else {
             // User is authenticated but doesn't have a Firestore document.
             // This can happen if registration was interrupted. Let's create it.
             console.warn("User document not found for authenticated user. Creating one now.");
-            const newUser: User = {
-                uid: fbUser.uid,
+            const newUser: Omit<User, 'uid'> = {
                 name: fbUser.displayName || 'Usuario Anónimo',
                 email: fbUser.email || 'no-email@example.com',
                 avatar: fbUser.photoURL || PlaceHolderImages[0].imageUrl,
@@ -75,11 +74,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             };
             try {
                 await setDoc(userDocRef, newUser);
-                setUser(newUser); // Set user in context after creation
-                localStorage.setItem('classconnect-user', JSON.stringify(newUser));
+                // No need to call setUser here, onSnapshot will trigger again with the new data.
             } catch (error) {
                 console.error("Failed to create fallback user document:", error);
-                // If we can't create the doc, log them out to prevent being stuck.
                 auth.signOut();
             }
           }
@@ -88,13 +85,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return () => unsubSnapshot(); // Cleanup snapshot listener
 
       } else {
+        // User logged out
         setFirebaseUser(null);
         setUser(null);
-        localStorage.removeItem('classconnect-user');
       }
     });
 
-    return () => unsubscribe();
+    return () => unsubscribe(); // Cleanup auth state listener
   }, [auth, firestore]);
 
   const setTheme = useCallback((newTheme: Theme) => {
@@ -104,16 +101,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.add(newTheme);
   }, []);
 
+  // These functions can be simplified or removed if all updates happen via Firestore.
+  // Kept for potential other uses, but our main flow is now Firestore-driven.
   const login = (userData: User) => {
     setUser(userData);
-    localStorage.setItem('classconnect-user', JSON.stringify(userData));
   };
   
   const updateUser = (updatedData: Partial<User>) => {
     setUser(currentUser => {
       if (!currentUser) return null;
       const newUser = { ...currentUser, ...updatedData };
-      localStorage.setItem('classconnect-user', JSON.stringify(newUser));
       return newUser;
     });
   };
@@ -122,7 +119,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (auth) {
       auth.signOut();
     }
-    localStorage.removeItem('classconnect-user');
+    // No need to clear localStorage, as we are no longer using it for user data.
     setUser(null);
     setFirebaseUser(null);
   };
