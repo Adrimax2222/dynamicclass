@@ -6,7 +6,7 @@ import ChatBubble from "@/components/chatbot/chat-bubble";
 import ChatDrawer from "@/components/chatbot/chat-drawer";
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import LoadingScreen from "@/components/layout/loading-screen";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, theme, firebaseUser } = useApp();
@@ -38,11 +38,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // While user or firebaseUser is being determined, show a loader.
   // This covers the initial load time for auth state and Firestore doc fetch.
   if (!firebaseUser || !user) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   // If we reach here, user is authenticated and user data is available
