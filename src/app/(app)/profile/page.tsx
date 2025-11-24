@@ -132,8 +132,7 @@ function EditProfileDialog({ user }: { user: User }) {
 
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
-    setIsLoading(true);
-
+    
     const updatedData: Partial<User> = {};
     if (name !== user.name) updatedData.name = name;
     if (center !== user.center) updatedData.center = center;
@@ -142,9 +141,10 @@ function EditProfileDialog({ user }: { user: User }) {
     if (Object.keys(updatedData).length === 0) {
       toast({ title: "Sin cambios", description: "No has realizado ningún cambio."});
       setIsOpen(false);
-      setIsLoading(false);
       return;
     }
+
+    setIsLoading(true);
 
     try {
       const userDocRef = doc(firestore, 'users', user.uid);
@@ -237,5 +237,7 @@ function AchievementCard({ title, value, icon: Icon, color }: SummaryCardData) {
       </Card>
     );
   }
+
+    
 
     
