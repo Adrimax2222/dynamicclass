@@ -11,10 +11,11 @@ import {
 import { upcomingClasses } from "@/lib/data";
 import type { SummaryCardData, UpcomingClass } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
+import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
   const { user } = useApp();
@@ -48,12 +49,33 @@ export default function HomePage() {
         </div>
       </header>
 
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold sm:text-2xl">
-          ¡Bienvenido de nuevo, {user.name}!
-        </h2>
-        <p className="text-muted-foreground">Este es tu Dynamic Panel para hoy.</p>
+      <div className="mb-8 space-y-4">
+        <div>
+            <h2 className="text-xl font-semibold sm:text-2xl">
+              ¡Bienvenido de nuevo, {user.name}!
+            </h2>
+            <p className="text-muted-foreground">Este es tu Dynamic Panel para hoy.</p>
+        </div>
+
+        <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
+            <CardHeader className="flex-row items-center gap-4 space-y-0 p-4">
+                <LifeBuoy className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+                <div className="flex-1">
+                    <CardTitle className="text-base font-semibold">¿Necesitas ayuda?</CardTitle>
+                    <CardDescription className="text-sm">Si encuentras algún error, no dudes en contactarnos.</CardDescription>
+                </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+                <Button className="w-full" asChild>
+                    <Link href="/settings">
+                        Ir a Soporte
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
       </div>
+
 
       <div className="mb-10 grid grid-cols-2 gap-4">
         {summaryCards.map((card) => (

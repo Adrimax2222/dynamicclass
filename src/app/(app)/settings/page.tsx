@@ -91,7 +91,7 @@ export default function SettingsPage() {
                 ¿Necesitas ayuda o tienes alguna sugerencia? Contáctanos.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <CardContent className="flex flex-col gap-4">
                 <Button asChild variant="outline">
                     <Link href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer">
                         <Globe className="mr-2 h-4 w-4" />
