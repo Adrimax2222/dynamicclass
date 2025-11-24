@@ -65,7 +65,7 @@ export default function LoadingScreen() {
 
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background text-center p-4">
-      <div className="relative mb-8 flex h-40 w-40 items-center justify-center">
+      <div className="relative mb-8 flex h-48 w-48 items-center justify-center">
         {icons.map((item, index) => {
             const Icon = item.icon;
             return (
