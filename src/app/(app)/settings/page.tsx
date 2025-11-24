@@ -5,11 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
+import Link from "next/link";
 
 export default function SettingsPage() {
   const { theme, setTheme, logout: contextLogout } = useApp();
@@ -81,6 +82,29 @@ export default function SettingsPage() {
               <Switch id="email-notifications" />
             </div>
           </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><LifeBuoy />Soporte</CardTitle>
+                <CardDescription>
+                ¿Necesitas ayuda o tienes alguna sugerencia? Contáctanos.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Button asChild variant="outline">
+                    <Link href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer">
+                        <Globe className="mr-2 h-4 w-4" />
+                        Web Oficial
+                    </Link>
+                </Button>
+                <Button asChild>
+                     <Link href="https://form.jotform.com/230622014643040" target="_blank" rel="noopener noreferrer">
+                        <FileText className="mr-2 h-4 w-4" />
+                        Formulario de Asistencia
+                    </Link>
+                </Button>
+            </CardContent>
         </Card>
 
         <Card>
