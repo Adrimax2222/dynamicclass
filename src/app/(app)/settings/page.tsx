@@ -10,6 +10,8 @@ import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
+import { Logo } from "@/components/icons";
+import Link from "next/link";
 
 export default function SettingsPage() {
   const { theme, setTheme, logout: contextLogout } = useApp();
@@ -120,6 +122,16 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+       <div className="mt-12 text-center text-sm text-muted-foreground">
+            <div className="mx-auto mb-4 flex items-center justify-center gap-3">
+                <Logo className="h-8 w-8 text-primary" />
+                <p className="font-bold text-lg text-foreground">Dynamic Class</p>
+            </div>
+            <Link href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+            Impulsado por <span className="font-semibold">Proyecto Adrimax</span>
+            </Link>
+        </div>
     </div>
   );
 }

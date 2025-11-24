@@ -72,7 +72,7 @@ export default function LoadingScreen() {
                 <div
                     key={index}
                     className={cn(
-                        "absolute animate-float-icons text-primary/70",
+                        "absolute animate-float-icons text-primary",
                         item.position
                     )}
                     style={{ animationDelay: `${index * 250}ms`}}
