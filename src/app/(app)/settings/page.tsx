@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
-import Link from "next/link";
 
 export default function SettingsPage() {
   const { theme, setTheme, logout: contextLogout } = useApp();
