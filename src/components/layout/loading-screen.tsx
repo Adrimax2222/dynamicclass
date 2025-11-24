@@ -5,6 +5,7 @@ import { Logo } from "@/components/icons";
 import { BookOpenCheck, FlaskConical, GraduationCap, PencilRuler } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import Link from "next/link";
 
 const loadingMessages = [
   "Preparando tu aula virtual...",
@@ -64,7 +65,7 @@ export default function LoadingScreen() {
   }, []);
 
   return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-background text-center p-4">
+    <div className="relative flex h-screen w-full flex-col items-center justify-center bg-background text-center p-4">
       <div className="relative mb-8 flex h-48 w-48 items-center justify-center">
         {icons.map((item, index) => {
             const Icon = item.icon;
@@ -92,6 +93,12 @@ export default function LoadingScreen() {
         </p>
       </div>
       <Progress value={progress} className="w-full max-w-xs h-2" />
+      
+      <div className="absolute bottom-6 text-center text-sm text-muted-foreground">
+        <Link href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+            Impulsado por <span className="font-semibold">Proyecto Adrimax</span>
+        </Link>
+      </div>
     </div>
   );
 }
