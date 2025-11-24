@@ -28,7 +28,7 @@ import { Edit, Settings, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -85,7 +85,7 @@ export default function ProfilePage() {
           </Avatar>
           <h2 className="mt-4 text-2xl font-bold">{user.name}</h2>
           <p className="text-muted-foreground">{user.center}</p>
-          <EditProfileDialog user={user} />
+          <EditProfileDialog />
         </CardContent>
       </Card>
       
@@ -121,25 +121,31 @@ export default function ProfilePage() {
   );
 }
 
-function EditProfileDialog({ user }: { user: User }) {
+function EditProfileDialog() {
+  const { user } = useApp(); // Use the global, updated user state
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [name, setName] = useState(user.name);
-  const [center, setCenter] = useState(user.center);
-  const [ageRange, setAgeRange] = useState(user.ageRange);
+  const [name, setName] = useState(user?.name || "");
+  const [center, setCenter] = useState(user?.center || "");
+  const [ageRange, setAgeRange] = useState(user?.ageRange || "");
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const handleSaveChanges = async () => {
-    if (!firestore || !user) return;
+  // Effect to sync local state if global user state changes
+  useEffect(() => {
+    if (user) {
+      setName(user.name);
+      setCenter(user.center);
+      setAgeRange(user.ageRange);
+    }
+  }, [user]);
+  
+  if (!user) return null;
 
-    const updatedData = {
-        name: name,
-        center: center,
-        ageRange: ageRange,
-    };
-    
-    // Check if there are any actual changes to be made
+  const handleSaveChanges = async () => {
+    if (!firestore) return;
+
+    // Use the up-to-date user from context for comparison
     if (name === user.name && center === user.center && ageRange === user.ageRange) {
       toast({ title: "Sin cambios", description: "No has realizado ningún cambio." });
       setIsOpen(false);
@@ -147,6 +153,12 @@ function EditProfileDialog({ user }: { user: User }) {
     }
 
     setIsLoading(true);
+
+    const updatedData = {
+        name: name,
+        center: center,
+        ageRange: ageRange,
+    };
 
     try {
       const userDocRef = doc(firestore, 'users', user.uid);
