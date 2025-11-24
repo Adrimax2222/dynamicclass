@@ -9,13 +9,30 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { achievements } from "@/lib/data";
-import type { SummaryCardData } from "@/lib/types";
+import type { SummaryCardData, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings } from "lucide-react";
+import { Edit, Settings, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
+import { doc, updateDoc } from "firebase/firestore";
+import { useFirestore } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
+
 
 export default function ProfilePage() {
   const { user } = useApp();
@@ -68,10 +85,7 @@ export default function ProfilePage() {
           </Avatar>
           <h2 className="mt-4 text-2xl font-bold">{user.name}</h2>
           <p className="text-muted-foreground">{user.center}</p>
-          <Button variant="outline" size="sm" className="mt-4">
-            <Edit className="h-4 w-4 mr-2" />
-            Editar Perfil
-          </Button>
+          <EditProfileDialog user={user} />
         </CardContent>
       </Card>
       
@@ -106,6 +120,94 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+function EditProfileDialog({ user }: { user: User }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [name, setName] = useState(user.name);
+  const [center, setCenter] = useState(user.center);
+  const [ageRange, setAgeRange] = useState(user.ageRange);
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
+  const handleSaveChanges = async () => {
+    if (!firestore || !user) return;
+    setIsLoading(true);
+    try {
+      const userDocRef = doc(firestore, 'users', user.uid);
+      await updateDoc(userDocRef, {
+        name,
+        center,
+        ageRange,
+      });
+      toast({
+        title: "¡Perfil actualizado!",
+        description: "Tu información ha sido guardada correctamente.",
+      });
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar tu perfil. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="mt-4">
+          <Edit className="h-4 w-4 mr-2" />
+          Editar Perfil
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar tu Perfil</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nombre Completo</Label>
+            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="center">Centro Educativo</Label>
+            <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="ageRange">Rango de Edad</Label>
+            <Select onValueChange={setAgeRange} value={ageRange}>
+                <SelectTrigger id="ageRange">
+                    <SelectValue placeholder="Selecciona tu rango de edad" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="12-15">12-15 años</SelectItem>
+                    <SelectItem value="16-18">16-18 años</SelectItem>
+                    <SelectItem value="19-22">19-22 años</SelectItem>
+                    <SelectItem value="23+">23+ años</SelectItem>
+                    <SelectItem value="No especificado">No especificado</SelectItem>
+                </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline" disabled={isLoading}>Cancelar</Button>
+          </DialogClose>
+          <Button onClick={handleSaveChanges} disabled={isLoading}>
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Guardar Cambios
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 function AchievementCard({ title, value, icon: Icon, color }: SummaryCardData) {
     return (
