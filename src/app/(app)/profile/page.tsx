@@ -129,17 +129,25 @@ function EditProfileDialog({ user }: { user: User }) {
   const [ageRange, setAgeRange] = useState(user.ageRange);
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { updateUser } = useApp();
 
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
     setIsLoading(true);
-    try {
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await updateDoc(userDocRef, {
+
+    const updatedData = {
         name,
         center,
         ageRange,
-      });
+    };
+
+    try {
+      const userDocRef = doc(firestore, 'users', user.uid);
+      await updateDoc(userDocRef, updatedData);
+      
+      // Update user in the context to reflect changes immediately
+      updateUser(updatedData);
+
       toast({
         title: "¡Perfil actualizado!",
         description: "Tu información ha sido guardada correctamente.",
@@ -192,6 +200,11 @@ function EditProfileDialog({ user }: { user: User }) {
                     <SelectItem value="No especificado">No especificado</SelectItem>
                 </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Correo Electrónico</Label>
+            <Input id="email" value={user.email} disabled />
+            <p className="text-xs text-muted-foreground">El correo electrónico no se puede cambiar.</p>
           </div>
         </div>
         <DialogFooter>

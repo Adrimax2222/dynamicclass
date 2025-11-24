@@ -14,6 +14,7 @@ export interface AppContextType {
   firebaseUser: FirebaseUser | null;
   login: (userData: User) => void;
   logout: () => void;
+  updateUser: (updatedData: Partial<User>) => void;
   theme: Theme;
   setTheme: (theme: Theme) => void;
   isChatBubbleVisible: boolean;
@@ -51,7 +52,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // Use onSnapshot to listen for real-time updates
         const unsubSnapshot = onSnapshot(userDocRef, async (docSnap) => {
           if (docSnap.exists()) {
-            const userData = docSnap.data() as User;
+            const userData = { uid: docSnap.id, ...docSnap.data() } as User;
             setUser(userData);
             localStorage.setItem('classconnect-user', JSON.stringify(userData));
           } else {
@@ -109,6 +110,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUser(userData);
     localStorage.setItem('classconnect-user', JSON.stringify(userData));
   };
+  
+  const updateUser = (updatedData: Partial<User>) => {
+    setUser(currentUser => {
+      if (!currentUser) return null;
+      const newUser = { ...currentUser, ...updatedData };
+      localStorage.setItem('classconnect-user', JSON.stringify(newUser));
+      return newUser;
+    });
+  };
 
   const logout = () => {
     // Firebase onAuthStateChanged will handle setting user to null
@@ -129,6 +139,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     firebaseUser,
     login,
     logout,
+    updateUser,
     theme,
     setTheme,
     isChatBubbleVisible,
