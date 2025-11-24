@@ -79,8 +79,9 @@ export default function HomePage() {
             <CardHeader className="flex-row items-center justify-between space-y-0">
                 <div className="space-y-1">
                     <CardTitle className="text-base flex items-center gap-2">
-                        <LifeBuoy className="h-5 w-5 text-primary" />
+                        <LifeBuoy className="h-5 w-5 text-accent" />
                         ¿Necesitas ayuda?
+                        <Badge variant="secondary">Beta</Badge>
                     </CardTitle>
                     <CardDescription className="text-xs pl-7">
                         Contacta con el equipo de soporte.
