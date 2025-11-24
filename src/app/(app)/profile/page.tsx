@@ -95,16 +95,16 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 text-sm">
              <div>
-                <p className="font-bold">{user.role === 'student' ? 'Estudiante' : 'Profesor'}</p>
                 <p className="text-muted-foreground">Rol</p>
+                <p className="font-bold">{user.role === 'student' ? 'Estudiante' : 'Profesor'}</p>
             </div>
             <div>
-                <p className="font-bold">{user.ageRange}</p>
                 <p className="text-muted-foreground">Edad</p>
+                <p className="font-bold">{user.ageRange}</p>
             </div>
             <div className="col-span-2">
-                 <p className="font-bold break-words">{user.email}</p>
                 <p className="text-muted-foreground">Correo Electrónico</p>
+                <p className="font-bold break-words">{user.email}</p>
             </div>
         </CardContent>
       </Card>
