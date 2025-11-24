@@ -142,6 +142,7 @@ export default function AuthPage() {
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setUploadedAvatarPreview(dataUrl);
+        // We set the value to the dataURL for immediate feedback, but will handle the upload separately.
         form.setValue("avatar", dataUrl, { shouldValidate: true }); 
       };
       reader.readAsDataURL(file);
@@ -152,7 +153,7 @@ export default function AuthPage() {
     const storage = getStorage();
     const selectedAvatar = form.getValues("avatar");
 
-    // Case 1: User uploaded a new file (from either the preview or a placeholder was clicked then a file was uploaded)
+    // Case 1: User uploaded a new file.
     if (avatarFile) {
         const filePath = `avatars/${userId}/${avatarFile.name}`;
         const fileRef = storageRef(storage, filePath);
@@ -161,13 +162,11 @@ export default function AuthPage() {
     }
 
     // Case 2: User selected a placeholder.
-    // The value will be a URL from placehold.co or picsum.photos. No upload needed.
     if (selectedAvatar.startsWith('https://')) {
         return selectedAvatar;
     }
     
-    // Fallback: This case should not be reached with proper validation,
-    // but as a safeguard, we return a default image.
+    // Fallback: This case should not be reached with proper validation.
     return PlaceHolderImages?.[0]?.imageUrl ?? '';
   }
   
@@ -181,17 +180,20 @@ export default function AuthPage() {
     }
 
     try {
+      // 1. Create user in Auth
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
       
+      // 2. Upload avatar and get final URL
       const finalAvatarUrl = await uploadAvatar(firebaseUser.uid);
 
+      // 3. Update Auth profile
       await updateProfile(firebaseUser, {
         displayName: values.fullName,
         photoURL: finalAvatarUrl,
       });
 
-      // The user object that will be stored in Firestore
+      // 4. Create user document in Firestore with the final, correct data
        const newUser: Omit<User, 'uid'> = {
           name: values.fullName,
           email: values.email,
@@ -207,6 +209,8 @@ export default function AuthPage() {
       };
 
       await setDoc(doc(firestore, 'users', firebaseUser.uid), newUser);
+      
+      // The onAuthStateChanged listener in AppProvider will handle login and redirection
 
     } catch (error: any) {
       console.error("Registration Error:", error);

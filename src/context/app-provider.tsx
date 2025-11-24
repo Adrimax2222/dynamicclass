@@ -61,8 +61,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             console.warn("User document not found for authenticated user. Creating one now.");
             const newUser: User = {
                 uid: fbUser.uid,
-                name: fbUser.displayName || 'Usuario',
-                email: fbUser.email || '',
+                name: fbUser.displayName || 'Usuario Anónimo',
+                email: fbUser.email || 'no-email@example.com',
                 avatar: fbUser.photoURL || PlaceHolderImages[0].imageUrl,
                 center: 'Centro no especificado',
                 ageRange: 'No especificado',
@@ -78,7 +78,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 setUser(newUser); // Set user in context after creation
                 localStorage.setItem('classconnect-user', JSON.stringify(newUser));
             } catch (error) {
-                console.error("Failed to create user document:", error);
+                console.error("Failed to create fallback user document:", error);
                 // If we can't create the doc, log them out to prevent being stuck.
                 auth.signOut();
             }
@@ -147,5 +147,3 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
-
-    
