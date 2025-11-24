@@ -27,30 +27,40 @@ const icons = [
 export default function LoadingScreen() {
   const [messageIndex, setMessageIndex] = useState(0);
   const [progress, setProgress] = useState(10);
+  const [currentMessage, setCurrentMessage] = useState(loadingMessages[0]);
+  const [isFading, setIsFading] = useState(false);
 
+  // Effect for cycling messages
   useEffect(() => {
-    // Timer for the cycling messages
-    const messageInterval = setInterval(() => {
-      setMessageIndex((prevIndex) => (prevIndex + 1) % loadingMessages.length);
+    const interval = setInterval(() => {
+      setIsFading(true);
+      setTimeout(() => {
+        setMessageIndex((prevIndex) => (prevIndex + 1) % loadingMessages.length);
+        setIsFading(false);
+      }, 500); // Half a second for fade-out
     }, 2500); // Change message every 2.5 seconds
 
-    // Timer for the progress bar to simulate loading
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    setCurrentMessage(loadingMessages[messageIndex]);
+  }, [messageIndex]);
+
+
+  // Effect for the progress bar
+  useEffect(() => {
     const progressTimer = setInterval(() => {
         setProgress(prev => {
-            // Stop incrementing just before the end to wait for real load
             if (prev >= 95) {
                 clearInterval(progressTimer);
                 return 95;
             }
-            // Increment slowly
             return prev + 5;
         })
-    }, 400); // Slower progress update
+    }, 400);
 
-    return () => {
-        clearInterval(messageInterval)
-        clearInterval(progressTimer)
-    };
+    return () => clearInterval(progressTimer);
   }, []);
 
   return (
@@ -74,20 +84,10 @@ export default function LoadingScreen() {
         <Logo className="h-20 w-20 animate-pulse-slow text-primary" />
       </div>
 
-      <div className="relative h-6 w-full max-w-sm overflow-hidden mb-4">
-        <div
-          className="absolute w-full transition-transform duration-500 ease-in-out"
-          style={{ transform: `translateY(-${messageIndex * 100}%)` }}
-        >
-          {loadingMessages.map((msg, index) => (
-            <div
-              key={index}
-              className="flex h-6 w-full items-center justify-center"
-            >
-              <p className="text-sm text-muted-foreground">{msg}</p>
-            </div>
-          ))}
-        </div>
+      <div className="h-6 w-full max-w-sm overflow-hidden mb-4 flex items-center justify-center">
+        <p className={cn("text-sm text-muted-foreground transition-opacity duration-500", isFading ? 'opacity-0' : 'opacity-100')}>
+            {currentMessage}
+        </p>
       </div>
       <Progress value={progress} className="w-full max-w-xs h-2" />
     </div>
