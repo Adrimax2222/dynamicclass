@@ -84,7 +84,7 @@ export default function LoadingScreen() {
         <Logo className="h-20 w-20 animate-pulse-slow text-primary" />
       </div>
 
-      <div className="h-6 w-full max-w-sm overflow-hidden mb-4 flex items-center justify-center">
+      <div className="h-12 w-full max-w-sm mb-4 flex items-center justify-center">
         <p className={cn("text-sm text-muted-foreground transition-opacity duration-500", isFading ? 'opacity-0' : 'opacity-100')}>
             {currentMessage}
         </p>
