@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a user of the application.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "center": { "type": "string" },
+        "ageRange": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "teacher"] },
+        "avatar": { "type": "string", "format": "uri" },
+        "trophies": { "type": "number" },
+        "tasks": { "type": "number" },
+        "exams": { "type": "number" },
+        "pending": { "type": "number" },
+        "activities": { "type": "number" }
+      },
+      "required": ["uid", "name", "email", "role", "avatar"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "Represents a user's personal note.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content", "createdAt"]
+    }
+  },
+  "auth": {
+    "providers": ["password"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profile information."
+    },
+    "/users/{userId}/notes/{noteId}": {
+      "schema": { "$ref": "#/entities/Note" },
+      "description": "Stores personal notes for each user."
+    }
+  }
+}
