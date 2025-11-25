@@ -10,6 +10,8 @@
         "email": { "type": "string", "format": "email" },
         "center": { "type": "string" },
         "ageRange": { "type": "string" },
+        "course": { "type": "string" },
+        "className": { "type": "string" },
         "role": { "type": "string", "enum": ["student", "teacher"] },
         "avatar": { "type": "string", "format": "uri" },
         "trophies": { "type": "number" },
@@ -18,7 +20,7 @@
         "pending": { "type": "number" },
         "activities": { "type": "number" }
       },
-      "required": ["uid", "name", "email", "role", "avatar"]
+      "required": ["uid", "name", "email", "role", "avatar", "course", "className"]
     },
     "Note": {
       "title": "Note",

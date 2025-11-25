@@ -12,9 +12,8 @@ import {
   signInWithEmailAndPassword,
   updateProfile,
 } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
-
 
 import { Button } from "@/components/ui/button";
 import {
@@ -59,6 +58,8 @@ const registrationSchema = z.object({
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
   center: z.string().min(1, { message: "El centro educativo es obligatorio." }),
   ageRange: z.string().min(1, { message: "Por favor, selecciona un rango de edad." }),
+  course: z.string().min(1, { message: "Por favor, selecciona tu curso." }),
+  className: z.string().min(1, { message: "Por favor, selecciona tu clase." }),
   role: z.enum(["student", "teacher"], { required_error: "Debes seleccionar un rol." }),
   classCode: z.string().optional(),
   avatar: z.string().min(1, { message: "Por favor, selecciona una foto de perfil." }),
@@ -74,7 +75,7 @@ type LoginSchemaType = z.infer<typeof loginSchema>;
 
 const steps = [
     { id: 1, fields: ['fullName', 'email', 'password'] },
-    { id: 2, fields: ['center', 'ageRange', 'role', 'classCode'] },
+    { id: 2, fields: ['center', 'ageRange', 'course', 'className', 'role', 'classCode'] },
     { id: 3, fields: ['avatar'] },
 ];
 
@@ -110,6 +111,8 @@ export default function AuthPage() {
       center: "",
       role: "student",
       ageRange: "",
+      course: "",
+      className: "",
       classCode: "",
       avatar: PlaceHolderImages?.[0]?.imageUrl ?? '',
     },
@@ -145,7 +148,6 @@ export default function AuthPage() {
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setUploadedAvatarPreview(dataUrl);
-        // We set the value to the dataURL for immediate feedback, but will handle the upload separately.
         form.setValue("avatar", dataUrl, { shouldValidate: true }); 
       };
       reader.readAsDataURL(file);
@@ -156,7 +158,6 @@ export default function AuthPage() {
     const storage = getStorage();
     const selectedAvatar = form.getValues("avatar");
 
-    // Case 1: User uploaded a new file.
     if (avatarFile) {
         const filePath = `avatars/${userId}/${avatarFile.name}`;
         const fileRef = storageRef(storage, filePath);
@@ -164,12 +165,10 @@ export default function AuthPage() {
         return getDownloadURL(fileRef);
     }
 
-    // Case 2: User selected a placeholder.
     if (selectedAvatar.startsWith('https://')) {
         return selectedAvatar;
     }
     
-    // Fallback: This case should not be reached with proper validation.
     return PlaceHolderImages?.[0]?.imageUrl ?? '';
   }
   
@@ -183,26 +182,24 @@ export default function AuthPage() {
     }
 
     try {
-      // 1. Create user in Auth
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
       
-      // 2. Upload avatar and get final URL
       const finalAvatarUrl = await uploadAvatar(firebaseUser.uid);
 
-      // 3. Update Auth profile
       await updateProfile(firebaseUser, {
         displayName: values.fullName,
         photoURL: finalAvatarUrl,
       });
 
-      // 4. Create user document in Firestore with the final, correct data
        const newUser: Omit<User, 'uid'> = {
           name: values.fullName,
           email: values.email,
           avatar: finalAvatarUrl,
           center: values.center,
           ageRange: values.ageRange,
+          course: values.course,
+          className: values.className,
           role: values.role,
           trophies: 0,
           tasks: 0,
@@ -213,8 +210,6 @@ export default function AuthPage() {
 
       await setDoc(doc(firestore, 'users', firebaseUser.uid), newUser);
       
-      // The onAuthStateChanged listener in AppProvider will handle login and redirection
-
     } catch (error: any) {
       console.error("Registration Error:", error);
       let errorMessage = "No se pudo crear la cuenta. Inténtalo de nuevo.";
@@ -232,8 +227,7 @@ export default function AuthPage() {
         variant: "destructive",
       });
     } finally {
-      // Don't set isLoading to false on success, as we want to show loader
-      // until the main app layout takes over.
+      // Keep loading on success
     }
   }
 
@@ -255,8 +249,6 @@ export default function AuthPage() {
         values.email,
         values.password
       );
-       // On successful sign-in, the onAuthStateChanged listener will trigger.
-       // We keep isLoading true to let the LoadingScreen show until redirection.
     } catch (error: any) {
       console.error("Login Error:", error);
       let errorMessage = "No se pudo iniciar sesión. Por favor, intenta de nuevo.";
@@ -272,7 +264,7 @@ export default function AuthPage() {
         description: errorMessage,
         variant: "destructive",
       });
-      setIsLoading(false); // Set loading to false only on error
+      setIsLoading(false); 
     }
   }
 
@@ -295,6 +287,8 @@ export default function AuthPage() {
       center: "",
       role: "student",
       ageRange: "",
+      course: "",
+      className: "",
       classCode: "",
       avatar: PlaceHolderImages?.[0]?.imageUrl ?? '',
     });
@@ -304,7 +298,8 @@ export default function AuthPage() {
     setAvatarFile(null);
   }
 
-  if (isLoading) {
+  if (user) {
+    // While the redirect is happening, show a loading screen.
     return <LoadingScreen />;
   }
 
@@ -327,7 +322,7 @@ export default function AuthPage() {
             {authMode === 'register' ? (
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                    <div className="relative min-h-[380px] overflow-hidden">
+                    <div className="relative min-h-[420px] overflow-hidden">
                       {steps.map((step, index) => (
                         <div key={step.id} className={cn("absolute w-full", getAnimationClass(index))}>
                           {index === 0 && (
@@ -366,9 +361,13 @@ export default function AuthPage() {
                             </div>
                           )}
                           {index === 1 && (
-                            <div className="space-y-6">
+                            <div className="space-y-4">
                                 <FormField control={form.control} name="center" render={({ field }) => (<FormItem><FormLabel>Centro Educativo</FormLabel><FormControl><Input placeholder="Universidad de Springfield" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="ageRange" render={({ field }) => (<FormItem><FormLabel>Rango de Edad</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger></FormControl><SelectContent><SelectItem value="12-15">12-15 años</SelectItem><SelectItem value="16-18">16-18 años</SelectItem><SelectItem value="19-22">19-22 años</SelectItem><SelectItem value="23+">23+ años</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                                <div className="grid grid-cols-2 gap-4">
+                                  <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel>Curso</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="1eso">1º ESO</SelectItem><SelectItem value="2eso">2º ESO</SelectItem><SelectItem value="3eso">3º ESO</SelectItem><SelectItem value="4eso">4º ESO</SelectItem><SelectItem value="1bach">1º Bachillerato</SelectItem><SelectItem value="2bach">2º Bachillerato</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                                  <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel>Clase</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="A">A</SelectItem><SelectItem value="B">B</SelectItem><SelectItem value="C">C</SelectItem><SelectItem value="D">D</SelectItem><SelectItem value="E">E</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                                </div>
                                 <FormField control={form.control} name="role" render={({ field }) => (<FormItem className="space-y-3"><FormLabel>Tu Rol</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex items-center space-x-4"><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="student" /></FormControl><FormLabel className="font-normal">Estudiante</FormLabel></FormItem><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="teacher" /></FormControl><FormLabel className="font-normal">Profesor</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="classCode" render={({ field }) => (<FormItem><FormLabel>Código de Clase (Opcional)</FormLabel><FormControl><Input placeholder="Introduce el código para unirte" {...field} /></FormControl><FormDescription>Tu profesor te proporcionará este código.</FormDescription><FormMessage /></FormItem>)}/>
                             </div>
@@ -474,5 +473,3 @@ export default function AuthPage() {
     </main>
   );
 }
-
-    

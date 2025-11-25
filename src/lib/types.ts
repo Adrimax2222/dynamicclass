@@ -6,6 +6,8 @@ export type User = {
   email: string;
   center: string;
   ageRange: string;
+  course: string;
+  className: string;
   role: 'student' | 'teacher';
   avatar: string;
   trophies: number;

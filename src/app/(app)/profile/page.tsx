@@ -56,11 +56,22 @@ export default function ProfilePage() {
                 <CardContent className="grid grid-cols-2 gap-4">
                     <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-10 w-full col-span-2" />
                 </CardContent>
             </Card>
         </div>
     );
+  }
+
+  const courseMap: Record<string, string> = {
+    "1eso": "1º ESO",
+    "2eso": "2º ESO",
+    "3eso": "3º ESO",
+    "4eso": "4º ESO",
+    "1bach": "1º Bachillerato",
+    "2bach": "2º Bachillerato",
   }
 
   return (
@@ -102,6 +113,14 @@ export default function ProfilePage() {
                 <p className="text-muted-foreground">Edad</p>
                 <p className="font-bold">{user.ageRange}</p>
             </div>
+            <div>
+                <p className="text-muted-foreground">Curso</p>
+                <p className="font-bold">{courseMap[user.course] || user.course}</p>
+            </div>
+            <div>
+                <p className="text-muted-foreground">Clase</p>
+                <p className="font-bold">{user.className}</p>
+            </div>
             <div className="col-span-2">
                 <p className="text-muted-foreground">Correo Electrónico</p>
                 <p className="font-bold break-words">{user.email}</p>
@@ -122,12 +141,14 @@ export default function ProfilePage() {
 }
 
 function EditProfileDialog() {
-  const { user } = useApp();
+  const { user, updateUser } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState(user?.name || "");
   const [center, setCenter] = useState(user?.center || "");
   const [ageRange, setAgeRange] = useState(user?.ageRange || "");
+  const [course, setCourse] = useState(user?.course || "");
+  const [className, setClassName] = useState(user?.className || "");
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -136,6 +157,8 @@ function EditProfileDialog() {
       setName(user.name);
       setCenter(user.center);
       setAgeRange(user.ageRange);
+      setCourse(user.course);
+      setClassName(user.className);
     }
   }, [user, isOpen]);
   
@@ -144,8 +167,13 @@ function EditProfileDialog() {
   const handleSaveChanges = async () => {
     if (!firestore) return;
     
-    // Check for changes to avoid unnecessary writes
-    if (name === user.name && center === user.center && ageRange === user.ageRange) {
+    const hasChanged = name !== user.name ||
+                     center !== user.center ||
+                     ageRange !== user.ageRange ||
+                     course !== user.course ||
+                     className !== user.className;
+
+    if (!hasChanged) {
       toast({ title: "Sin cambios", description: "No has realizado ningún cambio." });
       setIsOpen(false);
       return;
@@ -154,20 +182,25 @@ function EditProfileDialog() {
     setIsLoading(true);
 
     const updatedData = {
-        name: name,
-        center: center,
-        ageRange: ageRange,
+        name,
+        center,
+        ageRange,
+        course,
+        className,
     };
 
     try {
       const userDocRef = doc(firestore, 'users', user.uid);
       await updateDoc(userDocRef, updatedData);
       
+      // Update local context immediately for instant feedback
+      updateUser(updatedData);
+
       toast({
         title: "¡Perfil actualizado!",
         description: "Tu información ha sido guardada correctamente.",
       });
-      setIsOpen(false); // Close dialog on success
+      setIsOpen(false); 
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({
@@ -176,7 +209,7 @@ function EditProfileDialog() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false); // Always stop loading, whether success or failure
+      setIsLoading(false);
     }
   };
 
@@ -215,6 +248,35 @@ function EditProfileDialog() {
                     <SelectItem value="No especificado">No especificado</SelectItem>
                 </SelectContent>
             </Select>
+          </div>
+           <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="course">Curso</Label>
+                <Select onValueChange={setCourse} value={course}>
+                    <SelectTrigger id="course"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="1eso">1º ESO</SelectItem>
+                        <SelectItem value="2eso">2º ESO</SelectItem>
+                        <SelectItem value="3eso">3º ESO</SelectItem>
+                        <SelectItem value="4eso">4º ESO</SelectItem>
+                        <SelectItem value="1bach">1º Bachillerato</SelectItem>
+                        <SelectItem value="2bach">2º Bachillerato</SelectItem>
+                    </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="className">Clase</Label>
+                <Select onValueChange={setClassName} value={className}>
+                    <SelectTrigger id="className"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="A">A</SelectItem>
+                        <SelectItem value="B">B</SelectItem>
+                        <SelectItem value="C">C</SelectItem>
+                        <SelectItem value="D">D</SelectItem>
+                        <SelectItem value="E">E</SelectItem>
+                    </SelectContent>
+                </Select>
+              </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Correo Electrónico</Label>
