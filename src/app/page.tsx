@@ -322,7 +322,7 @@ export default function AuthPage() {
             {authMode === 'register' ? (
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                    <div className="relative overflow-x-hidden">
+                    <div className="relative">
                       {steps.map((step, index) => (
                         <div key={step.id} className={cn("w-full", getAnimationClass(index))}>
                           {index === 0 && (
@@ -494,5 +494,3 @@ export default function AuthPage() {
     </main>
   );
 }
-
-    
