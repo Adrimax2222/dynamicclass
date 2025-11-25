@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Camera, Loader2, ArrowLeft } from "lucide-react";
+import { Camera, Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -79,12 +79,13 @@ const steps = [
 export default function AuthPage() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const router = useRouter();
-  const { firebaseUser } = useApp();
+  const { user } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward'>('forward');
   const [uploadedAvatarPreview, setUploadedAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -92,10 +93,10 @@ export default function AuthPage() {
 
   // Redirect if user is already logged in
   useEffect(() => {
-    if (firebaseUser) {
+    if (user) {
       router.replace('/home');
     }
-  }, [firebaseUser, router]);
+  }, [user, router]);
 
 
   const form = useForm<RegistrationSchemaType>({
@@ -325,7 +326,35 @@ export default function AuthPage() {
                             <div className="space-y-6">
                                 <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Nombre Completo</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" placeholder="tu@ejemplo.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Contraseña</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField
+                                  control={form.control}
+                                  name="password"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Contraseña</FormLabel>
+                                      <div className="relative">
+                                        <FormControl>
+                                          <Input
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="••••••••"
+                                            {...field}
+                                            className="pr-10"
+                                          />
+                                        </FormControl>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon"
+                                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                                          onClick={() => setShowPassword(!showPassword)}
+                                        >
+                                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </Button>
+                                      </div>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
                             </div>
                           )}
                           {index === 1 && (
@@ -382,7 +411,35 @@ export default function AuthPage() {
                 <Form {...loginForm}>
                     <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
                         <FormField control={loginForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" placeholder="tu@ejemplo.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={loginForm.control} name="password" render={({ field }) => (<FormItem><FormLabel>Contraseña</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField
+                          control={loginForm.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Contraseña</FormLabel>
+                              <div className="relative">
+                                <FormControl>
+                                  <Input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="••••••••"
+                                    {...field}
+                                    className="pr-10"
+                                  />
+                                </FormControl>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                >
+                                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </Button>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                         <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
                             {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Iniciando Sesión...</>) : "Iniciar Sesión"}
                         </Button>
@@ -396,6 +453,12 @@ export default function AuthPage() {
                 ) : (
                     <>¿No tienes una cuenta? <Button variant="link" className="p-0 h-auto" onClick={() => handleAuthModeChange('register')}>Crea una</Button></>
                 )}
+            </div>
+            
+            <div className="mt-8 text-center text-sm text-muted-foreground">
+                <Link href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                    Impulsado por <span className="font-semibold">Proyecto Adrimax</span>
+                </Link>
             </div>
 
         </CardContent>
