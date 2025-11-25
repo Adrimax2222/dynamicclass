@@ -47,15 +47,15 @@ export default function HomePage() {
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
       <header className="mb-8 flex items-center justify-between">
         <div>
-            <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-                    Dynamic Class
-                </h1>
+            <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
+                Dynamic Class
+            </h1>
+            <div className="flex items-center gap-2 mt-1">
+                <Badge variant="outline">V3.0 - Beta</Badge>
                 {user.center === SCHOOL_NAME && (
                     <Badge>Ins Torre del Palau</Badge>
                 )}
             </div>
-          <Badge variant="outline">V3.0 - Beta</Badge>
         </div>
         <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 rounded-full border bg-card p-2 shadow-sm">
