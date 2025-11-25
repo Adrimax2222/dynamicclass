@@ -18,9 +18,10 @@
         "tasks": { "type": "number" },
         "exams": { "type": "number" },
         "pending": { "type": "number" },
-        "activities": { "type": "number" }
+        "activities": { "type": "number" },
+        "organizationId": { "type": "string" }
       },
-      "required": ["uid", "name", "email", "role", "avatar", "course", "className"]
+      "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange"]
     },
     "Note": {
       "title": "Note",
@@ -49,5 +50,3 @@
     }
   }
 }
-
-    

@@ -32,6 +32,7 @@ import { useState, useEffect } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { normalizeSchoolName } from "@/lib/school-utils";
 
 
 export default function ProfilePage() {
@@ -166,9 +167,11 @@ function EditProfileDialog() {
 
   const handleSaveChanges = async () => {
     if (!firestore) return;
+
+    const normalizedCenter = normalizeSchoolName(center);
     
     const hasChanged = name !== user.name ||
-                     center !== user.center ||
+                     normalizedCenter !== user.center ||
                      ageRange !== user.ageRange ||
                      course !== user.course ||
                      className !== user.className;
@@ -183,7 +186,7 @@ function EditProfileDialog() {
 
     const updatedData = {
         name,
-        center,
+        center: normalizedCenter,
         ageRange,
         course,
         className,

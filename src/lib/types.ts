@@ -8,13 +8,14 @@ export type User = {
   ageRange: string;
   course: string;
   className: string;
-  role: 'student' | 'teacher';
+  role: 'student' | 'teacher' | 'admin';
   avatar: string;
   trophies: number;
   tasks: number;
   exams: number;
   pending: number;
   activities: number;
+  organizationId?: string; // e.g., 'ies-torre-del-palau'
 };
 
 export type SummaryCardData = {

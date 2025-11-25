@@ -51,6 +51,7 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import type { User } from "@/lib/types";
 import LoadingScreen from "@/components/layout/loading-screen";
+import { normalizeSchoolName } from "@/lib/school-utils";
 
 const registrationSchema = z.object({
   fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
@@ -192,11 +193,13 @@ export default function AuthPage() {
         photoURL: finalAvatarUrl,
       });
 
+      const normalizedCenter = normalizeSchoolName(values.center);
+
        const newUser: Omit<User, 'uid'> = {
           name: values.fullName,
           email: values.email,
           avatar: finalAvatarUrl,
-          center: values.center,
+          center: normalizedCenter,
           ageRange: values.ageRange,
           course: values.course,
           className: values.className,

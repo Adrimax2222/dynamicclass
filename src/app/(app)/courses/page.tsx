@@ -55,6 +55,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { SCHOOL_NAME } from "@/lib/constants";
 
 export default function InfoPage() {
   return (
@@ -104,11 +106,17 @@ export default function InfoPage() {
 
 function AnnouncementsTab() {
   const [filter, setFilter] = useState("all");
+  const { user } = useApp();
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-lg font-semibold">Últimos Anuncios</h2>
+        <div className="flex items-center gap-4">
+            <h2 className="text-lg font-semibold">Últimos Anuncios</h2>
+            {user?.center === SCHOOL_NAME && (
+                <Badge variant="secondary" className="border-primary/50">Torre del Palau</Badge>
+            )}
+        </div>
         <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger className="w-[180px]">
             <ListFilter className="h-4 w-4 mr-2" />
