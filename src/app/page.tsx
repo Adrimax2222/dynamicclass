@@ -51,6 +51,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import type { User } from "@/lib/types";
+import LoadingScreen from "@/components/layout/loading-screen";
 
 const registrationSchema = z.object({
   fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
@@ -231,7 +232,8 @@ export default function AuthPage() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      // Don't set isLoading to false on success, as we want to show loader
+      // until the main app layout takes over.
     }
   }
 
@@ -253,6 +255,8 @@ export default function AuthPage() {
         values.email,
         values.password
       );
+       // On successful sign-in, the onAuthStateChanged listener will trigger.
+       // We keep isLoading true to let the LoadingScreen show until redirection.
     } catch (error: any) {
       console.error("Login Error:", error);
       let errorMessage = "No se pudo iniciar sesión. Por favor, intenta de nuevo.";
@@ -268,8 +272,7 @@ export default function AuthPage() {
         description: errorMessage,
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Set loading to false only on error
     }
   }
 
@@ -299,6 +302,10 @@ export default function AuthPage() {
     setIsLoading(false);
     setUploadedAvatarPreview(null);
     setAvatarFile(null);
+  }
+
+  if (isLoading) {
+    return <LoadingScreen />;
   }
 
   return (
@@ -400,7 +407,7 @@ export default function AuthPage() {
                     <div className="pt-2">
                         <Progress value={progress} className="h-2 mb-4" />
                         <div className="flex items-center gap-4">
-                            <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isFirstStep || isLoading} className={cn(isFirstStep && 'invisible', 'transition-opacity')}><ArrowLeft className="mr-2 h-4 w-4" /> Atrás</Button>
+                            <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isLoading} className={cn(isFirstStep && 'invisible', 'transition-opacity')}><ArrowLeft className="mr-2 h-4 w-4" /> Atrás</Button>
                             <Button type={!isLastStep ? 'button' : 'submit'} onClick={!isLastStep ? goToNextStep : undefined} className="w-full" size="lg" disabled={isLoading}>
                                 {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creando Cuenta...</>) : isLastStep ? ("Crear Cuenta") : ("Siguiente")}
                             </Button>
@@ -467,3 +474,5 @@ export default function AuthPage() {
     </main>
   );
 }
+
+    
