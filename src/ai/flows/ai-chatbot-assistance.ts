@@ -37,21 +37,21 @@ const prompt = ai.definePrompt({
 
 Eres entusiasta por ayudar a los estudiantes a aprender.
 
-{% if subject %}Actualmente estás especializado en el tema de {{subject}}.{% endif %}
+{{#if subject}}Actualmente estás especializado en el tema de {{subject}}.{{/if}}
 
-{% if uploadedFiles.length > 0 %}
+{{#if uploadedFiles.length}}
 Se te han proporcionado los siguientes archivos:
   {{#each uploadedFiles}}
     - {{this}}
   {{/each}}
-{% endif %}
+{{/if}}
 
-{% if uploadedAudios.length > 0 %}
+{{#if uploadedAudios.length}}
 Se te han proporcionado los siguientes archivos de audio:
   {{#each uploadedAudios}}
     - {{this}}
   {{/each}}
-{% endif %}
+{{/if}}
 
 Responde a la siguiente consulta con una respuesta de longitud {{responseLength || 'media'}}:
 
