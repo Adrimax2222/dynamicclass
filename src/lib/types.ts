@@ -25,7 +25,7 @@ export type SummaryCardData = {
 export type UpcomingClass = {
   id: string;
   subject: string;
-teacher: string;
+  teacher: string;
   time: string;
   notes?: string;
   grade?: string;
@@ -45,4 +45,11 @@ export type ChatMessage = {
   content: string;
   timestamp: string;
   type?: 'text' | 'image';
+};
+
+export type Note = {
+    id: string;
+    title: string;
+    content: string;
+    createdAt: { seconds: number, nanoseconds: number };
 };
