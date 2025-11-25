@@ -305,7 +305,7 @@ export default function AuthPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-muted/20 p-4">
-      <Card className="w-full max-w-md shadow-2xl overflow-hidden">
+      <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
             <div className="mx-auto mb-2 flex items-center justify-center gap-3">
                 <Logo className="h-10 w-10 text-primary" />
@@ -322,9 +322,9 @@ export default function AuthPage() {
             {authMode === 'register' ? (
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                    <div className="relative min-h-[420px] overflow-hidden">
+                    <div className="relative overflow-x-hidden">
                       {steps.map((step, index) => (
-                        <div key={step.id} className={cn("absolute w-full", getAnimationClass(index))}>
+                        <div key={step.id} className={cn("w-full", getAnimationClass(index))}>
                           {index === 0 && (
                             <div className="space-y-6">
                                 <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Nombre Completo</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>)} />
