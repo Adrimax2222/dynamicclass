@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { Camera, Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import {
   createUserWithEmailAndPassword,
