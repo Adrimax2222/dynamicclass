@@ -11,6 +11,7 @@
 
 import { z } from 'genkit';
 import { ai } from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const GenerateImageInputSchema = z.object({
   prompt: z.string().describe('El texto para la generación de la imagen.'),
@@ -32,20 +33,18 @@ export const generateImageFlow = ai.defineFlow(
   async ({ prompt }) => {
     try {
       const { media } = await ai.generate({
-        model: 'googleai/gemini-1.5-flash',
+        model: googleAI.model('imagen-4.0-fast-generate-001'),
         prompt: `Genera una imagen fotorrealista de alta calidad de: ${prompt}`,
-        config: {
-            responseModalities: ['IMAGE'],
-        }
       });
       
-      if (!media || !media.url) {
+      const imageUrl = media.url;
+      if (!imageUrl) {
         console.error('La generación de imágenes falló: La respuesta de la IA no contenía una URL de medios.');
         throw new Error('La generación de imágenes no pudo producir una URI de datos.');
       }
 
       return {
-        imageDataUri: media.url,
+        imageDataUri: imageUrl,
       };
 
     } catch (error) {
