@@ -82,7 +82,7 @@ export default function LoadingScreen() {
                 </div>
             )
         })}
-        <div className="animate-float-icons" style={{ animationDelay: '1000ms' }}>
+        <div className="animate-float-logo" style={{ animationDelay: '1000ms' }}>
             <Logo className="h-20 w-20 text-primary" />
         </div>
       </div>
