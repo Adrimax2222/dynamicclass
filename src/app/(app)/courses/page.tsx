@@ -71,17 +71,19 @@ export default function InfoPage() {
 
       <main className="flex-1">
         <Tabs defaultValue="announcements" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 m-4">
-            <TabsTrigger value="announcements">
-              <Building className="h-4 w-4 mr-2" /> Anuncios
-            </TabsTrigger>
-            <TabsTrigger value="my-classes">
-              <GraduationCap className="h-4 w-4 mr-2" /> Mis Clases
-            </TabsTrigger>
-            <TabsTrigger value="notes">
-              <Notebook className="h-4 w-4 mr-2" /> Anotaciones
-            </TabsTrigger>
-          </TabsList>
+          <div className="p-4">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="announcements">
+                <Building className="h-4 w-4 mr-2" /> Anuncios
+              </TabsTrigger>
+              <TabsTrigger value="my-classes">
+                <GraduationCap className="h-4 w-4 mr-2" /> Mis Clases
+              </TabsTrigger>
+              <TabsTrigger value="notes">
+                <Notebook className="h-4 w-4 mr-2" /> Anotaciones
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <div className="p-4 sm:p-6 pt-0">
             <TabsContent value="announcements">
