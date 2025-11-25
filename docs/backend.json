@@ -12,7 +12,7 @@
         "ageRange": { "type": "string" },
         "course": { "type": "string" },
         "className": { "type": "string" },
-        "role": { "type": "string", "enum": ["student", "teacher"] },
+        "role": { "type": "string", "enum": ["student", "teacher", "admin"] },
         "avatar": { "type": "string", "format": "uri" },
         "trophies": { "type": "number" },
         "tasks": { "type": "number" },
@@ -49,3 +49,5 @@
     }
   }
 }
+
+    

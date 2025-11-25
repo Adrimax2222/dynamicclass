@@ -60,7 +60,7 @@ const registrationSchema = z.object({
   ageRange: z.string().min(1, { message: "Por favor, selecciona un rango de edad." }),
   course: z.string().min(1, { message: "Por favor, selecciona tu curso." }),
   className: z.string().min(1, { message: "Por favor, selecciona tu clase." }),
-  role: z.enum(["student", "teacher"], { required_error: "Debes seleccionar un rol." }),
+  role: z.enum(["student", "teacher", "admin"], { required_error: "Debes seleccionar un rol." }),
   classCode: z.string().optional(),
   avatar: z.string().min(1, { message: "Por favor, selecciona una foto de perfil." }),
 });
@@ -368,7 +368,28 @@ export default function AuthPage() {
                                   <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel>Curso</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="1eso">1º ESO</SelectItem><SelectItem value="2eso">2º ESO</SelectItem><SelectItem value="3eso">3º ESO</SelectItem><SelectItem value="4eso">4º ESO</SelectItem><SelectItem value="1bach">1º Bachillerato</SelectItem><SelectItem value="2bach">2º Bachillerato</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                   <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel>Clase</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="A">A</SelectItem><SelectItem value="B">B</SelectItem><SelectItem value="C">C</SelectItem><SelectItem value="D">D</SelectItem><SelectItem value="E">E</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                 </div>
-                                <FormField control={form.control} name="role" render={({ field }) => (<FormItem className="space-y-3"><FormLabel>Tu Rol</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex items-center space-x-4"><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="student" /></FormControl><FormLabel className="font-normal">Estudiante</FormLabel></FormItem><FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="teacher" /></FormControl><FormLabel className="font-normal">Profesor</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="role" render={({ field }) => (
+                                    <FormItem className="space-y-3">
+                                        <FormLabel>Tu Rol</FormLabel>
+                                        <FormControl>
+                                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-3 gap-4">
+                                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                                    <FormControl><RadioGroupItem value="student" /></FormControl>
+                                                    <FormLabel className="font-normal">Estudiante</FormLabel>
+                                                </FormItem>
+                                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                                    <FormControl><RadioGroupItem value="teacher" disabled /></FormControl>
+                                                    <FormLabel className="font-normal opacity-50">Profesor</FormLabel>
+                                                </FormItem>
+                                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                                    <FormControl><RadioGroupItem value="admin" disabled /></FormControl>
+                                                    <FormLabel className="font-normal opacity-50">Admin</FormLabel>
+                                                </FormItem>
+                                            </RadioGroup>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
                                 <FormField control={form.control} name="classCode" render={({ field }) => (<FormItem><FormLabel>Código de Clase (Opcional)</FormLabel><FormControl><Input placeholder="Introduce el código para unirte" {...field} /></FormControl><FormDescription>Tu profesor te proporcionará este código.</FormDescription><FormMessage /></FormItem>)}/>
                             </div>
                           )}
@@ -473,3 +494,5 @@ export default function AuthPage() {
     </main>
   );
 }
+
+    
