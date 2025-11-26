@@ -79,6 +79,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 exams: 0,
                 pending: 0,
                 activities: 0,
+                isNewUser: true,
             };
             try {
                 await setDoc(userDocRef, newUser);
