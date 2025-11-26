@@ -5,10 +5,11 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Loader2, ArrowLeft, Eye, EyeOff, MailCheck } from "lucide-react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendEmailVerification,
   updateProfile,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
@@ -76,6 +77,7 @@ const steps = [
 
 export default function AuthPage() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const router = useRouter();
   const { user } = useApp();
   const [isLoading, setIsLoading] = useState(false);
@@ -141,6 +143,8 @@ export default function AuthPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
+
+      await sendEmailVerification(firebaseUser);
       
       const firstInitial = values.fullName.charAt(0).toUpperCase() || 'A';
       const defaultAvatarUrl = `https://placehold.co/100x100/A78BFA/FFFFFF?text=${firstInitial}`;
@@ -170,7 +174,9 @@ export default function AuthPage() {
       };
 
       await setDoc(doc(firestore, 'users', firebaseUser.uid), newUser);
-      // Let onAuthStateChanged handle the redirect
+      
+      // Show verification message instead of auto-redirecting
+      setRegistrationSuccess(true);
       
     } catch (error: any) {
       console.error("Registration Error:", error);
@@ -186,7 +192,8 @@ export default function AuthPage() {
         description: `${errorMessage}`,
         variant: "destructive",
       });
-      setIsLoading(false);
+    } finally {
+        setIsLoading(false);
     }
   }
 
@@ -203,12 +210,23 @@ export default function AuthPage() {
     }
   
     try {
-      await signInWithEmailAndPassword(
+      const userCredential = await signInWithEmailAndPassword(
         auth,
         values.email,
         values.password
       );
-      // Let onAuthStateChanged handle the redirect
+
+      if (!userCredential.user.emailVerified) {
+        toast({
+          title: "Verificación Requerida",
+          description: "Por favor, verifica tu correo electrónico para iniciar sesión. Revisa tu bandeja de entrada.",
+          variant: "destructive",
+        });
+        await auth.signOut();
+        setIsLoading(false);
+        return;
+      }
+      // Let onAuthStateChanged handle the redirect if email is verified
     } catch (error: any) {
       console.error("Login Error:", error);
       let errorMessage = "No se pudo iniciar sesión. Por favor, intenta de nuevo.";
@@ -239,6 +257,7 @@ export default function AuthPage() {
     
   const handleAuthModeChange = (mode: 'login' | 'register') => {
     setAuthMode(mode);
+    setRegistrationSuccess(false);
     loginForm.reset();
     form.reset({
       fullName: "",
@@ -267,15 +286,35 @@ export default function AuthPage() {
                 <Logo className="h-10 w-10 text-primary" />
                 <h1 className="text-xl font-bold tracking-tight">Dynamic Class</h1>
             </div>
-            <CardTitle className="text-2xl font-headline">
-                {authMode === 'register' ? 'Únete a la Clase' : 'Bienvenido de Nuevo'}
-            </CardTitle>
-            <CardDescription>
-                {authMode === 'register' ? 'Crea tu cuenta para empezar a conectar.' : 'Inicia sesión para acceder a tu panel.'}
-            </CardDescription>
+            {registrationSuccess ? (
+                 <CardTitle className="text-2xl font-headline">¡Un último paso!</CardTitle>
+            ) : (
+                <>
+                    <CardTitle className="text-2xl font-headline">
+                        {authMode === 'register' ? 'Únete a la Clase' : 'Bienvenido de Nuevo'}
+                    </CardTitle>
+                    <CardDescription>
+                        {authMode === 'register' ? 'Crea tu cuenta para empezar a conectar.' : 'Inicia sesión para acceder a tu panel.'}
+                    </CardDescription>
+                </>
+            )}
         </CardHeader>
         <CardContent>
-            {authMode === 'register' ? (
+            {registrationSuccess ? (
+                <div className="text-center space-y-4">
+                    <MailCheck className="h-16 w-16 text-green-500 mx-auto animate-pulse-slow" />
+                    <p className="text-foreground">¡Gracias por registrarte!</p>
+                    <p className="text-muted-foreground text-sm">
+                        Te hemos enviado un correo electrónico. Por favor, haz clic en el enlace de verificación para activar tu cuenta y poder iniciar sesión.
+                    </p>
+                    <p className="text-xs text-muted-foreground/80">
+                        (Si no lo ves, revisa tu carpeta de spam)
+                    </p>
+                    <Button onClick={() => handleAuthModeChange('login')} className="w-full mt-4">
+                        Volver a Inicio de Sesión
+                    </Button>
+                </div>
+            ) : authMode === 'register' ? (
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onRegisterSubmit)} className="space-y-4">
                     <div className="relative overflow-hidden">
@@ -352,7 +391,7 @@ export default function AuthPage() {
                       ))}
                     </div>
                     
-                    <div className="pt-8">
+                    <div className="pt-4">
                         <Progress value={progress} className="h-2 mb-4" />
                         <div className="flex items-center gap-4">
                              <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isLoading} className={cn(isFirstStep && 'invisible')}>
@@ -410,13 +449,15 @@ export default function AuthPage() {
                 </Form>
             )}
 
-            <div className="mt-6 text-center text-sm">
-                {authMode === 'register' ? (
-                    <>¿Ya tienes una cuenta? <Button variant="link" className="p-0 h-auto" onClick={() => handleAuthModeChange('login')}>Inicia Sesión</Button></>
-                ) : (
-                    <>¿No tienes una cuenta? <Button variant="link" className="p-0 h-auto" onClick={() => handleAuthModeChange('register')}>Crea una</Button></>
-                )}
-            </div>
+           {!registrationSuccess && (
+                <div className="mt-6 text-center text-sm">
+                    {authMode === 'register' ? (
+                        <>¿Ya tienes una cuenta? <Button variant="link" className="p-0 h-auto" onClick={() => handleAuthModeChange('login')}>Inicia Sesión</Button></>
+                    ) : (
+                        <>¿No tienes una cuenta? <Button variant="link" className="p-0 h-auto" onClick={() => handleAuthModeChange('register')}>Crea una</Button></>
+                    )}
+                </div>
+           )}
             
             <div className="mt-8 text-center text-sm text-muted-foreground">
                 <Link href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
