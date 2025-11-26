@@ -33,6 +33,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import WelcomeModal from "@/components/layout/welcome-modal";
 import { doc, updateDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
+import { FullScheduleView } from "@/components/layout/full-schedule-view";
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Actividades";
 
@@ -227,27 +228,8 @@ function DetailsDialog({ title, children }: { title: string, children: React.Rea
     )
 }
 
-function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, userClassName }: { children: React.ReactNode, scheduleData: Schedule, selectedClassId: string, userCourse: string, userClassName: string }) {
-    const today = new Date().toLocaleString('es-ES', { weekday: 'long' });
-    const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
-    const [isOpen, setIsOpen] = useState(false);
+function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, userClassName }: { children: React.ReactNode, scheduleData: Schedule, selectedClassId?: string, userCourse: string, userClassName: string }) {
     
-    // Find which day the selected class is on to set the default tab
-    const findDefaultTab = () => {
-        for (const day in scheduleData) {
-            // Capitalize day to match keys in scheduleData
-            const capitalizedDay = day.charAt(0).toUpperCase() + day.slice(1);
-            if (scheduleData[capitalizedDay as keyof Schedule]?.some(entry => entry.id === selectedClassId)) {
-                return capitalizedDay;
-            }
-        }
-        // Fallback to today, but make sure today is a valid key.
-        const capitalizedToday = today.charAt(0).toUpperCase() + today.slice(1);
-        const validDays = Object.keys(scheduleData);
-        return validDays.includes(capitalizedToday) ? capitalizedToday : validDays[0];
-    }
-    const defaultTab = findDefaultTab();
-
     const courseMap: Record<string, string> = {
         "1eso": "1º ESO",
         "2eso": "2º ESO",
@@ -257,33 +239,10 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         "2bach": "2º Bachillerato",
     };
 
-    const dayAbbreviations: Record<string, string> = {
-        Lunes: 'Lun',
-        Martes: 'Mar',
-        Miércoles: 'Mié',
-        Jueves: 'Jue',
-        Viernes: 'Vie',
-    }
-
     const formattedCourse = courseMap[userCourse] || userCourse;
 
-    useEffect(() => {
-        if (isOpen) {
-            // Delay scrolling slightly to ensure the element is in the DOM and visible
-            setTimeout(() => {
-                const itemEl = itemRefs.current.get(`item-${selectedClassId}`);
-                if (itemEl) {
-                    itemEl.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
-                }
-            }, 100);
-        }
-    }, [isOpen, selectedClassId]);
-
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="max-w-lg w-[95vw] max-h-[80vh] flex flex-col p-0">
                 <DialogHeader className="p-6 pb-2">
@@ -295,59 +254,10 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
                         Aquí tienes tu horario para toda la semana.
                     </DialogDescription>
                 </DialogHeader>
-                <Tabs defaultValue={defaultTab} className="w-full flex-1 flex flex-col min-h-0">
-                    <div className="px-6">
-                        <TabsList className="grid w-full grid-cols-5 h-auto">
-                            {Object.keys(scheduleData).map(day => (
-                                <TabsTrigger key={day} value={day} className="py-2 text-xs sm:text-sm">{dayAbbreviations[day] || day}</TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </div>
-                    <div className="flex-1 overflow-y-auto">
-                        <div className="px-6 py-4">
-                            {Object.entries(scheduleData).map(([day, entries]) => (
-                                <TabsContent key={day} value={day} className="mt-0">
-                                    <Accordion type="single" collapsible defaultValue={`item-${selectedClassId}`}>
-                                        {entries.map(entry => {
-                                            const isSelected = entry.id === selectedClassId;
-                                            return (
-                                                <div key={entry.id} ref={(node) => itemRefs.current.set(`item-${entry.id}`, node)}>
-                                                    <AccordionItem 
-                                                        value={`item-${entry.id}`} 
-                                                        className={cn(isSelected && 'border-primary rounded-lg bg-primary/10')}
-                                                    >
-                                                        <AccordionTrigger className="hover:no-underline px-4">
-                                                            <div className="flex-1 text-left">
-                                                                <p className="font-bold">{entry.subject}</p>
-                                                                <p className="text-sm text-muted-foreground">{entry.time}</p>
-                                                            </div>
-                                                        </AccordionTrigger>
-                                                        <AccordionContent className="space-y-2 px-4">
-                                                            <div className="flex items-center gap-2 text-sm">
-                                                                <User className="h-4 w-4 text-muted-foreground" />
-                                                                <span>{entry.teacher}</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 text-sm">
-                                                                <Building className="h-4 w-4 text-muted-foreground" />
-                                                                <span>{entry.room}</span>
-                                                            </div>
-                                                            {entry.details && (
-                                                                <div className="flex items-start gap-2 text-sm pt-2">
-                                                                    <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                                                    <p className="italic">{entry.details}</p>
-                                                                </div>
-                                                            )}
-                                                        </AccordionContent>
-                                                    </AccordionItem>
-                                                </div>
-                                            )
-                                        })}
-                                    </Accordion>
-                                </TabsContent>
-                            ))}
-                        </div>
-                    </div>
-                </Tabs>
+                 <FullScheduleView 
+                    scheduleData={scheduleData} 
+                    selectedClassId={selectedClassId}
+                 />
             </DialogContent>
         </Dialog>
     );

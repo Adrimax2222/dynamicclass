@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -18,7 +19,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
-  CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
@@ -66,6 +66,8 @@ import { SCHOOL_NAME } from "@/lib/constants";
 import { Logo } from "@/components/icons";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+import { fullSchedule } from "@/lib/data";
+import { FullScheduleView } from "@/components/layout/full-schedule-view";
 
 export default function InfoPage() {
   return (
@@ -340,26 +342,53 @@ function AnnouncementItem({ announcement, isAuthor, onUpdate, onDelete }: { anno
 }
 
 function MyClassesTab() {
+  const { user } = useApp();
+
+  if (!user) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Mis Clases</CardTitle>
+                <CardDescription>Cargando tu horario...</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Loader2 className="mx-auto my-8 h-8 w-8 animate-spin text-primary" />
+            </CardContent>
+        </Card>
+    );
+  }
+
+  const courseMap: Record<string, string> = {
+    "1eso": "1º ESO",
+    "2eso": "2º ESO",
+    "3eso": "3º ESO",
+    "4eso": "4º ESO",
+    "1bach": "1º Bachillerato",
+    "2bach": "2º Bachillerato",
+  };
+
+  const formattedCourse = courseMap[user.course] || user.course;
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Mis Clases</CardTitle>
-        <CardDescription>
-          Material de estudio, calificaciones y más. Esta sección está en construcción.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
-          <Logo className="h-12 w-12 text-muted-foreground/50 mb-4" />
-          <p className="font-semibold">Próximamente</p>
-          <p className="text-sm text-muted-foreground">
-            Aquí encontrarás todo lo relacionado con tus asignaturas.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+                 <CardTitle>Mi Horario de Clases</CardTitle>
+                 <CardDescription>
+                    Aquí tienes tu horario para toda la semana.
+                </CardDescription>
+            </div>
+            <Badge variant="default" className="text-sm px-3 py-1 w-fit">{formattedCourse} - {user.className}</Badge>
         </div>
+      </CardHeader>
+      <CardContent className="p-0 sm:p-2">
+        <FullScheduleView scheduleData={fullSchedule} />
       </CardContent>
     </Card>
   );
 }
+
 
 function NotesTab() {
   const { user } = useApp();
