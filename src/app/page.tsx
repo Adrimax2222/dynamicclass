@@ -216,17 +216,23 @@ export default function AuthPage() {
         values.password
       );
 
-      if (!userCredential.user.emailVerified) {
+      // Reload the user to get the latest emailVerified status
+      await userCredential.user.reload();
+      const freshUser = auth.currentUser;
+
+      if (freshUser && !freshUser.emailVerified) {
         toast({
           title: "Verificación Requerida",
           description: "Por favor, verifica tu correo electrónico para iniciar sesión. Revisa tu bandeja de entrada.",
           variant: "destructive",
         });
-        await auth.signOut();
+        // Sign out to prevent inconsistent states
+        await signOut(auth);
         setIsLoading(false);
         return;
       }
       // Let onAuthStateChanged handle the redirect if email is verified
+      // If the app doesn't redirect, it means the listener in AppProvider is working.
     } catch (error: any) {
       console.error("Login Error:", error);
       let errorMessage = "No se pudo iniciar sesión. Por favor, intenta de nuevo.";

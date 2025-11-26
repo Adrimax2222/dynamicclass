@@ -37,7 +37,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   // While user or firebaseUser is being determined, show a loader.
   // This covers the initial load time for auth state and Firestore doc fetch.
-  if (!firebaseUser || !user) {
+  // The !user check is crucial because it waits for the Firestore data,
+  // which prevents premature redirects for newly registered (but not yet verified) users.
+  if (!user) {
     return <LoadingScreen />;
   }
 
