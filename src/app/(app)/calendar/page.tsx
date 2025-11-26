@@ -93,7 +93,7 @@ export default function CalendarPage() {
       <header className="mb-8 flex flex-col items-start gap-4">
         <div>
             <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-                Dynamic Calendar
+                Calendario Dinámico
             </h1>
             <p className="text-muted-foreground">Gestiona tus tareas y eventos.</p>
         </div>

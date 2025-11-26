@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/firebase";
@@ -23,11 +23,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SettingsPage() {
-  const { theme, setTheme, logout: contextLogout } = useApp();
+  const { theme, setTheme, logout: contextLogout, deleteAccount } = useApp();
   const router = useRouter();
   const auth = useAuth();
+  const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLogout = async () => {
     if (auth) {
@@ -35,6 +39,27 @@ export default function SettingsPage() {
     }
     contextLogout(); // This clears the user from React context and localStorage
     router.push("/");
+  };
+  
+  const handleDeleteAccount = async () => {
+      setIsDeleting(true);
+      try {
+        await deleteAccount();
+        toast({
+            title: "Cuenta eliminada",
+            description: "Tu cuenta y todos tus datos han sido eliminados.",
+        });
+        router.push("/");
+      } catch (error: any) {
+        console.error("Error deleting account:", error);
+        toast({
+            title: "Error al eliminar la cuenta",
+            description: error.message || "No se pudo eliminar tu cuenta. Por favor, intenta cerrar sesión y volver a iniciarla.",
+            variant: "destructive",
+        });
+      } finally {
+        setIsDeleting(false);
+      }
   };
 
   return (
@@ -121,37 +146,71 @@ export default function SettingsPage() {
             </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Cuenta</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="w-full">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Cerrar Sesión
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <div className="mx-auto mb-2">
-                    <Logo className="h-14 w-14 text-primary" />
-                  </div>
-                  <AlertDialogTitle className="text-center">¿Estás seguro?</AlertDialogTitle>
-                  <AlertDialogDescription className="text-center">
-                    Esta acción cerrará tu sesión actual en este dispositivo.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter className="sm:justify-center">
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
-                    Cerrar Sesión
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </CardContent>
+        <Card className="border-destructive/50">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert />Zona Peligrosa</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 <div className="flex items-start justify-between rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                    <div>
+                        <h3 className="font-bold">Cerrar Sesión</h3>
+                        <p className="text-sm text-muted-foreground">Cierra tu sesión en este dispositivo.</p>
+                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline">
+                          <LogOut className="mr-2 h-4 w-4" />
+                          Cerrar Sesión
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <div className="mx-auto mb-2">
+                            <Logo className="h-14 w-14 text-primary" />
+                          </div>
+                          <AlertDialogTitle className="text-center">¿Estás seguro?</AlertDialogTitle>
+                          <AlertDialogDescription className="text-center">
+                            Esta acción cerrará tu sesión actual en este dispositivo.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="sm:justify-center">
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleLogout} className="bg-primary hover:bg-primary/90">
+                            Confirmar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+                 <div className="flex items-start justify-between rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                    <div>
+                        <h3 className="font-bold">Eliminar Cuenta</h3>
+                        <p className="text-sm text-muted-foreground">Esta acción es permanente e irreversible.</p>
+                    </div>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                             <Button variant="destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta acción no se puede deshacer. Esto eliminará permanentemente tu cuenta y todos tus datos asociados de nuestros servidores.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteAccount} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                    {isDeleting ? 'Eliminando...' : 'Sí, eliminar mi cuenta'}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            </CardContent>
         </Card>
       </div>
 

@@ -3,8 +3,8 @@
 import { createContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { User } from '@/lib/types';
 import { useAuth, useFirestore } from '@/firebase';
-import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { onAuthStateChanged, type User as FirebaseUser, deleteUser } from 'firebase/auth';
+import { doc, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
 
 export type Theme = 'light' | 'dark';
 
@@ -14,6 +14,7 @@ export interface AppContextType {
   login: (userData: User) => void;
   logout: () => void;
   updateUser: (updatedData: Partial<User>) => void;
+  deleteAccount: () => Promise<void>;
   theme: Theme;
   setTheme: (theme: Theme) => void;
   isChatBubbleVisible: boolean;
@@ -50,19 +51,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setFirebaseUser(fbUser);
         const userDocRef = doc(firestore, 'users', fbUser.uid);
         
-        // Use onSnapshot to listen for real-time updates from Firestore.
-        // This is the single source of truth for user data.
         const unsubSnapshot = onSnapshot(userDocRef, async (docSnap) => {
           if (docSnap.exists()) {
             let userData = { uid: docSnap.id, ...docSnap.data() } as User;
-            // Check if the logged-in user is an admin and override role if necessary
             if (fbUser.email && ADMIN_EMAILS.includes(fbUser.email)) {
                 userData.role = 'admin';
             }
             setUser(userData);
           } else {
-            // User is authenticated but doesn't have a Firestore document.
-            // This can happen if registration was interrupted. Let's create it.
             console.warn("User document not found for authenticated user. Creating one now.");
             
             const isAdmin = fbUser.email && ADMIN_EMAILS.includes(fbUser.email);
@@ -86,7 +82,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             };
             try {
                 await setDoc(userDocRef, newUser);
-                // No need to call setUser here, onSnapshot will trigger again with the new data.
             } catch (error) {
                 console.error("Failed to create fallback user document:", error);
                 auth.signOut();
@@ -94,16 +89,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
         });
         
-        return () => unsubSnapshot(); // Cleanup snapshot listener
+        return () => unsubSnapshot();
 
       } else {
-        // User logged out
         setFirebaseUser(null);
         setUser(null);
       }
     });
 
-    return () => unsubscribe(); // Cleanup auth state listener
+    return () => unsubscribe();
   }, [auth, firestore]);
 
   const setTheme = useCallback((newTheme: Theme) => {
@@ -113,8 +107,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.add(newTheme);
   }, []);
 
-  // These functions can be simplified or removed if all updates happen via Firestore.
-  // Kept for potential other uses, but our main flow is now Firestore-driven.
   const login = (userData: User) => {
     setUser(userData);
   };
@@ -131,9 +123,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (auth) {
       auth.signOut();
     }
-    // No need to clear localStorage, as we are no longer using it for user data.
     setUser(null);
     setFirebaseUser(null);
+  };
+
+  const deleteAccount = async () => {
+    if (!auth || !auth.currentUser || !firestore) {
+        throw new Error("La autenticación no está lista. Inténtalo de nuevo.");
+    }
+
+    const currentUser = auth.currentUser;
+    
+    // 1. Delete Firestore document
+    const userDocRef = doc(firestore, 'users', currentUser.uid);
+    await deleteDoc(userDocRef);
+
+    // 2. Delete Firebase Auth user
+    // This is the sensitive part and might require recent re-authentication.
+    await deleteUser(currentUser);
+    
+    // The onAuthStateChanged listener will handle setting user state to null.
   };
 
   const toggleChatBubble = () => {
@@ -146,6 +155,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     updateUser,
+    deleteAccount,
     theme,
     setTheme,
     isChatBubbleVisible,
@@ -156,5 +166,3 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
-
-    
