@@ -1,5 +1,7 @@
+
 "use client";
 
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -8,6 +10,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { upcomingClasses } from "@/lib/data";
 import type { SummaryCardData, UpcomingClass } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -17,9 +27,13 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
 import { Button } from "@/components/ui/button";
 import { SCHOOL_NAME } from "@/lib/constants";
+import { Logo } from "@/components/icons";
+
+type Category = "Tareas" | "Exámenes" | "Pendientes" | "Actividades";
 
 export default function HomePage() {
   const { user } = useApp();
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
   if (!user) {
     return null; // Or a loading spinner
@@ -79,7 +93,19 @@ export default function HomePage() {
 
       <div className="mb-10 grid grid-cols-2 gap-4">
         {summaryCards.map((card) => (
-          <SummaryCard key={card.title} {...card} />
+          <DetailsDialog key={card.title} title={card.title}>
+            <DialogTrigger asChild>
+                <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+                        <card.icon className={cn("h-5 w-5 text-muted-foreground", card.color)} />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{card.value}</div>
+                    </CardContent>
+                </Card>
+            </DialogTrigger>
+          </DetailsDialog>
         ))}
       </div>
 
@@ -117,20 +143,6 @@ export default function HomePage() {
   );
 }
 
-function SummaryCard({ title, value, icon: Icon, color }: SummaryCardData) {
-  return (
-    <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className={cn("h-5 w-5 text-muted-foreground", color)} />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function UpcomingClassCard(item: UpcomingClass) {
     return (
         <Card className="overflow-hidden transition-all hover:shadow-md">
@@ -153,5 +165,28 @@ function UpcomingClassCard(item: UpcomingClass) {
                 </CardContent>
             </Link>
         </Card>
+    )
+}
+
+function DetailsDialog({ title, children }: { title: string, children: React.ReactNode }) {
+    return (
+        <Dialog>
+            {children}
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{title}</DialogTitle>
+                    <DialogDescription>
+                        Aquí verás el listado de tus {title.toLowerCase()}.
+                    </DialogDescription>
+                </DialogHeader>
+                 <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg my-4">
+                    <Logo className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                    <p className="font-semibold">Próximamente</p>
+                    <p className="text-sm text-muted-foreground">
+                       Esta sección está en construcción.
+                    </p>
+                </div>
+            </DialogContent>
+        </Dialog>
     )
 }
