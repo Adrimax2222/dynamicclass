@@ -98,17 +98,15 @@ export default function HomePage() {
       <div className="mb-10 grid grid-cols-2 gap-4">
         {summaryCards.map((card) => (
           <DetailsDialog key={card.title} title={card.title}>
-            <DialogTrigger asChild>
-                <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-                        <card.icon className={cn("h-5 w-5 text-muted-foreground", card.color)} />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{card.value}</div>
-                    </CardContent>
-                </Card>
-            </DialogTrigger>
+            <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+                    <card.icon className={cn("h-5 w-5 text-muted-foreground", card.color)} />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{card.value}</div>
+                </CardContent>
+            </Card>
           </DetailsDialog>
         ))}
       </div>
@@ -117,29 +115,33 @@ export default function HomePage() {
         <h3 className="text-xl font-semibold font-headline mb-4">Próximas Clases</h3>
         <div className="space-y-4">
           {upcomingClasses.map((item) => (
-             <ScheduleDialog key={item.id} scheduleData={fullSchedule} selectedClassId={item.id}>
-                <DialogTrigger asChild>
-                    <Card className="overflow-hidden transition-all hover:shadow-md cursor-pointer">
-                         <div className="block hover:bg-muted/50">
-                            <CardContent className="p-4">
-                                <div className="flex flex-col gap-2">
-                                    <div className="flex items-start justify-between">
-                                        <h4 className="font-semibold">{item.subject}</h4>
-                                        {item.grade && <Badge variant="secondary">{item.grade}</Badge>}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground space-y-1">
-                                        <p>{item.teacher}</p>
-                                        <p>{item.time}</p>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-2">
-                                       <p className="text-sm italic text-muted-foreground line-clamp-2">{item.notes}</p>
-                                       <ArrowRight className="h-5 w-5 text-primary shrink-0 ml-4" />
-                                    </div>
+             <ScheduleDialog 
+                key={item.id} 
+                scheduleData={fullSchedule} 
+                selectedClassId={item.id}
+                userCourse={user.course}
+                userClassName={user.className}
+             >
+                <Card className="overflow-hidden transition-all hover:shadow-md cursor-pointer">
+                     <div className="block hover:bg-muted/50">
+                        <CardContent className="p-4">
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-start justify-between">
+                                    <h4 className="font-semibold">{item.subject}</h4>
+                                    {item.grade && <Badge variant="secondary">{item.grade}</Badge>}
                                 </div>
-                            </CardContent>
-                        </div>
-                    </Card>
-                </DialogTrigger>
+                                <div className="text-sm text-muted-foreground space-y-1">
+                                    <p>{item.teacher}</p>
+                                    <p>{item.time}</p>
+                                </div>
+                                <div className="flex items-center justify-between mt-2">
+                                   <p className="text-sm italic text-muted-foreground line-clamp-2">{item.notes}</p>
+                                   <ArrowRight className="h-5 w-5 text-primary shrink-0 ml-4" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </div>
+                </Card>
              </ScheduleDialog>
           ))}
         </div>
@@ -173,7 +175,7 @@ export default function HomePage() {
 function DetailsDialog({ title, children }: { title: string, children: React.ReactNode }) {
     return (
         <Dialog>
-            {children}
+            <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
@@ -193,7 +195,7 @@ function DetailsDialog({ title, children }: { title: string, children: React.Rea
     )
 }
 
-function ScheduleDialog({ children, scheduleData, selectedClassId }: { children: React.ReactNode, scheduleData: Schedule, selectedClassId: string }) {
+function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, userClassName }: { children: React.ReactNode, scheduleData: Schedule, selectedClassId: string, userCourse: string, userClassName: string }) {
     const today = new Date().toLocaleString('es-ES', { weekday: 'long' });
     const capitalizedToday = today.charAt(0).toUpperCase() + today.slice(1);
     
@@ -208,12 +210,26 @@ function ScheduleDialog({ children, scheduleData, selectedClassId }: { children:
     }
     const defaultTab = findDefaultTab();
 
+    const courseMap: Record<string, string> = {
+        "1eso": "1º ESO",
+        "2eso": "2º ESO",
+        "3eso": "3º ESO",
+        "4eso": "4º ESO",
+        "1bach": "1º Bachillerato",
+        "2bach": "2º Bachillerato",
+    };
+
+    const formattedCourse = courseMap[userCourse] || userCourse;
+
     return (
         <Dialog>
-            {children}
+            <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="max-w-lg w-[95vw] max-h-[80vh] flex flex-col p-0">
                 <DialogHeader className="p-6 pb-2">
-                    <DialogTitle className="text-xl">Horario de Clases</DialogTitle>
+                    <div className="flex items-center gap-2">
+                        <DialogTitle className="text-xl">Horario de Clases</DialogTitle>
+                        <Badge variant="secondary">{formattedCourse} - {userClassName}</Badge>
+                    </div>
                     <DialogDescription>
                         Aquí tienes tu horario para toda la semana.
                     </DialogDescription>
