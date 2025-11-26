@@ -232,8 +232,9 @@ export default function AuthPage() {
         setIsLoading(false);
         return;
       }
-      // Let onAuthStateChanged handle the redirect if email is verified
-      // If the app doesn't redirect, it means the listener in AppProvider is working.
+      
+      router.push('/home');
+
     } catch (error: any) {
       console.error("Login Error:", error);
       let errorMessage = "No se pudo iniciar sesión. Por favor, intenta de nuevo.";
@@ -286,8 +287,8 @@ export default function AuthPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-start sm:justify-center bg-muted/20 p-4">
-      <Card className="w-full max-w-md shadow-2xl my-8">
+    <main className="flex min-h-screen flex-col items-center justify-start bg-muted/20 p-4 sm:justify-center">
+      <Card className="my-8 w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
             <div className="mx-auto mb-2 flex items-center justify-center gap-3">
                 <Logo className="h-10 w-10 text-primary" />
