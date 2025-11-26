@@ -34,6 +34,25 @@ export type UpcomingClass = {
   grade?: string;
 };
 
+export type ScheduleEntry = {
+  id: string;
+  subject: string;
+  time: string;
+  teacher: string;
+  room: string;
+  details?: string;
+  notes?: string; // from UpcomingClass
+};
+
+export type Schedule = {
+  Lunes: ScheduleEntry[];
+  Martes: ScheduleEntry[];
+  Miércoles: ScheduleEntry[];
+  Jueves: ScheduleEntry[];
+  Viernes: ScheduleEntry[];
+};
+
+
 export type CalendarEvent = {
   id: string;
   title: string;

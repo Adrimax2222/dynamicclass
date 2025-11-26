@@ -18,16 +18,20 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { upcomingClasses } from "@/lib/data";
-import type { SummaryCardData, UpcomingClass } from "@/lib/types";
+import { upcomingClasses, fullSchedule } from "@/lib/data";
+import type { SummaryCardData, UpcomingClass, Schedule, ScheduleEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy, BookOpen, Building, User, Info } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
 import { Button } from "@/components/ui/button";
 import { SCHOOL_NAME } from "@/lib/constants";
 import { Logo } from "@/components/icons";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Actividades";
 
@@ -113,7 +117,30 @@ export default function HomePage() {
         <h3 className="text-xl font-semibold font-headline mb-4">Próximas Clases</h3>
         <div className="space-y-4">
           {upcomingClasses.map((item) => (
-            <UpcomingClassCard key={item.id} {...item} />
+             <ScheduleDialog key={item.id} scheduleData={fullSchedule} selectedClassId={item.id}>
+                <DialogTrigger asChild>
+                    <Card className="overflow-hidden transition-all hover:shadow-md cursor-pointer">
+                         <div className="block hover:bg-muted/50">
+                            <CardContent className="p-4">
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-start justify-between">
+                                        <h4 className="font-semibold">{item.subject}</h4>
+                                        {item.grade && <Badge variant="secondary">{item.grade}</Badge>}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground space-y-1">
+                                        <p>{item.teacher}</p>
+                                        <p>{item.time}</p>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2">
+                                       <p className="text-sm italic text-muted-foreground line-clamp-2">{item.notes}</p>
+                                       <ArrowRight className="h-5 w-5 text-primary shrink-0 ml-4" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </div>
+                    </Card>
+                </DialogTrigger>
+             </ScheduleDialog>
           ))}
         </div>
       </section>
@@ -143,31 +170,6 @@ export default function HomePage() {
   );
 }
 
-function UpcomingClassCard(item: UpcomingClass) {
-    return (
-        <Card className="overflow-hidden transition-all hover:shadow-md">
-            <Link href="#" className="block hover:bg-muted/50">
-                <CardContent className="p-4">
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-start justify-between">
-                            <h4 className="font-semibold">{item.subject}</h4>
-                            {item.grade && <Badge variant="secondary">{item.grade}</Badge>}
-                        </div>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                            <p>{item.teacher}</p>
-                            <p>{item.time}</p>
-                        </div>
-                        <div className="flex items-center justify-between mt-2">
-                           <p className="text-sm italic text-muted-foreground line-clamp-2">{item.notes}</p>
-                           <ArrowRight className="h-5 w-5 text-primary shrink-0 ml-4" />
-                        </div>
-                    </div>
-                </CardContent>
-            </Link>
-        </Card>
-    )
-}
-
 function DetailsDialog({ title, children }: { title: string, children: React.ReactNode }) {
     return (
         <Dialog>
@@ -189,4 +191,77 @@ function DetailsDialog({ title, children }: { title: string, children: React.Rea
             </DialogContent>
         </Dialog>
     )
+}
+
+function ScheduleDialog({ children, scheduleData, selectedClassId }: { children: React.ReactNode, scheduleData: Schedule, selectedClassId: string }) {
+    const today = new Date().toLocaleString('es-ES', { weekday: 'long' });
+    const capitalizedToday = today.charAt(0).toUpperCase() + today.slice(1);
+    
+    // Find which day the selected class is on to set the default tab
+    const findDefaultTab = () => {
+        for (const day in scheduleData) {
+            if (scheduleData[day as keyof Schedule].some(entry => entry.id === selectedClassId)) {
+                return day;
+            }
+        }
+        return capitalizedToday; // Fallback to today
+    }
+    const defaultTab = findDefaultTab();
+
+    return (
+        <Dialog>
+            {children}
+            <DialogContent className="max-w-lg w-[95vw] max-h-[80vh] flex flex-col p-0">
+                <DialogHeader className="p-6 pb-2">
+                    <DialogTitle className="text-xl">Horario de Clases</DialogTitle>
+                    <DialogDescription>
+                        Aquí tienes tu horario para toda la semana.
+                    </DialogDescription>
+                </DialogHeader>
+                <Tabs defaultValue={defaultTab} className="w-full flex-1 flex flex-col min-h-0">
+                    <div className="px-6">
+                        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 h-auto">
+                            {Object.keys(scheduleData).map(day => (
+                                <TabsTrigger key={day} value={day} className="py-2 text-xs sm:text-sm">{day}</TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </div>
+                    <ScrollArea className="flex-1 px-6 py-4">
+                        {Object.entries(scheduleData).map(([day, entries]) => (
+                            <TabsContent key={day} value={day}>
+                                <Accordion type="single" collapsible defaultValue={`item-${selectedClassId}`}>
+                                    {entries.map(entry => (
+                                        <AccordionItem key={entry.id} value={`item-${entry.id}`} className={cn(entry.id === selectedClassId && 'border-primary')}>
+                                            <AccordionTrigger className="hover:no-underline">
+                                                <div className="flex-1 text-left">
+                                                    <p className="font-bold">{entry.subject}</p>
+                                                    <p className="text-sm text-muted-foreground">{entry.time}</p>
+                                                </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent className="space-y-2">
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <User className="h-4 w-4 text-muted-foreground" />
+                                                    <span>{entry.teacher}</span>
+                                                </div>
+                                                 <div className="flex items-center gap-2 text-sm">
+                                                    <Building className="h-4 w-4 text-muted-foreground" />
+                                                    <span>{entry.room}</span>
+                                                </div>
+                                                {entry.details && (
+                                                    <div className="flex items-start gap-2 text-sm pt-2">
+                                                        <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                                        <p className="italic">{entry.details}</p>
+                                                    </div>
+                                                )}
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    ))}
+                                </Accordion>
+                            </TabsContent>
+                        ))}
+                    </ScrollArea>
+                </Tabs>
+            </DialogContent>
+        </Dialog>
+    );
 }
