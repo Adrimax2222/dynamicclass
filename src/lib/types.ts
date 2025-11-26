@@ -16,6 +16,7 @@ export type User = {
   pending: number;
   activities: number;
   organizationId?: string; // e.g., 'ies-torre-del-palau'
+  isNewUser?: boolean;
 };
 
 export type SummaryCardData = {

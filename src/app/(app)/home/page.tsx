@@ -15,7 +15,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
 import { upcomingClasses, fullSchedule } from "@/lib/data";
@@ -30,13 +29,41 @@ import { SCHOOL_NAME } from "@/lib/constants";
 import { Logo } from "@/components/icons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import WelcomeModal from "@/components/layout/welcome-modal";
+import { doc, updateDoc } from "firebase/firestore";
+import { useFirestore } from "@/firebase";
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Actividades";
 
 export default function HomePage() {
-  const { user } = useApp();
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const { user, updateUser } = useApp();
+  const firestore = useFirestore();
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(user?.isNewUser || false);
 
+  useEffect(() => {
+    // Only show the modal if the user is new
+    if (user?.isNewUser) {
+      setIsWelcomeModalOpen(true);
+    }
+  }, [user]);
+
+  const handleCloseWelcomeModal = async () => {
+    if (user && firestore) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        try {
+            await updateDoc(userDocRef, { isNewUser: false });
+            updateUser({ isNewUser: false }); // Update local context
+            setIsWelcomeModalOpen(false);
+        } catch (error) {
+            console.error("Failed to update isNewUser flag:", error);
+            // Even if the update fails, close the modal for a better user experience
+            setIsWelcomeModalOpen(false);
+        }
+    } else {
+        setIsWelcomeModalOpen(false);
+    }
+  };
+  
   if (!user) {
     return null; // Or a loading spinner
   }
@@ -61,6 +88,9 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
+      
+      {isWelcomeModalOpen && <WelcomeModal onClose={handleCloseWelcomeModal} />}
+
       <header className="mb-8 flex items-center justify-between">
         <div>
             <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">

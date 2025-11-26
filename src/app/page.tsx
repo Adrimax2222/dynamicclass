@@ -109,7 +109,7 @@ export default function AuthPage() {
       classCode: "",
     },
   });
-
+  
   const loginForm = useForm<LoginSchemaType>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -168,9 +168,11 @@ export default function AuthPage() {
           exams: 0,
           pending: 0,
           activities: 0,
+          isNewUser: true,
       };
 
       await setDoc(doc(firestore, 'users', firebaseUser.uid), newUser);
+      // Let onAuthStateChanged handle the redirect
       
     } catch (error: any) {
       console.error("Registration Error:", error);
@@ -208,6 +210,7 @@ export default function AuthPage() {
         values.email,
         values.password
       );
+      // Let onAuthStateChanged handle the redirect
     } catch (error: any) {
       console.error("Login Error:", error);
       let errorMessage = "No se pudo iniciar sesión. Por favor, intenta de nuevo.";
@@ -278,9 +281,9 @@ export default function AuthPage() {
             {authMode === 'register' ? (
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                    <div className="relative">
+                    <div className="relative min-h-[350px]">
                       {steps.map((step, index) => (
-                        <div key={step.id} className={cn("w-full", getAnimationClass(index))}>
+                        <div key={step.id} className={cn("w-full absolute", getAnimationClass(index))}>
                           {index === 0 && (
                             <div className="space-y-6">
                                 <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Nombre Completo</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -356,7 +359,9 @@ export default function AuthPage() {
                     <div className="pt-2">
                         <Progress value={progress} className="h-2 mb-4" />
                         <div className="flex items-center gap-4">
-                            <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isLoading} className={cn(isFirstStep && 'invisible', 'transition-opacity')}><ArrowLeft className="mr-2 h-4 w-4" /> Atrás</Button>
+                             <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isLoading} className={cn(isFirstStep && 'invisible')}>
+                                <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
+                            </Button>
                             <Button 
                                 type={isLastStep ? 'submit' : 'button'}
                                 onClick={!isLastStep ? goToNextStep : undefined} 
@@ -428,5 +433,3 @@ export default function AuthPage() {
     </main>
   );
 }
-
-    

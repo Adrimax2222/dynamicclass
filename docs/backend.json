@@ -19,9 +19,10 @@
         "exams": { "type": "number" },
         "pending": { "type": "number" },
         "activities": { "type": "number" },
-        "organizationId": { "type": "string" }
+        "organizationId": { "type": "string" },
+        "isNewUser": { "type": "boolean" }
       },
-      "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange"]
+      "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange", "isNewUser"]
     },
     "Note": {
       "title": "Note",
