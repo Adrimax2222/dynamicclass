@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2 } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/firebase";
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 export default function SettingsPage() {
   const { theme, setTheme, logout: contextLogout, deleteAccount } = useApp();
@@ -94,6 +95,24 @@ export default function SettingsPage() {
               />
             </div>
           </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Languages className="h-5 w-5" />
+                    Idioma
+                    <Badge variant="outline">Beta</Badge>
+                </CardTitle>
+                <CardDescription>
+                    Selecciona el idioma de la aplicación.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <div className="text-sm text-muted-foreground p-4 text-center border-2 border-dashed rounded-lg">
+                    Esta función estará disponible próximamente.
+                </div>
+            </CardContent>
         </Card>
 
         <Card>
