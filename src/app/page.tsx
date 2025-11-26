@@ -281,7 +281,7 @@ export default function AuthPage() {
             {authMode === 'register' ? (
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                    <div className="relative min-h-[350px]">
+                    <div className="relative min-h-[450px]">
                       {steps.map((step, index) => (
                         <div key={step.id} className={cn("w-full absolute", getAnimationClass(index))}>
                           {index === 0 && (
@@ -356,7 +356,7 @@ export default function AuthPage() {
                       ))}
                     </div>
                     
-                    <div className="pt-2">
+                    <div className="pt-2 mt-4">
                         <Progress value={progress} className="h-2 mb-4" />
                         <div className="flex items-center gap-4">
                              <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isLoading} className={cn(isFirstStep && 'invisible')}>
