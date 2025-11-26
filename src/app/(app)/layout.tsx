@@ -4,7 +4,7 @@ import { useApp } from "@/lib/hooks/use-app";
 import BottomNav from "@/components/layout/bottom-nav";
 import ChatBubble from "@/components/chatbot/chat-bubble";
 import ChatDrawer from "@/components/chatbot/chat-drawer";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import LoadingScreen from "@/components/layout/loading-screen";
 
@@ -12,6 +12,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, theme, firebaseUser } = useApp();
   const router = useRouter();
   const pathname = usePathname();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   
   // Handles theme changes
   useEffect(() => {
@@ -21,25 +22,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   // Auth status check
   useEffect(() => {
-    // If firebaseUser is null after auth state has been checked, redirect to login
-    // but give it a moment in case it's just initializing
-    const timer = setTimeout(() => {
-        if (firebaseUser === null) {
-            if (pathname !== '/') {
-                router.replace("/");
-            }
-        }
-    }, 200); // 200ms delay to prevent flash on initial load
+    // firebaseUser being undefined means auth state is still being checked.
+    // We wait until it's either a user object or null.
+    if (firebaseUser !== undefined) {
+      if (firebaseUser === null) {
+        // Not logged in, redirect to login page.
+        router.replace("/");
+      } else if (!firebaseUser.emailVerified) {
+        // Logged in but not verified, show error and kick out.
+        // This is a safeguard, main logic is on login page.
+        alert("Tu correo no está verificado. Por favor, revisa tu email o regístrate de nuevo.");
+        router.replace("/");
+      } else {
+        // User is logged in and verified.
+        setIsCheckingAuth(false);
+      }
+    }
+  }, [firebaseUser, router]);
 
-    return () => clearTimeout(timer);
-
-  }, [firebaseUser, pathname, router]);
-  
-  // While user or firebaseUser is being determined, show a loader.
-  // This covers the initial load time for auth state and Firestore doc fetch.
-  // The !user check is crucial because it waits for the Firestore data,
-  // which prevents premature redirects for newly registered (but not yet verified) users.
-  if (!user || !firebaseUser?.emailVerified) {
+  // While auth state is being checked, or we're waiting for the Firestore user data, show loader.
+  if (isCheckingAuth || !user) {
     return <LoadingScreen />;
   }
 

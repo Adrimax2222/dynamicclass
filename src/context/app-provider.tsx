@@ -10,7 +10,7 @@ export type Theme = 'light' | 'dark';
 
 export interface AppContextType {
   user: User | null;
-  firebaseUser: FirebaseUser | null;
+  firebaseUser: FirebaseUser | null | undefined; // Now can be undefined during initial check
   login: (userData: User) => void;
   logout: () => void;
   updateUser: (updatedData: Partial<User>) => void;
@@ -29,7 +29,7 @@ export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null | undefined>(undefined); // Start as undefined
   const [theme, setThemeState] = useState<Theme>('light');
   const [isChatBubbleVisible, setIsChatBubbleVisible] = useState(true);
   const [isChatDrawerOpen, setChatDrawerOpen] = useState(false);
@@ -47,8 +47,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!auth || !firestore) return;
 
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      if (fbUser) {
-        setFirebaseUser(fbUser);
+      setFirebaseUser(fbUser); // This will now be null if not logged in, or a user object
+      if (fbUser && fbUser.emailVerified) {
         const userDocRef = doc(firestore, 'users', fbUser.uid);
         
         const unsubSnapshot = onSnapshot(userDocRef, async (docSnap) => {
@@ -59,41 +59,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
             setUser(userData);
           } else {
-            console.warn("User document not found for authenticated user. Creating one now.");
-            
-            const isAdmin = fbUser.email && ADMIN_EMAILS.includes(fbUser.email);
-            const firstInitial = fbUser.displayName?.charAt(0).toUpperCase() || 'A';
-            const defaultAvatarUrl = `https://placehold.co/100x100/A78BFA/FFFFFF?text=${firstInitial}`;
-
-            const newUser: Omit<User, 'uid'> = {
-                name: fbUser.displayName || 'Usuario Anónimo',
-                email: fbUser.email || 'no-email@example.com',
-                avatar: fbUser.photoURL || defaultAvatarUrl,
-                center: 'Centro no especificado',
-                ageRange: 'No especificado',
-                course: 'No especificado',
-                className: 'A',
-                role: isAdmin ? 'admin' : 'student',
-                trophies: 0,
-                tasks: 0,
-                exams: 0,
-                pending: 0,
-                activities: 0,
-                isNewUser: true,
-            };
-            try {
-                await setDoc(userDocRef, newUser);
-            } catch (error) {
-                console.error("Failed to create fallback user document:", error);
-                auth.signOut();
-            }
+            console.warn("User document not found for authenticated user. This can happen if doc creation is pending.");
+            // Don't auto-create here to avoid race conditions with registration
           }
         });
         
         return () => unsubSnapshot();
 
       } else {
-        setFirebaseUser(null);
+        // User is not logged in or not verified
         setUser(null);
       }
     });
@@ -140,7 +114,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await deleteDoc(userDocRef);
 
     // 2. Delete Firebase Auth user
-    // This is the sensitive part and might require recent re-authentication.
     await deleteUser(currentUser);
     
     // The onAuthStateChanged listener will handle setting user state to null.
