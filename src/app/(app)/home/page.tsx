@@ -206,7 +206,9 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
                 return day;
             }
         }
-        return capitalizedToday; // Fallback to today
+        // Fallback to today, but make sure today is a valid key.
+        const validDays = Object.keys(scheduleData);
+        return validDays.includes(capitalizedToday) ? capitalizedToday : validDays[0];
     }
     const defaultTab = findDefaultTab();
 
@@ -244,7 +246,7 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
                     </div>
                     <ScrollArea className="flex-1 px-6 py-4">
                         {Object.entries(scheduleData).map(([day, entries]) => (
-                            <TabsContent key={day} value={day}>
+                            <TabsContent key={day} value={day} className="mt-0">
                                 <Accordion type="single" collapsible defaultValue={`item-${selectedClassId}`}>
                                     {entries.map(entry => (
                                         <AccordionItem key={entry.id} value={`item-${entry.id}`} className={cn(entry.id === selectedClassId && 'border-primary')}>
