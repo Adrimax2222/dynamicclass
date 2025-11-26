@@ -210,6 +210,8 @@ export default function AuthPage() {
       return;
     }
   
+    const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
+    
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
@@ -221,7 +223,9 @@ export default function AuthPage() {
       await userCredential.user.reload();
       const freshUser = auth.currentUser;
 
-      if (freshUser && !freshUser.emailVerified) {
+      const isAdmin = freshUser?.email && ADMIN_EMAILS.includes(freshUser.email);
+      
+      if (freshUser && !freshUser.emailVerified && !isAdmin) {
         toast({
           title: "Verificación Requerida",
           description: "Por favor, verifica tu correo electrónico para iniciar sesión. Revisa tu bandeja de entrada.",
@@ -233,7 +237,9 @@ export default function AuthPage() {
         return;
       }
       
-      router.push('/home');
+      // The onAuthStateChanged listener in AppProvider will handle the redirect
+      // by updating the user context, which triggers the useEffect in this component.
+      // No need to call router.push here.
 
     } catch (error: any) {
       console.error("Login Error:", error);
