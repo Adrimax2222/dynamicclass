@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { achievements } from "@/lib/data";
 import type { SummaryCardData } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Camera } from "lucide-react";
+import { Edit, Settings, Loader2, Camera, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,6 +36,7 @@ import { normalizeSchoolName } from "@/lib/school-utils";
 import { Badge } from "@/components/ui/badge";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 
 export default function ProfilePage() {
@@ -205,16 +206,16 @@ function EditProfileDialog() {
   const handleInitialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newInitial = e.target.value.charAt(0).toUpperCase();
     setInitial(newInitial);
-    setAvatarFile(null);
+    setAvatarFile(null); // Clear file when creating avatar
   };
 
   const handleColorChange = (color: string) => {
     setBgColor(color);
-    setAvatarFile(null);
+    setAvatarFile(null); // Clear file when creating avatar
   };
 
   useEffect(() => {
-    if (avatarFile) return;
+    if (avatarFile) return; // If a file is being previewed, don't generate a URL
     const newAvatarUrl = `https://placehold.co/100x100/${bgColor}/${'FFFFFF'}?text=${initial}`;
     setFinalAvatarUrl(newAvatarUrl);
   }, [initial, bgColor, avatarFile]);
@@ -222,30 +223,29 @@ function EditProfileDialog() {
   if (!user) return null;
   
   async function uploadAvatar(userId: string): Promise<string> {
-    const storage = getStorage();
-
     if (avatarFile) {
-        const filePath = `avatars/${userId}/${avatarFile.name}`;
+        const storage = getStorage();
+        const filePath = `avatars/${userId}/${Date.now()}_${avatarFile.name}`;
         const fileRef = storageRef(storage, filePath);
         await uploadBytes(fileRef, avatarFile);
-        return getDownloadURL(fileRef);
+        const downloadUrl = await getDownloadURL(fileRef);
+        return downloadUrl;
     }
-    
-    // If a new avatar was generated or an old one kept, finalAvatarUrl has it
+    // If no new file, return the current URL (either original or newly generated placehold.co)
     return finalAvatarUrl;
   }
 
   const handleSaveChanges = async () => {
-    if (!firestore) return;
+    if (!firestore || !user) return;
 
     setIsLoading(true);
 
     try {
         const uploadedAvatarUrl = await uploadAvatar(user.uid);
-
+        
         const normalizedCenter = normalizeSchoolName(center);
         
-        const updatedData: Partial<typeof user> = {
+        const updatedData = {
             name,
             center: normalizedCenter,
             ageRange,
@@ -328,6 +328,12 @@ function EditProfileDialog() {
                         </Button>
                          <p className="text-xs text-muted-foreground mt-2 text-center">Sube una imagen JPG, PNG o GIF.</p>
                     </TabsContent>
+                    <Alert variant="destructive" className="mt-4 text-xs">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                            Esta función es beta. La subida de archivos puede fallar. Si tienes problemas, intenta crear un avatar.
+                        </AlertDescription>
+                    </Alert>
                 </Tabs>
             </div>
             
@@ -417,3 +423,5 @@ function AchievementCard({ title, value, icon: Icon, color }: SummaryCardData) {
       </Card>
     );
   }
+
+    
