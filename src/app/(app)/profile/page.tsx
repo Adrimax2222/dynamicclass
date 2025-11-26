@@ -205,17 +205,19 @@ function EditProfileDialog() {
   const handleInitialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newInitial = e.target.value.charAt(0).toUpperCase();
     setInitial(newInitial);
-    const newAvatarUrl = `https://placehold.co/100x100/${bgColor}/FFFFFF?text=${newInitial}`;
-    setFinalAvatarUrl(newAvatarUrl);
     setAvatarFile(null);
   };
 
   const handleColorChange = (color: string) => {
     setBgColor(color);
-    const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${initial}`;
-    setFinalAvatarUrl(newAvatarUrl);
     setAvatarFile(null);
   };
+
+  useEffect(() => {
+    if (avatarFile) return;
+    const newAvatarUrl = `https://placehold.co/100x100/${bgColor}/${'FFFFFF'}?text=${initial}`;
+    setFinalAvatarUrl(newAvatarUrl);
+  }, [initial, bgColor, avatarFile]);
   
   if (!user) return null;
   
