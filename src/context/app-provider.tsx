@@ -11,6 +11,7 @@ export type Theme = 'light' | 'dark';
 export interface AppContextType {
   user: User | null;
   firebaseUser: FirebaseUser | null | undefined; // Now can be undefined during initial check
+  auth: ReturnType<typeof useAuth> | null;
   login: (userData: User) => void;
   logout: () => void;
   updateUser: (updatedData: Partial<User>) => void;
@@ -48,26 +49,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser); // This will now be null if not logged in, or a user object
-      if (fbUser && fbUser.emailVerified) {
-        const userDocRef = doc(firestore, 'users', fbUser.uid);
+      if (fbUser) { // User is logged in, now check verification OR if they are an admin
         
-        const unsubSnapshot = onSnapshot(userDocRef, async (docSnap) => {
-          if (docSnap.exists()) {
-            let userData = { uid: docSnap.id, ...docSnap.data() } as User;
-            if (fbUser.email && ADMIN_EMAILS.includes(fbUser.email)) {
-                userData.role = 'admin';
-            }
-            setUser(userData);
-          } else {
-            console.warn("User document not found for authenticated user. This can happen if doc creation is pending.");
-            // Don't auto-create here to avoid race conditions with registration
-          }
-        });
+        // Admins can bypass email verification
+        const isAdmin = fbUser.email && ADMIN_EMAILS.includes(fbUser.email);
         
-        return () => unsubSnapshot();
-
+        if (fbUser.emailVerified || isAdmin) {
+            const userDocRef = doc(firestore, 'users', fbUser.uid);
+            
+            const unsubSnapshot = onSnapshot(userDocRef, async (docSnap) => {
+              if (docSnap.exists()) {
+                let userData = { uid: docSnap.id, ...docSnap.data() } as User;
+                // Force role to admin if email matches, overriding Firestore data
+                if (isAdmin) {
+                    userData.role = 'admin';
+                }
+                setUser(userData);
+              } else {
+                console.warn("User document not found for authenticated user. This can happen if doc creation is pending.");
+                // This might happen if registration is not complete, logout to be safe
+                // auth.signOut();
+              }
+            });
+            
+            return () => unsubSnapshot();
+        }
       } else {
-        // User is not logged in or not verified
+        // User is not logged in
         setUser(null);
       }
     });
@@ -126,6 +134,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value: AppContextType = {
     user,
     firebaseUser,
+    auth,
     login,
     logout,
     updateUser,

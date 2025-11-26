@@ -76,8 +76,6 @@ const steps = [
     { id: 2, fields: ['center', 'ageRange', 'course', 'className', 'role'] },
 ];
 
-const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
-
 export default function AuthPage() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
@@ -223,9 +221,7 @@ export default function AuthPage() {
       await userCredential.user.reload();
       const freshUser = auth.currentUser;
 
-      const isAdmin = ADMIN_EMAILS.includes(values.email);
-
-      if (freshUser && !freshUser.emailVerified && !isAdmin) {
+      if (freshUser && !freshUser.emailVerified) {
         toast({
           title: "Verificación Requerida",
           description: "Por favor, verifica tu correo electrónico para iniciar sesión. Revisa tu bandeja de entrada.",
@@ -291,7 +287,7 @@ export default function AuthPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-start bg-muted/20 p-4 sm:justify-center">
+    <main className="flex min-h-screen flex-col items-center justify-start bg-muted/20 p-4 sm:pt-8 sm:justify-center">
       <Card className="my-8 w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
             <div className="mx-auto mb-2 flex items-center justify-center gap-3">
@@ -329,9 +325,9 @@ export default function AuthPage() {
             ) : authMode === 'register' ? (
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                    <div className="relative overflow-hidden">
+                    <div className="relative overflow-hidden min-h-[350px]">
                       {steps.map((step, index) => (
-                        <div key={step.id} className={cn("w-full", getAnimationClass(index))}>
+                        <div key={step.id} className={cn("w-full absolute top-0", getAnimationClass(index))}>
                           {index === 0 && (
                             <div className="space-y-6">
                                 <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Nombre Completo</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>)} />

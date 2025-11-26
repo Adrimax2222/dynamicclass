@@ -7,9 +7,10 @@ import ChatDrawer from "@/components/chatbot/chat-drawer";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import LoadingScreen from "@/components/layout/loading-screen";
+import { signOut } from "firebase/auth";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, theme, firebaseUser } = useApp();
+  const { user, theme, firebaseUser, auth } = useApp();
   const router = useRouter();
   const pathname = usePathname();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -28,17 +29,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       if (firebaseUser === null) {
         // Not logged in, redirect to login page.
         router.replace("/");
-      } else if (!firebaseUser.emailVerified) {
-        // Logged in but not verified, show error and kick out.
-        // This is a safeguard, main logic is on login page.
+      } else if (!firebaseUser.emailVerified && user?.role !== 'admin') {
+        // Logged in but not verified (and not an admin), show error and kick out.
         alert("Tu correo no está verificado. Por favor, revisa tu email o regístrate de nuevo.");
+        if (auth) {
+          signOut(auth);
+        }
         router.replace("/");
       } else {
-        // User is logged in and verified.
+        // User is logged in and verified OR is an admin.
         setIsCheckingAuth(false);
       }
     }
-  }, [firebaseUser, router]);
+  }, [firebaseUser, user, router, auth]);
 
   // While auth state is being checked, or we're waiting for the Firestore user data, show loader.
   if (isCheckingAuth || !user) {
