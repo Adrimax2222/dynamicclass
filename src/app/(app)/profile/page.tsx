@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,6 +34,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { normalizeSchoolName } from "@/lib/school-utils";
+import { Badge } from "@/components/ui/badge";
 
 
 export default function ProfilePage() {
@@ -96,7 +98,10 @@ export default function ProfilePage() {
             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
           </Avatar>
           <h2 className="mt-4 text-2xl font-bold">{user.name}</h2>
-          <p className="text-muted-foreground">{user.center}</p>
+          {user.role === 'admin' && (
+            <Badge variant="destructive" className="mt-2">Admin</Badge>
+          )}
+          <p className="text-muted-foreground mt-2">{user.center}</p>
           <EditProfileDialog />
         </CardContent>
       </Card>
@@ -108,7 +113,7 @@ export default function ProfilePage() {
         <CardContent className="grid grid-cols-2 gap-4 text-sm">
              <div>
                 <p className="text-muted-foreground">Rol</p>
-                <p className="font-bold">{user.role === 'student' ? 'Estudiante' : 'Profesor'}</p>
+                <p className="font-bold">{user.role === 'student' ? 'Estudiante' : user.role === 'admin' ? 'Administrador' : 'Profesor'}</p>
             </div>
             <div>
                 <p className="text-muted-foreground">Edad</p>
@@ -315,3 +320,5 @@ function AchievementCard({ title, value, icon: Icon, color }: SummaryCardData) {
       </Card>
     );
   }
+
+    
