@@ -76,6 +76,8 @@ const steps = [
     { id: 2, fields: ['center', 'ageRange', 'course', 'className', 'role'] },
 ];
 
+const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
+
 export default function AuthPage() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
@@ -221,7 +223,9 @@ export default function AuthPage() {
       await userCredential.user.reload();
       const freshUser = auth.currentUser;
 
-      if (freshUser && !freshUser.emailVerified) {
+      const isAdmin = ADMIN_EMAILS.includes(values.email);
+
+      if (freshUser && !freshUser.emailVerified && !isAdmin) {
         toast({
           title: "Verificación Requerida",
           description: "Por favor, verifica tu correo electrónico para iniciar sesión. Revisa tu bandeja de entrada.",
