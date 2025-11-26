@@ -12,6 +12,8 @@ import {
   Loader2,
   Info as InfoIcon,
   MessageSquare,
+  Globe,
+  Filter,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -47,7 +49,7 @@ import {
   orderBy,
   query
 } from "firebase/firestore";
-import type { Note, Announcement } from "@/lib/types";
+import type { Note, Announcement, AnnouncementScope } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -111,9 +113,12 @@ export default function InfoPage() {
   );
 }
 
+type AnnouncementFilter = "all" | AnnouncementScope;
+
 function AnnouncementsTab() {
   const { user } = useApp();
   const firestore = useFirestore();
+  const [filter, setFilter] = useState<AnnouncementFilter>("all");
 
   const announcementsCollection = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -122,11 +127,12 @@ function AnnouncementsTab() {
 
   const { data: announcements = [], isLoading } = useCollection<Announcement>(announcementsCollection);
 
-  const handleAddAnnouncement = async (text: string) => {
+  const handleAddAnnouncement = async (text: string, scope: AnnouncementScope) => {
     if (!firestore || !user) return;
     const announcementsCollectionRef = collection(firestore, "announcements");
     await addDoc(announcementsCollectionRef, {
         text,
+        scope,
         authorId: user.uid,
         authorName: user.name,
         authorAvatar: user.avatar,
@@ -146,13 +152,42 @@ function AnnouncementsTab() {
       await deleteDoc(announcementDocRef);
   }
 
+  const filteredAnnouncements = announcements.filter(ann => {
+    if (filter === 'all') return true;
+    if (filter === 'center' && user?.center === SCHOOL_NAME) return ann.scope === 'center';
+    if (filter === 'general') return ann.scope === 'general';
+    // If filter is 'center' but user is not from the school, show nothing
+    if (filter === 'center' && user?.center !== SCHOOL_NAME) return false;
+    return true; // Default to showing all if something is weird
+  });
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h2 className="text-lg font-semibold">Últimos Anuncios</h2>
-          {user?.center === SCHOOL_NAME && (
-              <Badge variant="secondary" className="border-primary/50">Torre del Palau</Badge>
-          )}
+          <div className="w-full sm:w-auto">
+            <Select onValueChange={(v: AnnouncementFilter) => setFilter(v)} defaultValue="all">
+                <SelectTrigger className="w-full sm:w-[200px]">
+                    <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4" />
+                        <SelectValue placeholder="Filtrar anuncios..." />
+                    </div>
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todos los Anuncios</SelectItem>
+                    <SelectItem value="general">
+                        <div className="flex items-center gap-2">
+                           <Globe className="h-4 w-4" /> General
+                        </div>
+                    </SelectItem>
+                     <SelectItem value="center" disabled={user?.center !== SCHOOL_NAME}>
+                        <div className="flex items-center gap-2">
+                           <Building className="h-4 w-4" /> {SCHOOL_NAME}
+                        </div>
+                    </SelectItem>
+                </SelectContent>
+            </Select>
+          </div>
       </div>
 
       {user?.role === 'admin' && (
@@ -161,17 +196,17 @@ function AnnouncementsTab() {
 
       {isLoading && <Loader2 className="mx-auto my-8 h-8 w-8 animate-spin text-primary" />}
       
-      {!isLoading && announcements.length === 0 && (
+      {!isLoading && filteredAnnouncements.length === 0 && (
         <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
           <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
           <p className="font-semibold">No hay anuncios</p>
           <p className="text-sm text-muted-foreground">
-            Aún no se ha publicado ningún anuncio.
+            No hay anuncios que coincidan con el filtro seleccionado.
           </p>
         </div>
       )}
 
-      {announcements.map((announcement) => (
+      {filteredAnnouncements.map((announcement) => (
         <AnnouncementItem
             key={announcement.id}
             announcement={announcement}
@@ -184,8 +219,9 @@ function AnnouncementsTab() {
   );
 }
 
-function NewAnnouncementCard({ onSend }: { onSend: (text: string) => Promise<void> }) {
+function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: AnnouncementScope) => Promise<void> }) {
   const [text, setText] = useState("");
+  const [scope, setScope] = useState<AnnouncementScope>("general");
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useApp();
 
@@ -193,7 +229,7 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string) => Promise<voi
     if (!text.trim()) return;
     setIsLoading(true);
     try {
-        await onSend(text);
+        await onSend(text, scope);
         setText("");
     } catch (error) {
         console.error("Failed to send announcement", error);
@@ -206,9 +242,9 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string) => Promise<voi
     <Card className="shadow-lg">
         <CardHeader>
             <CardTitle className="text-base">Nuevo Anuncio</CardTitle>
-            <CardDescription>Este mensaje será visible para todos los usuarios de la app.</CardDescription>
+            <CardDescription>Este mensaje será visible según el ámbito que elijas.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-4">
             <div className="flex gap-3">
                 <Avatar className="h-9 w-9">
                     <AvatarImage src={user?.avatar} />
@@ -222,8 +258,21 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string) => Promise<voi
                     rows={3}
                 />
             </div>
-            <div className="flex justify-end">
-                <Button onClick={handleSend} disabled={isLoading || !text.trim()}>
+            <div className="flex flex-col sm:flex-row justify-end items-stretch gap-2">
+                <Select onValueChange={(v: AnnouncementScope) => setScope(v)} defaultValue="general">
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue/>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="general">
+                           <div className="flex items-center gap-2"><Globe className="h-4 w-4" /> General</div>
+                        </SelectItem>
+                        <SelectItem value="center">
+                           <div className="flex items-center gap-2"><Building className="h-4 w-4" /> Centro</div>
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+                <Button onClick={handleSend} disabled={isLoading || !text.trim()} className="w-full sm:w-auto">
                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                     Publicar
                 </Button>
@@ -256,9 +305,13 @@ function AnnouncementItem({ announcement, isAuthor, onUpdate, onDelete }: { anno
          <AvatarFallback>{announcement.authorName.charAt(0)}</AvatarFallback>
       </Avatar>
       <div className="w-full">
-        <div className="flex items-baseline gap-2">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <p className="font-bold text-sm">{announcement.authorName}</p>
           <p className="text-xs text-muted-foreground">{formatTimestamp(announcement.createdAt)}</p>
+          <Badge variant={announcement.scope === 'center' ? 'secondary' : 'outline'} className="border-primary/20">
+              {announcement.scope === 'center' ? <Building className="h-3 w-3 mr-1"/> : <Globe className="h-3 w-3 mr-1"/>}
+              {announcement.scope === 'center' ? 'Centro' : 'General'}
+          </Badge>
         </div>
         <div className="rounded-lg px-4 py-3 bg-muted mt-1">
             {isEditing ? (

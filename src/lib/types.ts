@@ -76,6 +76,8 @@ export type Note = {
     createdAt: { seconds: number, nanoseconds: number };
 };
 
+export type AnnouncementScope = 'general' | 'center';
+
 export type Announcement = {
   id: string;
   text: string;
@@ -83,4 +85,5 @@ export type Announcement = {
   authorName: string;
   authorAvatar: string;
   createdAt: { seconds: number, nanoseconds: number };
+  scope: AnnouncementScope;
 }
