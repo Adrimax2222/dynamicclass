@@ -29,16 +29,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       if (firebaseUser === null) {
         // Not logged in, redirect to login page.
         router.replace("/");
-      } else if (!firebaseUser.emailVerified && user?.role !== 'admin') {
-        // Logged in but not verified (and not an admin), show error and kick out.
-        alert("Tu correo no está verificado. Por favor, revisa tu email o regístrate de nuevo.");
-        if (auth) {
-          signOut(auth);
-        }
-        router.replace("/");
       } else {
-        // User is logged in and verified OR is an admin.
-        setIsCheckingAuth(false);
+        // User is logged in. The logic to check for verification is handled
+        // on the login page itself. Once they are past that, they are allowed in.
+        // We just need to wait for the Firestore user data to be loaded.
+        if (user) {
+          setIsCheckingAuth(false);
+        }
       }
     }
   }, [firebaseUser, user, router, auth]);
