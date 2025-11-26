@@ -197,16 +197,18 @@ function DetailsDialog({ title, children }: { title: string, children: React.Rea
 
 function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, userClassName }: { children: React.ReactNode, scheduleData: Schedule, selectedClassId: string, userCourse: string, userClassName: string }) {
     const today = new Date().toLocaleString('es-ES', { weekday: 'long' });
-    const capitalizedToday = today.charAt(0).toUpperCase() + today.slice(1);
     
     // Find which day the selected class is on to set the default tab
     const findDefaultTab = () => {
         for (const day in scheduleData) {
-            if (scheduleData[day as keyof Schedule].some(entry => entry.id === selectedClassId)) {
-                return day;
+            // Capitalize day to match keys in scheduleData
+            const capitalizedDay = day.charAt(0).toUpperCase() + day.slice(1);
+            if (scheduleData[capitalizedDay as keyof Schedule]?.some(entry => entry.id === selectedClassId)) {
+                return capitalizedDay;
             }
         }
         // Fallback to today, but make sure today is a valid key.
+        const capitalizedToday = today.charAt(0).toUpperCase() + today.slice(1);
         const validDays = Object.keys(scheduleData);
         return validDays.includes(capitalizedToday) ? capitalizedToday : validDays[0];
     }
@@ -244,40 +246,42 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
                             ))}
                         </TabsList>
                     </div>
-                    <ScrollArea className="flex-1 px-6 py-4">
-                        {Object.entries(scheduleData).map(([day, entries]) => (
-                            <TabsContent key={day} value={day} className="mt-0">
-                                <Accordion type="single" collapsible defaultValue={`item-${selectedClassId}`}>
-                                    {entries.map(entry => (
-                                        <AccordionItem key={entry.id} value={`item-${entry.id}`} className={cn(entry.id === selectedClassId && 'border-primary')}>
-                                            <AccordionTrigger className="hover:no-underline">
-                                                <div className="flex-1 text-left">
-                                                    <p className="font-bold">{entry.subject}</p>
-                                                    <p className="text-sm text-muted-foreground">{entry.time}</p>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="space-y-2">
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <User className="h-4 w-4 text-muted-foreground" />
-                                                    <span>{entry.teacher}</span>
-                                                </div>
-                                                 <div className="flex items-center gap-2 text-sm">
-                                                    <Building className="h-4 w-4 text-muted-foreground" />
-                                                    <span>{entry.room}</span>
-                                                </div>
-                                                {entry.details && (
-                                                    <div className="flex items-start gap-2 text-sm pt-2">
-                                                        <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                                        <p className="italic">{entry.details}</p>
+                    <div className="flex-1 overflow-y-auto">
+                        <div className="px-6 py-4">
+                            {Object.entries(scheduleData).map(([day, entries]) => (
+                                <TabsContent key={day} value={day} className="mt-0">
+                                    <Accordion type="single" collapsible defaultValue={`item-${selectedClassId}`}>
+                                        {entries.map(entry => (
+                                            <AccordionItem key={entry.id} value={`item-${entry.id}`} className={cn(entry.id === selectedClassId && 'border-primary')}>
+                                                <AccordionTrigger className="hover:no-underline">
+                                                    <div className="flex-1 text-left">
+                                                        <p className="font-bold">{entry.subject}</p>
+                                                        <p className="text-sm text-muted-foreground">{entry.time}</p>
                                                     </div>
-                                                )}
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    ))}
-                                </Accordion>
-                            </TabsContent>
-                        ))}
-                    </ScrollArea>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="space-y-2">
+                                                    <div className="flex items-center gap-2 text-sm">
+                                                        <User className="h-4 w-4 text-muted-foreground" />
+                                                        <span>{entry.teacher}</span>
+                                                    </div>
+                                                     <div className="flex items-center gap-2 text-sm">
+                                                        <Building className="h-4 w-4 text-muted-foreground" />
+                                                        <span>{entry.room}</span>
+                                                    </div>
+                                                    {entry.details && (
+                                                        <div className="flex items-start gap-2 text-sm pt-2">
+                                                            <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                                            <p className="italic">{entry.details}</p>
+                                                        </div>
+                                                    )}
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        ))}
+                                    </Accordion>
+                                </TabsContent>
+                            ))}
+                        </div>
+                    </div>
                 </Tabs>
             </DialogContent>
         </Dialog>
