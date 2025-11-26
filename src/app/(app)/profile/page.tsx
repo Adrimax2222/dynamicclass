@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -36,7 +35,6 @@ import { useToast } from "@/hooks/use-toast";
 import { normalizeSchoolName } from "@/lib/school-utils";
 import { Badge } from "@/components/ui/badge";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
-import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
@@ -292,7 +290,7 @@ function EditProfileDialog() {
             <div className="space-y-2">
                 <Label>Foto de Perfil</Label>
                 <div className="flex justify-center py-4">
-                    <Image src={finalAvatarUrl} alt="Avatar Preview" width={100} height={100} className="rounded-full aspect-square object-cover ring-4 ring-primary ring-offset-2" />
+                    <img src={finalAvatarUrl} alt="Avatar Preview" width={100} height={100} className="rounded-full aspect-square object-cover ring-4 ring-primary ring-offset-2" />
                 </div>
                  <Tabs defaultValue="create" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
