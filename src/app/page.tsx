@@ -92,7 +92,7 @@ export default function AuthPage() {
   // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
-      router.replace('/home');
+      router.push('/home');
     }
   }, [user, router]);
 
@@ -176,7 +176,6 @@ export default function AuthPage() {
 
       await setDoc(doc(firestore, 'users', firebaseUser.uid), newUser);
       
-      // Show verification message instead of auto-redirecting
       setRegistrationSuccess(true);
       
     } catch (error: any) {
@@ -211,7 +210,8 @@ export default function AuthPage() {
     }
   
     const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
-    
+    const isAdmin = ADMIN_EMAILS.includes(values.email);
+
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
@@ -219,27 +219,21 @@ export default function AuthPage() {
         values.password
       );
 
-      // Reload the user to get the latest emailVerified status
       await userCredential.user.reload();
       const freshUser = auth.currentUser;
 
-      const isAdmin = freshUser?.email && ADMIN_EMAILS.includes(freshUser.email);
-      
       if (freshUser && !freshUser.emailVerified && !isAdmin) {
         toast({
           title: "Verificación Requerida",
           description: "Por favor, verifica tu correo electrónico para iniciar sesión. Revisa tu bandeja de entrada.",
           variant: "destructive",
         });
-        // Sign out to prevent inconsistent states
         await signOut(auth);
         setIsLoading(false);
         return;
       }
-      
-      // The onAuthStateChanged listener in AppProvider will handle the redirect
-      // by updating the user context, which triggers the useEffect in this component.
-      // No need to call router.push here.
+
+      router.push('/home');
 
     } catch (error: any) {
       console.error("Login Error:", error);
@@ -288,7 +282,6 @@ export default function AuthPage() {
   }
 
   if (user) {
-    // While the redirect is happening, show a loading screen.
     return <LoadingScreen />;
   }
 
@@ -321,8 +314,8 @@ export default function AuthPage() {
                     <p className="text-muted-foreground text-sm">
                         Te hemos enviado un correo electrónico. Por favor, haz clic en el enlace de verificación para activar tu cuenta y poder iniciar sesión.
                     </p>
-                    <p className="text-xs text-muted-foreground/80">
-                        (Si no lo ves, revisa tu carpeta de spam)
+                    <p className="text-sm font-semibold text-muted-foreground">
+                        (Si no lo ves, ¡revisa tu carpeta de spam!)
                     </p>
                     <Button onClick={() => handleAuthModeChange('login')} className="w-full mt-4">
                         Volver a Inicio de Sesión
@@ -331,7 +324,7 @@ export default function AuthPage() {
             ) : authMode === 'register' ? (
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                    <div className="relative overflow-hidden min-h-[350px]">
+                    <div className="relative overflow-hidden min-h-[450px]">
                       {steps.map((step, index) => (
                         <div key={step.id} className={cn("w-full absolute top-0", getAnimationClass(index))}>
                           {index === 0 && (
