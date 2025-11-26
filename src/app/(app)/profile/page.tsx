@@ -25,16 +25,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { achievements } from "@/lib/data";
 import type { SummaryCardData } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2 } from "lucide-react";
+import { Edit, Settings, Loader2, Camera } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { normalizeSchoolName } from "@/lib/school-utils";
 import { Badge } from "@/components/ui/badge";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import Image from "next/image";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 export default function ProfilePage() {
@@ -146,6 +149,15 @@ export default function ProfilePage() {
   );
 }
 
+const AVATAR_COLORS = [
+  "F87171", // red
+  "FBBF24", // amber
+  "34D399", // emerald
+  "60A5FA", // blue
+  "A78BFA", // violet
+  "F472B6", // pink
+];
+
 function EditProfileDialog() {
   const { user, updateUser } = useApp();
   const [isOpen, setIsOpen] = useState(false);
@@ -157,6 +169,15 @@ function EditProfileDialog() {
   const [className, setClassName] = useState(user?.className || "");
   const firestore = useFirestore();
   const { toast } = useToast();
+  
+  // Avatar state
+  const [finalAvatarUrl, setFinalAvatarUrl] = useState(user?.avatar || "");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Avatar creator state
+  const [initial, setInitial] = useState(user?.name?.charAt(0).toUpperCase() || 'A');
+  const [bgColor, setBgColor] = useState(AVATAR_COLORS[0]);
 
   useEffect(() => {
     if (user && isOpen) {
@@ -165,59 +186,93 @@ function EditProfileDialog() {
       setAgeRange(user.ageRange);
       setCourse(user.course);
       setClassName(user.className);
+      setFinalAvatarUrl(user.avatar);
+      setInitial(user.name?.charAt(0).toUpperCase() || 'A');
+      setAvatarFile(null);
     }
   }, [user, isOpen]);
   
+  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFinalAvatarUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleInitialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newInitial = e.target.value.charAt(0).toUpperCase();
+    setInitial(newInitial);
+    const newAvatarUrl = `https://placehold.co/100x100/${bgColor}/FFFFFF?text=${newInitial}`;
+    setFinalAvatarUrl(newAvatarUrl);
+    setAvatarFile(null);
+  };
+
+  const handleColorChange = (color: string) => {
+    setBgColor(color);
+    const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${initial}`;
+    setFinalAvatarUrl(newAvatarUrl);
+    setAvatarFile(null);
+  };
+  
   if (!user) return null;
+  
+  async function uploadAvatar(userId: string): Promise<string> {
+    const storage = getStorage();
+
+    if (avatarFile) {
+        const filePath = `avatars/${userId}/${avatarFile.name}`;
+        const fileRef = storageRef(storage, filePath);
+        await uploadBytes(fileRef, avatarFile);
+        return getDownloadURL(fileRef);
+    }
+    
+    // If a new avatar was generated or an old one kept, finalAvatarUrl has it
+    return finalAvatarUrl;
+  }
 
   const handleSaveChanges = async () => {
     if (!firestore) return;
 
-    const normalizedCenter = normalizeSchoolName(center);
-    
-    const hasChanged = name !== user.name ||
-                     normalizedCenter !== user.center ||
-                     ageRange !== user.ageRange ||
-                     course !== user.course ||
-                     className !== user.className;
-
-    if (!hasChanged) {
-      toast({ title: "Sin cambios", description: "No has realizado ningún cambio." });
-      setIsOpen(false);
-      return;
-    }
-    
     setIsLoading(true);
 
-    const updatedData = {
-        name,
-        center: normalizedCenter,
-        ageRange,
-        course,
-        className,
-    };
-
     try {
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await updateDoc(userDocRef, updatedData);
-      
-      // Update local context immediately for instant feedback
-      updateUser(updatedData);
+        const uploadedAvatarUrl = await uploadAvatar(user.uid);
 
-      toast({
-        title: "¡Perfil actualizado!",
-        description: "Tu información ha sido guardada correctamente.",
-      });
-      setIsOpen(false); 
+        const normalizedCenter = normalizeSchoolName(center);
+        
+        const updatedData: Partial<typeof user> = {
+            name,
+            center: normalizedCenter,
+            ageRange,
+            course,
+            className,
+            avatar: uploadedAvatarUrl,
+        };
+
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await updateDoc(userDocRef, updatedData);
+      
+        updateUser(updatedData);
+
+        toast({
+            title: "¡Perfil actualizado!",
+            description: "Tu información ha sido guardada correctamente.",
+        });
+        setIsOpen(false); 
     } catch (error) {
-      console.error("Error updating profile:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar tu perfil. Inténtalo de nuevo.",
-        variant: "destructive",
-      });
+        console.error("Error updating profile:", error);
+        toast({
+            title: "Error",
+            description: "No se pudo actualizar tu perfil. Inténtalo de nuevo.",
+            variant: "destructive",
+        });
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
   };
 
@@ -229,68 +284,110 @@ function EditProfileDialog() {
           Editar Perfil
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-md w-[95vw]">
         <DialogHeader>
           <DialogTitle>Editar tu Perfil</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nombre Completo</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="center">Centro Educativo</Label>
-            <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="ageRange">Rango de Edad</Label>
-            <Select onValueChange={setAgeRange} value={ageRange}>
-                <SelectTrigger id="ageRange">
-                    <SelectValue placeholder="Selecciona tu rango de edad" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="12-15">12-15 años</SelectItem>
-                    <SelectItem value="16-18">16-18 años</SelectItem>
-                    <SelectItem value="19-22">19-22 años</SelectItem>
-                    <SelectItem value="23+">23+ años</SelectItem>
-                    <SelectItem value="No especificado">No especificado</SelectItem>
-                </SelectContent>
-            </Select>
-          </div>
-           <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="course">Curso</Label>
-                <Select onValueChange={setCourse} value={course}>
-                    <SelectTrigger id="course"><SelectValue /></SelectTrigger>
+        <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
+            <div className="space-y-2">
+                <Label>Foto de Perfil</Label>
+                <div className="flex justify-center py-4">
+                    <Image src={finalAvatarUrl} alt="Avatar Preview" width={100} height={100} className="rounded-full aspect-square object-cover ring-4 ring-primary ring-offset-2" />
+                </div>
+                 <Tabs defaultValue="create" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="create">Crear Avatar</TabsTrigger>
+                        <TabsTrigger value="upload">Subir Foto</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="create" className="pt-4">
+                         <div className="space-y-4">
+                            <div className="grid grid-cols-3 gap-4 items-center">
+                               <Label className="text-right">Inicial</Label>
+                                <Input 
+                                    value={initial}
+                                    onChange={handleInitialChange}
+                                    maxLength={1}
+                                    className="col-span-2"
+                                />
+                            </div>
+                            <div className="grid grid-cols-3 gap-4 items-center">
+                                <Label className="text-right">Color</Label>
+                                <div className="col-span-2 grid grid-cols-6 gap-2">
+                                    {AVATAR_COLORS.map(color => (
+                                        <button key={color} type="button" onClick={() => handleColorChange(color)} className={cn("w-8 h-8 rounded-full border", bgColor === color && "ring-2 ring-primary ring-offset-2")} style={{ backgroundColor: `#${color}` }} />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="upload" className="pt-4">
+                        <input type="file" accept="image/*" className="sr-only" ref={fileInputRef} onChange={handleAvatarUpload} />
+                        <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+                            <Camera className="mr-2 h-4 w-4" />
+                            Seleccionar Archivo
+                        </Button>
+                         <p className="text-xs text-muted-foreground mt-2 text-center">Sube una imagen JPG, PNG o GIF.</p>
+                    </TabsContent>
+                </Tabs>
+            </div>
+            
+            <div className="space-y-2">
+                <Label htmlFor="name">Nombre Completo</Label>
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="center">Centro Educativo</Label>
+                <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="ageRange">Rango de Edad</Label>
+                <Select onValueChange={setAgeRange} value={ageRange}>
+                    <SelectTrigger id="ageRange">
+                        <SelectValue placeholder="Selecciona tu rango de edad" />
+                    </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="1eso">1º ESO</SelectItem>
-                        <SelectItem value="2eso">2º ESO</SelectItem>
-                        <SelectItem value="3eso">3º ESO</SelectItem>
-                        <SelectItem value="4eso">4º ESO</SelectItem>
-                        <SelectItem value="1bach">1º Bachillerato</SelectItem>
-                        <SelectItem value="2bach">2º Bachillerato</SelectItem>
+                        <SelectItem value="12-15">12-15 años</SelectItem>
+                        <SelectItem value="16-18">16-18 años</SelectItem>
+                        <SelectItem value="19-22">19-22 años</SelectItem>
+                        <SelectItem value="23+">23+ años</SelectItem>
+                        <SelectItem value="No especificado">No especificado</SelectItem>
                     </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="className">Clase</Label>
-                <Select onValueChange={setClassName} value={className}>
-                    <SelectTrigger id="className"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="A">A</SelectItem>
-                        <SelectItem value="B">B</SelectItem>
-                        <SelectItem value="C">C</SelectItem>
-                        <SelectItem value="D">D</SelectItem>
-                        <SelectItem value="E">E</SelectItem>
-                    </SelectContent>
-                </Select>
-              </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Correo Electrónico</Label>
-            <Input id="email" value={user.email} disabled />
-            <p className="text-xs text-muted-foreground">El correo electrónico no se puede cambiar.</p>
-          </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="course">Curso</Label>
+                    <Select onValueChange={setCourse} value={course}>
+                        <SelectTrigger id="course"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="1eso">1º ESO</SelectItem>
+                            <SelectItem value="2eso">2º ESO</SelectItem>
+                            <SelectItem value="3eso">3º ESO</SelectItem>
+                            <SelectItem value="4eso">4º ESO</SelectItem>
+                            <SelectItem value="1bach">1º Bachillerato</SelectItem>
+                            <SelectItem value="2bach">2º Bachillerato</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="className">Clase</Label>
+                    <Select onValueChange={setClassName} value={className}>
+                        <SelectTrigger id="className"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="A">A</SelectItem>
+                            <SelectItem value="B">B</SelectItem>
+                            <SelectItem value="C">C</SelectItem>
+                            <SelectItem value="D">D</SelectItem>
+                            <SelectItem value="E">E</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="email">Correo Electrónico</Label>
+                <Input id="email" value={user.email} disabled />
+                <p className="text-xs text-muted-foreground">El correo electrónico no se puede cambiar.</p>
+            </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
@@ -320,5 +417,3 @@ function AchievementCard({ title, value, icon: Icon, color }: SummaryCardData) {
       </Card>
     );
   }
-
-    
