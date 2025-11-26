@@ -59,7 +59,6 @@ const registrationSchema = z.object({
   course: z.string().min(1, { message: "Por favor, selecciona tu curso." }),
   className: z.string().min(1, { message: "Por favor, selecciona tu clase." }),
   role: z.enum(["student", "teacher", "admin"], { required_error: "Debes seleccionar un rol." }),
-  classCode: z.string().optional(),
 });
 
 const loginSchema = z.object({
@@ -72,7 +71,7 @@ type LoginSchemaType = z.infer<typeof loginSchema>;
 
 const steps = [
     { id: 1, fields: ['fullName', 'email', 'password'] },
-    { id: 2, fields: ['center', 'ageRange', 'course', 'className', 'role', 'classCode'] },
+    { id: 2, fields: ['center', 'ageRange', 'course', 'className', 'role'] },
 ];
 
 export default function AuthPage() {
@@ -106,7 +105,6 @@ export default function AuthPage() {
       ageRange: "",
       course: "",
       className: "",
-      classCode: "",
     },
   });
   
@@ -251,7 +249,6 @@ export default function AuthPage() {
       ageRange: "",
       course: "",
       className: "",
-      classCode: "",
     });
     setCurrentStep(0);
     setIsLoading(false);
@@ -263,8 +260,8 @@ export default function AuthPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-muted/20 p-4">
-      <Card className="w-full max-w-md shadow-2xl">
+    <main className="flex min-h-screen flex-col items-center justify-start sm:justify-center bg-muted/20 p-4">
+      <Card className="w-full max-w-md shadow-2xl my-8">
         <CardHeader className="text-center">
             <div className="mx-auto mb-2 flex items-center justify-center gap-3">
                 <Logo className="h-10 w-10 text-primary" />
@@ -281,9 +278,9 @@ export default function AuthPage() {
             {authMode === 'register' ? (
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                    <div className="relative min-h-[450px]">
+                    <div className="relative overflow-hidden">
                       {steps.map((step, index) => (
-                        <div key={step.id} className={cn("w-full absolute", getAnimationClass(index))}>
+                        <div key={step.id} className={cn("w-full", getAnimationClass(index))}>
                           {index === 0 && (
                             <div className="space-y-6">
                                 <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Nombre Completo</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -349,14 +346,13 @@ export default function AuthPage() {
                                         <FormMessage />
                                     </FormItem>
                                 )} />
-                                <FormField control={form.control} name="classCode" render={({ field }) => (<FormItem><FormLabel>Código de Clase (Opcional)</FormLabel><FormControl><Input placeholder="Introduce el código para unirte" {...field} /></FormControl><FormDescription>Tu profesor te proporcionará este código.</FormDescription><FormMessage /></FormItem>)}/>
                             </div>
                           )}
                         </div>
                       ))}
                     </div>
                     
-                    <div className="pt-2 mt-4">
+                    <div className="pt-8">
                         <Progress value={progress} className="h-2 mb-4" />
                         <div className="flex items-center gap-4">
                              <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isLoading} className={cn(isFirstStep && 'invisible')}>
