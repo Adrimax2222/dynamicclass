@@ -34,6 +34,20 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["title", "content", "createdAt"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Represents a global announcement for all users.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorAvatar": { "type": "string", "format": "uri" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "authorId", "authorName", "authorAvatar", "createdAt"]
     }
   },
   "auth": {
@@ -47,6 +61,10 @@
     "/users/{userId}/notes/{noteId}": {
       "schema": { "$ref": "#/entities/Note" },
       "description": "Stores personal notes for each user."
+    },
+    "/announcements/{announcementId}": {
+        "schema": { "$ref": "#/entities/Announcement" },
+        "description": "Stores global announcements for all users."
     }
   }
 }

@@ -8,8 +8,10 @@ import {
   PlusCircle,
   Edit,
   Trash2,
-  ListFilter,
+  Send,
+  Loader2,
   Info as InfoIcon,
+  MessageSquare,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -20,7 +22,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -42,8 +44,10 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  orderBy,
+  query
 } from "firebase/firestore";
-import type { Note } from "@/lib/types";
+import type { Note, Announcement } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +62,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { SCHOOL_NAME } from "@/lib/constants";
 import { Logo } from "@/components/icons";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
 
 export default function InfoPage() {
   return (
@@ -106,82 +112,173 @@ export default function InfoPage() {
 }
 
 function AnnouncementsTab() {
-  const [filter, setFilter] = useState("all");
   const { user } = useApp();
+  const firestore = useFirestore();
+
+  const announcementsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "announcements"), orderBy("createdAt", "desc"));
+  }, [firestore]);
+
+  const { data: announcements = [], isLoading } = useCollection<Announcement>(announcementsCollection);
+
+  const handleAddAnnouncement = async (text: string) => {
+    if (!firestore || !user) return;
+    const announcementsCollectionRef = collection(firestore, "announcements");
+    await addDoc(announcementsCollectionRef, {
+        text,
+        authorId: user.uid,
+        authorName: user.name,
+        authorAvatar: user.avatar,
+        createdAt: serverTimestamp()
+    });
+  }
+
+  const handleUpdateAnnouncement = async (id: string, text: string) => {
+    if (!firestore) return;
+    const announcementDocRef = doc(firestore, "announcements", id);
+    await updateDoc(announcementDocRef, { text });
+  }
+
+  const handleDeleteAnnouncement = async (id: string) => {
+      if (!firestore) return;
+      const announcementDocRef = doc(firestore, "announcements", id);
+      await deleteDoc(announcementDocRef);
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold">Últimos Anuncios</h2>
-            {user?.center === SCHOOL_NAME && (
-                <Badge variant="secondary" className="border-primary/50">Torre del Palau</Badge>
-            )}
-        </div>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[180px]">
-            <ListFilter className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Filtrar" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todo</SelectItem>
-            <SelectItem value="institute">Instituto</SelectItem>
-            <SelectItem value="class">Clase</SelectItem>
-          </SelectContent>
-        </Select>
+          <h2 className="text-lg font-semibold">Últimos Anuncios</h2>
+          {user?.center === SCHOOL_NAME && (
+              <Badge variant="secondary" className="border-primary/50">Torre del Palau</Badge>
+          )}
       </div>
-      <Announcement
-        user="@Adrià Navarro"
-        text="Recordatorio: El próximo viernes hay huelga general de estudiantes. No habrá clases."
-        avatarSeed="avatar1"
-        timestamp="Hace 2 horas"
-      />
-      <Announcement
-        user="@Luc Rota"
-        text="Se necesita la autorización para la salida al museo de ciencias antes del día 25. Podéis descargar el documento desde la web del centro."
-        avatarSeed="avatar2"
-        timestamp="Hace 1 día"
-      />
-      <Announcement
-        user="@Adrià Navarro"
-        text="Debido a una indisposición del profesor de matemáticas, la clase de mañana se cancela. Se recuperará la próxima semana."
-        avatarSeed="avatar1"
-        timestamp="Hace 3 días"
-      />
-      <Announcement
-        user="@Luc Rota"
-        text="Las notas de la segunda evaluación estarán disponibles en la plataforma a partir del viernes a las 15:00h."
-        avatarSeed="avatar2"
-        timestamp="Hace 4 días"
-      />
+
+      {user?.role === 'admin' && (
+        <NewAnnouncementCard onSend={handleAddAnnouncement} />
+      )}
+
+      {isLoading && <Loader2 className="mx-auto my-8 h-8 w-8 animate-spin text-primary" />}
+      
+      {!isLoading && announcements.length === 0 && (
+        <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
+          <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
+          <p className="font-semibold">No hay anuncios</p>
+          <p className="text-sm text-muted-foreground">
+            Aún no se ha publicado ningún anuncio.
+          </p>
+        </div>
+      )}
+
+      {announcements.map((announcement) => (
+        <AnnouncementItem
+            key={announcement.id}
+            announcement={announcement}
+            isAuthor={user?.uid === announcement.authorId}
+            onUpdate={handleUpdateAnnouncement}
+            onDelete={handleDeleteAnnouncement}
+        />
+      ))}
     </div>
   );
 }
 
-function Announcement({
-  user,
-  text,
-  avatarSeed,
-  timestamp,
-}: {
-  user: string;
-  text: string;
-  avatarSeed: string;
-  timestamp: string;
-}) {
+function NewAnnouncementCard({ onSend }: { onSend: (text: string) => Promise<void> }) {
+  const [text, setText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useApp();
+
+  const handleSend = async () => {
+    if (!text.trim()) return;
+    setIsLoading(true);
+    try {
+        await onSend(text);
+        setText("");
+    } catch (error) {
+        console.error("Failed to send announcement", error);
+    } finally {
+        setIsLoading(false);
+    }
+  }
+
+  return (
+    <Card className="shadow-lg">
+        <CardHeader>
+            <CardTitle className="text-base">Nuevo Anuncio</CardTitle>
+            <CardDescription>Este mensaje será visible para todos los usuarios de la app.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+            <div className="flex gap-3">
+                <Avatar className="h-9 w-9">
+                    <AvatarImage src={user?.avatar} />
+                    <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <Textarea 
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="Escribe tu anuncio aquí..."
+                    className="flex-1"
+                    rows={3}
+                />
+            </div>
+            <div className="flex justify-end">
+                <Button onClick={handleSend} disabled={isLoading || !text.trim()}>
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                    Publicar
+                </Button>
+            </div>
+        </CardContent>
+    </Card>
+  )
+}
+
+
+function AnnouncementItem({ announcement, isAuthor, onUpdate, onDelete }: { announcement: Announcement, isAuthor: boolean, onUpdate: (id: string, text: string) => void, onDelete: (id: string) => void }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(announcement.text);
+
+  const formatTimestamp = (timestamp: { seconds: number }) => {
+    if (!timestamp) return "";
+    const date = new Date(timestamp.seconds * 1000);
+    return formatDistanceToNow(date, { addSuffix: true, locale: es });
+  };
+  
+  const handleUpdate = () => {
+    onUpdate(announcement.id, editText);
+    setIsEditing(false);
+  }
+
   return (
     <div className="flex items-start gap-3">
       <Avatar className="h-9 w-9 border-2 border-primary/50">
-        <AvatarImage src={`https://picsum.photos/seed/${avatarSeed}/100`} />
+        <AvatarImage src={announcement.authorAvatar} />
+         <AvatarFallback>{announcement.authorName.charAt(0)}</AvatarFallback>
       </Avatar>
       <div className="w-full">
         <div className="flex items-baseline gap-2">
-          <p className="font-bold text-sm">{user}</p>
-          <p className="text-xs text-muted-foreground">{timestamp}</p>
+          <p className="font-bold text-sm">{announcement.authorName}</p>
+          <p className="text-xs text-muted-foreground">{formatTimestamp(announcement.createdAt)}</p>
         </div>
         <div className="rounded-lg px-4 py-3 bg-muted mt-1">
-          <p className="text-sm">{text}</p>
+            {isEditing ? (
+                <div className="space-y-2">
+                    <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={3} />
+                    <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>Cancelar</Button>
+                        <Button size="sm" onClick={handleUpdate}>Guardar</Button>
+                    </div>
+                </div>
+            ) : (
+                <p className="text-sm whitespace-pre-wrap">{announcement.text}</p>
+            )}
         </div>
+        {isAuthor && !isEditing && (
+            <div className="flex gap-1 mt-1">
+                <Button variant="ghost" size="xs" onClick={() => setIsEditing(true)}>Editar</Button>
+                <Button variant="ghost" size="xs" className="text-destructive hover:text-destructive" onClick={() => onDelete(announcement.id)}>Eliminar</Button>
+            </div>
+        )}
       </div>
     </div>
   );

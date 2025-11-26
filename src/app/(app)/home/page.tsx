@@ -71,6 +71,9 @@ export default function HomePage() {
                 {user.center === SCHOOL_NAME && (
                     <Badge>Ins Torre del Palau</Badge>
                 )}
+                {user.role === 'admin' && (
+                    <Badge variant="destructive">Admin</Badge>
+                )}
             </div>
         </div>
         <div className="flex items-center gap-2">
@@ -310,4 +313,3 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
-

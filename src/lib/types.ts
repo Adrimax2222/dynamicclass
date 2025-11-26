@@ -75,3 +75,12 @@ export type Note = {
     content: string;
     createdAt: { seconds: number, nanoseconds: number };
 };
+
+export type Announcement = {
+  id: string;
+  text: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  createdAt: { seconds: number, nanoseconds: number };
+}

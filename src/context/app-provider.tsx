@@ -23,6 +23,8 @@ export interface AppContextType {
   setChatDrawerOpen: (isOpen: boolean) => void;
 }
 
+const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
+
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -53,19 +55,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // This is the single source of truth for user data.
         const unsubSnapshot = onSnapshot(userDocRef, async (docSnap) => {
           if (docSnap.exists()) {
-            const userData = { uid: docSnap.id, ...docSnap.data() } as User;
+            let userData = { uid: docSnap.id, ...docSnap.data() } as User;
+            // Check if the logged-in user is an admin and override role if necessary
+            if (fbUser.email && ADMIN_EMAILS.includes(fbUser.email)) {
+                userData.role = 'admin';
+            }
             setUser(userData);
           } else {
             // User is authenticated but doesn't have a Firestore document.
             // This can happen if registration was interrupted. Let's create it.
             console.warn("User document not found for authenticated user. Creating one now.");
+            
+            const isAdmin = fbUser.email && ADMIN_EMAILS.includes(fbUser.email);
+
             const newUser: Omit<User, 'uid'> = {
                 name: fbUser.displayName || 'Usuario Anónimo',
                 email: fbUser.email || 'no-email@example.com',
                 avatar: fbUser.photoURL || PlaceHolderImages[0].imageUrl,
                 center: 'Centro no especificado',
                 ageRange: 'No especificado',
-                role: 'student',
+                course: 'No especificado',
+                className: 'A',
+                role: isAdmin ? 'admin' : 'student',
                 trophies: 0,
                 tasks: 0,
                 exams: 0,
