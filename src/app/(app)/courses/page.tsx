@@ -57,6 +57,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { SCHOOL_NAME } from "@/lib/constants";
+import { Logo } from "@/components/icons";
 
 export default function InfoPage() {
   return (
@@ -197,7 +198,7 @@ function MyClassesTab() {
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
-          <GraduationCap className="h-12 w-12 text-muted-foreground/50 mb-4" />
+          <Logo className="h-12 w-12 text-muted-foreground/50 mb-4" />
           <p className="font-semibold">Próximamente</p>
           <p className="text-sm text-muted-foreground">
             Aquí encontrarás todo lo relacionado con tus asignaturas.
