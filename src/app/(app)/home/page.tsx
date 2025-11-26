@@ -257,6 +257,14 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         "2bach": "2º Bachillerato",
     };
 
+    const dayAbbreviations: Record<string, string> = {
+        Lunes: 'Lun',
+        Martes: 'Mar',
+        Miércoles: 'Mié',
+        Jueves: 'Jue',
+        Viernes: 'Vie',
+    }
+
     const formattedCourse = courseMap[userCourse] || userCourse;
 
     useEffect(() => {
@@ -289,9 +297,9 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
                 </DialogHeader>
                 <Tabs defaultValue={defaultTab} className="w-full flex-1 flex flex-col min-h-0">
                     <div className="px-6">
-                        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 h-auto">
+                        <TabsList className="grid w-full grid-cols-5 h-auto">
                             {Object.keys(scheduleData).map(day => (
-                                <TabsTrigger key={day} value={day} className="py-2 text-xs sm:text-sm">{day}</TabsTrigger>
+                                <TabsTrigger key={day} value={day} className="py-2 text-xs sm:text-sm">{dayAbbreviations[day] || day}</TabsTrigger>
                             ))}
                         </TabsList>
                     </div>
@@ -344,3 +352,5 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
+    
