@@ -226,9 +226,9 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="max-w-lg w-[95vw] max-h-[80vh] flex flex-col p-0">
                 <DialogHeader className="p-6 pb-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-4">
                         <DialogTitle className="text-xl">Horario de Clases</DialogTitle>
-                        <Badge variant="secondary">{formattedCourse} - {userClassName}</Badge>
+                        <Badge variant="default" className="text-sm px-3 py-1">{formattedCourse} - {userClassName}</Badge>
                     </div>
                     <DialogDescription>
                         Aquí tienes tu horario para toda la semana.
