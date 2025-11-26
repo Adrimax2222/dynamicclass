@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { upcomingClasses, fullSchedule } from "@/lib/data";
 import type { SummaryCardData, UpcomingClass, Schedule, ScheduleEntry } from "@/lib/types";
@@ -38,14 +39,14 @@ type Category = "Tareas" | "Exámenes" | "Pendientes" | "Actividades";
 export default function HomePage() {
   const { user, updateUser } = useApp();
   const firestore = useFirestore();
-  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(user?.isNewUser || false);
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
 
   useEffect(() => {
-    // Only show the modal if the user is new
-    if (user?.isNewUser) {
+    // Only show the modal if the user is new and the state is not already open
+    if (user?.isNewUser && !isWelcomeModalOpen) {
       setIsWelcomeModalOpen(true);
     }
-  }, [user]);
+  }, [user, isWelcomeModalOpen]);
 
   const handleCloseWelcomeModal = async () => {
     if (user && firestore) {
