@@ -153,12 +153,14 @@ function AnnouncementsTab() {
   }
 
   const filteredAnnouncements = announcements.filter(ann => {
+    // Show only 'general' announcements to users not in the center
+    if (user?.center !== SCHOOL_NAME) {
+      return ann.scope === 'general';
+    }
+
+    // For users in the center, filter based on their selection
     if (filter === 'all') return true;
-    if (filter === 'center' && user?.center === SCHOOL_NAME) return ann.scope === 'center';
-    if (filter === 'general') return ann.scope === 'general';
-    // If filter is 'center' but user is not from the school, show nothing
-    if (filter === 'center' && user?.center !== SCHOOL_NAME) return false;
-    return true; // Default to showing all if something is weird
+    return ann.scope === filter;
   });
 
   return (
@@ -166,7 +168,7 @@ function AnnouncementsTab() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h2 className="text-lg font-semibold">Últimos Anuncios</h2>
           <div className="w-full sm:w-auto">
-            <Select onValueChange={(v: AnnouncementFilter) => setFilter(v)} defaultValue="all">
+            <Select onValueChange={(v: AnnouncementFilter) => setFilter(v)} defaultValue={user?.center === SCHOOL_NAME ? "all" : "general"}>
                 <SelectTrigger className="w-full sm:w-[200px]">
                     <div className="flex items-center gap-2">
                         <Filter className="h-4 w-4" />
@@ -174,7 +176,7 @@ function AnnouncementsTab() {
                     </div>
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">Todos los Anuncios</SelectItem>
+                    {user?.center === SCHOOL_NAME && <SelectItem value="all">Todos los Anuncios</SelectItem>}
                     <SelectItem value="general">
                         <div className="flex items-center gap-2">
                            <Globe className="h-4 w-4" /> General

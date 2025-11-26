@@ -12,6 +12,10 @@ service cloud.firestore {
         'lrotav@iestorredelpalau.cat'
       ];
     }
+    
+    function getUserCenter() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.center;
+    }
 
     match /users/{userId} {
       allow get, update, delete: if isOwner(userId);
@@ -25,7 +29,10 @@ service cloud.firestore {
     }
 
     match /announcements/{announcementId} {
-      allow list, get: if request.auth != null;
+      // Allow list for all authenticated users, client will filter.
+      allow list: if request.auth != null;
+      // Allow get only if the announcement is general or if the user belongs to the center.
+      allow get: if request.auth != null && (resource.data.scope == 'general' || (resource.data.scope == 'center' && getUserCenter() == 'IES Torre del Palau'));
       allow create, update, delete: if isAdmin();
     }
   }
