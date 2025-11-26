@@ -5,7 +5,6 @@ import type { User } from '@/lib/types';
 import { useAuth, useFirestore } from '@/firebase';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export type Theme = 'light' | 'dark';
 
@@ -67,11 +66,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
             console.warn("User document not found for authenticated user. Creating one now.");
             
             const isAdmin = fbUser.email && ADMIN_EMAILS.includes(fbUser.email);
+            const firstInitial = fbUser.displayName?.charAt(0).toUpperCase() || 'A';
+            const defaultAvatarUrl = `https://placehold.co/100x100/A78BFA/FFFFFF?text=${firstInitial}`;
 
             const newUser: Omit<User, 'uid'> = {
                 name: fbUser.displayName || 'Usuario Anónimo',
                 email: fbUser.email || 'no-email@example.com',
-                avatar: fbUser.photoURL || PlaceHolderImages[0].imageUrl,
+                avatar: fbUser.photoURL || defaultAvatarUrl,
                 center: 'Centro no especificado',
                 ageRange: 'No especificado',
                 course: 'No especificado',
@@ -155,3 +156,5 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
+
+    

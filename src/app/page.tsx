@@ -4,16 +4,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
-import { Camera, Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -42,9 +40,8 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useApp } from "@/lib/hooks/use-app";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Logo } from "@/components/icons";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth, useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -63,7 +60,6 @@ const registrationSchema = z.object({
   className: z.string().min(1, { message: "Por favor, selecciona tu clase." }),
   role: z.enum(["student", "teacher", "admin"], { required_error: "Debes seleccionar un rol." }),
   classCode: z.string().optional(),
-  avatar: z.string().min(1, { message: "Por favor, selecciona una foto de perfil." }),
 });
 
 const loginSchema = z.object({
@@ -77,7 +73,6 @@ type LoginSchemaType = z.infer<typeof loginSchema>;
 const steps = [
     { id: 1, fields: ['fullName', 'email', 'password'] },
     { id: 2, fields: ['center', 'ageRange', 'course', 'className', 'role', 'classCode'] },
-    { id: 3, fields: ['avatar'] },
 ];
 
 export default function AuthPage() {
@@ -87,13 +82,10 @@ export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward'>('forward');
-  const [uploadedAvatarPreview, setUploadedAvatarPreview] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -115,7 +107,6 @@ export default function AuthPage() {
       course: "",
       className: "",
       classCode: "",
-      avatar: PlaceHolderImages?.[0]?.imageUrl ?? '',
     },
   });
 
@@ -141,39 +132,6 @@ export default function AuthPage() {
     setCurrentStep(prev => prev - 1);
   }
 
-  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setAvatarFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        setUploadedAvatarPreview(dataUrl);
-        form.setValue("avatar", dataUrl, { shouldValidate: true }); 
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  async function uploadAvatar(userId: string): Promise<string> {
-    const storage = getStorage();
-    const selectedAvatar = form.getValues("avatar");
-
-    if (avatarFile) {
-        const filePath = `avatars/${userId}/${avatarFile.name}`;
-        const fileRef = storageRef(storage, filePath);
-        await uploadBytes(fileRef, avatarFile);
-        return getDownloadURL(fileRef);
-    }
-
-    if (selectedAvatar.startsWith('https://')) {
-        return selectedAvatar;
-    }
-    
-    return PlaceHolderImages?.[0]?.imageUrl ?? '';
-  }
-  
-
   async function onRegisterSubmit(values: RegistrationSchemaType) {
     setIsLoading(true);
     if (!auth || !firestore) {
@@ -186,11 +144,12 @@ export default function AuthPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
       
-      const finalAvatarUrl = await uploadAvatar(firebaseUser.uid);
+      const firstInitial = values.fullName.charAt(0).toUpperCase() || 'A';
+      const defaultAvatarUrl = `https://placehold.co/100x100/A78BFA/FFFFFF?text=${firstInitial}`;
 
       await updateProfile(firebaseUser, {
         displayName: values.fullName,
-        photoURL: finalAvatarUrl,
+        photoURL: defaultAvatarUrl,
       });
 
       const normalizedCenter = normalizeSchoolName(values.center);
@@ -198,7 +157,7 @@ export default function AuthPage() {
        const newUser: Omit<User, 'uid'> = {
           name: values.fullName,
           email: values.email,
-          avatar: finalAvatarUrl,
+          avatar: defaultAvatarUrl,
           center: normalizedCenter,
           ageRange: values.ageRange,
           course: values.course,
@@ -220,8 +179,6 @@ export default function AuthPage() {
           errorMessage = "Esta dirección de correo electrónico ya está en uso.";
       } else if (error.code === 'auth/weak-password') {
           errorMessage = 'La contraseña es demasiado débil. Debe tener al menos 6 caracteres.';
-      } else if (error.code?.includes('storage')) {
-          errorMessage = "No se pudo subir la imagen de perfil."
       }
       
       toast({
@@ -229,8 +186,7 @@ export default function AuthPage() {
         description: `${errorMessage}`,
         variant: "destructive",
       });
-    } finally {
-      // Keep loading on success
+      setIsLoading(false);
     }
   }
 
@@ -293,12 +249,9 @@ export default function AuthPage() {
       course: "",
       className: "",
       classCode: "",
-      avatar: PlaceHolderImages?.[0]?.imageUrl ?? '',
     });
     setCurrentStep(0);
     setIsLoading(false);
-    setUploadedAvatarPreview(null);
-    setAvatarFile(null);
   }
 
   if (user) {
@@ -396,33 +349,6 @@ export default function AuthPage() {
                                 <FormField control={form.control} name="classCode" render={({ field }) => (<FormItem><FormLabel>Código de Clase (Opcional)</FormLabel><FormControl><Input placeholder="Introduce el código para unirte" {...field} /></FormControl><FormDescription>Tu profesor te proporcionará este código.</FormDescription><FormMessage /></FormItem>)}/>
                             </div>
                           )}
-                          {index === 2 && (
-                            <FormField control={form.control} name="avatar" render={({ field }) => (
-                                <FormItem className="space-y-4 text-center">
-                                    <FormLabel className="text-base">Elige tu Foto de Perfil</FormLabel>
-                                    <FormDescription>Selecciona un avatar o sube el tuyo.</FormDescription>
-                                    <RadioGroup onValueChange={(value) => { field.onChange(value); setUploadedAvatarPreview(null); setAvatarFile(null); }} defaultValue={field.value} className="grid grid-cols-3 gap-4 pt-4">
-                                    {PlaceHolderImages?.slice(0,5).map((img) => (
-                                        <FormItem key={img.id} className="relative">
-                                            <FormControl><RadioGroupItem value={img.imageUrl} className="sr-only" /></FormControl>
-                                            <FormLabel className="cursor-pointer"><Image src={img.imageUrl} alt={img.description} width={80} height={80} className={`rounded-full aspect-square object-cover transition-all mx-auto ${field.value === img.imageUrl ? 'ring-4 ring-primary ring-offset-2' : 'opacity-60 hover:opacity-100'}`} /></FormLabel>
-                                        </FormItem>
-                                    ))}
-                                    <FormItem className="relative">
-                                        <FormControl><input type="file" accept="image/*" className="sr-only" ref={fileInputRef} onChange={handleAvatarUpload} /></FormControl>
-                                        <FormLabel className="cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                                            {uploadedAvatarPreview ? (
-                                                <Image src={uploadedAvatarPreview} alt="Avatar subido" width={80} height={80} className="rounded-full aspect-square object-cover transition-all mx-auto ring-4 ring-primary ring-offset-2" />
-                                            ) : (
-                                                <div className="h-[80px] w-[80px] rounded-full flex flex-col items-center justify-center gap-1 border-2 border-dashed bg-muted hover:bg-muted/80 mx-auto"><Camera className="h-6 w-6" /><span className="text-xs">Subir</span></div>
-                                            )}
-                                        </FormLabel>
-                                    </FormItem>
-                                    </RadioGroup>
-                                    <FormMessage className="pt-2" />
-                                </FormItem>
-                            )} />
-                          )}
                         </div>
                       ))}
                     </div>
@@ -431,7 +357,12 @@ export default function AuthPage() {
                         <Progress value={progress} className="h-2 mb-4" />
                         <div className="flex items-center gap-4">
                             <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isLoading} className={cn(isFirstStep && 'invisible', 'transition-opacity')}><ArrowLeft className="mr-2 h-4 w-4" /> Atrás</Button>
-                            <Button type={!isLastStep ? 'button' : 'submit'} onClick={!isLastStep ? goToNextStep : undefined} className="w-full" size="lg" disabled={isLoading}>
+                            <Button 
+                                type={isLastStep ? 'submit' : 'button'}
+                                onClick={!isLastStep ? goToNextStep : undefined} 
+                                className="w-full" 
+                                size="lg" 
+                                disabled={isLoading}>
                                 {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creando Cuenta...</>) : isLastStep ? ("Crear Cuenta") : ("Siguiente")}
                             </Button>
                         </div>
@@ -497,3 +428,5 @@ export default function AuthPage() {
     </main>
   );
 }
+
+    
