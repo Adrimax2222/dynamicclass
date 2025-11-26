@@ -11,6 +11,7 @@ import {
   signInWithEmailAndPassword,
   sendEmailVerification,
   updateProfile,
+  signOut,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 

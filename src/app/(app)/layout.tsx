@@ -39,7 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // This covers the initial load time for auth state and Firestore doc fetch.
   // The !user check is crucial because it waits for the Firestore data,
   // which prevents premature redirects for newly registered (but not yet verified) users.
-  if (!user) {
+  if (!user || !firebaseUser?.emailVerified) {
     return <LoadingScreen />;
   }
 
