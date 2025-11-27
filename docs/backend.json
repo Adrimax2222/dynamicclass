@@ -20,7 +20,8 @@
         "pending": { "type": "number" },
         "activities": { "type": "number" },
         "organizationId": { "type": "string" },
-        "isNewUser": { "type": "boolean" }
+        "isNewUser": { "type": "boolean" },
+        "fcmToken": { "type": "string", "description": "Firebase Cloud Messaging token for push notifications." }
       },
       "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange", "isNewUser"]
     },

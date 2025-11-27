@@ -3,12 +3,12 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow authenticated users to read all files
-    match /{allPaths=**} {
+    // Allow read access to avatars for any authenticated user
+    match /avatars/{userId}/{allPaths=**} {
       allow read: if request.auth != null;
     }
     
-    // Allow an authenticated user to write to their own avatar folder
+    // Allow a user to write ONLY to their own avatar folder
     match /avatars/{userId}/{allPaths=**} {
       allow write: if request.auth != null && request.auth.uid == userId;
     }
