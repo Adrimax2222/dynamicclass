@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,11 +33,11 @@ import { useState, useEffect, useRef } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { normalizeSchoolName } from "@/lib/school-utils";
 import { Badge } from "@/components/ui/badge";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 
 
 export default function ProfilePage() {
@@ -78,6 +79,8 @@ export default function ProfilePage() {
     "1bach": "1º Bachillerato",
     "2bach": "2º Bachillerato",
   }
+  
+  const displayCenter = user.center === SCHOOL_VERIFICATION_CODE ? SCHOOL_NAME : user.center;
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
@@ -103,7 +106,7 @@ export default function ProfilePage() {
           {user.role === 'admin' && (
             <Badge variant="destructive" className="mt-2">Admin</Badge>
           )}
-          <p className="text-muted-foreground mt-2">{user.center}</p>
+          <p className="text-muted-foreground mt-2">{displayCenter}</p>
           <EditProfileDialog />
         </CardContent>
       </Card>
@@ -243,11 +246,9 @@ function EditProfileDialog() {
     try {
         const uploadedAvatarUrl = await uploadAvatar(user.uid);
         
-        const normalizedCenter = normalizeSchoolName(center);
-        
         const updatedData = {
             name,
-            center: normalizedCenter,
+            center: center,
             ageRange,
             course,
             className,
@@ -342,7 +343,7 @@ function EditProfileDialog() {
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="center">Centro Educativo</Label>
+                <Label htmlFor="center">Código de Centro Educativo</Label>
                 <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} />
             </div>
             <div className="space-y-2">
@@ -423,5 +424,7 @@ function AchievementCard({ title, value, icon: Icon, color }: SummaryCardData) {
       </Card>
     );
   }
+
+    
 
     

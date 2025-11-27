@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -50,13 +51,12 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import type { User } from "@/lib/types";
 import LoadingScreen from "@/components/layout/loading-screen";
-import { normalizeSchoolName } from "@/lib/school-utils";
 
 const registrationSchema = z.object({
   fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
   email: z.string().email({ message: "Por favor, introduce una dirección de correo electrónico válida." }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
-  center: z.string().min(1, { message: "El centro educativo es obligatorio." }),
+  center: z.string().min(1, { message: "El código de centro es obligatorio." }),
   ageRange: z.string().min(1, { message: "Por favor, selecciona un rango de edad." }),
   course: z.string().min(1, { message: "Por favor, selecciona tu curso." }),
   className: z.string().min(1, { message: "Por favor, selecciona tu clase." }),
@@ -155,13 +155,11 @@ export default function AuthPage() {
         photoURL: defaultAvatarUrl,
       });
 
-      const normalizedCenter = normalizeSchoolName(values.center);
-
        const newUser: Omit<User, 'uid'> = {
           name: values.fullName,
           email: values.email,
           avatar: defaultAvatarUrl,
-          center: normalizedCenter,
+          center: values.center,
           ageRange: values.ageRange,
           course: values.course,
           className: values.className,
@@ -365,7 +363,7 @@ export default function AuthPage() {
                           )}
                           {index === 1 && (
                             <div className="space-y-4">
-                                <FormField control={form.control} name="center" render={({ field }) => (<FormItem><FormLabel>Centro Educativo</FormLabel><FormControl><Input placeholder="Escribe el nombre de tu centro" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="center" render={({ field }) => (<FormItem><FormLabel>Código de Centro Educativo</FormLabel><FormControl><Input placeholder="Escribe el código de tu centro" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="ageRange" render={({ field }) => (<FormItem><FormLabel>Rango de Edad</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger></FormControl><SelectContent><SelectItem value="12-15">12-15 años</SelectItem><SelectItem value="16-18">16-18 años</SelectItem><SelectItem value="19-22">19-22 años</SelectItem><SelectItem value="23+">23+ años</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                 <div className="grid grid-cols-2 gap-4">
                                   <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel>Curso</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="1eso">1º ESO</SelectItem><SelectItem value="2eso">2º ESO</SelectItem><SelectItem value="3eso">3º ESO</SelectItem><SelectItem value="4eso">4º ESO</SelectItem><SelectItem value="1bach">1º Bachillerato</SelectItem><SelectItem value="2bach">2º Bachillerato</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
@@ -478,3 +476,5 @@ export default function AuthPage() {
     </main>
   );
 }
+
+    

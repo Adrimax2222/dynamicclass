@@ -63,7 +63,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { SCHOOL_NAME } from "@/lib/constants";
+import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Logo } from "@/components/icons";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -155,9 +155,11 @@ function AnnouncementsTab() {
       await deleteDoc(announcementDocRef);
   }
 
+  const userIsInCenter = user?.center === SCHOOL_VERIFICATION_CODE;
+
   const filteredAnnouncements = announcements.filter(ann => {
     // Show only 'general' announcements to users not in the center
-    if (user?.center !== SCHOOL_NAME) {
+    if (!userIsInCenter) {
       return ann.scope === 'general';
     }
 
@@ -171,7 +173,7 @@ function AnnouncementsTab() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h2 className="text-lg font-semibold">Últimos Anuncios</h2>
           <div className="w-full sm:w-auto">
-            <Select onValueChange={(v: AnnouncementFilter) => setFilter(v)} defaultValue={user?.center === SCHOOL_NAME ? "all" : "general"}>
+            <Select onValueChange={(v: AnnouncementFilter) => setFilter(v)} defaultValue={userIsInCenter ? "all" : "general"}>
                 <SelectTrigger className="w-full sm:w-[200px]">
                     <div className="flex items-center gap-2">
                         <Filter className="h-4 w-4" />
@@ -179,13 +181,13 @@ function AnnouncementsTab() {
                     </div>
                 </SelectTrigger>
                 <SelectContent>
-                    {user?.center === SCHOOL_NAME && <SelectItem value="all">Todos los Anuncios</SelectItem>}
+                    {userIsInCenter && <SelectItem value="all">Todos los Anuncios</SelectItem>}
                     <SelectItem value="general">
                         <div className="flex items-center gap-2">
                            <Globe className="h-4 w-4" /> General
                         </div>
                     </SelectItem>
-                     <SelectItem value="center" disabled={user?.center !== SCHOOL_NAME}>
+                     <SelectItem value="center" disabled={!userIsInCenter}>
                         <div className="flex items-center gap-2">
                            <Building className="h-4 w-4" /> {SCHOOL_NAME}
                         </div>
@@ -513,3 +515,5 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     </Dialog>
   )
 }
+
+    

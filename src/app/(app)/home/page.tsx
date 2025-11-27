@@ -26,7 +26,7 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
 import { Button } from "@/components/ui/button";
-import { SCHOOL_NAME } from "@/lib/constants";
+import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Logo } from "@/components/icons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -100,7 +100,7 @@ export default function HomePage() {
             </h1>
             <div className="flex items-center gap-2 mt-1">
                 <Badge variant="outline">V3.0 - Beta</Badge>
-                {user.center === SCHOOL_NAME && (
+                {user.center === SCHOOL_VERIFICATION_CODE && (
                     <Badge>Ins Torre del Palau</Badge>
                 )}
                 {user.role === 'admin' && (
@@ -262,5 +262,7 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
+    
 
     
