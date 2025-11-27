@@ -7,6 +7,8 @@ import { SCHOOL_NAME } from "./constants";
  * @returns The canonical school name if it's a match, otherwise the original input.
  */
 export function normalizeSchoolName(input: string): string {
+  if (!input) return "";
+  
   const normalizedInput = input
     .toLowerCase()
     .normalize("NFD") // Decompose accents from characters

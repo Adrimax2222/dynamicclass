@@ -250,7 +250,8 @@ export default function AuthPage() {
         description: errorMessage,
         variant: "destructive",
       });
-      setIsLoading(false); 
+    } finally {
+        setIsLoading(false); 
     }
   }
 
@@ -364,7 +365,7 @@ export default function AuthPage() {
                           )}
                           {index === 1 && (
                             <div className="space-y-4">
-                                <FormField control={form.control} name="center" render={({ field }) => (<FormItem><FormLabel>Centro Educativo</FormLabel><FormControl><Input placeholder="Universidad de Springfield" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="center" render={({ field }) => (<FormItem><FormLabel>Centro Educativo</FormLabel><FormControl><Input placeholder="Escribe el nombre de tu centro" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="ageRange" render={({ field }) => (<FormItem><FormLabel>Rango de Edad</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger></FormControl><SelectContent><SelectItem value="12-15">12-15 años</SelectItem><SelectItem value="16-18">16-18 años</SelectItem><SelectItem value="19-22">19-22 años</SelectItem><SelectItem value="23+">23+ años</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                 <div className="grid grid-cols-2 gap-4">
                                   <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel>Curso</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="1eso">1º ESO</SelectItem><SelectItem value="2eso">2º ESO</SelectItem><SelectItem value="3eso">3º ESO</SelectItem><SelectItem value="4eso">4º ESO</SelectItem><SelectItem value="1bach">1º Bachillerato</SelectItem><SelectItem value="2bach">2º Bachillerato</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
