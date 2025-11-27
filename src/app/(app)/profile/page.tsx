@@ -344,7 +344,10 @@ function EditProfileDialog() {
             </div>
             <div className="space-y-2">
                 <Label htmlFor="center">Código de Centro Educativo</Label>
-                <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} />
+                <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} placeholder="Ej: 246-369" />
+                 <p className="text-xs text-muted-foreground">
+                    Introduce el código proporcionado por tu centro para unirte a su grupo.
+                </p>
             </div>
             <div className="space-y-2">
                 <Label htmlFor="ageRange">Rango de Edad</Label>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -6,11 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2 } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore } from "@/firebase";
-import { signOut } from "firebase/auth";
+import { signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import { Logo } from "@/components/icons";
 import Link from "next/link";
 import {
@@ -27,9 +26,21 @@ import {
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
+import { SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
-import { doc, updateDoc } from "firebase/firestore";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+
 
 export default function SettingsPage() {
   const { theme, setTheme, logout: contextLogout, deleteAccount } = useApp();
@@ -117,6 +128,24 @@ export default function SettingsPage() {
                     Esta función estará disponible próximamente.
                 </div>
             </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+              <CardTitle>Seguridad</CardTitle>
+              <CardDescription>
+                  Gestiona la seguridad de tu cuenta.
+              </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                  <Label htmlFor="change-password-button" className="flex items-center gap-2">
+                      <KeyRound className="h-5 w-5" />
+                      <span>Contraseña</span>
+                  </Label>
+                  <ChangePasswordDialog />
+              </div>
+          </CardContent>
         </Card>
 
         <Card>
@@ -247,5 +276,182 @@ export default function SettingsPage() {
             </Link>
         </div>
     </div>
+  );
+}
+
+
+const passwordChangeSchema = z.object({
+  currentPassword: z.string().min(1, { message: "La contraseña actual es obligatoria." }),
+  newPassword: z.string().min(6, { message: "La nueva contraseña debe tener al menos 6 caracteres." }),
+  confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Las nuevas contraseñas no coinciden.",
+  path: ["confirmPassword"],
+});
+
+type PasswordChangeSchema = z.infer<typeof passwordChangeSchema>;
+
+function ChangePasswordDialog() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const { toast } = useToast();
+  const auth = useAuth();
+
+  const form = useForm<PasswordChangeSchema>({
+    resolver: zodResolver(passwordChangeSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
+  const onSubmit = async (values: PasswordChangeSchema) => {
+    setIsLoading(true);
+    const user = auth?.currentUser;
+
+    if (!user || !user.email) {
+      toast({
+        title: "Error",
+        description: "No se pudo encontrar el usuario. Intenta iniciar sesión de nuevo.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const credential = EmailAuthProvider.credential(user.email, values.currentPassword);
+      await reauthenticateWithCredential(user, credential);
+
+      // Re-authentication successful, now update the password
+      await updatePassword(user, values.newPassword);
+
+      toast({
+        title: "¡Contraseña actualizada!",
+        description: "Tu contraseña ha sido cambiada exitosamente.",
+      });
+      setIsOpen(false);
+      form.reset();
+
+    } catch (error: any) {
+      console.error("Password change error:", error);
+      let description = "Ocurrió un error inesperado.";
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        description = "La contraseña actual es incorrecta.";
+        form.setError("currentPassword", { type: "manual", message: description });
+      }
+      toast({
+        title: "Error al cambiar la contraseña",
+        description: description,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button id="change-password-button" variant="outline">Cambiar Contraseña</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Cambiar tu Contraseña</DialogTitle>
+          <DialogDescription>
+            Introduce tu contraseña actual y luego la nueva.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <FormField
+              control={form.control}
+              name="currentPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contraseña Actual</FormLabel>
+                  <div className="relative">
+                    <FormControl>
+                      <Input
+                        type={showCurrentPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        {...field}
+                      />
+                    </FormControl>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    >
+                      {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="newPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nueva Contraseña</FormLabel>
+                   <div className="relative">
+                    <FormControl>
+                      <Input
+                        type={showNewPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        {...field}
+                      />
+                    </FormControl>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirmar Nueva Contraseña</FormLabel>
+                  <FormControl>
+                    <Input
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <DialogFooter className="pt-4">
+              <DialogClose asChild>
+                <Button variant="outline" type="button" disabled={isLoading}>Cancelar</Button>
+              </DialogClose>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Guardar Cambios
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
