@@ -20,10 +20,19 @@
         "pending": { "type": "number" },
         "activities": { "type": "number" },
         "organizationId": { "type": "string" },
-        "isNewUser": { "type": "boolean" },
-        "fcmToken": { "type": "string", "description": "Firebase Cloud Messaging token for push notifications." }
+        "isNewUser": { "type": "boolean" }
       },
       "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange", "isNewUser"]
+    },
+    "UserToken": {
+      "title": "User Token",
+      "description": "Stores a user's Firebase Cloud Messaging (FCM) token for push notifications.",
+      "type": "object",
+      "properties": {
+        "token": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["token", "updatedAt"]
     },
     "Note": {
       "title": "Note",
@@ -68,6 +77,10 @@
     "/announcements/{announcementId}": {
         "schema": { "$ref": "#/entities/Announcement" },
         "description": "Stores global announcements for all users."
+    },
+    "/userTokens/{userId}": {
+      "schema": { "$ref": "#/entities/UserToken" },
+      "description": "Stores the FCM token for a specific user."
     }
   }
 }

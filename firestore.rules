@@ -32,6 +32,10 @@ service cloud.firestore {
         allow list, get, create, update, delete: if isOwner(userId);
       }
     }
+    
+    match /userTokens/{userId} {
+      allow read, write: if isOwner(userId);
+    }
 
     match /announcements/{announcementId} {
       // Allow list for all authenticated users, client will filter.
