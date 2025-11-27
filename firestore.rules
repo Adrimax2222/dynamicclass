@@ -41,7 +41,7 @@ service cloud.firestore {
       // Allow list for all authenticated users, client will filter.
       allow list: if request.auth != null;
       // Allow get only if the announcement is general or if the user belongs to the center.
-      allow get: if request.auth != null && (resource.data.scope == 'general' || (resource.data.scope == 'center' && getUserCenter() == 'IES Torre del Palau'));
+      allow get: if request.auth != null && (resource.data.scope == 'general' || (resource.data.scope == 'center' && getUserCenter() == '246-369'));
       allow create, update, delete: if isAdmin();
     }
   }
