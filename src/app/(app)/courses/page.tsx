@@ -376,11 +376,11 @@ function MyClassesTab() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
                  <CardTitle>Mi Horario de Clases</CardTitle>
-                 <CardDescription>
+                 <CardDescription className="pt-1">
                     Aquí tienes tu horario para toda la semana.
                 </CardDescription>
             </div>
-            <Badge variant="default" className="text-sm px-3 py-1 w-fit">{formattedCourse} - {user.className}</Badge>
+            <Badge variant="default" className="text-sm px-3 py-1 w-fit">{`${formattedCourse} - ${user.className}`}</Badge>
         </div>
       </CardHeader>
       <CardContent className="p-0 sm:p-2">
