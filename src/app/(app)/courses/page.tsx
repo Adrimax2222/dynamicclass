@@ -380,7 +380,7 @@ function MyClassesTab() {
                     Aquí tienes tu horario para toda la semana.
                 </CardDescription>
             </div>
-            <Badge variant="default" className="text-sm px-3 py-1 w-fit">{`${formattedCourse} - ${user.className}`}</Badge>
+            <Badge variant="default" className="text-sm px-2 py-1 whitespace-nowrap">{`${formattedCourse} - ${user.className}`}</Badge>
         </div>
       </CardHeader>
       <CardContent className="p-0 sm:p-2">
