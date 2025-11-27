@@ -57,9 +57,9 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
                 <School className="h-5 w-5 text-blue-500 mt-0.5 shrink-0"/>
                 <div>
                     <h3 className="font-semibold text-foreground mb-1">Tu Centro Educativo</h3>
-                    <p>
-                        Para acceder a contenido exclusivo y comunicados de tu centro, asegúrate de haberte registrado con la etiqueta oficial: <Badge variant="secondary">{SCHOOL_NAME}</Badge>.
-                    </p>
+                    <div className="text-muted-foreground">
+                        Para acceder a contenido exclusivo y comunicados de tu centro, asegúrate de haberte registrado con el código oficial: <Badge variant="secondary">{SCHOOL_VERIFICATION_CODE}</Badge>.
+                    </div>
                 </div>
             </div>
            
