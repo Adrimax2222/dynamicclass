@@ -19,7 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { upcomingClasses, fullSchedule } from "@/lib/data";
-import type { SummaryCardData, UpcomingClass, Schedule, ScheduleEntry } from "@/lib/types";
+import type { SummaryCardData, Schedule, ScheduleEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy, BookOpen, Building, User, Info } from "lucide-react";
 import Link from "next/link";
