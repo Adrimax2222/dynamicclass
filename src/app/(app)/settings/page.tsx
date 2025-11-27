@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -29,97 +30,6 @@ import { Badge } from "@/components/ui/badge";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import { doc, updateDoc } from "firebase/firestore";
-
-function CenterVerificationCard() {
-    const { user, updateUser } = useApp();
-    const firestore = useFirestore();
-    const { toast } = useToast();
-    const [code, setCode] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-
-    // This card should only be shown if the user is eligible
-    const isEligible = user && user.email.endsWith('@iestorredelpalau.cat') && user.center !== SCHOOL_NAME;
-
-    if (!isEligible) {
-        return null;
-    }
-
-    const handleVerification = async () => {
-        setIsLoading(true);
-
-        if (code !== SCHOOL_VERIFICATION_CODE) {
-            toast({
-                title: "Código Incorrecto",
-                description: "El código de verificación no es válido. Inténtalo de nuevo.",
-                variant: "destructive",
-            });
-            setIsLoading(false);
-            return;
-        }
-
-        if (!user || !firestore) {
-             toast({
-                title: "Error",
-                description: "No se pudo completar la verificación. Inténtalo de nuevo.",
-                variant: "destructive",
-            });
-            setIsLoading(false);
-            return;
-        }
-
-        try {
-            const userDocRef = doc(firestore, 'users', user.uid);
-            await updateDoc(userDocRef, {
-                center: SCHOOL_NAME
-            });
-
-            updateUser({ center: SCHOOL_NAME });
-
-            toast({
-                title: "¡Verificación Completada!",
-                description: `Ahora eres miembro oficial de ${SCHOOL_NAME}.`,
-            });
-        } catch (error) {
-            console.error("Error updating user center:", error);
-            toast({
-                title: "Error de Verificación",
-                description: "No se pudo actualizar tu centro. Por favor, contacta con soporte.",
-                variant: "destructive",
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    return (
-         <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <KeyRound className="h-5 w-5 text-primary"/>
-                    Verificación del Centro
-                </CardTitle>
-                <CardDescription>
-                   Introduce el código de tu centro para acceder a contenido exclusivo.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="verification-code">Código de Verificación</Label>
-                    <Input 
-                        id="verification-code" 
-                        placeholder="XXX-XXX"
-                        value={code}
-                        onChange={(e) => setCode(e.target.value)}
-                    />
-                </div>
-                <Button onClick={handleVerification} disabled={isLoading || !code}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                    Verificar
-                </Button>
-            </CardContent>
-        </Card>
-    );
-}
 
 export default function SettingsPage() {
   const { theme, setTheme, logout: contextLogout, deleteAccount } = useApp();
@@ -190,8 +100,6 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
-
-        <CenterVerificationCard />
 
         <Card>
             <CardHeader>

@@ -101,7 +101,7 @@ export default function HomePage() {
             <div className="flex items-center gap-2 mt-1">
                 <Badge variant="outline">V3.0 - Beta</Badge>
                 {user.center === SCHOOL_VERIFICATION_CODE && (
-                    <Badge>Ins Torre del Palau</Badge>
+                    <Badge>{SCHOOL_NAME}</Badge>
                 )}
                 {user.role === 'admin' && (
                     <Badge variant="destructive">Admin</Badge>
