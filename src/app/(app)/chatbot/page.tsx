@@ -36,6 +36,8 @@ import {
   doc,
   deleteDoc,
   writeBatch,
+  getDocs,
+  updateDoc,
 } from "firebase/firestore";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -77,7 +79,7 @@ export default function ChatbotPage() {
     if (viewport) {
       viewport.scrollTop = viewport.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isSending]);
 
   const createNewChat = async () => {
     if (!firestore || !user) return;
@@ -119,16 +121,21 @@ export default function ChatbotPage() {
     if (!input.trim() || !user || !firestore) return;
 
     let currentChatId = activeChatId;
+    const isNewChat = !currentChatId || chats.find(c => c.id === currentChatId)?.title === "Nuevo Chat";
 
     // If there's no active chat, create one first
     if (!currentChatId) {
         const newChatRef = await addDoc(collection(firestore, `users/${user.uid}/chats`), {
             userId: user.uid,
-            title: input.substring(0, 25), // Use first few words as title
+            title: input.substring(0, 30), // Use first few words as title
             createdAt: serverTimestamp(),
         });
         currentChatId = newChatRef.id;
         setActiveChatId(currentChatId);
+    } else if (isNewChat) {
+        // If it's a "Nuevo Chat", update its title with the first message
+        const chatDocRef = doc(firestore, `users/${user.uid}/chats`, currentChatId);
+        await updateDoc(chatDocRef, { title: input.substring(0, 30) });
     }
     
     const userMessage: Omit<ChatMessage, 'id'> = {

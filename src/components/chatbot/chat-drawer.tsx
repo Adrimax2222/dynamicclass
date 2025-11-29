@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -19,6 +20,7 @@ import {
   deleteDoc,
   writeBatch,
   getDocs,
+  updateDoc,
 } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
@@ -95,15 +97,19 @@ export default function ChatDrawer() {
     if (!input.trim() || !user || !firestore) return;
 
     let currentChatId = activeChatId;
+    const isNewChat = !currentChatId || chats.find(c => c.id === currentChatId)?.title === "Nuevo Chat";
 
     if (!currentChatId) {
         const newChatRef = await addDoc(collection(firestore, `users/${user.uid}/chats`), {
             userId: user.uid,
-            title: input.substring(0, 25),
+            title: input.substring(0, 30),
             createdAt: serverTimestamp(),
         });
         currentChatId = newChatRef.id;
         setActiveChatId(currentChatId);
+    } else if (isNewChat) {
+        const chatDocRef = doc(firestore, `users/${user.uid}/chats`, currentChatId);
+        await updateDoc(chatDocRef, { title: input.substring(0, 30) });
     }
     
     const userMessage: Omit<ChatMessage, 'id'> = {
