@@ -210,7 +210,7 @@ export default function ChatbotPage() {
             <div className="w-10"></div>
         </header>
 
-        <ScrollArea className="flex-1 bg-chat-logo-pattern" ref={scrollAreaRef}>
+        <ScrollArea className="flex-1" ref={scrollAreaRef}>
             <div className="space-y-6 p-4">
             {!activeChatId && !isChatsLoading ? (
                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 mt-16">
