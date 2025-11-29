@@ -14,7 +14,7 @@ import { Logo } from "@/components/icons";
 import { Badge } from "../ui/badge";
 import { ShieldCheck, School, Package, AlertTriangle } from "lucide-react";
 import Link from "next/link";
-import { SCHOOL_NAME } from "@/lib/constants";
+import { SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 
 interface WelcomeModalProps {
   onClose: () => void;
