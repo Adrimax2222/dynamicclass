@@ -6,8 +6,6 @@ import {
   Paperclip,
   Send,
   Sparkles,
-  Mic,
-  FileImage,
   MessageSquare,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -25,18 +23,15 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/lib/types";
 import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance";
-import { generateImage } from "@/ai/flows/image-generator-flow";
 import { useApp } from "@/lib/hooks/use-app";
 import Image from "next/image";
 
-type AiMode = "text" | "image";
 type Subject = "general" | "mathematics" | "physics" | "chemistry" | "language" | "biology" | "music" | "programming" | "social_sciences" | "geography";
 
 export default function ChatbotPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [aiMode, setAiMode] = useState<AiMode>("text");
   const [subject, setSubject] = useState<Subject>("general");
   const { user } = useApp();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -65,35 +60,23 @@ export default function ChatbotPage() {
     setIsLoading(true);
 
     try {
-        if (aiMode === 'text') {
-            const result = await aiChatbotAssistance({
-                query: currentInput,
-                subject: subject === 'general' ? undefined : subject.replace('_', ' '),
-            });
-            const assistantMessage: ChatMessage = {
-                id: (Date.now() + 1).toString(),
-                role: "assistant",
-                content: result.response,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            };
-            setMessages((prev) => [...prev, assistantMessage]);
-        } else { // aiMode === 'image'
-            const result = await generateImage({ prompt: currentInput });
-            const assistantMessage: ChatMessage = {
-                id: (Date.now() + 1).toString(),
-                role: "assistant",
-                content: result.imageDataUri,
-                type: 'image',
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            };
-            setMessages((prev) => [...prev, assistantMessage]);
-        }
+        const result = await aiChatbotAssistance({
+            query: currentInput,
+            subject: subject === 'general' ? undefined : subject.replace('_', ' '),
+        });
+        const assistantMessage: ChatMessage = {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: result.response,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("AI Error:", error);
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "system",
-        content: `Lo siento, he encontrado un problema. Por favor, inténtalo de nuevo. Modo: ${aiMode}`,
+        content: `Lo siento, he encontrado un problema. Por favor, inténtalo de nuevo.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -101,8 +84,6 @@ export default function ChatbotPage() {
       setIsLoading(false);
     }
   };
-
-  const isTextMode = aiMode === 'text';
 
   const subjectMap: Record<Subject, string> = {
     general: 'General',
@@ -127,20 +108,10 @@ export default function ChatbotPage() {
       </header>
 
       <div className="border-b p-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Modo IA</Label>
-              <Select value={aiMode} onValueChange={(v: AiMode) => setAiMode(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="text"><div className="flex items-center gap-2"><MessageSquare className="h-4 w-4"/> Texto</div></SelectItem>
-                  <SelectItem value="image"><div className="flex items-center gap-2"><FileImage className="h-4 w-4"/> Imagen</div></SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
               <Label>Materia/Tema</Label>
-              <Select value={subject} onValueChange={(v: Subject) => setSubject(v)} disabled={!isTextMode}>
+              <Select value={subject} onValueChange={(v: Subject) => setSubject(v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(subjectMap).map(([key, value]) => (
@@ -158,11 +129,7 @@ export default function ChatbotPage() {
                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 mt-16">
                     <Sparkles className="h-12 w-12 mb-4" />
                     <p className="text-lg font-semibold">¡Comienza una conversación!</p>
-                    {isTextMode ? (
-                        <p>Pregúntame sobre {subject === 'general' ? 'cualquier cosa' : subjectMap[subject].toLowerCase()}, y haré mi mejor esfuerzo para ayudar.</p>
-                    ) : (
-                        <p>Describe una imagen y la generaré para ti.</p>
-                    )}
+                    <p>Pregúntame sobre {subject === 'general' ? 'cualquier cosa' : subjectMap[subject].toLowerCase()}, y haré mi mejor esfuerzo para ayudar.</p>
                 </div>
             )}
           {messages.map((message) => (
@@ -216,7 +183,7 @@ export default function ChatbotPage() {
       <div className="mt-auto border-t bg-background p-4">
         <div className="relative">
           <Textarea
-            placeholder={isTextMode ? "Enviar un mensaje..." : "Describe una imagen para generar..."}
+            placeholder={"Enviar un mensaje..."}
             className="pr-28"
             value={input}
             onChange={(e) => setInput(e.target.value)}
