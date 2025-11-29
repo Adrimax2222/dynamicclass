@@ -7,6 +7,8 @@ import {
   Send,
   Sparkles,
   MessageSquare,
+  Image as ImageIcon,
+  Text,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -23,16 +25,17 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/lib/types";
 import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance";
+import { generateImage } from "@/ai/flows/image-generator-flow";
 import { useApp } from "@/lib/hooks/use-app";
 import Image from "next/image";
 
-type Subject = "general" | "mathematics" | "physics" | "chemistry" | "language" | "biology" | "music" | "programming" | "social_sciences" | "geography";
+type AIMode = "text" | "image";
 
 export default function ChatbotPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [subject, setSubject] = useState<Subject>("general");
+  const [aiMode, setAiMode] = useState<AIMode>("text");
   const { user } = useApp();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -60,17 +63,26 @@ export default function ChatbotPage() {
     setIsLoading(true);
 
     try {
-        const result = await aiChatbotAssistance({
-            query: currentInput,
-            subject: subject === 'general' ? undefined : subject.replace('_', ' '),
-        });
-        const assistantMessage: ChatMessage = {
-            id: (Date.now() + 1).toString(),
-            role: "assistant",
-            content: result.response,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
+        if (aiMode === 'text') {
+            const result = await aiChatbotAssistance({ query: currentInput });
+            const assistantMessage: ChatMessage = {
+                id: (Date.now() + 1).toString(),
+                role: "assistant",
+                content: result.response,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            };
+            setMessages((prev) => [...prev, assistantMessage]);
+        } else { // aiMode === 'image'
+            const result = await generateImage({ prompt: currentInput });
+            const imageMessage: ChatMessage = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: result.dataUri,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                type: 'image',
+            };
+            setMessages((prev) => [...prev, imageMessage]);
+        }
     } catch (error) {
       console.error("AI Error:", error);
       const errorMessage: ChatMessage = {
@@ -85,18 +97,9 @@ export default function ChatbotPage() {
     }
   };
 
-  const subjectMap: Record<Subject, string> = {
-    general: 'General',
-    mathematics: 'Matemáticas',
-    physics: 'Física',
-    chemistry: 'Química',
-    language: 'Lenguaje',
-    biology: 'Biología',
-    music: 'Música',
-    programming: 'Programación',
-    social_sciences: 'Ciencias Sociales',
-    geography: 'Geografía',
-  }
+  const placeholderText = aiMode === 'text' 
+    ? "Pregúntame sobre cualquier tema..." 
+    : "Describe una imagen para generar...";
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
@@ -110,13 +113,24 @@ export default function ChatbotPage() {
       <div className="border-b p-4">
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
-              <Label>Materia/Tema</Label>
-              <Select value={subject} onValueChange={(v: Subject) => setSubject(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Label>Modo IA</Label>
+              <Select value={aiMode} onValueChange={(v: AIMode) => setAiMode(v)}>
+                <SelectTrigger>
+                    <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(subjectMap).map(([key, value]) => (
-                    <SelectItem key={key} value={key}>{value}</SelectItem>
-                  ))}
+                    <SelectItem value="text">
+                        <div className="flex items-center gap-2">
+                            <Text className="h-4 w-4" />
+                            <span>Chat de Texto</span>
+                        </div>
+                    </SelectItem>
+                    <SelectItem value="image">
+                        <div className="flex items-center gap-2">
+                            <ImageIcon className="h-4 w-4" />
+                            <span>Generador de Imágenes</span>
+                        </div>
+                    </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -129,7 +143,7 @@ export default function ChatbotPage() {
                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 mt-16">
                     <Sparkles className="h-12 w-12 mb-4" />
                     <p className="text-lg font-semibold">¡Comienza una conversación!</p>
-                    <p>Pregúntame sobre {subject === 'general' ? 'cualquier cosa' : subjectMap[subject].toLowerCase()}, y haré mi mejor esfuerzo para ayudar.</p>
+                    <p>{placeholderText}</p>
                 </div>
             )}
           {messages.map((message) => (
@@ -183,7 +197,7 @@ export default function ChatbotPage() {
       <div className="mt-auto border-t bg-background p-4">
         <div className="relative">
           <Textarea
-            placeholder={"Enviar un mensaje..."}
+            placeholder={placeholderText}
             className="pr-28"
             value={input}
             onChange={(e) => setInput(e.target.value)}
