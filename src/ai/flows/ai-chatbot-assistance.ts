@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {googleAI} from '@genkit-ai/google-genai';
 import {z} from 'genkit';
 
 const AIChatbotAssistanceInputSchema = z.object({
@@ -31,6 +32,7 @@ export async function aiChatbotAssistance(input: AIChatbotAssistanceInput): Prom
 
 const prompt = ai.definePrompt({
   name: 'aiChatbotAssistancePrompt',
+  model: googleAI.model('gemini-2.5-flash'),
   input: {schema: AIChatbotAssistanceInputSchema},
   output: {schema: AIChatbotAssistanceOutputSchema},
   prompt: `Eres un asistente de chatbot de IA, competente en educación.
