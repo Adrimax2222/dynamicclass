@@ -89,11 +89,19 @@ export default function ProfilePage() {
         <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
           Mi Perfil
         </h1>
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/settings" aria-label="Ajustes">
-            <Settings />
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+            <RankingDialog user={user}>
+                 <div className="flex items-center gap-2 rounded-full border bg-card p-2 shadow-sm cursor-pointer hover:bg-muted transition-colors">
+                    <Trophy className="h-5 w-5 text-yellow-400" />
+                    <span className="font-bold">{user.trophies}</span>
+                </div>
+            </RankingDialog>
+            <Button variant="ghost" size="icon" asChild>
+                <Link href="/settings" aria-label="Ajustes">
+                    <Settings />
+                </Link>
+            </Button>
+        </div>
       </header>
 
       <Card className="mb-8 overflow-hidden shadow-lg">
@@ -439,3 +447,5 @@ function AchievementCard({ title, value, icon: Icon, color }: SummaryCardData) {
       </Card>
     );
   }
+
+    
