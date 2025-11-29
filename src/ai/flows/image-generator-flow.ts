@@ -25,6 +25,21 @@ export async function generateImage(input: GenerateImageInput): Promise<Generate
   return imageGeneratorFlow(input);
 }
 
+const imageGeneratorPrompt = ai.definePrompt(
+  {
+    name: 'imageGeneratorPrompt',
+    model: googleAI.model('imagen-4.0-fast-generate-001'),
+    input: {
+      schema: GenerateImageInputSchema,
+    },
+  },
+  async input => {
+    return {
+      prompt: input.prompt,
+    };
+  }
+);
+
 const imageGeneratorFlow = ai.defineFlow(
   {
     name: 'imageGeneratorFlow',
@@ -32,10 +47,8 @@ const imageGeneratorFlow = ai.defineFlow(
     outputSchema: GenerateImageOutputSchema,
   },
   async input => {
-    const {media} = await ai.generate({
-      model: googleAI.model('imagen-4.0-fast-generate-001'),
-      prompt: input.prompt,
-    });
+    const response = await imageGeneratorPrompt(input);
+    const media = response.media;
 
     if (!media) {
       throw new Error('Image generation failed to produce an image.');

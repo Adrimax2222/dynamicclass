@@ -83,12 +83,12 @@ export default function ChatbotPage() {
             };
             setMessages((prev) => [...prev, imageMessage]);
         }
-    } catch (error) {
+    } catch (error: any) {
       console.error("AI Error:", error);
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "system",
-        content: `Lo siento, he encontrado un problema. Por favor, inténtalo de nuevo.`,
+        content: `Lo siento, he encontrado un problema: ${error.message || 'Error desconocido'}. Por favor, inténtalo de nuevo.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMessage]);
