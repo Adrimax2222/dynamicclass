@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore } from "@/firebase";
@@ -43,7 +44,7 @@ import {
 
 
 export default function SettingsPage() {
-  const { theme, setTheme, logout: contextLogout, deleteAccount } = useApp();
+  const { theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, toggleChatBubble } = useApp();
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
@@ -97,7 +98,7 @@ export default function SettingsPage() {
               Personaliza el aspecto de la aplicación.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <Label htmlFor="theme-switch" className="flex items-center gap-2">
                 {theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
@@ -108,6 +109,18 @@ export default function SettingsPage() {
                 checked={theme === "dark"}
                 onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
               />
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+                <Label htmlFor="ai-bubble-switch" className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <span>Burbuja de IA</span>
+                </Label>
+                <Switch
+                    id="ai-bubble-switch"
+                    checked={isChatBubbleVisible}
+                    onCheckedChange={toggleChatBubble}
+                />
             </div>
           </CardContent>
         </Card>
@@ -455,3 +468,5 @@ function ChangePasswordDialog() {
     </Dialog>
   );
 }
+
+    
