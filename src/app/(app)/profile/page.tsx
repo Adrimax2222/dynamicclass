@@ -344,7 +344,7 @@ function EditProfileDialog() {
             </div>
             <div className="space-y-2">
                 <Label htmlFor="center">Código de Centro Educativo</Label>
-                <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} placeholder="Ej: 246-369" />
+                <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} placeholder="Ej: 123-456" />
                  <p className="text-xs text-muted-foreground">
                     Introduce el código proporcionado por tu centro para unirte a su grupo.
                 </p>
@@ -431,3 +431,4 @@ function AchievementCard({ title, value, icon: Icon, color }: SummaryCardData) {
     
 
     
+
