@@ -129,7 +129,7 @@ export default function ChatbotPage() {
               )}
               <div
                 className={cn(
-                  "max-w-[80%] rounded-lg p-3",
+                  "max-w-[80%] rounded-lg p-3 break-words",
                   message.role === "user" && "bg-primary text-primary-foreground",
                   message.role === "assistant" && "bg-muted",
                   message.role === 'system' && "bg-destructive text-destructive-foreground"
