@@ -277,6 +277,11 @@ function RankingDialog({ children, user }: { children: React.ReactNode; user: Us
     const isInSchoolGroup = user.center === SCHOOL_VERIFICATION_CODE;
 
     const fetchRanking = async () => {
+        // Temporarily disable ranking and show error message
+        setError("Debes estar en el grupo del centro para ver el ranking. Añade el código de centro en tu perfil.");
+        return;
+
+        /*
         if (!isInSchoolGroup) {
             setError("Debes estar en el grupo del centro para ver el ranking. Añade el código de centro en tu perfil.");
             return;
@@ -297,6 +302,7 @@ function RankingDialog({ children, user }: { children: React.ReactNode; user: Us
         } finally {
             setIsLoading(false);
         }
+        */
     };
 
     useEffect(() => {
