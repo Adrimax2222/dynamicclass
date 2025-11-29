@@ -36,12 +36,10 @@ async function requestGeneration(prompt: string, apiKey: string): Promise<string
           steps: 25,
           cfg_scale: 7.5,
       },
-      models: ["stable_diffusion"], // Using a more common base model
+      models: ["stable_diffusion"], // Using a common and reliable model
       nsfw: false,
       censor_nsfw: true,
       shared: true,
-      client_agent: "adrimax-studio-app:v1.0:github.com/google/studio",
-      apikey: apiKey 
   };
 
   try {
@@ -50,6 +48,7 @@ async function requestGeneration(prompt: string, apiKey: string): Promise<string
           headers: { 
             'Content-Type': 'application/json',
             'Accept': 'application/json',
+            'apikey': apiKey, // <<< CRITICAL: API KEY IN HEADERS
             'Client-Agent': 'adrimax-studio-app:v1.0:github.com/google/studio'
           },
           body: JSON.stringify(bodyData)
@@ -81,8 +80,13 @@ async function checkResult(taskId: string): Promise<string | null> {
 
   for (let i = 0; i < 30; i++) { // Max ~2.5 minutes
       try {
-          await sleep(5000); // Wait 5 seconds
+          await sleep(5000); // Wait 5 seconds before checking
+          
           const checkResponse = await fetch(checkUrl);
+          if (!checkResponse.ok) {
+              console.log(`   - Check attempt ${i+1} failed with status ${checkResponse.status}. Retrying...`);
+              continue;
+          }
           const checkResult = await checkResponse.json();
           
           if (checkResult.faulted) {
@@ -91,7 +95,7 @@ async function checkResult(taskId: string): Promise<string | null> {
           }
 
           if (checkResult.done) {
-              console.log("Generation process 'done'. Fetching final status...");
+              console.log("Generation process marked as 'done'. Fetching final status...");
               const statusResponse = await fetch(statusUrl);
               const statusResult = await statusResponse.json();
 
@@ -111,7 +115,7 @@ async function checkResult(taskId: string): Promise<string | null> {
 
       } catch (error: any) {
           console.error(`Error checking result on attempt ${i+1}:`, error.message);
-          // Don't exit on a single failed check, allow retries
+          // Don't exit on a single failed check, allow retries in the loop
       }
   }
 
@@ -135,5 +139,5 @@ export async function generateStableHordeImage(input: StableHordeImageInput): Pr
       }
   }
   
-  throw new Error('Failed to generate image with AI Stable Horde. Please try again later.');
+  throw new Error('Failed to generate image with AI Stable Horde. The service might be busy or the request timed out. Please try again later.');
 }
