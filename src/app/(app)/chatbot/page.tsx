@@ -383,5 +383,3 @@ function ChatHistorySheet({ chats, isChatsLoading, activeChatId, setActiveChatId
         </Sheet>
     );
 }
-
-    
