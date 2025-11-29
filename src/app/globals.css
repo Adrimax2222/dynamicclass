@@ -76,6 +76,11 @@
 }
 
 @layer utilities {
+  .bg-chat-pattern {
+    background-image: radial-gradient(hsl(var(--primary) / 0.1) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+    
   @keyframes slide-out {
     from {
       transform: translateX(0);

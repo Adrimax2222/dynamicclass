@@ -244,7 +244,7 @@ export default function ChatDrawer() {
         </div>
 
 
-        <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
+        <ScrollArea className="flex-1 px-4 bg-chat-pattern" ref={scrollAreaRef}>
           <div className="space-y-4 py-4">
              {!activeChatId && !isChatsLoading ? (
                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">

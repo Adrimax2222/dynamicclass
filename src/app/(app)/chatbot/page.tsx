@@ -210,7 +210,7 @@ export default function ChatbotPage() {
             <div className="w-10"></div>
         </header>
 
-        <ScrollArea className="flex-1" ref={scrollAreaRef}>
+        <ScrollArea className="flex-1 bg-chat-pattern" ref={scrollAreaRef}>
             <div className="space-y-6 p-4">
             {!activeChatId && !isChatsLoading ? (
                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 mt-16">
@@ -354,7 +354,7 @@ function ChatHistorySheet({ chats, isChatsLoading, activeChatId, setActiveChatId
                                 </Button>
                                  <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
                                             <Trash2 className="h-4 w-4"/>
                                         </Button>
                                     </AlertDialogTrigger>
