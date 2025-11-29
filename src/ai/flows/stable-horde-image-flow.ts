@@ -23,6 +23,93 @@ export type StableHordeImageOutput = z.infer<typeof StableHordeImageOutputSchema
 // Helper function to delay execution
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+async function requestGeneration(prompt: string, apiKey: string): Promise<string | null> {
+  console.log(`Requesting generation for: "${prompt}"...`);
+  const url = "https://stablehorde.net/api/v2/generate/async";
+  
+  const bodyData = {
+      prompt: prompt,
+      params: {
+          sampler_name: "k_euler",
+          width: 512,
+          height: 512,
+          steps: 25
+      },
+      models: ["stable_diffusion_xl"],
+      nsfw: false,
+      censor_nsfw: true,
+      shared: true,
+      client_agent: "adrimax-studio-app:v1.0:github.com/google/studio",
+      apikey: apiKey 
+  };
+
+  try {
+      const response = await fetch(url, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(bodyData)
+      });
+
+      if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP Error ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      const taskId = result.id;
+      
+      console.log(`Task started with ID: ${taskId}`);
+      return taskId;
+      
+  } catch (error: any) {
+      console.error("Error requesting generation:", error.message);
+      return null;
+  }
+}
+
+async function checkResult(taskId: string): Promise<string | null> {
+  const checkUrl = `https://stablehorde.net/api/v2/generate/check/${taskId}`;
+  const interval = 5000; // 5-second interval
+  
+  console.log(`Waiting for task to finish...`);
+
+  while (true) {
+      try {
+          const response = await fetch(checkUrl);
+          const result = await response.json();
+          
+          if (result.done) {
+              const statusResponse = await fetch(`https://stablehorde.net/api/v2/generate/status/${taskId}`);
+              const statusResult = await statusResponse.json();
+
+              if (statusResult.generations && statusResult.generations.length > 0) {
+                  const imageUrl = statusResult.generations[0].img;
+                  console.log("Generation completed!");
+                  return imageUrl;
+              } else {
+                  console.error("Error: Task finished, but no image was generated.");
+                  return null;
+              }
+          }
+
+          if (result.faulted) {
+              console.error("Error: The task faulted or was rejected by the network.");
+              return null;
+          }
+
+          const wait_time = result.wait_time || 0;
+          console.log(`   - Estimated remaining: ${wait_time.toFixed(1)} seconds.`);
+          await sleep(interval); 
+
+      } catch (error: any) {
+          console.error("Error checking result:", error.message);
+          return null;
+      }
+  }
+}
+
 export async function generateStableHordeImage(input: StableHordeImageInput): Promise<StableHordeImageOutput> {
   const apiKey = process.env.STABLE_HORDE_API_KEY || 'pRtmb6M2waL_iXADAcsXqQ';
   
@@ -30,84 +117,14 @@ export async function generateStableHordeImage(input: StableHordeImageInput): Pr
     throw new Error('STABLE_HORDE_API_KEY is not defined in the environment variables.');
   }
 
-  const STABLE_HORDE_API_URL = 'https://stablehorde.net/api';
+  const taskId = await requestGeneration(input.prompt, apiKey);
 
-  try {
-    // Step 1: Request image generation asynchronously
-    const generationRequestResponse = await fetch(`${STABLE_HORDE_API_URL}/v2/generate/async`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'apikey': apiKey,
-            'Client-Agent': 'adrimax-studio-app:v1.0:github.com/google/studio'
-        },
-        body: JSON.stringify({
-            prompt: input.prompt,
-            params: {
-                sampler_name: 'k_dpm_fast', 
-                cfg_scale: 7.5,
-                width: 512,
-                height: 512,
-                steps: 20
-            }
-        })
-    });
-
-    if (!generationRequestResponse.ok) {
-        const errorText = await generationRequestResponse.text();
-        throw new Error(`Failed to request image generation: ${generationRequestResponse.status} ${errorText}`);
-    }
-
-    const generationRequest = await generationRequestResponse.json();
-    const generationId = generationRequest.id;
-
-    if (!generationId) {
-        throw new Error('Failed to get a generation ID from Stable Horde.');
-    }
-
-    // Step 2: Poll for the result
-    let attempts = 0;
-    const maxAttempts = 60; // 60 attempts * 5 seconds = 5 minutes timeout
-    
-    while (attempts < maxAttempts) {
-      const checkResponse = await fetch(`${STABLE_HORDE_API_URL}/v2/generate/check/${generationId}`);
-      
-      if (!checkResponse.ok) {
-          await sleep(5000);
-          attempts++;
-          continue;
+  if (taskId) {
+      const imageUrl = await checkResult(taskId);
+      if (imageUrl) {
+          return { imageUrl };
       }
-
-      const checkResult = await checkResponse.json();
-      
-      if (checkResult.done) {
-        // Generation is complete, fetch the final status to get the image URL
-        const finalStatusResponse = await fetch(`${STABLE_HORDE_API_URL}/v2/generate/status/${generationId}`);
-        if (!finalStatusResponse.ok) {
-            throw new Error('Failed to get final generation status.');
-        }
-
-        const finalStatus = await finalStatusResponse.json();
-
-        if (finalStatus.generations && finalStatus.generations.length > 0) {
-          const imageUrl = finalStatus.generations[0].img;
-          if (imageUrl) {
-            return { imageUrl };
-          }
-        }
-        throw new Error('Image generation completed, but no image URL was found.');
-      }
-
-      // If not done, wait for a bit before checking again
-      await sleep(5000); // Wait 5 seconds
-      attempts++;
-    }
-
-    throw new Error('Image generation timed out. The AI Horde is busy. Please try again later.');
-
-  } catch (error: any) {
-    console.error('Error generating image with AI Stable Horde:', error);
-    // Rethrow a more user-friendly error
-    throw new Error(`Failed to generate image: ${error.message || 'Unknown error'}`);
   }
+  
+  throw new Error('Failed to generate image with AI Stable Horde. Please try again later.');
 }
