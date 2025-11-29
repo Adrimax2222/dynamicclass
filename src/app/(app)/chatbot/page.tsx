@@ -10,7 +10,7 @@ import {
   Image as ImageIcon,
   Type as TypeIcon,
 } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,6 +19,7 @@ import type { ChatMessage } from "@/lib/types";
 import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance";
 import { useApp } from "@/lib/hooks/use-app";
 import { Badge } from "@/components/ui/badge";
+import { Logo } from "@/components/icons";
 
 export default function ChatbotPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -122,8 +123,8 @@ export default function ChatbotPage() {
               )}
             >
               {(message.role === "assistant" || message.role === 'system') && (
-                <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-                  <AvatarFallback><Sparkles className="h-5 w-5" /></AvatarFallback>
+                <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
+                  <Logo className="h-5 w-5" />
                 </Avatar>
               )}
               <div
@@ -139,6 +140,7 @@ export default function ChatbotPage() {
               </div>
               {message.role === "user" && user && (
                 <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.avatar} alt={user.name} />
                   <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                 </Avatar>
               )}
@@ -146,8 +148,8 @@ export default function ChatbotPage() {
           ))}
           {isLoading && (
             <div className="flex items-end gap-3 justify-start">
-              <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-                <AvatarFallback><Sparkles className="h-5 w-5" /></AvatarFallback>
+              <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
+                <Logo className="h-5 w-5" />
               </Avatar>
               <div className="max-w-md rounded-lg p-3 bg-muted flex items-center">
                 <Loader2 className="h-5 w-5 animate-spin" />
