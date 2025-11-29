@@ -30,12 +30,13 @@ async function requestGeneration(prompt: string, apiKey: string): Promise<string
   const bodyData = {
       prompt: prompt,
       params: {
-          sampler_name: "k_euler",
+          sampler_name: "k_euler_a", // Using a common sampler
           width: 512,
           height: 512,
-          steps: 25
+          steps: 25,
+          cfg_scale: 7.5,
       },
-      models: ["stable_diffusion_xl"],
+      models: ["stable_diffusion"], // Using a more common base model
       nsfw: false,
       censor_nsfw: true,
       shared: true,
@@ -48,12 +49,15 @@ async function requestGeneration(prompt: string, apiKey: string): Promise<string
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Client-Agent': 'adrimax-studio-app:v1.0:github.com/google/studio'
           },
           body: JSON.stringify(bodyData)
       });
 
       if (!response.ok) {
           const errorText = await response.text();
+          console.error(`HTTP Error ${response.status}: ${errorText}`);
           throw new Error(`HTTP Error ${response.status}: ${errorText}`);
       }
 
@@ -71,43 +75,48 @@ async function requestGeneration(prompt: string, apiKey: string): Promise<string
 
 async function checkResult(taskId: string): Promise<string | null> {
   const checkUrl = `https://stablehorde.net/api/v2/generate/check/${taskId}`;
-  const interval = 5000; // 5-second interval
+  const statusUrl = `https://stablehorde.net/api/v2/generate/status/${taskId}`;
   
-  console.log(`Waiting for task to finish...`);
+  console.log(`Waiting for task to finish... ID: ${taskId}`);
 
-  while (true) {
+  for (let i = 0; i < 30; i++) { // Max ~2.5 minutes
       try {
-          const response = await fetch(checkUrl);
-          const result = await response.json();
+          await sleep(5000); // Wait 5 seconds
+          const checkResponse = await fetch(checkUrl);
+          const checkResult = await checkResponse.json();
           
-          if (result.done) {
-              const statusResponse = await fetch(`https://stablehorde.net/api/v2/generate/status/${taskId}`);
-              const statusResult = await statusResponse.json();
-
-              if (statusResult.generations && statusResult.generations.length > 0) {
-                  const imageUrl = statusResult.generations[0].img;
-                  console.log("Generation completed!");
-                  return imageUrl;
-              } else {
-                  console.error("Error: Task finished, but no image was generated.");
-                  return null;
-              }
-          }
-
-          if (result.faulted) {
+          if (checkResult.faulted) {
               console.error("Error: The task faulted or was rejected by the network.");
               return null;
           }
 
-          const wait_time = result.wait_time || 0;
-          console.log(`   - Estimated remaining: ${wait_time.toFixed(1)} seconds.`);
-          await sleep(interval); 
+          if (checkResult.done) {
+              console.log("Generation process 'done'. Fetching final status...");
+              const statusResponse = await fetch(statusUrl);
+              const statusResult = await statusResponse.json();
+
+              if (statusResult.generations && statusResult.generations.length > 0) {
+                  const imageUrl = statusResult.generations[0].img;
+                  console.log("Generation completed! Image URL found.");
+                  return imageUrl;
+              } else {
+                  console.error("Error: Task finished, but no image was generated.", statusResult);
+                  return null;
+              }
+          }
+
+          const wait_time = checkResult.wait_time || 0;
+          const queue_position = checkResult.queue_position || 0;
+          console.log(`   - Attempt ${i+1}/30. In queue: ${queue_position}. Est. wait: ${wait_time.toFixed(1)}s.`);
 
       } catch (error: any) {
-          console.error("Error checking result:", error.message);
-          return null;
+          console.error(`Error checking result on attempt ${i+1}:`, error.message);
+          // Don't exit on a single failed check, allow retries
       }
   }
+
+  console.error("Error: Generation timed out after multiple checks.");
+  return null;
 }
 
 export async function generateStableHordeImage(input: StableHordeImageInput): Promise<StableHordeImageOutput> {
