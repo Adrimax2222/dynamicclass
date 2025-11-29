@@ -9,7 +9,6 @@
  */
 
 import { z } from 'zod';
-import AIHorde from 'aihorde';
 
 const StableHordeImageInputSchema = z.object({
   prompt: z.string().describe('The text prompt to generate an image from.'),
@@ -25,52 +24,74 @@ export type StableHordeImageOutput = z.infer<typeof StableHordeImageOutputSchema
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function generateStableHordeImage(input: StableHordeImageInput): Promise<StableHordeImageOutput> {
-  const apiKey = process.env.STABLE_HORDE_API_KEY || '0000000000';
+  const apiKey = process.env.STABLE_HORDE_API_KEY || 'pRtmb6M2waL_iXADAcsXqQ';
   
-  if (!apiKey || apiKey === '0000000000') {
+  if (!apiKey) {
     throw new Error('STABLE_HORDE_API_KEY is not defined in the environment variables.');
   }
 
-  const aihorde = new AIHorde({
-    client_agent: 'adrimax-studio-app:v1.0:github.com/google/studio',
-    default_token: apiKey,
-  });
+  const STABLE_HORDE_API_URL = 'https://stablehorde.net/api';
 
   try {
     // Step 1: Request image generation asynchronously
-    const generationRequest = await aihorde.postAsyncImageGenerate({
-      prompt: input.prompt,
-      params: {
-        // Using a common, fast model.
-        // You can find more models via aihorde.getModels()
-        'sampler_name': 'k_dpm_fast', 
-        'cfg_scale': 7.5,
-        'width': 512,
-        'height': 512,
-        'steps': 20
-      },
+    const generationRequestResponse = await fetch(`${STABLE_HORDE_API_URL}/v2/generate/async`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'apikey': apiKey,
+            'Client-Agent': 'adrimax-studio-app:v1.0:github.com/google/studio'
+        },
+        body: JSON.stringify({
+            prompt: input.prompt,
+            params: {
+                sampler_name: 'k_dpm_fast', 
+                cfg_scale: 7.5,
+                width: 512,
+                height: 512,
+                steps: 20
+            }
+        })
     });
 
-    if (!generationRequest.id) {
-        throw new Error('Failed to get a generation ID from Stable Horde.');
+    if (!generationRequestResponse.ok) {
+        const errorText = await generationRequestResponse.text();
+        throw new Error(`Failed to request image generation: ${generationRequestResponse.status} ${errorText}`);
     }
 
+    const generationRequest = await generationRequestResponse.json();
     const generationId = generationRequest.id;
+
+    if (!generationId) {
+        throw new Error('Failed to get a generation ID from Stable Horde.');
+    }
 
     // Step 2: Poll for the result
     let attempts = 0;
     const maxAttempts = 60; // 60 attempts * 5 seconds = 5 minutes timeout
     
     while (attempts < maxAttempts) {
-      const checkResult = await aihorde.getImageGenerationCheck(generationId);
+      const checkResponse = await fetch(`${STABLE_HORDE_API_URL}/v2/generate/check/${generationId}`);
+      
+      if (!checkResponse.ok) {
+          await sleep(5000);
+          attempts++;
+          continue;
+      }
+
+      const checkResult = await checkResponse.json();
       
       if (checkResult.done) {
-        // Generation is complete, find the image
-        const finalStatus = await aihorde.getImageGenerationStatus(generationId);
+        // Generation is complete, fetch the final status to get the image URL
+        const finalStatusResponse = await fetch(`${STABLE_HORDE_API_URL}/v2/generate/status/${generationId}`);
+        if (!finalStatusResponse.ok) {
+            throw new Error('Failed to get final generation status.');
+        }
+
+        const finalStatus = await finalStatusResponse.json();
+
         if (finalStatus.generations && finalStatus.generations.length > 0) {
           const imageUrl = finalStatus.generations[0].img;
           if (imageUrl) {
-            // The API sometimes returns a WebP image, which is fine for browsers
             return { imageUrl };
           }
         }
