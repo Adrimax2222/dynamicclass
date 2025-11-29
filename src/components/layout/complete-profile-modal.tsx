@@ -96,7 +96,7 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                                 <Input placeholder="Ej: 123-456" {...field} />
                             </FormControl>
                             <FormDescription>
-                                Únete al grupo de tu centro. Si no tienes uno, usa <strong className="text-foreground">{SCHOOL_VERIFICATION_CODE}</strong> por ahora.
+                                Únete al grupo de tu centro. Si no tienes uno, contacta con el administrador.
                             </FormDescription>
                             <FormMessage />
                         </FormItem>
@@ -182,5 +182,4 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     </Dialog>
   );
 }
-
     
