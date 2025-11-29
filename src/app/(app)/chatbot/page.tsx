@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -16,7 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/lib/types";
 import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance";
-import { generateTogetherImage } from "@/ai/flows/together-image-flow";
+import { generateStableHordeImage } from "@/ai/flows/stable-horde-image-flow";
 import { useApp } from "@/lib/hooks/use-app";
 import { Badge } from "@/components/ui/badge";
 
@@ -64,7 +65,7 @@ export default function ChatbotPage() {
         };
         setMessages((prev) => [...prev, assistantMessage]);
       } else { // Image mode
-        const result = await generateTogetherImage({ prompt: currentInput });
+        const result = await generateStableHordeImage({ prompt: currentInput });
         const imageMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
           role: "assistant",
@@ -122,7 +123,7 @@ export default function ChatbotPage() {
               <Sparkles className="h-12 w-12 mb-4" />
               <p className="text-lg font-semibold">¡Comienza una conversación!</p>
               <p>{placeholderText}</p>
-              {aiMode === 'image' && <Badge variant="outline" className="mt-4">Powered by Together AI</Badge>}
+              {aiMode === 'image' && <Badge variant="outline" className="mt-4">Powered by AI Stable Horde</Badge>}
             </div>
           )}
           {messages.map((message) => (
