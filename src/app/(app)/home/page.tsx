@@ -41,6 +41,7 @@ export default function HomePage() {
   const { user, updateUser } = useApp();
   const firestore = useFirestore();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showWelcomeAfterCompletion, setShowWelcomeAfterCompletion] = useState(false);
 
   useEffect(() => {
     // Only show the modal if the user is new and the state is not already open
@@ -49,24 +50,28 @@ export default function HomePage() {
     }
   }, [user, isModalOpen]);
 
-  const handleCloseModal = async (updatedData?: Partial<User>) => {
+  const handleProfileCompletionSave = async (updatedData?: Partial<User>) => {
     if (user && firestore) {
         const userDocRef = doc(firestore, 'users', user.uid);
         try {
-            // Merge updatedData from profile completion if it exists
             const finalData = { ...updatedData, isNewUser: false };
             await updateDoc(userDocRef, finalData);
             updateUser(finalData); // Update local context
-            setIsModalOpen(false);
+            setIsModalOpen(false); // Close the profile completion modal
+            setShowWelcomeAfterCompletion(true); // Trigger the welcome modal
         } catch (error) {
-            console.error("Failed to update isNewUser flag:", error);
-            // Even if the update fails, close the modal for a better user experience
-            setIsModalOpen(false);
+            console.error("Failed to update user profile:", error);
+            setIsModalOpen(false); // Close on error too
         }
     } else {
         setIsModalOpen(false);
     }
   };
+  
+  const handleWelcomeModalClose = () => {
+    setShowWelcomeAfterCompletion(false);
+  }
+
   
   if (!user) {
     return null; // Or a loading spinner
@@ -91,17 +96,17 @@ export default function HomePage() {
   ];
 
   // Determine if profile is incomplete (for Google sign-up case)
-  const isProfileIncomplete = user.course === "default" || user.className === "default" || user.ageRange === "default";
+  const isProfileIncomplete = user.isNewUser && (user.course === "default" || user.className === "default" || user.ageRange === "default");
 
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
       
-      {isModalOpen && (
-        isProfileIncomplete ? 
-        <CompleteProfileModal user={user} onSave={handleCloseModal} /> :
-        <WelcomeModal onClose={handleCloseModal} />
-      )}
+      {isProfileIncomplete && isModalOpen ? (
+        <CompleteProfileModal user={user} onSave={handleProfileCompletionSave} />
+      ) : showWelcomeAfterCompletion ? (
+        <WelcomeModal onClose={handleWelcomeModalClose} />
+      ) : null}
 
       <header className="mb-8 flex items-center justify-between">
         <div>
