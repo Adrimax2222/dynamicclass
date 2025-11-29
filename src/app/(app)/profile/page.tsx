@@ -25,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { achievements } from "@/lib/data";
 import type { SummaryCardData } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Camera, AlertTriangle } from "lucide-react";
+import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,6 +38,7 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "fire
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
+import { RankingDialog } from "@/components/layout/ranking-dialog";
 
 
 export default function ProfilePage() {
@@ -142,7 +143,18 @@ export default function ProfilePage() {
       <section>
         <h3 className="text-xl font-semibold font-headline mb-4">Logros</h3>
         <div className="grid grid-cols-2 gap-4">
-            {achievements.map(card => (
+            <RankingDialog user={user}>
+              <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Trofeos Ganados</CardTitle>
+                  <Trophy className={cn("h-5 w-5 text-muted-foreground", "text-yellow-400")} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{user.trophies}</div>
+                </CardContent>
+              </Card>
+            </RankingDialog>
+            {achievements.filter(a => a.title !== 'Trofeos Ganados').map(card => (
                 <AchievementCard key={card.title} {...card} />
             ))}
         </div>
@@ -344,7 +356,7 @@ function EditProfileDialog() {
             </div>
             <div className="space-y-2">
                 <Label htmlFor="center">Código de Centro Educativo</Label>
-                <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} placeholder="Ej: 123-456" />
+                <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} placeholder="123-456" />
                  <p className="text-xs text-muted-foreground">
                     Introduce el código proporcionado por tu centro para unirte a su grupo.
                 </p>
@@ -427,8 +439,3 @@ function AchievementCard({ title, value, icon: Icon, color }: SummaryCardData) {
       </Card>
     );
   }
-
-    
-
-    
-
