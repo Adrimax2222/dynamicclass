@@ -97,19 +97,15 @@ export default function ChatDrawer() {
     if (!input.trim() || !user || !firestore) return;
 
     let currentChatId = activeChatId;
-    const isNewChat = !currentChatId || chats.find(c => c.id === currentChatId)?.title === "Nuevo Chat";
-
+    
     if (!currentChatId) {
         const newChatRef = await addDoc(collection(firestore, `users/${user.uid}/chats`), {
             userId: user.uid,
-            title: input.substring(0, 30),
+            title: `Chat ${chats.length + 1}`,
             createdAt: serverTimestamp(),
         });
         currentChatId = newChatRef.id;
         setActiveChatId(currentChatId);
-    } else if (isNewChat) {
-        const chatDocRef = doc(firestore, `users/${user.uid}/chats`, currentChatId);
-        await updateDoc(chatDocRef, { title: input.substring(0, 30) });
     }
     
     const userMessage: Omit<ChatMessage, 'id'> = {
@@ -155,7 +151,7 @@ export default function ChatDrawer() {
     if (!firestore || !user) return;
     const newChatRef = await addDoc(collection(firestore, `users/${user.uid}/chats`), {
         userId: user.uid,
-        title: "Nuevo Chat",
+        title: `Chat ${chats.length + 1}`,
         createdAt: serverTimestamp(),
     });
     setActiveChatId(newChatRef.id);
@@ -209,7 +205,7 @@ export default function ChatDrawer() {
                         <div className="p-4 text-center text-sm text-muted-foreground">No hay chats.</div>
                     ) : (
                         chats.map((chat) => (
-                           <div key={chat.id} className="relative group">
+                           <div key={chat.id} className="relative group flex items-center">
                              <Button
                                 variant={activeChatId === chat.id ? "secondary" : "ghost"}
                                 className="w-full justify-start truncate h-8"
@@ -219,7 +215,7 @@ export default function ChatDrawer() {
                             </Button>
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="absolute right-0 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive">
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive">
                                         <Trash2 className="h-4 w-4"/>
                                     </Button>
                                 </AlertDialogTrigger>
@@ -299,30 +295,32 @@ export default function ChatDrawer() {
           </div>
         </ScrollArea>
         <SheetFooter className="p-4 border-t">
-          <div className="relative w-full">
-            <Textarea
-              placeholder="Pregúntame cualquier cosa..."
-              className="pr-12"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-               disabled={isMessagesLoading}
-            />
-            <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center">
-              <Button size="icon" onClick={handleSend} disabled={isSending || !input.trim()} aria-label="Enviar mensaje">
-                <Send className="h-5 w-5" />
-              </Button>
+          <div className="space-y-2">
+            <div className="relative w-full">
+              <Textarea
+                placeholder="Pregúntame cualquier cosa..."
+                className="pr-12"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                disabled={isMessagesLoading}
+              />
+              <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center">
+                <Button size="icon" onClick={handleSend} disabled={isSending || !input.trim()} aria-label="Enviar mensaje">
+                  <Send className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
-          </div>
-            <Button variant="outline" className="w-full mt-2" onClick={createNewChat}>
+            <Button variant="outline" className="w-full" onClick={createNewChat}>
                 <MessageSquarePlus className="mr-2 h-4 w-4" />
                 Nuevo Chat
             </Button>
+          </div>
         </SheetFooter>
       </SheetContent>
     </Sheet>

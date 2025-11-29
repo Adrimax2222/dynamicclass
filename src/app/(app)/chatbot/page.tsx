@@ -10,6 +10,7 @@ import {
   Trash2,
   PanelLeftClose,
   PanelLeftOpen,
+  History,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,13 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 
 export default function ChatbotPage() {
@@ -60,7 +68,6 @@ export default function ChatbotPage() {
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const firestore = useFirestore();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Memoize the query for messages of the active chat
   const messagesCollection = useMemoFirebase(() => {
@@ -86,7 +93,7 @@ export default function ChatbotPage() {
     
     const newChatRef = await addDoc(collection(firestore, `users/${user.uid}/chats`), {
         userId: user.uid,
-        title: "Nuevo Chat",
+        title: `Chat ${chats.length + 1}`,
         createdAt: serverTimestamp(),
     });
     setActiveChatId(newChatRef.id);
@@ -121,21 +128,16 @@ export default function ChatbotPage() {
     if (!input.trim() || !user || !firestore) return;
 
     let currentChatId = activeChatId;
-    const isNewChat = !currentChatId || chats.find(c => c.id === currentChatId)?.title === "Nuevo Chat";
 
     // If there's no active chat, create one first
     if (!currentChatId) {
         const newChatRef = await addDoc(collection(firestore, `users/${user.uid}/chats`), {
             userId: user.uid,
-            title: input.substring(0, 30), // Use first few words as title
+            title: `Chat ${chats.length + 1}`, // Use numeric title
             createdAt: serverTimestamp(),
         });
         currentChatId = newChatRef.id;
         setActiveChatId(currentChatId);
-    } else if (isNewChat) {
-        // If it's a "Nuevo Chat", update its title with the first message
-        const chatDocRef = doc(firestore, `users/${user.uid}/chats`, currentChatId);
-        await updateDoc(chatDocRef, { title: input.substring(0, 30) });
     }
     
     const userMessage: Omit<ChatMessage, 'id'> = {
@@ -185,155 +187,179 @@ export default function ChatbotPage() {
   const placeholderText = "Pregúntame sobre cualquier tema...";
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
-        <aside className={cn("flex flex-col border-r bg-muted/30 transition-all duration-300", isSidebarOpen ? "w-64" : "w-0 overflow-hidden")}>
-            <div className="flex items-center justify-between p-4 border-b">
-                <h2 className="text-lg font-semibold tracking-tight">Historial</h2>
-                <Button variant="ghost" size="icon" onClick={createNewChat}>
-                    <MessageSquarePlus className="h-5 w-5" />
-                </Button>
+    <div className="flex h-[calc(100vh-4rem)] flex-col">
+        <header className="border-b p-4 text-center flex items-center justify-between relative">
+            <ChatHistorySheet 
+                chats={chats} 
+                isChatsLoading={isChatsLoading} 
+                activeChatId={activeChatId} 
+                setActiveChatId={setActiveChatId} 
+                deleteChat={deleteChat}
+                createNewChat={createNewChat}
+            />
+            <div className="flex flex-1 items-center justify-center gap-2">
+                 <Sparkles className="h-6 w-6 text-primary" />
+                 <h1 className="text-xl font-bold font-headline tracking-tighter">
+                    ADRIMAX AI
+                 </h1>
             </div>
-            <ScrollArea className="flex-1">
-                <div className="p-2 space-y-1">
-                    {isChatsLoading ? (
-                        <div className="p-4 text-center text-sm text-muted-foreground">Cargando...</div>
-                    ) : chats.length === 0 ? (
-                        <div className="p-4 text-center text-sm text-muted-foreground">No hay chats.</div>
-                    ) : (
-                        chats.map((chat) => (
-                           <div key={chat.id} className="relative group">
-                             <Button
-                                variant={activeChatId === chat.id ? "secondary" : "ghost"}
-                                className="w-full justify-start truncate"
-                                onClick={() => setActiveChatId(chat.id)}
-                            >
-                                {chat.title}
-                            </Button>
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive">
-                                        <Trash2 className="h-4 w-4"/>
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>¿Eliminar este chat?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Esta acción es permanente y no se puede deshacer.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => deleteChat(chat.id)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                           </div>
-                        ))
-                    )}
+            <div className="flex-1" />
+        </header>
+
+        <ScrollArea className="flex-1" ref={scrollAreaRef}>
+            <div className="space-y-6 p-4">
+            {(isMessagesLoading || (!activeChatId && !isChatsLoading)) && (
+                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 mt-16">
+                    <Sparkles className="h-12 w-12 mb-4" />
+                    <p className="text-lg font-semibold">{isMessagesLoading ? "Cargando chat..." : "Comienza una conversación"}</p>
+                    <p>{isMessagesLoading ? "Espera un momento." : placeholderText}</p>
                 </div>
-            </ScrollArea>
-            <div className="p-4 border-t text-xs text-muted-foreground">
-                <p>{format(new Date(), "d 'de' MMMM, yyyy", { locale: es })}</p>
-            </div>
-        </aside>
-
-        <div className="flex flex-1 flex-col relative">
-             <Button 
-                variant="ghost" 
-                size="icon" 
-                className="absolute top-2 left-2 z-10"
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-             >
-                {isSidebarOpen ? <PanelLeftClose /> : <PanelLeftOpen />}
-            </Button>
-             <header className="border-b p-4 text-center">
-                <h1 className="text-xl font-bold font-headline tracking-tighter flex items-center justify-center gap-2">
-                    <Sparkles className="h-6 w-6 text-primary" /> ADRIMAX AI
-                </h1>
-                <p className="text-sm text-muted-foreground">Tu entusiasta compañero creativo y educativo.</p>
-             </header>
-
-            <ScrollArea className="flex-1" ref={scrollAreaRef}>
-                <div className="space-y-6 p-4">
-                {(isMessagesLoading || (!activeChatId && !isChatsLoading)) && (
-                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 mt-16">
-                        <Sparkles className="h-12 w-12 mb-4" />
-                        <p className="text-lg font-semibold">{isMessagesLoading ? "Cargando chat..." : "Comienza una conversación"}</p>
-                        <p>{isMessagesLoading ? "Espera un momento." : placeholderText}</p>
-                    </div>
+            )}
+            {messages.map((message) => (
+                <div
+                key={message.id}
+                className={cn(
+                    "flex items-end gap-3",
+                    message.role === "user" ? "justify-end" : "justify-start"
                 )}
-                {messages.map((message) => (
-                    <div
-                    key={message.id}
-                    className={cn(
-                        "flex items-end gap-3",
-                        message.role === "user" ? "justify-end" : "justify-start"
-                    )}
-                    >
-                    {(message.role === "assistant" || message.role === 'system') && (
-                        <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
-                            <Logo className="h-5 w-5" />
-                        </Avatar>
-                    )}
-                    <div
-                        className={cn(
-                        "max-w-[80%] rounded-lg p-3",
-                        message.role === "user" && "bg-primary text-primary-foreground",
-                        message.role === "assistant" && "bg-muted",
-                        message.role === 'system' && "bg-destructive text-destructive-foreground"
-                        )}
-                    >
-                        {message.role === 'assistant' ? (
-                            <MarkdownRenderer content={message.content} />
-                        ) : (
-                            <div className="whitespace-pre-wrap break-words">{message.content}</div>
-                        )}
-                        <p className="mt-1 pb-1 text-right text-xs opacity-60">{formatTimestamp(message.timestamp)}</p>
-                    </div>
-                    {message.role === "user" && user && (
-                        <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                    )}
-                    </div>
-                ))}
-                {isSending && (
-                    <div className="flex items-end gap-3 justify-start">
+                >
+                {(message.role === "assistant" || message.role === 'system') && (
                     <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
                         <Logo className="h-5 w-5" />
                     </Avatar>
-                    <div className="max-w-md rounded-lg p-3 bg-muted flex items-center">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                    </div>
-                    </div>
+                )}
+                <div
+                    className={cn(
+                    "max-w-[80%] rounded-lg p-3",
+                    message.role === "user" && "bg-primary text-primary-foreground",
+                    message.role === "assistant" && "bg-muted",
+                    message.role === 'system' && "bg-destructive text-destructive-foreground"
+                    )}
+                >
+                    {message.role === 'assistant' ? (
+                        <MarkdownRenderer content={message.content} />
+                    ) : (
+                        <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                    )}
+                    <p className="mt-1 pb-1 text-right text-xs opacity-60">{formatTimestamp(message.timestamp)}</p>
+                </div>
+                {message.role === "user" && user && (
+                    <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
                 )}
                 </div>
-            </ScrollArea>
-            <div className="mt-auto border-t bg-background p-4">
-                <div className="relative">
-                <Textarea
-                    placeholder={placeholderText}
-                    className="pr-12"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                    }
-                    }}
-                    disabled={isMessagesLoading}
-                />
-                <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
-                    <Button size="icon" onClick={handleSend} disabled={isSending || !input.trim()}>
-                    <Send className="h-5 w-5" />
-                    </Button>
+            ))}
+            {isSending && (
+                <div className="flex items-end gap-3 justify-start">
+                <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
+                    <Logo className="h-5 w-5" />
+                </Avatar>
+                <div className="max-w-md rounded-lg p-3 bg-muted flex items-center">
+                    <Loader2 className="h-5 w-5 animate-spin" />
                 </div>
                 </div>
+            )}
+            </div>
+        </ScrollArea>
+        <div className="mt-auto border-t bg-background p-4">
+            <div className="relative">
+            <Textarea
+                placeholder={placeholderText}
+                className="pr-12"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                }
+                }}
+                disabled={isMessagesLoading}
+            />
+            <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
+                <Button size="icon" onClick={handleSend} disabled={isSending || !input.trim()}>
+                <Send className="h-5 w-5" />
+                </Button>
+            </div>
             </div>
         </div>
     </div>
   );
+}
+
+interface ChatHistorySheetProps {
+    chats: Chat[];
+    isChatsLoading: boolean;
+    activeChatId: string | null;
+    setActiveChatId: (id: string | null) => void;
+    deleteChat: (id: string) => void;
+    createNewChat: () => void;
+}
+
+function ChatHistorySheet({ chats, isChatsLoading, activeChatId, setActiveChatId, deleteChat, createNewChat }: ChatHistorySheetProps) {
+    return (
+        <Sheet>
+            <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2">
+                    <History className="h-5 w-5" />
+                </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-full max-w-sm flex flex-col p-0">
+                <SheetHeader className="p-4 border-b">
+                    <SheetTitle>Historial de Chats</SheetTitle>
+                </SheetHeader>
+                <div className="p-4 flex-none">
+                    <Button onClick={createNewChat} className="w-full">
+                        <MessageSquarePlus className="mr-2 h-4 w-4" />
+                        Nuevo Chat
+                    </Button>
+                </div>
+                <ScrollArea className="flex-1">
+                    <div className="p-4 pt-0 space-y-1">
+                        {isChatsLoading ? (
+                            <div className="p-4 text-center text-sm text-muted-foreground">Cargando...</div>
+                        ) : chats.length === 0 ? (
+                            <div className="p-4 text-center text-sm text-muted-foreground">No hay chats.</div>
+                        ) : (
+                            chats.map((chat) => (
+                               <div key={chat.id} className="relative group flex items-center">
+                                 <Button
+                                    variant={activeChatId === chat.id ? "secondary" : "ghost"}
+                                    className="w-full justify-start truncate"
+                                    onClick={() => setActiveChatId(chat.id)}
+                                >
+                                    {chat.title}
+                                </Button>
+                                 <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive">
+                                            <Trash2 className="h-4 w-4"/>
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>¿Eliminar este chat?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Esta acción es permanente y no se puede deshacer.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => deleteChat(chat.id)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                               </div>
+                            ))
+                        )}
+                    </div>
+                </ScrollArea>
+                <div className="p-4 border-t text-xs text-muted-foreground">
+                    <p>{format(new Date(), "d 'de' MMMM, yyyy", { locale: es })}</p>
+                </div>
+            </SheetContent>
+        </Sheet>
+    );
 }
