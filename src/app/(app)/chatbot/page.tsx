@@ -17,11 +17,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/lib/types";
 import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance";
-import { generateFalImage } from "@/ai/flows/fal-image-flow";
 import { useApp } from "@/lib/hooks/use-app";
 import { Badge } from "@/components/ui/badge";
-
-type AIMode = "text" | "image";
 
 export default function ChatbotPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -29,7 +26,6 @@ export default function ChatbotPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useApp();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const [aiMode, setAiMode] = useState<AIMode>("text");
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -55,26 +51,14 @@ export default function ChatbotPage() {
     setIsLoading(true);
 
     try {
-      if (aiMode === "text") {
-        const result = await aiChatbotAssistance({ query: currentInput });
-        const assistantMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: result.response,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-      } else { // Image mode
-        const result = await generateFalImage({ prompt: currentInput });
-        const imageMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: result.imageUrl,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          type: 'image',
-        };
-        setMessages((prev) => [...prev, imageMessage]);
-      }
+      const result = await aiChatbotAssistance({ query: currentInput });
+      const assistantMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: result.response,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error: any) {
       console.error("AI Error:", error);
       const errorMessage: ChatMessage = {
@@ -89,9 +73,7 @@ export default function ChatbotPage() {
     }
   };
 
-  const placeholderText = aiMode === "text"
-    ? "Pregúntame sobre cualquier tema..."
-    : "Describe la imagen que quieres crear...";
+  const placeholderText = "Pregúntame sobre cualquier tema...";
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
@@ -104,14 +86,17 @@ export default function ChatbotPage() {
                 <p className="text-sm text-muted-foreground">Tu entusiasta compañero creativo y educativo.</p>
             </div>
             <div className="flex items-center gap-2 rounded-full border p-1">
-                <Button size="sm" variant={aiMode === 'text' ? 'secondary' : 'ghost'} onClick={() => setAiMode('text')} className="rounded-full">
+                <Button size="sm" variant="secondary" className="rounded-full cursor-default">
                     <TypeIcon className="h-4 w-4 mr-2" />
                     Texto
                 </Button>
-                <Button size="sm" variant={aiMode === 'image' ? 'secondary' : 'ghost'} onClick={() => setAiMode('image')} className="rounded-full">
-                    <ImageIcon className="h-4 w-4 mr-2" />
-                    Imagen
-                </Button>
+                <div className="relative">
+                    <Button size="sm" variant="ghost" className="rounded-full" disabled>
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Imagen
+                    </Button>
+                    <Badge variant="secondary" className="absolute -top-2 -right-3 text-xs px-1.5 py-0.5">Beta</Badge>
+                </div>
             </div>
         </div>
       </header>
@@ -123,7 +108,9 @@ export default function ChatbotPage() {
               <Sparkles className="h-12 w-12 mb-4" />
               <p className="text-lg font-semibold">¡Comienza una conversación!</p>
               <p>{placeholderText}</p>
-              {aiMode === 'image' && <Badge variant="outline" className="mt-4">Powered by Fal AI</Badge>}
+              <Badge variant="outline" className="mt-4">
+                La generación de imágenes será próximamente
+              </Badge>
             </div>
           )}
           {messages.map((message) => (
@@ -141,21 +128,14 @@ export default function ChatbotPage() {
               )}
               <div
                 className={cn(
-                  "max-w-[80%] rounded-lg",
+                  "max-w-[80%] rounded-lg p-3",
                   message.role === "user" && "bg-primary text-primary-foreground",
                   message.role === "assistant" && "bg-muted",
-                  message.role === 'system' && "bg-destructive text-destructive-foreground",
-                  message.type !== 'image' && 'p-3'
+                  message.role === 'system' && "bg-destructive text-destructive-foreground"
                 )}
               >
-                {message.type === 'image' ? (
-                  <div className="p-2">
-                    <img src={message.content} alt="Generated image" className="rounded-lg" />
-                  </div>
-                ) : (
                   <p className="whitespace-pre-wrap">{message.content}</p>
-                )}
-                <p className="mt-1 px-3 pb-1 text-right text-xs opacity-60">{message.timestamp}</p>
+                <p className="mt-1 pb-1 text-right text-xs opacity-60">{message.timestamp}</p>
               </div>
               {message.role === "user" && user && (
                 <Avatar className="h-8 w-8">
