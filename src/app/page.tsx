@@ -302,22 +302,22 @@ export default function AuthPage() {
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists()) {
-        // User is new, create a document for them
+        // User is new, create a document for them with placeholder values
         const newUser: Omit<User, 'uid'> = {
             name: firebaseUser.displayName || 'Usuario',
             email: firebaseUser.email!,
             avatar: firebaseUser.photoURL || `https://placehold.co/100x100/A78BFA/FFFFFF?text=${firebaseUser.email![0].toUpperCase()}`,
-            center: '123-456', // Default value
-            ageRange: 'No especificado', // Default value
-            course: '1eso', // Default value
-            className: 'A', // Default value
+            center: 'default',
+            ageRange: 'default', 
+            course: 'default',
+            className: 'default',
             role: 'student',
             trophies: 0,
             tasks: 0,
             exams: 0,
             pending: 0,
             activities: 0,
-            isNewUser: true,
+            isNewUser: true, // This will trigger the profile completion modal
         };
         await setDoc(userDocRef, newUser);
       }
@@ -584,5 +584,7 @@ export default function AuthPage() {
     </main>
   );
 }
+
+    
 
     

@@ -33,35 +33,38 @@ import { doc, updateDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { FullScheduleView } from "@/components/layout/full-schedule-view";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
+import CompleteProfileModal from "@/components/layout/complete-profile-modal";
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Actividades";
 
 export default function HomePage() {
   const { user, updateUser } = useApp();
   const firestore = useFirestore();
-  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     // Only show the modal if the user is new and the state is not already open
-    if (user?.isNewUser && !isWelcomeModalOpen) {
-      setIsWelcomeModalOpen(true);
+    if (user?.isNewUser && !isModalOpen) {
+      setIsModalOpen(true);
     }
-  }, [user, isWelcomeModalOpen]);
+  }, [user, isModalOpen]);
 
-  const handleCloseWelcomeModal = async () => {
+  const handleCloseModal = async (updatedData?: Partial<User>) => {
     if (user && firestore) {
         const userDocRef = doc(firestore, 'users', user.uid);
         try {
-            await updateDoc(userDocRef, { isNewUser: false });
-            updateUser({ isNewUser: false }); // Update local context
-            setIsWelcomeModalOpen(false);
+            // Merge updatedData from profile completion if it exists
+            const finalData = { ...updatedData, isNewUser: false };
+            await updateDoc(userDocRef, finalData);
+            updateUser(finalData); // Update local context
+            setIsModalOpen(false);
         } catch (error) {
             console.error("Failed to update isNewUser flag:", error);
             // Even if the update fails, close the modal for a better user experience
-            setIsWelcomeModalOpen(false);
+            setIsModalOpen(false);
         }
     } else {
-        setIsWelcomeModalOpen(false);
+        setIsModalOpen(false);
     }
   };
   
@@ -87,10 +90,18 @@ export default function HomePage() {
     { title: 'Actividades', value: user.activities, icon: ListChecks, color: 'text-green-500' },
   ];
 
+  // Determine if profile is incomplete (for Google sign-up case)
+  const isProfileIncomplete = user.course === "default" || user.className === "default" || user.ageRange === "default";
+
+
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
       
-      {isWelcomeModalOpen && <WelcomeModal onClose={handleCloseWelcomeModal} />}
+      {isModalOpen && (
+        isProfileIncomplete ? 
+        <CompleteProfileModal user={user} onSave={handleCloseModal} /> :
+        <WelcomeModal onClose={handleCloseModal} />
+      )}
 
       <header className="mb-8 flex items-center justify-between">
         <div>
@@ -263,3 +274,5 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
+    
