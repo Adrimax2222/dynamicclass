@@ -20,6 +20,7 @@ import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance";
 import { useApp } from "@/lib/hooks/use-app";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/icons";
+import { MarkdownRenderer } from "@/components/chatbot/markdown-renderer";
 
 export default function ChatbotPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -110,7 +111,7 @@ export default function ChatbotPage() {
               <p className="text-lg font-semibold">¡Comienza una conversación!</p>
               <p>{placeholderText}</p>
               <Badge variant="outline" className="mt-4">
-                La generación de imágenes será próximamente
+                La generación de imágenes es una función beta.
               </Badge>
             </div>
           )}
@@ -129,13 +130,17 @@ export default function ChatbotPage() {
               )}
               <div
                 className={cn(
-                  "max-w-[80%] rounded-lg p-3 whitespace-pre-wrap break-words",
+                  "max-w-[80%] rounded-lg p-3",
                   message.role === "user" && "bg-primary text-primary-foreground",
                   message.role === "assistant" && "bg-muted",
                   message.role === 'system' && "bg-destructive text-destructive-foreground"
                 )}
               >
-                  {message.content}
+                {message.role === 'assistant' ? (
+                    <MarkdownRenderer content={message.content} />
+                ) : (
+                    <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                )}
                 <p className="mt-1 pb-1 text-right text-xs opacity-60">{message.timestamp}</p>
               </div>
               {message.role === "user" && user && (
