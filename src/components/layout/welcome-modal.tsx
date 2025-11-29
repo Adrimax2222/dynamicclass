@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -11,16 +12,26 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/icons";
-import { Badge } from "../ui/badge";
 import { ShieldCheck, School, Package, AlertTriangle } from "lucide-react";
 import Link from "next/link";
-import { SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 
 interface WelcomeModalProps {
   onClose: () => void;
 }
 
 export default function WelcomeModal({ onClose }: WelcomeModalProps) {
+  const [countdown, setCountdown] = useState(10);
+  const [isButtonDisabled, setIsButtonDisabled] = useState(true);
+
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setIsButtonDisabled(false);
+    }
+  }, [countdown]);
+
   return (
     <Dialog open={true} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="max-w-lg w-[95vw]">
@@ -75,7 +86,9 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
         </div>
 
         <DialogFooter className="flex-col items-center gap-4">
-            <Button onClick={onClose} className="w-full sm:w-auto">¡Entendido!</Button>
+            <Button onClick={onClose} className="w-full sm:w-auto" disabled={isButtonDisabled}>
+                {isButtonDisabled ? `Entendido (${countdown})` : "¡Entendido!"}
+            </Button>
             <div className="text-center text-xs text-muted-foreground">
                 <Link href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
                     Impulsado por <span className="font-semibold">Proyecto Adrimax</span>
