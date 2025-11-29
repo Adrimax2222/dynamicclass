@@ -129,13 +129,13 @@ export default function ChatbotPage() {
               )}
               <div
                 className={cn(
-                  "max-w-[80%] rounded-lg p-3 break-words",
+                  "max-w-[80%] rounded-lg p-3 whitespace-pre-wrap break-words",
                   message.role === "user" && "bg-primary text-primary-foreground",
                   message.role === "assistant" && "bg-muted",
                   message.role === 'system' && "bg-destructive text-destructive-foreground"
                 )}
               >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  {message.content}
                 <p className="mt-1 pb-1 text-right text-xs opacity-60">{message.timestamp}</p>
               </div>
               {message.role === "user" && user && (
