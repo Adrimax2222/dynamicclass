@@ -1,7 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { Sparkles, Loader2, Paperclip, Send } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import {
+  Sparkles,
+  Loader2,
+  Send,
+  MessageSquarePlus,
+  Trash2,
+} from "lucide-react";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  orderBy,
+  Timestamp,
+  doc,
+  deleteDoc,
+  writeBatch,
+  getDocs,
+} from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,59 +29,161 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
+  SheetFooter,
 } from "@/components/ui/sheet";
 import { useApp } from "@/lib/hooks/use-app";
-import type { ChatMessage } from "@/lib/types";
+import type { ChatMessage, Chat } from "@/lib/types";
 import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance";
 import { ScrollArea } from "../ui/scroll-area";
-import { Avatar, AvatarFallback } from "../ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { cn } from "@/lib/utils";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { Logo } from "../icons";
+import { MarkdownRenderer } from "./markdown-renderer";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function ChatDrawer() {
-  const { isChatDrawerOpen, setChatDrawerOpen } = useApp();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const {
+    user,
+    isChatDrawerOpen,
+    setChatDrawerOpen,
+    chats,
+    activeChatId,
+    setActiveChatId,
+    isChatsLoading,
+  } = useApp();
+
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const firestore = useFirestore();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // Memoize the query for messages of the active chat
+  const messagesCollection = useMemoFirebase(() => {
+    if (!firestore || !user || !activeChatId) return null;
+    return query(
+      collection(
+        firestore,
+        `users/${user.uid}/chats/${activeChatId}/messages`
+      ),
+      orderBy("timestamp", "asc")
+    );
+  }, [firestore, user, activeChatId]);
+
+  const { data: messages = [], isLoading: isMessagesLoading } =
+    useCollection<ChatMessage>(messagesCollection);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    const viewport = scrollAreaRef.current?.querySelector('div[data-radix-scroll-area-viewport]');
+    if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+    }
+  }, [messages, isSending]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !user || !firestore) return;
 
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
+    let currentChatId = activeChatId;
+
+    if (!currentChatId) {
+        const newChatRef = await addDoc(collection(firestore, `users/${user.uid}/chats`), {
+            userId: user.uid,
+            title: input.substring(0, 25),
+            createdAt: serverTimestamp(),
+        });
+        currentChatId = newChatRef.id;
+        setActiveChatId(currentChatId);
+    }
+    
+    const userMessage: Omit<ChatMessage, 'id'> = {
       role: "user",
       content: input,
-      timestamp: new Date().toLocaleTimeString(),
+      timestamp: Timestamp.now(),
     };
-    setMessages((prev) => [...prev, userMessage]);
+    
+    const currentInput = input;
     setInput("");
-    setIsLoading(true);
+    setIsSending(true);
 
     try {
-      const result = await aiChatbotAssistance({ query: input });
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
+      const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
+      await addDoc(messagesRef, userMessage);
+      
+      const result = await aiChatbotAssistance({ query: currentInput });
+      
+      const assistantMessage: Omit<ChatMessage, 'id'> = {
         role: "assistant",
         content: result.response,
-        timestamp: new Date().toLocaleTimeString(),
+        timestamp: Timestamp.now(),
       };
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
+      await addDoc(messagesRef, assistantMessage);
+
+    } catch (error: any) {
+      console.error("AI Error:", error);
+      const errorMessage: Omit<ChatMessage, 'id'> = {
         role: "system",
-        content: "Lo siento, he encontrado un problema. Por favor, inténtalo de nuevo.",
-        timestamp: new Date().toLocaleTimeString(),
+        content: `Lo siento, he encontrado un problema: ${error.message || 'Error desconocido'}. Por favor, inténtalo de nuevo.`,
+        timestamp: Timestamp.now(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
+       if (currentChatId) {
+            const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
+            await addDoc(messagesRef, errorMessage);
+       }
     } finally {
-      setIsLoading(false);
+      setIsSending(false);
     }
   };
+  
+  const createNewChat = async () => {
+    if (!firestore || !user) return;
+    const newChatRef = await addDoc(collection(firestore, `users/${user.uid}/chats`), {
+        userId: user.uid,
+        title: "Nuevo Chat",
+        createdAt: serverTimestamp(),
+    });
+    setActiveChatId(newChatRef.id);
+  }
 
+  const deleteChat = async (chatId: string) => {
+    if (!firestore || !user) return;
+
+    const messagesQuery = query(collection(firestore, `users/${user.uid}/chats/${chatId}/messages`));
+    const batch = writeBatch(firestore);
+    const messagesSnapshot = await getDocs(messagesQuery);
+    messagesSnapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    const chatDocRef = doc(firestore, `users/${user.uid}/chats`, chatId);
+    await deleteDoc(chatDocRef);
+    
+    if (activeChatId === chatId) {
+        const remainingChats = chats.filter(c => c.id !== chatId);
+        setActiveChatId(remainingChats.length > 0 ? remainingChats[0].id : null);
+    }
+  }
+
+  const formatTimestamp = (timestamp: Timestamp | null) => {
+    if (!timestamp) return "";
+    return new Date(timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+  
   return (
     <Sheet open={isChatDrawerOpen} onOpenChange={setChatDrawerOpen}>
-      <SheetContent className="flex flex-col p-0">
-        <SheetHeader className="p-6">
+      <SheetContent className="flex flex-col p-0 sm:max-w-lg">
+        <SheetHeader className="p-4 border-b">
           <SheetTitle className="flex items-center gap-2 font-headline">
             <Sparkles className="h-6 w-6 text-primary" />
             ADRIMAX AI
@@ -72,56 +192,111 @@ export default function ChatDrawer() {
             Tu asistente educativo personal.
           </SheetDescription>
         </SheetHeader>
-        <ScrollArea className="flex-1 px-6">
-          <div className="space-y-4">
+        
+        <div className="p-2 border-b">
+            <h3 className="text-sm font-semibold px-2 mb-1 text-muted-foreground">Historial</h3>
+            <ScrollArea className="h-24">
+                <div className="px-2 space-y-1">
+                     {isChatsLoading ? (
+                        <div className="p-4 text-center text-sm text-muted-foreground">Cargando...</div>
+                    ) : chats.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-muted-foreground">No hay chats.</div>
+                    ) : (
+                        chats.map((chat) => (
+                           <div key={chat.id} className="relative group">
+                             <Button
+                                variant={activeChatId === chat.id ? "secondary" : "ghost"}
+                                className="w-full justify-start truncate h-8"
+                                onClick={() => setActiveChatId(chat.id)}
+                            >
+                                {chat.title}
+                            </Button>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="absolute right-0 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive">
+                                        <Trash2 className="h-4 w-4"/>
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>¿Eliminar este chat?</AlertDialogTitle>
+                                        <AlertDialogDescription>Esta acción es permanente.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => deleteChat(chat.id)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                           </div>
+                        ))
+                    )}
+                </div>
+            </ScrollArea>
+        </div>
+
+
+        <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
+          <div className="space-y-4 py-4">
+             {(isMessagesLoading || (!activeChatId && !isChatsLoading)) && (
+                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
+                    <Sparkles className="h-10 w-10 mb-4" />
+                    <p className="font-semibold">{isMessagesLoading ? "Cargando..." : "Inicia un chat"}</p>
+                </div>
+            )}
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={cn(
-                  "flex items-start gap-3",
+                  "flex items-end gap-3",
                   message.role === "user" ? "justify-end" : "justify-start"
                 )}
               >
-                {message.role === "assistant" && (
-                  <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-                    <AvatarFallback>
-                      <Sparkles className="h-5 w-5" />
-                    </AvatarFallback>
-                  </Avatar>
+                {(message.role === "assistant" || message.role === 'system') && (
+                    <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
+                        <Logo className="h-5 w-5" />
+                    </Avatar>
                 )}
                 <div
                   className={cn(
-                    "max-w-xs rounded-lg p-3 text-sm",
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted",
-                    message.role === "system" && "mx-auto bg-destructive/20 text-destructive-foreground"
+                    "max-w-[80%] rounded-lg p-3",
+                    message.role === "user" && "bg-primary text-primary-foreground",
+                    message.role === "assistant" && "bg-muted",
+                    message.role === 'system' && "bg-destructive text-destructive-foreground"
                   )}
                 >
-                  <p>{message.content}</p>
-                  <p className="mt-1 text-xs opacity-50">{message.timestamp}</p>
+                    {message.role === 'assistant' ? (
+                        <MarkdownRenderer content={message.content} />
+                    ) : (
+                        <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                    )}
+                    <p className="mt-1 pb-1 text-right text-xs opacity-60">{formatTimestamp(message.timestamp)}</p>
                 </div>
+                {message.role === "user" && user && (
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                )}
               </div>
             ))}
-            {isLoading && (
-              <div className="flex items-start gap-3 justify-start">
-                <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-                  <AvatarFallback>
-                    <Sparkles className="h-5 w-5" />
-                  </AvatarFallback>
+            {isSending && (
+              <div className="flex items-end gap-3 justify-start">
+                <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
+                    <Logo className="h-5 w-5" />
                 </Avatar>
-                <div className="max-w-xs rounded-lg p-3 text-sm bg-muted flex items-center">
+                <div className="max-w-md rounded-lg p-3 bg-muted flex items-center">
                   <Loader2 className="h-5 w-5 animate-spin" />
                 </div>
               </div>
             )}
           </div>
         </ScrollArea>
-        <div className="border-t p-4">
-          <div className="relative">
+        <SheetFooter className="p-4 border-t">
+          <div className="relative w-full">
             <Textarea
               placeholder="Pregúntame cualquier cosa..."
-              className="pr-24"
+              className="pr-12"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -130,17 +305,19 @@ export default function ChatDrawer() {
                   handleSend();
                 }
               }}
+               disabled={isMessagesLoading}
             />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
-              <Button variant="ghost" size="icon" aria-label="Adjuntar archivo">
-                <Paperclip className="h-5 w-5" />
-              </Button>
-              <Button size="icon" onClick={handleSend} disabled={isLoading || !input.trim()} aria-label="Enviar mensaje">
+            <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center">
+              <Button size="icon" onClick={handleSend} disabled={isSending || !input.trim()} aria-label="Enviar mensaje">
                 <Send className="h-5 w-5" />
               </Button>
             </div>
           </div>
-        </div>
+            <Button variant="outline" className="w-full mt-2" onClick={createNewChat}>
+                <MessageSquarePlus className="mr-2 h-4 w-4" />
+                Nuevo Chat
+            </Button>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );

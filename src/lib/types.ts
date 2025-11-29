@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { Timestamp } from "firebase/firestore";
 
 export type User = {
   uid: string;
@@ -62,12 +63,18 @@ export type CalendarEvent = {
   type: 'personal' | 'class';
 };
 
+export type Chat = {
+  id: string;
+  title: string;
+  createdAt: Timestamp;
+  userId: string;
+};
+
 export type ChatMessage = {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  timestamp: string;
-  type?: 'text' | 'image';
+  timestamp: Timestamp;
 };
 
 export type Note = {

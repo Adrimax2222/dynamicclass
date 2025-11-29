@@ -1,10 +1,10 @@
 "use client";
 
 import { createContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import type { User } from '@/lib/types';
+import type { User, Chat } from '@/lib/types';
 import { useAuth, useFirestore } from '@/firebase';
 import { onAuthStateChanged, type User as FirebaseUser, deleteUser } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, deleteDoc, collection, query, orderBy } from 'firebase/firestore';
 
 export type Theme = 'light' | 'dark';
 
@@ -18,10 +18,18 @@ export interface AppContextType {
   deleteAccount: () => Promise<void>;
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  
   isChatBubbleVisible: boolean;
   toggleChatBubble: () => void;
+  
   isChatDrawerOpen: boolean;
   setChatDrawerOpen: (isOpen: boolean) => void;
+
+  // Chat History State
+  chats: Chat[];
+  activeChatId: string | null;
+  setActiveChatId: (chatId: string | null) => void;
+  isChatsLoading: boolean;
 }
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
@@ -35,6 +43,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isChatBubbleVisible, setIsChatBubbleVisible] = useState(true);
   const [isChatDrawerOpen, setChatDrawerOpen] = useState(false);
   
+  // Chat history state
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [isChatsLoading, setIsChatsLoading] = useState(true);
+
   const auth = useAuth();
   const firestore = useFirestore();
 
@@ -48,10 +61,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!auth || !firestore) return;
 
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      setFirebaseUser(fbUser); // This will now be null if not logged in, or a user object
-      if (fbUser) { // User is logged in, now check verification OR if they are an admin
-        
-        // Admins can bypass email verification
+      setFirebaseUser(fbUser); 
+      if (fbUser) { 
         const isAdmin = fbUser.email && ADMIN_EMAILS.includes(fbUser.email);
         
         if (fbUser.emailVerified || isAdmin) {
@@ -60,28 +71,60 @@ export function AppProvider({ children }: { children: ReactNode }) {
             const unsubSnapshot = onSnapshot(userDocRef, async (docSnap) => {
               if (docSnap.exists()) {
                 let userData = { uid: docSnap.id, ...docSnap.data() } as User;
-                // Force role to admin if email matches, overriding Firestore data
                 if (isAdmin) {
                     userData.role = 'admin';
                 }
                 setUser(userData);
               } else {
-                console.warn("User document not found for authenticated user. This can happen if doc creation is pending.");
-                // This might happen if registration is not complete, logout to be safe
-                // auth.signOut();
+                console.warn("User document not found for authenticated user.");
               }
             });
             
             return () => unsubSnapshot();
         }
       } else {
-        // User is not logged in
+        // User is not logged in, clear all user-specific state
         setUser(null);
+        setChats([]);
+        setActiveChatId(null);
+        setIsChatsLoading(false);
       }
     });
 
     return () => unsubscribe();
   }, [auth, firestore]);
+  
+  // Effect to load chat history
+  useEffect(() => {
+    if (!firestore || !user) {
+        setIsChatsLoading(false);
+        return;
+    }
+
+    setIsChatsLoading(true);
+    const chatsCollectionRef = collection(firestore, `users/${user.uid}/chats`);
+    const q = query(chatsCollectionRef, orderBy('createdAt', 'desc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const userChats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
+        setChats(userChats);
+        
+        // If there's no active chat, set it to the most recent one.
+        if (activeChatId === null && userChats.length > 0) {
+            setActiveChatId(userChats[0].id);
+        } else if (userChats.length === 0) {
+            // No chats exist
+            setActiveChatId(null);
+        }
+        setIsChatsLoading(false);
+    }, (error) => {
+        console.error("Error fetching chat history:", error);
+        setIsChatsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [firestore, user, activeChatId]);
+
 
   const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
@@ -117,14 +160,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const currentUser = auth.currentUser;
     
-    // 1. Delete Firestore document
     const userDocRef = doc(firestore, 'users', currentUser.uid);
     await deleteDoc(userDocRef);
 
-    // 2. Delete Firebase Auth user
     await deleteUser(currentUser);
-    
-    // The onAuthStateChanged listener will handle setting user state to null.
   };
 
   const toggleChatBubble = () => {
@@ -145,6 +184,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toggleChatBubble,
     isChatDrawerOpen,
     setChatDrawerOpen,
+    // Chat context values
+    chats,
+    activeChatId,
+    setActiveChatId,
+    isChatsLoading,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

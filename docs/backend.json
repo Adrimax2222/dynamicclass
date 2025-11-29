@@ -60,6 +60,30 @@
         "scope": { "type": "string", "enum": ["general", "center"] }
       },
       "required": ["text", "authorId", "authorName", "authorAvatar", "createdAt", "scope"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "Represents a single chat conversation session.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" }
+      },
+      "required": ["title", "createdAt", "userId"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "description": "Represents a single message within a chat conversation.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "assistant", "system"] },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["role", "content", "timestamp"]
     }
   },
   "auth": {
@@ -73,6 +97,14 @@
     "/users/{userId}/notes/{noteId}": {
       "schema": { "$ref": "#/entities/Note" },
       "description": "Stores personal notes for each user."
+    },
+    "/users/{userId}/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/Chat" },
+      "description": "Stores a user's chat sessions."
+    },
+    "/users/{userId}/chats/{chatId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Stores messages for a specific chat session."
     },
     "/announcements/{announcementId}": {
         "schema": { "$ref": "#/entities/Announcement" },
