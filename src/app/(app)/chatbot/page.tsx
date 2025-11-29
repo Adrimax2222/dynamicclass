@@ -11,6 +11,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   History,
+  AlertTriangle,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 
 export default function ChatbotPage() {
@@ -202,55 +205,72 @@ export default function ChatbotPage() {
                  <h1 className="text-xl font-bold font-headline tracking-tighter">
                     ADRIMAX AI
                  </h1>
+                <Badge variant="outline">Beta</Badge>
             </div>
-            <div className="flex-1" />
+            <div className="w-10"></div>
         </header>
 
         <ScrollArea className="flex-1" ref={scrollAreaRef}>
             <div className="space-y-6 p-4">
-            {(isMessagesLoading || (!activeChatId && !isChatsLoading)) && (
+            {!activeChatId && !isChatsLoading ? (
                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 mt-16">
-                    <Sparkles className="h-12 w-12 mb-4" />
-                    <p className="text-lg font-semibold">{isMessagesLoading ? "Cargando chat..." : "Comienza una conversación"}</p>
-                    <p>{isMessagesLoading ? "Espera un momento." : placeholderText}</p>
+                    <div className="relative mb-4">
+                        <Logo className="h-20 w-20 text-primary" />
+                        <Sparkles className="h-8 w-8 text-yellow-400 absolute -top-2 -right-2 animate-pulse-slow" />
+                    </div>
+                    <p className="text-lg font-semibold text-foreground">Tu Asistente Educativo Personal</p>
+                    <p className="mb-6">{placeholderText}</p>
+                    <Alert variant="destructive" className="max-w-sm text-xs">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                            Esta es una función beta. Las respuestas pueden no ser siempre precisas.
+                        </AlertDescription>
+                    </Alert>
                 </div>
-            )}
-            {messages.map((message) => (
-                <div
-                key={message.id}
-                className={cn(
-                    "flex items-end gap-3",
-                    message.role === "user" ? "justify-end" : "justify-start"
-                )}
-                >
-                {(message.role === "assistant" || message.role === 'system') && (
-                    <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
-                        <Logo className="h-5 w-5" />
-                    </Avatar>
-                )}
-                <div
+            ) : isMessagesLoading ? (
+                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 mt-16">
+                    <Loader2 className="h-12 w-12 mb-4 animate-spin" />
+                    <p className="text-lg font-semibold">Cargando chat...</p>
+                    <p>Espera un momento.</p>
+                </div>
+            ) : (
+                messages.map((message) => (
+                    <div
+                    key={message.id}
                     className={cn(
-                    "max-w-[80%] rounded-lg p-3",
-                    message.role === "user" && "bg-primary text-primary-foreground",
-                    message.role === "assistant" && "bg-muted",
-                    message.role === 'system' && "bg-destructive text-destructive-foreground"
+                        "flex items-end gap-3",
+                        message.role === "user" ? "justify-end" : "justify-start"
                     )}
-                >
-                    {message.role === 'assistant' ? (
-                        <MarkdownRenderer content={message.content} />
-                    ) : (
-                        <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                    >
+                    {(message.role === "assistant" || message.role === 'system') && (
+                        <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
+                            <Logo className="h-5 w-5" />
+                        </Avatar>
                     )}
-                    <p className="mt-1 pb-1 text-right text-xs opacity-60">{formatTimestamp(message.timestamp)}</p>
-                </div>
-                {message.role === "user" && user && (
-                    <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                )}
-                </div>
-            ))}
+                    <div
+                        className={cn(
+                        "max-w-[80%] rounded-lg p-3",
+                        message.role === "user" && "bg-primary text-primary-foreground",
+                        message.role === "assistant" && "bg-muted",
+                        message.role === 'system' && "bg-destructive text-destructive-foreground"
+                        )}
+                    >
+                        {message.role === 'assistant' ? (
+                            <MarkdownRenderer content={message.content} />
+                        ) : (
+                            <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                        )}
+                        <p className="mt-1 pb-1 text-right text-xs opacity-60">{formatTimestamp(message.timestamp)}</p>
+                    </div>
+                    {message.role === "user" && user && (
+                        <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                    )}
+                    </div>
+                ))
+            )}
             {isSending && (
                 <div className="flex items-end gap-3 justify-start">
                 <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">

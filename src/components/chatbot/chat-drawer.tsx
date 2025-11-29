@@ -8,6 +8,7 @@ import {
   Send,
   MessageSquarePlus,
   Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import {
   collection,
@@ -53,6 +54,8 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "../ui/badge";
+import { Alert, AlertDescription } from "../ui/alert";
 
 export default function ChatDrawer() {
   const {
@@ -182,6 +185,8 @@ export default function ChatDrawer() {
     return new Date(timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
   
+  const placeholderText = "Pregúntame cualquier cosa...";
+
   return (
     <Sheet open={isChatDrawerOpen} onOpenChange={setChatDrawerOpen}>
       <SheetContent className="flex flex-col p-0 sm:max-w-lg">
@@ -189,6 +194,7 @@ export default function ChatDrawer() {
           <SheetTitle className="flex items-center gap-2 font-headline">
             <Sparkles className="h-6 w-6 text-primary" />
             ADRIMAX AI
+            <Badge variant="outline">Beta</Badge>
           </SheetTitle>
           <SheetDescription>
             Tu asistente educativo personal.
@@ -240,48 +246,64 @@ export default function ChatDrawer() {
 
         <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
           <div className="space-y-4 py-4">
-             {(isMessagesLoading || (!activeChatId && !isChatsLoading)) && (
+             {!activeChatId && !isChatsLoading ? (
                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
-                    <Sparkles className="h-10 w-10 mb-4" />
-                    <p className="font-semibold">{isMessagesLoading ? "Cargando..." : "Inicia un chat"}</p>
+                     <div className="relative mb-4">
+                        <Logo className="h-16 w-16 text-primary" />
+                        <Sparkles className="h-6 w-6 text-yellow-400 absolute -top-1 -right-1 animate-pulse-slow" />
+                    </div>
+                    <p className="font-semibold text-foreground">Tu Asistente Educativo</p>
+                    <p className="mb-4 text-sm">{placeholderText}</p>
+                    <Alert variant="destructive" className="max-w-sm text-xs">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                            Esta es una función beta y puede tener errores.
+                        </AlertDescription>
+                    </Alert>
                 </div>
-            )}
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  "flex items-end gap-3",
-                  message.role === "user" ? "justify-end" : "justify-start"
-                )}
-              >
-                {(message.role === "assistant" || message.role === 'system') && (
-                    <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
-                        <Logo className="h-5 w-5" />
-                    </Avatar>
-                )}
+            ) : isMessagesLoading ? (
+                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
+                    <Loader2 className="h-10 w-10 mb-4 animate-spin" />
+                    <p className="font-semibold">Cargando...</p>
+                </div>
+            ) : (
+                messages.map((message) => (
                 <div
-                  className={cn(
-                    "max-w-[80%] rounded-lg p-3",
-                    message.role === "user" && "bg-primary text-primary-foreground",
-                    message.role === "assistant" && "bg-muted",
-                    message.role === 'system' && "bg-destructive text-destructive-foreground"
-                  )}
-                >
-                    {message.role === 'assistant' ? (
-                        <MarkdownRenderer content={message.content} />
-                    ) : (
-                        <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                    key={message.id}
+                    className={cn(
+                    "flex items-end gap-3",
+                    message.role === "user" ? "justify-end" : "justify-start"
                     )}
-                    <p className="mt-1 pb-1 text-right text-xs opacity-60">{formatTimestamp(message.timestamp)}</p>
+                >
+                    {(message.role === "assistant" || message.role === 'system') && (
+                        <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
+                            <Logo className="h-5 w-5" />
+                        </Avatar>
+                    )}
+                    <div
+                    className={cn(
+                        "max-w-[80%] rounded-lg p-3",
+                        message.role === "user" && "bg-primary text-primary-foreground",
+                        message.role === "assistant" && "bg-muted",
+                        message.role === 'system' && "bg-destructive text-destructive-foreground"
+                    )}
+                    >
+                        {message.role === 'assistant' ? (
+                            <MarkdownRenderer content={message.content} />
+                        ) : (
+                            <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                        )}
+                        <p className="mt-1 pb-1 text-right text-xs opacity-60">{formatTimestamp(message.timestamp)}</p>
+                    </div>
+                    {message.role === "user" && user && (
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar} alt={user.name} />
+                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                    )}
                 </div>
-                {message.role === "user" && user && (
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                )}
-              </div>
-            ))}
+                ))
+            )}
             {isSending && (
               <div className="flex items-end gap-3 justify-start">
                 <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
@@ -298,7 +320,7 @@ export default function ChatDrawer() {
           <div className="space-y-2">
             <div className="relative w-full">
               <Textarea
-                placeholder="Pregúntame cualquier cosa..."
+                placeholder={placeholderText}
                 className="pr-12"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
