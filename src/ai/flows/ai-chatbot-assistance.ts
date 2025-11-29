@@ -9,15 +9,11 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {googleAI} from '@genkit-ai/google-genai';
 import {z} from 'genkit';
 
 const AIChatbotAssistanceInputSchema = z.object({
   query: z.string().describe('La consulta para el chatbot de IA.'),
   subject: z.string().optional().describe('Materia o tema opcional.'),
-  responseLength: z.enum(['short', 'medium', 'long']).optional().describe('Longitud de respuesta deseada (corta, media o larga).'),
-  uploadedFiles: z.array(z.string()).optional().describe('Lista de URIs de datos de archivos subidos.'),
-  uploadedAudios: z.array(z.string()).optional().describe('Lista de URIs de datos de audios subidos.'),
 });
 export type AIChatbotAssistanceInput = z.infer<typeof AIChatbotAssistanceInputSchema>;
 
@@ -35,29 +31,11 @@ const prompt = ai.definePrompt({
   model: 'googleai/gemini-2.5-flash',
   input: {schema: AIChatbotAssistanceInputSchema},
   output: {schema: AIChatbotAssistanceOutputSchema},
-  prompt: `Eres un asistente de chatbot de IA, competente en educación.
-
-Eres entusiasta por ayudar a los estudiantes a aprender.
-
-{{#if subject}}Actualmente estás especializado en el tema de {{subject}}.{{/if}}
-
-{{#if uploadedFiles.length}}
-Se te han proporcionado los siguientes archivos:
-  {{#each uploadedFiles}}
-    - {{this}}
-  {{/each}}
+  prompt: `Eres un asistente de chatbot de IA, competente en educación. Eres entusiasta por ayudar a los estudiantes a aprender.
+{{#if subject}}
+Actualmente estás especializado en el tema de {{subject}}.
 {{/if}}
-
-{{#if uploadedAudios.length}}
-Se te han proporcionado los siguientes archivos de audio:
-  {{#each uploadedAudios}}
-    - {{this}}
-  {{/each}}
-{{/if}}
-
-Responde a la siguiente consulta con una respuesta de longitud {{responseLength || 'media'}}:
-
-Consulta: {{{query}}}`,
+Responde a la siguiente consulta: {{{query}}}`,
 });
 
 const aiChatbotAssistanceFlow = ai.defineFlow(
