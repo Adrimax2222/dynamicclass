@@ -15,25 +15,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { CalendarEvent as AppCalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/hooks/use-app";
@@ -96,8 +77,9 @@ export default function CalendarPage() {
         if (error.code === 'auth/popup-closed-by-user') {
             setError("Se ha cancelado la conexión con Google Calendar.");
         } else {
-            setError("Error de autenticación: No se ha podido conectar con Google Calendar.");
+            setError(`Error de autenticación: ${error.message || 'No se ha podido conectar con Google Calendar.'}`);
         }
+        setIsConnected(false);
     } finally {
         setIsLoading(false);
     }
@@ -106,8 +88,6 @@ export default function CalendarPage() {
   const listAllCalendars = async (accessToken: string): Promise<string[]> => {
     const url = new URL('https://www.googleapis.com/calendar/v3/users/me/calendarList');
     try {
-        console.log("Token de Google Calendar usado:", accessToken);
-        console.log('Verificando token antes de API:', accessToken);
         const response = await fetch(url.toString(), {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
@@ -118,7 +98,6 @@ export default function CalendarPage() {
         }
         const data = await response.json();
         const calendars: GoogleCalendar[] = data.items || [];
-        console.log("Calendarios encontrados:", calendars.map(cal => cal.id));
         const calendarIds = calendars.map(cal => cal.id);
         if (!calendarIds.includes('primary')) {
             calendarIds.push('primary');
@@ -142,14 +121,14 @@ export default function CalendarPage() {
             return;
         }
 
-        const timeMin = "2025-11-01T00:00:00Z";
-        const timeMax = "2026-12-31T23:59:59Z";
+        const timeMin = new Date().toISOString(); // From today onwards
+        const timeMax = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(); // To one year from now
 
         const eventPromises = calendarIds.map(id => {
             const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events`);
             url.searchParams.append('timeMin', timeMin);
             url.searchParams.append('timeMax', timeMax);
-            url.searchParams.append('maxResults', '10');
+            url.searchParams.append('maxResults', '50'); // Fetch more events
             url.searchParams.append('singleEvents', 'true');
             url.searchParams.append('orderBy', 'startTime');
 
@@ -161,7 +140,6 @@ export default function CalendarPage() {
                     return { items: [] }; 
                 }
                 const data = await res.json();
-                console.log(`Respuesta JSON de la API de Google para el calendario ${id}:`, data);
                 return data;
             }).catch(e => {
                 console.error(`Error en el fetch para el calendario ${id}:`, e);
