@@ -49,6 +49,11 @@ interface GoogleCalendarEvent {
     end: { dateTime?: string; date?: string; };
 }
 
+interface GoogleCalendar {
+    id: string;
+    summary: string;
+}
+
 
 export default function CalendarPage() {
   const { user } = useApp();
@@ -72,6 +77,7 @@ export default function CalendarPage() {
 
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/calendar.events.readonly');
+    provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
 
     try {
         const result = await signInWithPopup(auth, provider);
@@ -96,36 +102,62 @@ export default function CalendarPage() {
         setIsLoading(false);
     }
   };
+
+  const listAllCalendars = async (accessToken: string): Promise<string[]> => {
+    const url = new URL('https://www.googleapis.com/calendar/v3/users/me/calendarList');
+    try {
+        const response = await fetch(url.toString(), {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText || 'Fallo al listar calendarios'}`);
+        }
+        const data = await response.json();
+        const calendars: GoogleCalendar[] = data.items || [];
+        console.log("Calendarios encontrados:", calendars.map(cal => cal.id));
+        return calendars.map(cal => cal.id);
+    } catch (err) {
+        console.error("Error al listar calendarios:", err);
+        setError("No se pudieron cargar la lista de calendarios.");
+        return [];
+    }
+  };
   
   const getUpcomingEvents = async (accessToken: string) => {
     setIsLoading(true);
     setError(null);
     
-    const timeMin = new Date().toISOString();
-    const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
-    url.searchParams.append('timeMin', timeMin);
-    url.searchParams.append('maxResults', '10');
-    url.searchParams.append('singleEvents', 'true');
-    url.searchParams.append('orderBy', 'startTime');
-
     try {
-        const response = await fetch(url.toString(), {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Google API Error:', response.status, response.statusText, errorText);
-            throw new Error(`Error ${response.status}: ${response.statusText || 'Fallo al obtener eventos'}`);
+        const calendarIds = await listAllCalendars(accessToken);
+        if (calendarIds.length === 0) {
+            setGoogleEvents([]);
+            return;
         }
 
-        const data = await response.json();
-        const items: GoogleCalendarEvent[] = data.items || [];
-        
-        console.log('Eventos de Google Calendar:', items);
-        setGoogleEvents(items);
+        const timeMin = new Date().toISOString();
+        const eventPromises = calendarIds.map(id => {
+            const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events`);
+            url.searchParams.append('timeMin', timeMin);
+            url.searchParams.append('maxResults', '10');
+            url.searchParams.append('singleEvents', 'true');
+            url.searchParams.append('orderBy', 'startTime');
+
+            return fetch(url.toString(), {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            }).then(res => {
+                if (!res.ok) {
+                    console.warn(`Fallo al obtener eventos para el calendario ${id}: ${res.statusText}`);
+                    return { items: [] }; // Devuelve un objeto vacío para no romper Promise.all
+                }
+                return res.json();
+            });
+        });
+
+        const results = await Promise.all(eventPromises);
+        const allEvents = results.flatMap(result => result.items || []);
+
+        console.log('Todos los eventos de Google Calendar:', allEvents);
+        setGoogleEvents(allEvents);
 
     } catch (err: any) {
         console.error("Error al obtener eventos del calendario:", err);
@@ -246,6 +278,5 @@ export default function CalendarPage() {
       )}
     </div>
   );
-}
 
     
