@@ -96,3 +96,5 @@ export type Announcement = {
   createdAt: { seconds: number, nanoseconds: number };
   scope: AnnouncementScope;
 }
+
+    

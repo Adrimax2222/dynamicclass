@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -19,57 +20,68 @@ import type { CalendarEvent as AppCalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useApp } from "@/lib/hooks/use-app";
+import { SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
-interface ParsedEvent {
-    id: string;
-    title: string;
-    description: string;
+type CalendarType = "personal" | "class";
+
+interface ParsedEvent extends AppCalendarEvent {
+    // an extension of the base type to ensure date is a Date object during processing
     date: Date;
-    type: 'personal';
 }
 
+const SCHOOL_ICAL_URL = "https://calendar.google.com/calendar/ical/iestorredelpalau.cat_9vm0113gitbs90a9l7p4c3olh4%40group.calendar.google.com/public/basic.ics";
+
 export default function CalendarPage() {
-  const [icalUrl, setIcalUrl] = useState("https://calendar.google.com/calendar/ical/adrimax.dev%40gmail.com/public/basic.ics");
-  const [processedEvents, setProcessedEvents] = useState<AppCalendarEvent[]>([]);
+  const { user } = useApp();
+  const [personalIcalUrl, setPersonalIcalUrl] = useState("");
+  const [processedEvents, setProcessedEvents] = useState<ParsedEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
   const [date, setDate] = useState<Date | undefined>(new Date());
   
+  // New state for calendar type
+  const [calendarType, setCalendarType] = useState<CalendarType>("personal");
+  const [isPersonalCalendarConnected, setIsPersonalCalendarConnected] = useState(false);
+
+  const userIsInCenter = user?.center === SCHOOL_VERIFICATION_CODE;
+
+  // Load personal iCal URL from localStorage on mount
   useEffect(() => {
-    // On component mount, check for a saved iCal URL
     const savedIcalUrl = localStorage.getItem('icalUrl');
     if (savedIcalUrl) {
-      setIcalUrl(savedIcalUrl);
-      handleFetchEvents(savedIcalUrl);
+      setPersonalIcalUrl(savedIcalUrl);
+      setIsPersonalCalendarConnected(true);
     }
-  // We want this to run only once on mount, so we pass an empty dependency array.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fetch events when calendar type or user changes
+  useEffect(() => {
+    handleFetchEvents();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calendarType, user, isPersonalCalendarConnected]);
 
- const parseIcal = (icalData: string): ParsedEvent[] => {
+
+  const parseIcal = (icalData: string, type: CalendarType): ParsedEvent[] => {
     const events: ParsedEvent[] = [];
     const lines = icalData.split(/\r\n|\n|\r/);
     let currentEvent: any = null;
 
     for (const line of lines) {
         if (line.startsWith('BEGIN:VEVENT')) {
-            currentEvent = { type: 'personal' };
+            currentEvent = {};
         } else if (line.startsWith('END:VEVENT')) {
             if (currentEvent && currentEvent.dtstart && currentEvent.summary) {
                  try {
                     const dateStrRaw = currentEvent.dtstart.split(':')[1];
-                    const isAllDay = dateStrRaw.includes('VALUE=DATE');
                     const dateStr = dateStrRaw.split('T')[0].replace(';VALUE=DATE', '');
-
                     const year = parseInt(dateStr.substring(0, 4), 10);
-                    const month = parseInt(dateStr.substring(4, 6), 10) - 1; // JS months are 0-indexed
+                    const month = parseInt(dateStr.substring(4, 6), 10) - 1;
                     const day = parseInt(dateStr.substring(6, 8), 10);
                     
                     const eventDate = new Date(Date.UTC(year, month, day));
-                    
-                    // Unescape newline characters
                     const description = (currentEvent.description || 'No hay descripción.').replace(/\\n/g, '\n');
 
                     events.push({
@@ -77,7 +89,7 @@ export default function CalendarPage() {
                         title: currentEvent.summary,
                         description: description,
                         date: eventDate,
-                        type: 'personal',
+                        type: type,
                     });
                 } catch(e) {
                     console.error("Could not parse event date:", currentEvent.dtstart, e);
@@ -90,61 +102,80 @@ export default function CalendarPage() {
             const mainKey = key.split(';')[0]; 
 
             switch (mainKey) {
-                case 'UID':
-                    currentEvent.uid = value;
-                    break;
-                case 'SUMMARY':
-                    currentEvent.summary = value;
-                    break;
-                case 'DESCRIPTION':
-                    currentEvent.description = value;
-                    break;
-                case 'DTSTART':
-                    currentEvent.dtstart = line;
-                    break;
+                case 'UID': currentEvent.uid = value; break;
+                case 'SUMMARY': currentEvent.summary = value; break;
+                case 'DESCRIPTION': currentEvent.description = value; break;
+                case 'DTSTART': currentEvent.dtstart = line; break;
             }
         }
     }
     return events;
   };
   
-  const handleFetchEvents = async (urlToFetch?: string) => {
-      const finalUrl = urlToFetch || icalUrl;
-      if (!finalUrl) {
-          setError("Por favor, introduce una URL de iCal.");
+  const handleFetchEvents = async () => {
+      let urlToFetch: string | null = null;
+
+      if (calendarType === 'personal') {
+          urlToFetch = personalIcalUrl;
+          if (!isPersonalCalendarConnected) {
+             setProcessedEvents([]);
+             setError(null);
+             return; // Don't fetch if personal calendar is not set up
+          }
+      } else if (calendarType === 'class') {
+          if (!userIsInCenter) {
+              setError("No tienes permiso para ver el calendario del instituto.");
+              setProcessedEvents([]);
+              return;
+          }
+          urlToFetch = SCHOOL_ICAL_URL;
+      }
+      
+      if (!urlToFetch) {
+          setProcessedEvents([]);
+          setError(calendarType === 'personal' ? "Introduce una URL de iCal para tu calendario personal." : null);
           return;
       }
+
       setIsLoading(true);
       setError(null);
+      setProcessedEvents([]);
 
       try {
-          const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(finalUrl)}`);
-          
+          const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(urlToFetch)}`);
           if (!response.ok) {
                const errorData = await response.json();
                throw new Error(errorData.error || `No se pudo obtener el calendario. Código de estado: ${response.status}`);
           }
           const icalData = await response.text();
-          const parsed = parseIcal(icalData);
+          const parsed = parseIcal(icalData, calendarType);
           
           if (parsed.length === 0) {
-            setError("No se encontraron eventos en la URL proporcionada o el formato no es compatible. Asegúrate de que es una URL de iCal 'pública'.");
+            setError("No se encontraron eventos o el formato no es compatible. Si es un calendario personal, asegúrate de que la URL de iCal sea 'pública'.");
           } else {
             setProcessedEvents(parsed);
-            setIsConnected(true);
-            // Save the successful URL to localStorage
-            localStorage.setItem('icalUrl', finalUrl);
+            if (calendarType === 'personal') {
+              setIsPersonalCalendarConnected(true);
+              localStorage.setItem('icalUrl', urlToFetch);
+            }
           }
 
       } catch (err: any) {
           console.error("Error al obtener el iCal:", err);
-          setError(err.message || "No se pudo cargar el calendario. Verifica la URL y que sea accesible públicamente.");
-          setIsConnected(false); // If it fails, show the setup screen again
-          localStorage.removeItem('icalUrl'); // Clear the bad URL
+          setError(err.message || "No se pudo cargar el calendario. Verifica la URL y su configuración de privacidad.");
+          if(calendarType === 'personal') {
+            setIsPersonalCalendarConnected(false);
+            localStorage.removeItem('icalUrl');
+          }
       } finally {
           setIsLoading(false);
       }
   };
+
+  const handlePersonalCalendarConnect = () => {
+    // This is just a wrapper for handleFetchEvents for the button
+    handleFetchEvents();
+  }
 
   const eventsOnSelectedDate = processedEvents.filter(
     (event) => date && format(event.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
@@ -155,24 +186,42 @@ export default function CalendarPage() {
       <header className="mb-8 flex flex-col items-start gap-4">
         <div>
             <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-                Calendario Personal
+                Calendario
             </h1>
-            <p className="text-muted-foreground">Gestiona tus eventos de Google Calendar.</p>
+            <p className="text-muted-foreground">Gestiona tus eventos personales y del instituto.</p>
+        </div>
+         <div className="w-full">
+          <Select onValueChange={(value: CalendarType) => setCalendarType(value)} defaultValue="personal">
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Seleccionar calendario" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="personal">Calendario Personal</SelectItem>
+              <SelectItem value="class" disabled={!userIsInCenter}>
+                Calendario del Instituto
+              </SelectItem>
+            </SelectContent>
+          </Select>
+           {!userIsInCenter && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Únete al grupo de tu centro para ver su calendario.
+              </p>
+            )}
         </div>
       </header>
       
-      {isLoading && !isConnected ? (
+      {isLoading ? (
         <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg h-64">
           <Loader2 className="h-12 w-12 text-primary animate-spin" />
-          <p className="mt-4 font-semibold">Cargando calendario...</p>
+          <p className="mt-4 font-semibold">Cargando eventos...</p>
         </div>
-      ) : !isConnected ? (
+      ) : calendarType === 'personal' && !isPersonalCalendarConnected ? (
         <Card className="p-6">
             <CardHeader className="text-center p-0 pb-6">
                 <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
                     <CalendarIcon className="h-10 w-10 text-primary" />
                 </div>
-                <CardTitle>Sincroniza tu Calendario</CardTitle>
+                <CardTitle>Sincroniza tu Calendario Personal</CardTitle>
                 <CardDescription>
                     Pega la dirección URL pública de tu Google Calendar.
                 </CardDescription>
@@ -191,8 +240,8 @@ export default function CalendarPage() {
 
                 <div className="space-y-2">
                     <Input 
-                        value={icalUrl}
-                        onChange={(e) => setIcalUrl(e.target.value)}
+                        value={personalIcalUrl}
+                        onChange={(e) => setPersonalIcalUrl(e.target.value)}
                         placeholder="Pega aquí la URL de iCal..."
                     />
                 </div>
@@ -205,7 +254,7 @@ export default function CalendarPage() {
                     </Alert>
                 )}
 
-                <Button onClick={() => handleFetchEvents()} disabled={isLoading} className="w-full">
+                <Button onClick={handlePersonalCalendarConnect} disabled={isLoading || !personalIcalUrl} className="w-full">
                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link className="mr-2 h-4 w-4" />}
                     Cargar Eventos del Calendario
                 </Button>
@@ -239,15 +288,16 @@ export default function CalendarPage() {
             </h2>
             <Card className="min-h-[200px]">
                 <CardContent className="p-4">
-                {isLoading ? <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div> : 
-                eventsOnSelectedDate.length > 0 ? (
+                {eventsOnSelectedDate.length > 0 ? (
                     <Accordion type="single" collapsible className="w-full">
                     {eventsOnSelectedDate.map((event) => (
                         <AccordionItem value={event.id} key={event.id}>
                             <AccordionTrigger>
                                 <div className="flex flex-col items-start text-left">
                                     <p className="font-semibold">{event.title}</p>
-                                    <span className={cn("mt-1.5 inline-block px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800")}>Personal</span>
+                                     <Badge variant={event.type === 'class' ? 'secondary' : 'default'} className="mt-1.5">
+                                        {event.type === 'class' ? 'Instituto' : 'Personal'}
+                                    </Badge>
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent>
@@ -260,11 +310,18 @@ export default function CalendarPage() {
                     <div className="flex h-full flex-col items-center justify-center text-center p-8">
                     <CalendarIcon className="h-12 w-12 text-muted-foreground/50" />
                     <p className="mt-4 text-muted-foreground">No hay eventos para este día.</p>
+                    {error && (
+                         <Alert variant="destructive" className="mt-4 max-w-sm text-left">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>Error</AlertTitle>
+                            <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                    )}
                     </div>
                 )}
                 </CardContent>
             </Card>
-            </div>
+        </div>
         </div>
       )}
     </div>
