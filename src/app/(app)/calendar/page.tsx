@@ -58,7 +58,7 @@ interface GoogleCalendar {
 export default function CalendarPage() {
   const { user } = useApp();
   const auth = useAuth();
-  const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([]);
+  const [processedEvents, setProcessedEvents] = useState<AppCalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -138,7 +138,7 @@ export default function CalendarPage() {
     try {
         const calendarIds = await listAllCalendars(accessToken);
         if (calendarIds.length === 0) {
-            setGoogleEvents([]);
+            setProcessedEvents([]);
             return;
         }
 
@@ -170,9 +170,17 @@ export default function CalendarPage() {
         });
 
         const results = await Promise.all(eventPromises);
-        const allEvents = results.flatMap(result => result.items || []);
+        const allGoogleEvents: GoogleCalendarEvent[] = results.flatMap(result => result.items || []);
 
-        setGoogleEvents(allEvents);
+        const appEvents: AppCalendarEvent[] = allGoogleEvents.map(e => ({
+            id: e.id,
+            title: e.summary,
+            description: e.description || 'Sin descripción',
+            date: new Date(e.start.dateTime || e.start.date || new Date()),
+            type: 'personal' as const,
+        }));
+        
+        setProcessedEvents(appEvents);
 
     } catch (err: any) {
         console.error("Error al obtener eventos del calendario:", err);
@@ -182,14 +190,6 @@ export default function CalendarPage() {
         setIsLoading(false);
     }
   };
-
-  const processedEvents: AppCalendarEvent[] = googleEvents.map(e => ({
-        id: e.id,
-        title: e.summary,
-        description: e.description || 'Sin descripción',
-        date: new Date(e.start.dateTime || e.start.date || new Date()),
-        type: 'personal' as const,
-  }));
 
   const eventsOnSelectedDate = processedEvents.filter(
     (event) => date && format(event.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
@@ -293,7 +293,5 @@ export default function CalendarPage() {
       )}
     </div>
   );
-
-    
 
     
