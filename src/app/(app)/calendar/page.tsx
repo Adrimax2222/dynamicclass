@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon, Link, AlertTriangle, Loader2, Info } from "lucide-react";
@@ -30,7 +30,7 @@ interface ParsedEvent {
 }
 
 export default function CalendarPage() {
-  const [icalUrl, setIcalUrl] = useState("");
+  const [icalUrl, setIcalUrl] = useState("https://calendar.google.com/calendar/ical/adrimax.dev%40gmail.com/public/basic.ics");
   const [processedEvents, setProcessedEvents] = useState<AppCalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export default function CalendarPage() {
   const parseIcal = (icalData: string): ParsedEvent[] => {
       const events: ParsedEvent[] = [];
       const lines = icalData.split(/\r\n|\n|\r/);
-      let currentEvent: Partial<ParsedEvent> & { dtstart?: string } = {};
+      let currentEvent: Partial<ParsedEvent> & { dtstart?: string, uid?: string } = {};
 
       for (let i = 0; i < lines.length; i++) {
           const line = lines[i];
@@ -63,7 +63,7 @@ export default function CalendarPage() {
               if (key.startsWith('DTSTART')) currentEvent.dtstart = line;
               if (key === 'SUMMARY') currentEvent.title = value;
               if (key === 'DESCRIPTION') currentEvent.description = value;
-              if (key === 'UID') currentEvent.id = value;
+              if (key === 'UID') currentEvent.uid = value;
           }
       }
       return events;
@@ -78,7 +78,6 @@ export default function CalendarPage() {
       setError(null);
 
       try {
-          // Use a CORS proxy to fetch the iCal URL
           const response = await fetch(`https://cors-anywhere.herokuapp.com/${icalUrl}`);
           if (!response.ok) {
               throw new Error(`No se pudo obtener el calendario. Código de estado: ${response.status}`);
@@ -101,6 +100,11 @@ export default function CalendarPage() {
       }
   };
 
+  useEffect(() => {
+    // Automatically fetch events when the component mounts with the pre-filled URL.
+    handleFetchEvents();
+  }, []); // The empty dependency array ensures this runs only once on mount.
+
   const eventsOnSelectedDate = processedEvents.filter(
     (event) => date && format(event.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
   );
@@ -116,7 +120,7 @@ export default function CalendarPage() {
         </div>
       </header>
 
-      {!isConnected ? (
+      {!isConnected && !isLoading ? (
         <Card className="p-6">
             <CardHeader className="text-center p-0 pb-6">
                 <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
