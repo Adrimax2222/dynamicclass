@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import type { CalendarEvent as AppCalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface ParsedEvent {
     id: string;
@@ -59,7 +60,7 @@ export default function CalendarPage() {
                     events.push({
                         id: currentEvent.uid || Math.random().toString(),
                         title: currentEvent.summary,
-                        description: currentEvent.description || '',
+                        description: currentEvent.description || 'No hay descripción.',
                         date: eventDate,
                         type: 'personal',
                     });
@@ -215,15 +216,21 @@ export default function CalendarPage() {
                 <CardContent className="p-4">
                 {isLoading ? <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div> : 
                 eventsOnSelectedDate.length > 0 ? (
-                    <ul className="space-y-3">
+                    <Accordion type="single" collapsible className="w-full">
                     {eventsOnSelectedDate.map((event) => (
-                        <li key={event.id} className="rounded-lg border bg-background p-3">
-                            <p className="font-semibold">{event.title}</p>
-                            <p className="text-sm text-muted-foreground">{event.description}</p>
-                            <span className={cn("mt-2 inline-block px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800")}>Personal</span>
-                        </li>
+                        <AccordionItem value={event.id} key={event.id}>
+                            <AccordionTrigger>
+                                <div className="flex flex-col items-start text-left">
+                                    <p className="font-semibold">{event.title}</p>
+                                    <span className={cn("mt-1.5 inline-block px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800")}>Personal</span>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{event.description}</p>
+                            </AccordionContent>
+                        </AccordionItem>
                     ))}
-                    </ul>
+                    </Accordion>
                 ) : (
                     <div className="flex h-full flex-col items-center justify-center text-center p-8">
                     <CalendarIcon className="h-12 w-12 text-muted-foreground/50" />
