@@ -48,15 +48,15 @@ export default function CalendarPage() {
         } else if (line.startsWith('END:VEVENT')) {
             if (currentEvent && currentEvent.dtstart && currentEvent.summary) {
                  try {
-                    // DTSTART;VALUE=DATE:20251101 -> 20251101
-                    // DTSTART:20251101T100000Z -> 20251101
-                    const dateStr = currentEvent.dtstart.split(':')[1].split('T')[0].replace(';VALUE=DATE', '');
+                    const dateStrRaw = currentEvent.dtstart.split(':')[1];
+                    const isAllDay = dateStrRaw.includes('VALUE=DATE');
+                    const dateStr = dateStrRaw.split('T')[0].replace(';VALUE=DATE', '');
+
                     const year = parseInt(dateStr.substring(0, 4), 10);
                     const month = parseInt(dateStr.substring(4, 6), 10) - 1; // JS months are 0-indexed
                     const day = parseInt(dateStr.substring(6, 8), 10);
-
-                    // Create date in local timezone, ignoring time part from iCal for simplicity
-                    const eventDate = new Date(year, month, day);
+                    
+                    const eventDate = new Date(Date.UTC(year, month, day));
 
                     events.push({
                         id: currentEvent.uid || Math.random().toString(),
@@ -73,7 +73,7 @@ export default function CalendarPage() {
         } else if (currentEvent) {
             const [key, ...valueParts] = line.split(':');
             const value = valueParts.join(':');
-            const mainKey = key.split(';')[0]; // Handle cases like DTSTART;VALUE=DATE
+            const mainKey = key.split(';')[0]; 
 
             switch (mainKey) {
                 case 'UID':
@@ -103,7 +103,6 @@ export default function CalendarPage() {
       setError(null);
 
       try {
-          // Use a reliable CORS proxy
           const proxyUrl = `https://api.codetabs.com/v1/proxy/?quest=${icalUrl}`;
           const response = await fetch(proxyUrl);
           
@@ -128,11 +127,6 @@ export default function CalendarPage() {
       }
   };
 
-  useEffect(() => {
-    // Automatically fetch events when the component mounts with the pre-filled URL.
-    handleFetchEvents();
-  }, []); // The empty dependency array ensures this runs only once on mount.
-
   const eventsOnSelectedDate = processedEvents.filter(
     (event) => date && format(event.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
   );
@@ -148,7 +142,7 @@ export default function CalendarPage() {
         </div>
       </header>
 
-      {!isConnected && !isLoading ? (
+      {!isConnected ? (
         <Card className="p-6">
             <CardHeader className="text-center p-0 pb-6">
                 <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
@@ -246,4 +240,6 @@ export default function CalendarPage() {
     </div>
   );
 }
+    
+
     
