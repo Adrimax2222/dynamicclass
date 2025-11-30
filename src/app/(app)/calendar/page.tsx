@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon, Link, AlertTriangle, Loader2, Info } from "lucide-react";
 
@@ -37,36 +37,61 @@ export default function CalendarPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [date, setDate] = useState<Date | undefined>(new Date());
 
-  const parseIcal = (icalData: string): ParsedEvent[] => {
-      const events: ParsedEvent[] = [];
-      const lines = icalData.split(/\r\n|\n|\r/);
-      let currentEvent: Partial<ParsedEvent> & { dtstart?: string, uid?: string } = {};
+ const parseIcal = (icalData: string): ParsedEvent[] => {
+    const events: ParsedEvent[] = [];
+    const lines = icalData.split(/\r\n|\n|\r/);
+    let currentEvent: any = null;
 
-      for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          if (line.startsWith('BEGIN:VEVENT')) {
-              currentEvent = { type: 'personal' };
-          } else if (line.startsWith('END:VEVENT')) {
-              if (currentEvent.dtstart && currentEvent.title) {
-                  const dateStr = currentEvent.dtstart.split(':')[1] || '';
-                  const year = dateStr.substring(0, 4);
-                  const month = dateStr.substring(4, 6);
-                  const day = dateStr.substring(6, 8);
-                  
-                  currentEvent.date = new Date(`${year}-${month}-${day}T00:00:00`);
-                  currentEvent.id = currentEvent.uid || Math.random().toString();
-                  events.push(currentEvent as ParsedEvent);
-              }
-          } else if (currentEvent) {
-              const [key, ...valueParts] = line.split(':');
-              const value = valueParts.join(':');
-              if (key.startsWith('DTSTART')) currentEvent.dtstart = line;
-              if (key === 'SUMMARY') currentEvent.title = value;
-              if (key === 'DESCRIPTION') currentEvent.description = value;
-              if (key === 'UID') currentEvent.uid = value;
-          }
-      }
-      return events;
+    for (const line of lines) {
+        if (line.startsWith('BEGIN:VEVENT')) {
+            currentEvent = { type: 'personal' };
+        } else if (line.startsWith('END:VEVENT')) {
+            if (currentEvent && currentEvent.dtstart && currentEvent.summary) {
+                 try {
+                    // DTSTART;VALUE=DATE:20251101 -> 20251101
+                    // DTSTART:20251101T100000Z -> 20251101
+                    const dateStr = currentEvent.dtstart.split(':')[1].split('T')[0].replace(';VALUE=DATE', '');
+                    const year = parseInt(dateStr.substring(0, 4), 10);
+                    const month = parseInt(dateStr.substring(4, 6), 10) - 1; // JS months are 0-indexed
+                    const day = parseInt(dateStr.substring(6, 8), 10);
+
+                    // Create date in local timezone, ignoring time part from iCal for simplicity
+                    const eventDate = new Date(year, month, day);
+
+                    events.push({
+                        id: currentEvent.uid || Math.random().toString(),
+                        title: currentEvent.summary,
+                        description: currentEvent.description || '',
+                        date: eventDate,
+                        type: 'personal',
+                    });
+                } catch(e) {
+                    console.error("Could not parse event date:", currentEvent.dtstart, e);
+                }
+            }
+            currentEvent = null;
+        } else if (currentEvent) {
+            const [key, ...valueParts] = line.split(':');
+            const value = valueParts.join(':');
+            const mainKey = key.split(';')[0]; // Handle cases like DTSTART;VALUE=DATE
+
+            switch (mainKey) {
+                case 'UID':
+                    currentEvent.uid = value;
+                    break;
+                case 'SUMMARY':
+                    currentEvent.summary = value;
+                    break;
+                case 'DESCRIPTION':
+                    currentEvent.description = value;
+                    break;
+                case 'DTSTART':
+                    currentEvent.dtstart = line;
+                    break;
+            }
+        }
+    }
+    return events;
   };
   
   const handleFetchEvents = async () => {
