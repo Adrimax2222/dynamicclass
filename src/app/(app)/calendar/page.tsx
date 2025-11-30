@@ -107,6 +107,7 @@ export default function CalendarPage() {
     const url = new URL('https://www.googleapis.com/calendar/v3/users/me/calendarList');
     try {
         console.log("Token de Google Calendar usado:", accessToken);
+        console.log('Verificando token antes de API:', accessToken);
         const response = await fetch(url.toString(), {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
@@ -292,5 +293,7 @@ export default function CalendarPage() {
       )}
     </div>
   );
+
+    
 
     
