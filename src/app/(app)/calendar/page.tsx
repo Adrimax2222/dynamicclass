@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -78,6 +77,8 @@ export default function CalendarPage() {
     const provider = new GoogleAuthProvider();
     // Este scope más amplio permite listar calendarios y leer eventos.
     provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
+    // Forzar la selección de cuenta para asegurar que se conceden los nuevos permisos.
+    provider.setCustomParameters({ prompt: 'select_account' });
 
     try {
         const result = await signInWithPopup(auth, provider);
@@ -283,6 +284,3 @@ export default function CalendarPage() {
       )}
     </div>
   );
-
-    
-
