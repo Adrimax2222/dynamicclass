@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Link, AlertTriangle, Loader2, Info } from "lucide-react";
+import { Calendar as CalendarIcon, Link, AlertTriangle, Loader2, Info, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -42,7 +42,6 @@ export default function CalendarPage() {
   const [error, setError] = useState<string | null>(null);
   const [date, setDate] = useState<Date | undefined>(new Date());
   
-  // New state for calendar type
   const [calendarType, setCalendarType] = useState<CalendarType>("personal");
   const [isPersonalCalendarConnected, setIsPersonalCalendarConnected] = useState(false);
 
@@ -177,6 +176,14 @@ export default function CalendarPage() {
     handleFetchEvents();
   }
 
+  const handleDisconnectPersonalCalendar = () => {
+    localStorage.removeItem('icalUrl');
+    setIsPersonalCalendarConnected(false);
+    setPersonalIcalUrl("");
+    setProcessedEvents([]);
+    setError(null);
+  };
+
   const eventsOnSelectedDate = processedEvents.filter(
     (event) => date && format(event.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
   );
@@ -190,7 +197,7 @@ export default function CalendarPage() {
             </h1>
             <p className="text-muted-foreground">Gestiona tus eventos personales y de clase.</p>
         </div>
-         <div className="w-full">
+         <div className="w-full flex items-center gap-2">
           <Select onValueChange={(value: CalendarType) => setCalendarType(value)} defaultValue="personal">
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Seleccionar calendario" />
@@ -202,12 +209,17 @@ export default function CalendarPage() {
               </SelectItem>
             </SelectContent>
           </Select>
-           {!userIsInCenter && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Únete al grupo de tu centro para ver su calendario.
-              </p>
-            )}
+          {calendarType === 'personal' && isPersonalCalendarConnected && (
+              <Button variant="outline" size="icon" onClick={handleDisconnectPersonalCalendar} aria-label="Cambiar URL del calendario">
+                  <Pencil className="h-4 w-4" />
+              </Button>
+          )}
         </div>
+        {!userIsInCenter && calendarType === 'class' && (
+            <p className="text-xs text-muted-foreground -mt-2">
+              Únete al grupo de tu centro para ver su calendario.
+            </p>
+        )}
       </header>
       
       {isLoading ? (
@@ -327,3 +339,6 @@ export default function CalendarPage() {
     </div>
   );
 }
+
+
+    
