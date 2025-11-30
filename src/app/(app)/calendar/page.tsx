@@ -53,13 +53,13 @@ interface GoogleCalendarEvent {
 export default function CalendarPage() {
   const { user } = useApp();
   const auth = useAuth();
-  const [googleEvents, setGoogleEvents] = useState<AppCalendarEvent[]>([]);
+  const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [calendarType, setCalendarType] = useState<"personal" | "class" | "all">("all");
+  const [calendarType, setCalendarType] = useState<"personal" | "class" | "all">("personal");
 
   const handleAuthClick = async () => {
     if (!auth) {
@@ -82,7 +82,7 @@ export default function CalendarPage() {
         }
         
         const token = credential.accessToken;
-        await fetchCalendarEvents(token);
+        await getUpcomingEvents(token);
         setIsConnected(true);
 
     } catch (error: any) {
@@ -97,13 +97,21 @@ export default function CalendarPage() {
     }
   };
   
-  const fetchCalendarEvents = async (token: string) => {
+  const getUpcomingEvents = async (accessToken: string) => {
     setIsLoading(true);
     setError(null);
+    
+    const timeMin = new Date().toISOString();
+    const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
+    url.searchParams.append('timeMin', timeMin);
+    url.searchParams.append('maxResults', '10');
+    url.searchParams.append('singleEvents', 'true');
+    url.searchParams.append('orderBy', 'startTime');
+
     try {
-        const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=50&orderBy=startTime&singleEvents=true', {
+        const response = await fetch(url.toString(), {
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${accessToken}`
             }
         });
 
@@ -116,15 +124,8 @@ export default function CalendarPage() {
         const data = await response.json();
         const items: GoogleCalendarEvent[] = data.items || [];
         
-        const processedEvents: AppCalendarEvent[] = items.map(e => ({
-            id: e.id,
-            title: e.summary,
-            description: e.description || 'Sin descripción',
-            date: new Date(e.start.dateTime || e.start.date || new Date()),
-            type: 'personal' as const,
-        }));
-
-        setGoogleEvents(processedEvents);
+        console.log('Eventos de Google Calendar:', items);
+        setGoogleEvents(items);
 
     } catch (err: any) {
         console.error("Error al obtener eventos del calendario:", err);
@@ -135,8 +136,15 @@ export default function CalendarPage() {
     }
   };
 
+  const processedEvents: AppCalendarEvent[] = googleEvents.map(e => ({
+        id: e.id,
+        title: e.summary,
+        description: e.description || 'Sin descripción',
+        date: new Date(e.start.dateTime || e.start.date || new Date()),
+        type: 'personal' as const,
+  }));
 
-  const eventsOnSelectedDate = googleEvents.filter(
+  const eventsOnSelectedDate = processedEvents.filter(
     (event) => date && format(event.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
   );
 
@@ -150,7 +158,7 @@ export default function CalendarPage() {
             <p className="text-muted-foreground">Gestiona tus tareas y eventos.</p>
         </div>
         <div className="flex w-full items-center gap-2">
-          <Select onValueChange={(value: "personal" | "class" | "all") => setCalendarType(value)} defaultValue="all">
+          <Select onValueChange={(value: "personal" | "class" | "all") => setCalendarType(value as "personal" | "class" | "all")} defaultValue="personal">
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Seleccionar calendario" />
             </SelectTrigger>
@@ -198,7 +206,7 @@ export default function CalendarPage() {
                     className="w-full"
                     locale={es}
                     modifiers={{
-                      hasEvent: googleEvents.map((event) => event.date as Date),
+                      hasEvent: processedEvents.map((event) => event.date as Date),
                     }}
                     modifiersClassNames={{
                       hasEvent: "bg-primary/20 rounded-full",
@@ -239,3 +247,5 @@ export default function CalendarPage() {
     </div>
   );
 }
+
+    
