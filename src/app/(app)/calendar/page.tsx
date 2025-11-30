@@ -78,6 +78,7 @@ export default function CalendarPage() {
       setError(null);
 
       try {
+          // Use CORS proxy to bypass browser restrictions
           const response = await fetch(`https://cors-anywhere.herokuapp.com/${icalUrl}`);
           if (!response.ok) {
               throw new Error(`No se pudo obtener el calendario. Código de estado: ${response.status}`);
