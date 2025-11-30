@@ -53,14 +53,26 @@ export default function CalendarPage() {
     if (savedIcalUrl) {
       setPersonalIcalUrl(savedIcalUrl);
       setIsPersonalCalendarConnected(true);
+      // We trigger the fetch here if a URL is found on load
+      handleFetchEvents('personal', savedIcalUrl);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch events when calendar type or user changes
+  // Fetch events when calendar type or user changes, but not for initial personal setup
   useEffect(() => {
-    handleFetchEvents();
+    if (calendarType === 'class') {
+      handleFetchEvents('class');
+    } else if (calendarType === 'personal' && isPersonalCalendarConnected) {
+      // It's already connected, so fetch again if user switches back to it
+      handleFetchEvents('personal', localStorage.getItem('icalUrl') || personalIcalUrl);
+    } else if (calendarType === 'personal' && !isPersonalCalendarConnected) {
+      // Switched to personal but not connected, clear events
+      setProcessedEvents([]);
+      setError(null);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [calendarType, user, isPersonalCalendarConnected]);
+  }, [calendarType, user]);
 
 
   const parseIcal = (icalData: string, type: CalendarType): ParsedEvent[] => {
@@ -111,17 +123,12 @@ export default function CalendarPage() {
     return events;
   };
   
-  const handleFetchEvents = async () => {
+  const handleFetchEvents = async (type: CalendarType, urlOverride?: string | null) => {
       let urlToFetch: string | null = null;
-
-      if (calendarType === 'personal') {
-          urlToFetch = personalIcalUrl;
-          if (!isPersonalCalendarConnected) {
-             setProcessedEvents([]);
-             setError(null);
-             return; // Don't fetch if personal calendar is not set up
-          }
-      } else if (calendarType === 'class') {
+      
+      if (type === 'personal') {
+          urlToFetch = urlOverride || personalIcalUrl;
+      } else if (type === 'class') {
           if (!userIsInCenter) {
               setError("No tienes permiso para ver el calendario del instituto.");
               setProcessedEvents([]);
@@ -132,13 +139,15 @@ export default function CalendarPage() {
       
       if (!urlToFetch) {
           setProcessedEvents([]);
-          setError(calendarType === 'personal' ? "Introduce una URL de iCal para tu calendario personal." : null);
+          setError(type === 'personal' ? "Introduce una URL de iCal para tu calendario personal." : null);
           return;
       }
 
       setIsLoading(true);
       setError(null);
-      setProcessedEvents([]);
+      
+      // Don't clear previous events immediately, gives a better UX on switching
+      // setProcessedEvents([]);
 
       try {
           const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(urlToFetch)}`);
@@ -147,13 +156,14 @@ export default function CalendarPage() {
                throw new Error(errorData.error || `No se pudo obtener el calendario. Código de estado: ${response.status}`);
           }
           const icalData = await response.text();
-          const parsed = parseIcal(icalData, calendarType);
+          const parsed = parseIcal(icalData, type);
           
           if (parsed.length === 0) {
             setError("No se encontraron eventos o el formato no es compatible. Si es un calendario personal, asegúrate de que la URL de iCal sea 'pública'.");
+            setProcessedEvents([]);
           } else {
             setProcessedEvents(parsed);
-            if (calendarType === 'personal') {
+            if (type === 'personal') {
               setIsPersonalCalendarConnected(true);
               localStorage.setItem('icalUrl', urlToFetch);
             }
@@ -162,10 +172,11 @@ export default function CalendarPage() {
       } catch (err: any) {
           console.error("Error al obtener el iCal:", err);
           setError(err.message || "No se pudo cargar el calendario. Verifica la URL y su configuración de privacidad.");
-          if(calendarType === 'personal') {
-            setIsPersonalCalendarConnected(false);
+           if(type === 'personal') {
+            setIsPersonalCalendarConnected(false); // Disconnect on error
             localStorage.removeItem('icalUrl');
           }
+          setProcessedEvents([]);
       } finally {
           setIsLoading(false);
       }
@@ -173,7 +184,7 @@ export default function CalendarPage() {
 
   const handlePersonalCalendarConnect = () => {
     // This is just a wrapper for handleFetchEvents for the button
-    handleFetchEvents();
+    handleFetchEvents('personal');
   }
 
   const handleDisconnectPersonalCalendar = () => {
@@ -339,6 +350,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-
-
-    
