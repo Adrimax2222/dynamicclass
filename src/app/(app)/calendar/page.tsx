@@ -108,9 +108,10 @@ export default function CalendarPage() {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Google API Error:', errorData);
-            throw new Error(`Error ${response.status}: ${errorData.error?.message || 'Fallo al obtener eventos'}`);
+            // Don't assume the response is JSON. Create an error from status.
+            const errorText = await response.text();
+            console.error('Google API Error:', response.status, response.statusText, errorText);
+            throw new Error(`Error ${response.status}: ${response.statusText || 'Fallo al obtener eventos'}`);
         }
 
         const data = await response.json();
@@ -128,7 +129,7 @@ export default function CalendarPage() {
 
     } catch (err: any) {
         console.error("Error al obtener eventos del calendario:", err);
-        setError("No se pudieron cargar los eventos del calendario. Es posible que el permiso sea inválido.");
+        setError("No se pudieron cargar los eventos del calendario. Es posible que el permiso sea inválido o haya caducado.");
         setIsConnected(false); // Reset connection status on failure
     } finally {
         setIsLoading(false);
