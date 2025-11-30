@@ -21,7 +21,6 @@ import { useApp } from "@/lib/hooks/use-app";
 import { useAuth } from "@/firebase";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-
 interface GoogleCalendarEvent {
     id: string;
     summary: string;
@@ -39,44 +38,6 @@ export default function CalendarPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [date, setDate] = useState<Date | undefined>(new Date());
 
-  const handleAuthClick = async () => {
-    if (!auth) {
-        setError("El servicio de autenticación no está disponible.");
-        return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    const provider = new GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
-    provider.setCustomParameters({ prompt: 'select_account' });
-
-    try {
-        const result = await signInWithPopup(auth, provider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        
-        if (!credential?.accessToken) {
-            throw new Error("No se pudo obtener el token de acceso de Google.");
-        }
-        
-        const token = credential.accessToken;
-        await getUpcomingEvents(token);
-        setIsConnected(true);
-
-    } catch (error: any) {
-        console.error("Error durante la autenticación con Google:", error);
-        if (error.code === 'auth/popup-closed-by-user') {
-            setError("Se ha cancelado la conexión con Google Calendar.");
-        } else {
-            setError(`Error de autenticación: ${error.message || 'No se ha podido conectar con Google Calendar.'}`);
-        }
-        setIsConnected(false);
-    } finally {
-        setIsLoading(false);
-    }
-  };
-  
   const getUpcomingEvents = async (accessToken: string) => {
     setIsLoading(true);
     setError(null);
@@ -88,7 +49,7 @@ export default function CalendarPage() {
         const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/primary/events`);
         url.searchParams.append('timeMin', timeMin);
         url.searchParams.append('timeMax', timeMax);
-        url.searchParams.append('maxResults', '250'); // Fetch more events
+        url.searchParams.append('maxResults', '250');
         url.searchParams.append('singleEvents', 'true');
         url.searchParams.append('orderBy', 'startTime');
 
@@ -112,12 +73,49 @@ export default function CalendarPage() {
         }));
         
         setProcessedEvents(appEvents);
+        setIsConnected(true);
 
     } catch (err: any) {
         console.error("Error al obtener eventos del calendario:", err);
         setError("No se pudieron cargar los eventos del calendario. Es posible que el permiso sea inválido o haya caducado.");
         setIsConnected(false);
     } finally {
+        setIsLoading(false);
+    }
+  };
+  
+  const handleAuthClick = async () => {
+    if (!auth) {
+        setError("El servicio de autenticación no está disponible.");
+        return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        
+        if (!credential?.accessToken) {
+            throw new Error("No se pudo obtener el token de acceso de Google.");
+        }
+        
+        const token = credential.accessToken;
+        await getUpcomingEvents(token);
+
+    } catch (error: any) {
+        console.error("Error durante la autenticación con Google:", error);
+        if (error.code === 'auth/popup-closed-by-user') {
+            setError("Se ha cancelado la conexión con Google Calendar.");
+        } else {
+            setError(`Error de autenticación: ${error.message || 'No se ha podido conectar con Google Calendar.'}`);
+        }
+        setIsConnected(false);
         setIsLoading(false);
     }
   };
@@ -172,7 +170,7 @@ export default function CalendarPage() {
                     className="w-full"
                     locale={es}
                     modifiers={{
-                      hasEvent: processedEvents.map((event) => event.date as Date),
+                      hasEvent: processedEvents.map((event) => new Date(event.date)),
                     }}
                     modifiersClassNames={{
                       hasEvent: "bg-primary/20 rounded-full",
