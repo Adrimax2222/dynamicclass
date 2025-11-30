@@ -71,7 +71,7 @@ export default function CalendarPage() {
     setError(null);
 
     const provider = new GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
+    provider.addScope('https://www.googleapis.com/auth/calendar.events.readonly');
 
     try {
         const result = await signInWithPopup(auth, provider);
@@ -108,7 +108,6 @@ export default function CalendarPage() {
         });
 
         if (!response.ok) {
-            // Don't assume the response is JSON. Create an error from status.
             const errorText = await response.text();
             console.error('Google API Error:', response.status, response.statusText, errorText);
             throw new Error(`Error ${response.status}: ${response.statusText || 'Fallo al obtener eventos'}`);
