@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -105,6 +106,7 @@ export default function CalendarPage() {
   const listAllCalendars = async (accessToken: string): Promise<string[]> => {
     const url = new URL('https://www.googleapis.com/calendar/v3/users/me/calendarList');
     try {
+        console.log("Token de Google Calendar usado:", accessToken);
         const response = await fetch(url.toString(), {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
@@ -290,4 +292,5 @@ export default function CalendarPage() {
       )}
     </div>
   );
-}
+
+    
