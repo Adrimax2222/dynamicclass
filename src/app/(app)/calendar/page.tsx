@@ -75,9 +75,7 @@ export default function CalendarPage() {
     setError(null);
 
     const provider = new GoogleAuthProvider();
-    // Este scope más amplio permite listar calendarios y leer eventos.
     provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
-    // Forzar la selección de cuenta para asegurar que se conceden los nuevos permisos.
     provider.setCustomParameters({ prompt: 'select_account' });
 
     try {
@@ -111,10 +109,9 @@ export default function CalendarPage() {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         if (!response.ok) {
-            // No lanzar un error que pare todo, solo registrarlo y devolver una lista vacía.
             console.error(`Error ${response.status} al listar calendarios: ${response.statusText}`);
             setError("No se pudieron listar los calendarios, se cargará solo el principal.");
-            return ['primary']; // Devolver 'primary' como fallback
+            return ['primary']; 
         }
         const data = await response.json();
         const calendars: GoogleCalendar[] = data.items || [];
@@ -127,7 +124,7 @@ export default function CalendarPage() {
     } catch (err) {
         console.error("Error en la función listAllCalendars:", err);
         setError("Ocurrió un error inesperado al listar calendarios. Se cargará solo el principal.");
-        return ['primary']; // Devolver 'primary' como fallback
+        return ['primary'];
     }
   };
   
@@ -158,27 +155,26 @@ export default function CalendarPage() {
             }).then(async res => {
                 if (!res.ok) {
                     console.warn(`Fallo al obtener eventos para el calendario ${id}: ${res.status} ${res.statusText}`);
-                    return { items: [] }; // Devuelve un objeto vacío para no romper Promise.all
+                    return { items: [] }; 
                 }
                 const data = await res.json();
-                console.log("Respuesta de la API para el calendario " + id + ":", data);
+                console.log(`Respuesta JSON de la API de Google para el calendario ${id}:`, data);
                 return data;
             }).catch(e => {
                 console.error(`Error en el fetch para el calendario ${id}:`, e);
-                return { items: [] }; // En caso de error de red, también devolver objeto vacío.
+                return { items: [] }; 
             });
         });
 
         const results = await Promise.all(eventPromises);
         const allEvents = results.flatMap(result => result.items || []);
 
-        console.log('Todos los eventos de Google Calendar:', allEvents);
         setGoogleEvents(allEvents);
 
     } catch (err: any) {
         console.error("Error al obtener eventos del calendario:", err);
         setError("No se pudieron cargar los eventos del calendario. Es posible que el permiso sea inválido o haya caducado.");
-        setIsConnected(false); // Reset connection status on failure
+        setIsConnected(false);
     } finally {
         setIsLoading(false);
     }
@@ -294,3 +290,4 @@ export default function CalendarPage() {
       )}
     </div>
   );
+}
