@@ -1,8 +1,7 @@
-
 "use client";
 
-import { useState, useEffect } from "react";
-import { format, parseISO } from "date-fns";
+import { useState } from "react";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon, Link, AlertTriangle, Loader2, Info } from "lucide-react";
 
@@ -18,7 +17,6 @@ import {
 import { Input } from "@/components/ui/input";
 import type { CalendarEvent as AppCalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { useApp } from "@/lib/hooks/use-app";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface ParsedEvent {
@@ -103,11 +101,11 @@ export default function CalendarPage() {
       setError(null);
 
       try {
-          const proxyUrl = `https://api.codetabs.com/v1/proxy/?quest=${icalUrl}`;
-          const response = await fetch(proxyUrl);
+          const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(icalUrl)}`);
           
           if (!response.ok) {
-               throw new Error(`No se pudo obtener el calendario. Código de estado: ${response.status}`);
+               const errorData = await response.json();
+               throw new Error(errorData.error || `No se pudo obtener el calendario. Código de estado: ${response.status}`);
           }
           const icalData = await response.text();
           const parsed = parseIcal(icalData);
@@ -121,7 +119,7 @@ export default function CalendarPage() {
 
       } catch (err: any) {
           console.error("Error al obtener el iCal:", err);
-          setError("No se pudo cargar el calendario. Verifica la URL y que sea accesible públicamente. A veces, las redes o el proxy pueden fallar.");
+          setError(err.message || "No se pudo cargar el calendario. Verifica la URL y que sea accesible públicamente.");
       } finally {
           setIsLoading(false);
       }
@@ -240,6 +238,4 @@ export default function CalendarPage() {
     </div>
   );
 }
-    
-
     
