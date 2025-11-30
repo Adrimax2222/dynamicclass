@@ -76,7 +76,7 @@ export default function CalendarPage() {
     setError(null);
 
     const provider = new GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/calendar.events.readonly');
+    // Este scope más amplio permite listar calendarios y leer eventos.
     provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
 
     try {
@@ -285,3 +285,4 @@ export default function CalendarPage() {
   );
 
     
+
