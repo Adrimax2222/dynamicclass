@@ -4,8 +4,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Link, AlertTriangle, Loader2 } from "lucide-react";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { Calendar as CalendarIcon, Link, AlertTriangle, Loader2, Info } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -14,110 +13,92 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import type { CalendarEvent as AppCalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/hooks/use-app";
-import { useAuth } from "@/firebase";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-interface GoogleCalendarEvent {
+interface ParsedEvent {
     id: string;
-    summary: string;
-    description?: string;
-    start: { dateTime?: string; date?: string; };
-    end: { dateTime?: string; date?: string; };
+    title: string;
+    description: string;
+    date: Date;
+    type: 'personal';
 }
 
 export default function CalendarPage() {
-  const { user } = useApp();
-  const auth = useAuth();
+  const [icalUrl, setIcalUrl] = useState("");
   const [processedEvents, setProcessedEvents] = useState<AppCalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [date, setDate] = useState<Date | undefined>(new Date());
 
-  const getUpcomingEvents = async (accessToken: string) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-        const timeMin = new Date().toISOString(); 
-        const timeMax = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString();
+  const parseIcal = (icalData: string): ParsedEvent[] => {
+      const events: ParsedEvent[] = [];
+      const lines = icalData.split(/\r\n|\n|\r/);
+      let currentEvent: Partial<ParsedEvent> & { dtstart?: string } = {};
 
-        const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/primary/events`);
-        url.searchParams.append('timeMin', timeMin);
-        url.searchParams.append('timeMax', timeMax);
-        url.searchParams.append('maxResults', '250');
-        url.searchParams.append('singleEvents', 'true');
-        url.searchParams.append('orderBy', 'startTime');
-
-        const response = await fetch(url.toString(), {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Error ${response.status}: No se pudieron obtener los eventos del calendario principal.`);
-        }
-
-        const data = await response.json();
-        const googleEvents: GoogleCalendarEvent[] = data.items || [];
-
-        const appEvents: AppCalendarEvent[] = googleEvents.map(e => ({
-            id: e.id,
-            title: e.summary,
-            description: e.description || 'Sin descripción',
-            date: new Date(e.start.dateTime || e.start.date || new Date()),
-            type: 'personal' as const,
-        }));
-        
-        setProcessedEvents(appEvents);
-        setIsConnected(true);
-
-    } catch (err: any) {
-        console.error("Error al obtener eventos del calendario:", err);
-        setError("No se pudieron cargar los eventos del calendario. Es posible que el permiso sea inválido o haya caducado.");
-        setIsConnected(false);
-    } finally {
-        setIsLoading(false);
-    }
+      for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          if (line.startsWith('BEGIN:VEVENT')) {
+              currentEvent = { type: 'personal' };
+          } else if (line.startsWith('END:VEVENT')) {
+              if (currentEvent.dtstart && currentEvent.title) {
+                  const dateStr = currentEvent.dtstart.split(':')[1] || '';
+                  const year = dateStr.substring(0, 4);
+                  const month = dateStr.substring(4, 6);
+                  const day = dateStr.substring(6, 8);
+                  
+                  currentEvent.date = new Date(`${year}-${month}-${day}T00:00:00`);
+                  currentEvent.id = currentEvent.uid || Math.random().toString();
+                  events.push(currentEvent as ParsedEvent);
+              }
+          } else if (currentEvent) {
+              const [key, ...valueParts] = line.split(':');
+              const value = valueParts.join(':');
+              if (key.startsWith('DTSTART')) currentEvent.dtstart = line;
+              if (key === 'SUMMARY') currentEvent.title = value;
+              if (key === 'DESCRIPTION') currentEvent.description = value;
+              if (key === 'UID') currentEvent.id = value;
+          }
+      }
+      return events;
   };
   
-  const handleAuthClick = async () => {
-    if (!auth) {
-        setError("El servicio de autenticación no está disponible.");
-        return;
-    }
+  const handleFetchEvents = async () => {
+      if (!icalUrl) {
+          setError("Por favor, introduce una URL de iCal.");
+          return;
+      }
+      setIsLoading(true);
+      setError(null);
 
-    setIsLoading(true);
-    setError(null);
+      try {
+          // Use a CORS proxy to fetch the iCal URL
+          const response = await fetch(`https://cors-anywhere.herokuapp.com/${icalUrl}`);
+          if (!response.ok) {
+              throw new Error(`No se pudo obtener el calendario. Código de estado: ${response.status}`);
+          }
+          const icalData = await response.text();
+          const parsed = parseIcal(icalData);
+          
+          if (parsed.length === 0) {
+            setError("No se encontraron eventos en la URL proporcionada o el formato no es compatible. Asegúrate de que es una URL de iCal 'pública'.");
+          } else {
+            setProcessedEvents(parsed);
+            setIsConnected(true);
+          }
 
-    const provider = new GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
-    provider.setCustomParameters({ prompt: 'select_account' });
-
-    try {
-        const result = await signInWithPopup(auth, provider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        
-        if (!credential?.accessToken) {
-            throw new Error("No se pudo obtener el token de acceso de Google.");
-        }
-        
-        const token = credential.accessToken;
-        await getUpcomingEvents(token);
-
-    } catch (error: any) {
-        console.error("Error durante la autenticación con Google:", error);
-        if (error.code === 'auth/popup-closed-by-user') {
-            setError("Se ha cancelado la conexión con Google Calendar.");
-        } else {
-            setError(`Error de autenticación: ${error.message || 'No se ha podido conectar con Google Calendar.'}`);
-        }
-        setIsConnected(false);
-        setIsLoading(false);
-    }
+      } catch (err: any) {
+          console.error("Error al obtener el iCal:", err);
+          setError("No se pudo cargar el calendario. Verifica la URL y que sea accesible públicamente. A veces, las redes bloquean el acceso.");
+      } finally {
+          setIsLoading(false);
+      }
   };
 
   const eventsOnSelectedDate = processedEvents.filter(
@@ -136,27 +117,49 @@ export default function CalendarPage() {
       </header>
 
       {!isConnected ? (
-        <Card className="text-center p-8">
-            <CardHeader>
+        <Card className="p-6">
+            <CardHeader className="text-center p-0 pb-6">
                 <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
                     <CalendarIcon className="h-10 w-10 text-primary" />
                 </div>
                 <CardTitle>Sincroniza tu Calendario</CardTitle>
-                <CardContent className="text-sm text-muted-foreground pt-2">
-                    Conecta tu cuenta de Google para ver tus eventos personales directamente aquí.
-                </CardContent>
+                <CardDescription>
+                    Pega la dirección URL pública de tu Google Calendar.
+                </CardDescription>
             </CardHeader>
-             {error && (
-                <Alert variant="destructive" className="mb-4 text-left">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Error de Conexión</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
+             
+            <div className="space-y-4">
+                <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>¿Cómo obtener la URL?</AlertTitle>
+                    <AlertDescription className="text-xs space-y-1">
+                       <p>1. En Google Calendar (web), ve a <strong>Configuración</strong> del calendario que quieres compartir.</p>
+                       <p>2. En <strong>Permisos de acceso a los eventos</strong>, marca <strong>"Poner a disposición del público"</strong>.</p>
+                       <p>3. En <strong>Integrar el calendario</strong>, copia la <strong>"Dirección URL pública en formato iCal"</strong>.</p>
+                    </AlertDescription>
                 </Alert>
-            )}
-            <Button onClick={handleAuthClick} disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link className="mr-2 h-4 w-4" />}
-                Conectar con Google Calendar
-            </Button>
+
+                <div className="space-y-2">
+                    <Input 
+                        value={icalUrl}
+                        onChange={(e) => setIcalUrl(e.target.value)}
+                        placeholder="Pega aquí la URL de iCal..."
+                    />
+                </div>
+                
+                 {error && (
+                    <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Error de Conexión</AlertTitle>
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                )}
+
+                <Button onClick={handleFetchEvents} disabled={isLoading} className="w-full">
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link className="mr-2 h-4 w-4" />}
+                    Cargar Eventos del Calendario
+                </Button>
+            </div>
         </Card>
       ) : (
         <div className="flex flex-col gap-8">
