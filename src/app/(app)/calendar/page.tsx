@@ -134,22 +134,27 @@ export default function CalendarPage() {
             return;
         }
 
-        const timeMin = new Date().toISOString();
+        const timeMin = "2025-11-01T00:00:00Z";
+        const timeMax = "2026-12-31T23:59:59Z";
+
         const eventPromises = calendarIds.map(id => {
             const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events`);
             url.searchParams.append('timeMin', timeMin);
+            url.searchParams.append('timeMax', timeMax);
             url.searchParams.append('maxResults', '10');
             url.searchParams.append('singleEvents', 'true');
             url.searchParams.append('orderBy', 'startTime');
 
             return fetch(url.toString(), {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
-            }).then(res => {
+            }).then(async res => {
                 if (!res.ok) {
                     console.warn(`Fallo al obtener eventos para el calendario ${id}: ${res.statusText}`);
                     return { items: [] }; // Devuelve un objeto vacío para no romper Promise.all
                 }
-                return res.json();
+                const data = await res.json();
+                console.log("Respuesta de la API para el calendario " + id + ":", data);
+                return data;
             });
         });
 
