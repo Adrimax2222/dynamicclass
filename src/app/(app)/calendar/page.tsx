@@ -56,11 +56,14 @@ export default function CalendarPage() {
                     const day = parseInt(dateStr.substring(6, 8), 10);
                     
                     const eventDate = new Date(Date.UTC(year, month, day));
+                    
+                    // Unescape newline characters
+                    const description = (currentEvent.description || 'No hay descripción.').replace(/\\n/g, '\n');
 
                     events.push({
                         id: currentEvent.uid || Math.random().toString(),
                         title: currentEvent.summary,
-                        description: currentEvent.description || 'No hay descripción.',
+                        description: description,
                         date: eventDate,
                         type: 'personal',
                     });
@@ -245,4 +248,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-    
