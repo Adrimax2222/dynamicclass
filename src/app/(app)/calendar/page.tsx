@@ -1,10 +1,11 @@
+
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { format, toDate } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, PlusCircle } from "lucide-react";
-import { addDoc, collection, serverTimestamp, Timestamp } from "firebase/firestore";
+import { Calendar as CalendarIcon, PlusCircle, Link, AlertTriangle, Loader2 } from "lucide-react";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -33,60 +34,111 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { CalendarEvent } from "@/lib/types";
+import type { CalendarEvent as AppCalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/hooks/use-app";
-import { useFirestore, useCollection } from "@/firebase";
-import { useMemoFirebase } from "@/firebase/hooks";
+import { useAuth } from "@/firebase";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-type CalendarType = "personal" | "class" | "all";
 
-const normalizeEventDate = (event: CalendarEvent): Date => {
-  if (event.date instanceof Date) {
-    return event.date;
-  }
-  // It's a Firestore Timestamp
-  if (event.date && typeof event.date === 'object' && 'seconds' in event.date) {
-     return toDate(event.date.seconds * 1000);
-  }
-  return new Date();
-};
+interface GoogleCalendarEvent {
+    id: string;
+    summary: string;
+    description?: string;
+    start: { dateTime: string; date: string; };
+    end: { dateTime: string; date: string; };
+}
 
 
 export default function CalendarPage() {
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [calendarType, setCalendarType] = useState<CalendarType>("all");
   const { user } = useApp();
-  const firestore = useFirestore();
+  const auth = useAuth();
+  const [googleEvents, setGoogleEvents] = useState<AppCalendarEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
-  const eventsCollection = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return collection(firestore, `users/${user.uid}/events`);
-  }, [firestore, user]);
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [calendarType, setCalendarType] = useState<"personal" | "class" | "all">("all");
 
-  const { data: events = [], isLoading } = useCollection<CalendarEvent>(eventsCollection);
+  const handleAuthClick = async () => {
+    if (!auth) {
+        setError("El servicio de autenticación no está disponible.");
+        return;
+    }
 
-  const processedEvents = useMemo(() => {
-    if (!events) return [];
-    return events.map(e => ({...e, date: normalizeEventDate(e) }))
-  }, [events]);
+    setIsLoading(true);
+    setError(null);
 
-  const filteredEvents = processedEvents.filter(
-    (event) => calendarType === "all" || event.type === calendarType
-  );
+    const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
 
-  const eventsOnSelectedDate = filteredEvents.filter(
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        
+        if (!credential?.accessToken) {
+            throw new Error("No se pudo obtener el token de acceso de Google.");
+        }
+        
+        const token = credential.accessToken;
+        await fetchCalendarEvents(token);
+        setIsConnected(true);
+
+    } catch (error: any) {
+        console.error("Error durante la autenticación con Google:", error);
+        if (error.code === 'auth/popup-closed-by-user') {
+            setError("Se ha cancelado la conexión con Google Calendar.");
+        } else {
+            setError("Error de autenticación: No se ha podido conectar con Google Calendar.");
+        }
+    } finally {
+        setIsLoading(false);
+    }
+  };
+  
+  const fetchCalendarEvents = async (token: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+        const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=50&orderBy=startTime&singleEvents=true', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Google API Error:', errorData);
+            throw new Error(`Error ${response.status}: ${errorData.error?.message || 'Fallo al obtener eventos'}`);
+        }
+
+        const data = await response.json();
+        const items: GoogleCalendarEvent[] = data.items || [];
+        
+        const processedEvents = items.map(e => ({
+            id: e.id,
+            title: e.summary,
+            description: e.description || 'Sin descripción',
+            date: new Date(e.start.dateTime || e.start.date),
+            type: 'personal' as const,
+        }));
+
+        setGoogleEvents(processedEvents);
+
+    } catch (err: any) {
+        console.error("Error al obtener eventos del calendario:", err);
+        setError("No se pudieron cargar los eventos del calendario. Es posible que el permiso sea inválido.");
+        setIsConnected(false); // Reset connection status on failure
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+
+  const eventsOnSelectedDate = googleEvents.filter(
     (event) => date && format(event.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
   );
-
-  const addEvent = async (newEvent: Omit<CalendarEvent, "id">) => {
-    if (!eventsCollection) return;
-    await addDoc(eventsCollection, {
-      ...newEvent,
-      date: Timestamp.fromDate(newEvent.date as Date),
-      createdAt: serverTimestamp(),
-    });
-  };
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
@@ -98,133 +150,92 @@ export default function CalendarPage() {
             <p className="text-muted-foreground">Gestiona tus tareas y eventos.</p>
         </div>
         <div className="flex w-full items-center gap-2">
-          <Select onValueChange={(value: CalendarType) => setCalendarType(value)} defaultValue="all">
+          <Select onValueChange={(value: "personal" | "class" | "all") => setCalendarType(value)} defaultValue="all">
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Seleccionar calendario" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los Calendarios</SelectItem>
-              <SelectItem value="personal">Personal</SelectItem>
-              <SelectItem value="class">Clase</SelectItem>
+              <SelectItem value="all" disabled>Todos los Calendarios (Próximamente)</SelectItem>
+              <SelectItem value="personal">Personal (Google)</SelectItem>
+              <SelectItem value="class" disabled>Clase (Próximamente)</SelectItem>
             </SelectContent>
           </Select>
-          <AddEventDialog onAddEvent={addEvent} />
         </div>
       </header>
 
-      <div className="flex flex-col gap-8">
-        <div>
-          <Card>
-            <CardContent className="p-0">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                className="w-full"
-                locale={es}
-                modifiers={{
-                  hasEvent: filteredEvents.map((event) => event.date as Date),
-                }}
-                modifiersClassNames={{
-                  hasEvent: "bg-primary/20 rounded-full",
-                }}
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        <div>
-          <h2 className="mb-4 text-lg font-semibold">
-            Eventos del {date ? format(date, "d 'de' MMMM", {locale: es}) : "día seleccionado"}
-          </h2>
-          <Card className="min-h-[200px]">
-            <CardContent className="p-4">
-              {isLoading ? <p>Cargando eventos...</p> : 
-              eventsOnSelectedDate.length > 0 ? (
-                <ul className="space-y-3">
-                  {eventsOnSelectedDate.map((event) => (
-                    <li key={event.id} className="rounded-lg border bg-background p-3">
-                        <p className="font-semibold">{event.title}</p>
-                        <p className="text-sm text-muted-foreground">{event.description}</p>
-                        <span className={cn("mt-2 inline-block px-2 py-0.5 text-xs rounded-full", event.type === 'class' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800')}>{event.type === 'class' ? 'Clase' : 'Personal'}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="flex h-full flex-col items-center justify-center text-center p-8">
-                  <CalendarIcon className="h-12 w-12 text-muted-foreground/50" />
-                  <p className="mt-4 text-muted-foreground">No hay eventos para este día.</p>
+      {!isConnected ? (
+        <Card className="text-center p-8">
+            <CardHeader>
+                <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
+                    <CalendarIcon className="h-10 w-10 text-primary" />
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <CardTitle>Sincroniza tu Calendario</CardTitle>
+                <CardContent className="text-sm text-muted-foreground pt-2">
+                    Conecta tu cuenta de Google para ver tus eventos personales directamente aquí.
+                </CardContent>
+            </CardHeader>
+             {error && (
+                <Alert variant="destructive" className="mb-4 text-left">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Error de Conexión</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
+            <Button onClick={handleAuthClick} disabled={isLoading}>
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link className="mr-2 h-4 w-4" />}
+                Conectar con Google Calendar
+            </Button>
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-8">
+            <div>
+            <Card>
+                <CardContent className="p-0">
+                <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    className="w-full"
+                    locale={es}
+                    modifiers={{
+                    hasEvent: googleEvents.map((event) => event.date as Date),
+                    }}
+                    modifiersClassNames={{
+                    hasEvent: "bg-primary/20 rounded-full",
+                    }}
+                />
+                </CardContent>
+            </Card>
+            </div>
+
+            <div>
+            <h2 className="mb-4 text-lg font-semibold">
+                Eventos del {date ? format(date, "d 'de' MMMM", {locale: es}) : "día seleccionado"}
+            </h2>
+            <Card className="min-h-[200px]">
+                <CardContent className="p-4">
+                {isLoading ? <p>Cargando eventos...</p> : 
+                eventsOnSelectedDate.length > 0 ? (
+                    <ul className="space-y-3">
+                    {eventsOnSelectedDate.map((event) => (
+                        <li key={event.id} className="rounded-lg border bg-background p-3">
+                            <p className="font-semibold">{event.title}</p>
+                            <p className="text-sm text-muted-foreground">{event.description}</p>
+                            <span className={cn("mt-2 inline-block px-2 py-0.5 text-xs rounded-full", event.type === 'class' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800')}>{event.type === 'class' ? 'Clase' : 'Personal'}</span>
+                        </li>
+                    ))}
+                    </ul>
+                ) : (
+                    <div className="flex h-full flex-col items-center justify-center text-center p-8">
+                    <CalendarIcon className="h-12 w-12 text-muted-foreground/50" />
+                    <p className="mt-4 text-muted-foreground">No hay eventos para este día.</p>
+                    </div>
+                )}
+                </CardContent>
+            </Card>
+            </div>
         </div>
-      </div>
+      )}
     </div>
-  );
-}
-
-function AddEventDialog({ onAddEvent }: { onAddEvent: (event: Omit<CalendarEvent, 'id'>) => void }) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [date, setDate] = useState<Date|undefined>(new Date());
-  const [type, setType] = useState<"personal" | "class">("personal");
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleSubmit = () => {
-    if (title && date) {
-      onAddEvent({ title, description, date, type });
-      setTitle("");
-      setDescription("");
-      setDate(new Date());
-      setIsOpen(false);
-    }
-  };
-  
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button size="icon" aria-label="Añadir Evento">
-          <PlusCircle className="h-5 w-5" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Añadir Nuevo Evento</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Título</Label>
-            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">Descripción</Label>
-            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-           <div className="space-y-2">
-            <Label>Fecha</Label>
-            <Calendar mode="single" selected={date} onSelect={setDate} className="rounded-md border" locale={es}/>
-          </div>
-          <div className="space-y-2">
-            <Label>Tipo</Label>
-            <Select onValueChange={(v: "personal"|"class") => setType(v)} defaultValue={type}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="personal">Personal</SelectItem>
-                <SelectItem value="class">Clase</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancelar</Button>
-          </DialogClose>
-          <Button onClick={handleSubmit}>Añadir Evento</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
