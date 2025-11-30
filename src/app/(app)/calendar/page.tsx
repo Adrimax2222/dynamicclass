@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon, Link, AlertTriangle, Loader2, Info } from "lucide-react";
@@ -35,6 +35,18 @@ export default function CalendarPage() {
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [date, setDate] = useState<Date | undefined>(new Date());
+  
+  useEffect(() => {
+    // On component mount, check for a saved iCal URL
+    const savedIcalUrl = localStorage.getItem('icalUrl');
+    if (savedIcalUrl) {
+      setIcalUrl(savedIcalUrl);
+      handleFetchEvents(savedIcalUrl);
+    }
+  // We want this to run only once on mount, so we pass an empty dependency array.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
  const parseIcal = (icalData: string): ParsedEvent[] => {
     const events: ParsedEvent[] = [];
@@ -96,8 +108,9 @@ export default function CalendarPage() {
     return events;
   };
   
-  const handleFetchEvents = async () => {
-      if (!icalUrl) {
+  const handleFetchEvents = async (urlToFetch?: string) => {
+      const finalUrl = urlToFetch || icalUrl;
+      if (!finalUrl) {
           setError("Por favor, introduce una URL de iCal.");
           return;
       }
@@ -105,7 +118,7 @@ export default function CalendarPage() {
       setError(null);
 
       try {
-          const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(icalUrl)}`);
+          const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(finalUrl)}`);
           
           if (!response.ok) {
                const errorData = await response.json();
@@ -119,11 +132,15 @@ export default function CalendarPage() {
           } else {
             setProcessedEvents(parsed);
             setIsConnected(true);
+            // Save the successful URL to localStorage
+            localStorage.setItem('icalUrl', finalUrl);
           }
 
       } catch (err: any) {
           console.error("Error al obtener el iCal:", err);
           setError(err.message || "No se pudo cargar el calendario. Verifica la URL y que sea accesible públicamente.");
+          setIsConnected(false); // If it fails, show the setup screen again
+          localStorage.removeItem('icalUrl'); // Clear the bad URL
       } finally {
           setIsLoading(false);
       }
@@ -143,8 +160,13 @@ export default function CalendarPage() {
             <p className="text-muted-foreground">Gestiona tus eventos de Google Calendar.</p>
         </div>
       </header>
-
-      {!isConnected ? (
+      
+      {isLoading && !isConnected ? (
+        <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg h-64">
+          <Loader2 className="h-12 w-12 text-primary animate-spin" />
+          <p className="mt-4 font-semibold">Cargando calendario...</p>
+        </div>
+      ) : !isConnected ? (
         <Card className="p-6">
             <CardHeader className="text-center p-0 pb-6">
                 <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
@@ -183,7 +205,7 @@ export default function CalendarPage() {
                     </Alert>
                 )}
 
-                <Button onClick={handleFetchEvents} disabled={isLoading} className="w-full">
+                <Button onClick={() => handleFetchEvents()} disabled={isLoading} className="w-full">
                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link className="mr-2 h-4 w-4" />}
                     Cargar Eventos del Calendario
                 </Button>
