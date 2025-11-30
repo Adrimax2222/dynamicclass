@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
-import { format, toDate } from "date-fns";
+import { useState } from "react";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon, PlusCircle, Link, AlertTriangle, Loader2 } from "lucide-react";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
@@ -45,8 +45,8 @@ interface GoogleCalendarEvent {
     id: string;
     summary: string;
     description?: string;
-    start: { dateTime: string; date: string; };
-    end: { dateTime: string; date: string; };
+    start: { dateTime?: string; date?: string; };
+    end: { dateTime?: string; date?: string; };
 }
 
 
@@ -116,11 +116,11 @@ export default function CalendarPage() {
         const data = await response.json();
         const items: GoogleCalendarEvent[] = data.items || [];
         
-        const processedEvents = items.map(e => ({
+        const processedEvents: AppCalendarEvent[] = items.map(e => ({
             id: e.id,
             title: e.summary,
             description: e.description || 'Sin descripción',
-            date: new Date(e.start.dateTime || e.start.date),
+            date: new Date(e.start.dateTime || e.start.date || new Date()),
             type: 'personal' as const,
         }));
 
@@ -198,10 +198,10 @@ export default function CalendarPage() {
                     className="w-full"
                     locale={es}
                     modifiers={{
-                    hasEvent: googleEvents.map((event) => event.date as Date),
+                      hasEvent: googleEvents.map((event) => event.date as Date),
                     }}
                     modifiersClassNames={{
-                    hasEvent: "bg-primary/20 rounded-full",
+                      hasEvent: "bg-primary/20 rounded-full",
                     }}
                 />
                 </CardContent>
@@ -214,7 +214,7 @@ export default function CalendarPage() {
             </h2>
             <Card className="min-h-[200px]">
                 <CardContent className="p-4">
-                {isLoading ? <p>Cargando eventos...</p> : 
+                {isLoading ? <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div> : 
                 eventsOnSelectedDate.length > 0 ? (
                     <ul className="space-y-3">
                     {eventsOnSelectedDate.map((event) => (
