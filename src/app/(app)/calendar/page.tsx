@@ -15,6 +15,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { CalendarEvent as AppCalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/hooks/use-app";
@@ -87,6 +94,7 @@ export default function CalendarPage() {
 
   const listAllCalendars = async (accessToken: string): Promise<string[]> => {
     const url = new URL('https://www.googleapis.com/calendar/v3/users/me/calendarList');
+    console.log("Verificando token antes de API (calendarList):", accessToken);
     try {
         const response = await fetch(url.toString(), {
             headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -97,6 +105,7 @@ export default function CalendarPage() {
             return ['primary']; 
         }
         const data = await response.json();
+        console.log("Respuesta de la API de lista de calendarios:", data);
         const calendars: GoogleCalendar[] = data.items || [];
         const calendarIds = calendars.map(cal => cal.id);
         if (!calendarIds.includes('primary')) {
@@ -118,20 +127,22 @@ export default function CalendarPage() {
         const calendarIds = await listAllCalendars(accessToken);
         if (calendarIds.length === 0) {
             setProcessedEvents([]);
+            setIsLoading(false);
             return;
         }
 
-        const timeMin = new Date().toISOString(); // From today onwards
-        const timeMax = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(); // To one year from now
+        const timeMin = new Date().toISOString(); 
+        const timeMax = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString();
 
         const eventPromises = calendarIds.map(id => {
             const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events`);
             url.searchParams.append('timeMin', timeMin);
             url.searchParams.append('timeMax', timeMax);
-            url.searchParams.append('maxResults', '50'); // Fetch more events
+            url.searchParams.append('maxResults', '50');
             url.searchParams.append('singleEvents', 'true');
             url.searchParams.append('orderBy', 'startTime');
 
+            console.log(`Verificando token antes de API (events para ${id}):`, accessToken);
             return fetch(url.toString(), {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
             }).then(async res => {
@@ -140,6 +151,7 @@ export default function CalendarPage() {
                     return { items: [] }; 
                 }
                 const data = await res.json();
+                console.log(`Eventos JSON para el calendario ${id}:`, data);
                 return data;
             }).catch(e => {
                 console.error(`Error en el fetch para el calendario ${id}:`, e);
@@ -271,5 +283,6 @@ export default function CalendarPage() {
       )}
     </div>
   );
+}
 
     
