@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, PlusCircle, Link, AlertTriangle, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Link, AlertTriangle, Loader2 } from "lucide-react";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { CalendarEvent as AppCalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/hooks/use-app";
@@ -37,12 +30,6 @@ interface GoogleCalendarEvent {
     end: { dateTime?: string; date?: string; };
 }
 
-interface GoogleCalendar {
-    id: string;
-    summary: string;
-}
-
-
 export default function CalendarPage() {
   const { user } = useApp();
   const auth = useAuth();
@@ -50,9 +37,7 @@ export default function CalendarPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [calendarType, setCalendarType] = useState<"personal" | "class" | "all">("personal");
 
   const handleAuthClick = async () => {
     if (!auth) {
@@ -91,78 +76,34 @@ export default function CalendarPage() {
         setIsLoading(false);
     }
   };
-
-  const listAllCalendars = async (accessToken: string): Promise<string[]> => {
-    const url = new URL('https://www.googleapis.com/calendar/v3/users/me/calendarList');
-    console.log("Verificando token antes de API (calendarList):", accessToken);
-    try {
-        const response = await fetch(url.toString(), {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        if (!response.ok) {
-            console.error(`Error ${response.status} al listar calendarios: ${response.statusText}`);
-            setError("No se pudieron listar los calendarios, se cargará solo el principal.");
-            return ['primary']; 
-        }
-        const data = await response.json();
-        console.log("Respuesta de la API de lista de calendarios:", data);
-        const calendars: GoogleCalendar[] = data.items || [];
-        const calendarIds = calendars.map(cal => cal.id);
-        if (!calendarIds.includes('primary')) {
-            calendarIds.push('primary');
-        }
-        return calendarIds;
-    } catch (err) {
-        console.error("Error en la función listAllCalendars:", err);
-        setError("Ocurrió un error inesperado al listar calendarios. Se cargará solo el principal.");
-        return ['primary'];
-    }
-  };
   
   const getUpcomingEvents = async (accessToken: string) => {
     setIsLoading(true);
     setError(null);
     
     try {
-        const calendarIds = await listAllCalendars(accessToken);
-        if (calendarIds.length === 0) {
-            setProcessedEvents([]);
-            setIsLoading(false);
-            return;
-        }
-
         const timeMin = new Date().toISOString(); 
         const timeMax = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString();
 
-        const eventPromises = calendarIds.map(id => {
-            const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events`);
-            url.searchParams.append('timeMin', timeMin);
-            url.searchParams.append('timeMax', timeMax);
-            url.searchParams.append('maxResults', '50');
-            url.searchParams.append('singleEvents', 'true');
-            url.searchParams.append('orderBy', 'startTime');
+        const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/primary/events`);
+        url.searchParams.append('timeMin', timeMin);
+        url.searchParams.append('timeMax', timeMax);
+        url.searchParams.append('maxResults', '250'); // Fetch more events
+        url.searchParams.append('singleEvents', 'true');
+        url.searchParams.append('orderBy', 'startTime');
 
-            console.log(`Verificando token antes de API (events para ${id}):`, accessToken);
-            return fetch(url.toString(), {
-                headers: { 'Authorization': `Bearer ${accessToken}` }
-            }).then(async res => {
-                if (!res.ok) {
-                    console.warn(`Fallo al obtener eventos para el calendario ${id}: ${res.status} ${res.statusText}`);
-                    return { items: [] }; 
-                }
-                const data = await res.json();
-                console.log(`Eventos JSON para el calendario ${id}:`, data);
-                return data;
-            }).catch(e => {
-                console.error(`Error en el fetch para el calendario ${id}:`, e);
-                return { items: [] }; 
-            });
+        const response = await fetch(url.toString(), {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
         });
 
-        const results = await Promise.all(eventPromises);
-        const allGoogleEvents: GoogleCalendarEvent[] = results.flatMap(result => result.items || []);
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: No se pudieron obtener los eventos del calendario principal.`);
+        }
 
-        const appEvents: AppCalendarEvent[] = allGoogleEvents.map(e => ({
+        const data = await response.json();
+        const googleEvents: GoogleCalendarEvent[] = data.items || [];
+
+        const appEvents: AppCalendarEvent[] = googleEvents.map(e => ({
             id: e.id,
             title: e.summary,
             description: e.description || 'Sin descripción',
@@ -190,21 +131,9 @@ export default function CalendarPage() {
       <header className="mb-8 flex flex-col items-start gap-4">
         <div>
             <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-                Calendario Dinámico
+                Calendario Personal
             </h1>
-            <p className="text-muted-foreground">Gestiona tus tareas y eventos.</p>
-        </div>
-        <div className="flex w-full items-center gap-2">
-          <Select onValueChange={(value: "personal" | "class" | "all") => setCalendarType(value as "personal" | "class" | "all")} defaultValue="personal">
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Seleccionar calendario" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" disabled>Todos los Calendarios (Próximamente)</SelectItem>
-              <SelectItem value="personal">Personal (Google)</SelectItem>
-              <SelectItem value="class" disabled>Clase (Próximamente)</SelectItem>
-            </SelectContent>
-          </Select>
+            <p className="text-muted-foreground">Gestiona tus eventos de Google Calendar.</p>
         </div>
       </header>
 
@@ -266,7 +195,7 @@ export default function CalendarPage() {
                         <li key={event.id} className="rounded-lg border bg-background p-3">
                             <p className="font-semibold">{event.title}</p>
                             <p className="text-sm text-muted-foreground">{event.description}</p>
-                            <span className={cn("mt-2 inline-block px-2 py-0.5 text-xs rounded-full", event.type === 'class' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800')}>{event.type === 'class' ? 'Clase' : 'Personal'}</span>
+                            <span className={cn("mt-2 inline-block px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800")}>Personal</span>
                         </li>
                     ))}
                     </ul>
@@ -284,5 +213,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-
-    
