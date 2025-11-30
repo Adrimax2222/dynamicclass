@@ -111,16 +111,23 @@ export default function CalendarPage() {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         if (!response.ok) {
-            throw new Error(`Error ${response.status}: ${response.statusText || 'Fallo al listar calendarios'}`);
+            // No lanzar un error que pare todo, solo registrarlo y devolver una lista vacía.
+            console.error(`Error ${response.status} al listar calendarios: ${response.statusText}`);
+            setError("No se pudieron listar los calendarios, se cargará solo el principal.");
+            return ['primary']; // Devolver 'primary' como fallback
         }
         const data = await response.json();
         const calendars: GoogleCalendar[] = data.items || [];
         console.log("Calendarios encontrados:", calendars.map(cal => cal.id));
-        return calendars.map(cal => cal.id);
+        const calendarIds = calendars.map(cal => cal.id);
+        if (!calendarIds.includes('primary')) {
+            calendarIds.push('primary');
+        }
+        return calendarIds;
     } catch (err) {
-        console.error("Error al listar calendarios:", err);
-        setError("No se pudieron cargar la lista de calendarios.");
-        return [];
+        console.error("Error en la función listAllCalendars:", err);
+        setError("Ocurrió un error inesperado al listar calendarios. Se cargará solo el principal.");
+        return ['primary']; // Devolver 'primary' como fallback
     }
   };
   
@@ -150,12 +157,15 @@ export default function CalendarPage() {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
             }).then(async res => {
                 if (!res.ok) {
-                    console.warn(`Fallo al obtener eventos para el calendario ${id}: ${res.statusText}`);
+                    console.warn(`Fallo al obtener eventos para el calendario ${id}: ${res.status} ${res.statusText}`);
                     return { items: [] }; // Devuelve un objeto vacío para no romper Promise.all
                 }
                 const data = await res.json();
                 console.log("Respuesta de la API para el calendario " + id + ":", data);
                 return data;
+            }).catch(e => {
+                console.error(`Error en el fetch para el calendario ${id}:`, e);
+                return { items: [] }; // En caso de error de red, también devolver objeto vacío.
             });
         });
 
