@@ -78,10 +78,12 @@ export default function CalendarPage() {
       setError(null);
 
       try {
-          // Use CORS proxy to bypass browser restrictions
-          const response = await fetch(`https://cors-anywhere.herokuapp.com/${icalUrl}`);
+          // Use a reliable CORS proxy
+          const proxyUrl = `https://api.codetabs.com/v1/proxy/?quest=${icalUrl}`;
+          const response = await fetch(proxyUrl);
+          
           if (!response.ok) {
-              throw new Error(`No se pudo obtener el calendario. Código de estado: ${response.status}`);
+               throw new Error(`No se pudo obtener el calendario. Código de estado: ${response.status}`);
           }
           const icalData = await response.text();
           const parsed = parseIcal(icalData);
@@ -95,7 +97,7 @@ export default function CalendarPage() {
 
       } catch (err: any) {
           console.error("Error al obtener el iCal:", err);
-          setError("No se pudo cargar el calendario. Verifica la URL y que sea accesible públicamente. A veces, las redes bloquean el acceso.");
+          setError("No se pudo cargar el calendario. Verifica la URL y que sea accesible públicamente. A veces, las redes o el proxy pueden fallar.");
       } finally {
           setIsLoading(false);
       }
