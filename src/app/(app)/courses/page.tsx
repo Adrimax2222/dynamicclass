@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Globe,
   Filter,
+  BookX
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -349,17 +350,19 @@ function MyClassesTab() {
 
   if (!user) {
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Mis Clases</CardTitle>
-                <CardDescription>Cargando tu horario...</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Loader2 className="mx-auto my-8 h-8 w-8 animate-spin text-primary" />
-            </CardContent>
-        </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Mis Clases</CardTitle>
+          <CardDescription>Cargando tu horario...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Loader2 className="mx-auto my-8 h-8 w-8 animate-spin text-primary" />
+        </CardContent>
+      </Card>
     );
   }
+
+  const isScheduleAvailable = user.course === "4eso" && user.className === "B";
 
   const courseMap: Record<string, string> = {
     "1eso": "1º ESO",
@@ -376,17 +379,27 @@ function MyClassesTab() {
     <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-                 <CardTitle>Mi Horario de Clases</CardTitle>
-                 <CardDescription className="pt-1">
-                    Aquí tienes tu horario para toda la semana.
-                </CardDescription>
-            </div>
-            <Badge variant="default" className="text-sm px-2 py-1 whitespace-nowrap">{`${formattedCourse} - ${user.className}`}</Badge>
+          <div>
+            <CardTitle>Mi Horario de Clases</CardTitle>
+            <CardDescription className="pt-1">
+              {isScheduleAvailable ? "Aquí tienes tu horario para toda la semana." : "Tu horario de clases no está disponible."}
+            </CardDescription>
+          </div>
+          <Badge variant="default" className="text-sm px-2 py-1 whitespace-nowrap">{`${formattedCourse} - ${user.className}`}</Badge>
         </div>
       </CardHeader>
       <CardContent className="p-0 sm:p-2">
-        <FullScheduleView scheduleData={fullSchedule} />
+        {isScheduleAvailable ? (
+          <FullScheduleView scheduleData={fullSchedule} />
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center p-8 sm:p-12">
+            <BookX className="h-16 w-16 text-muted-foreground/50 mb-4" />
+            <p className="font-semibold text-lg">Horario no disponible</p>
+            <p className="text-muted-foreground max-w-sm">
+                Actualmente, solo el grupo 4ºB tiene un horario de clases digitalizado. Si perteneces a otro grupo, esta función no está activada para ti.
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -515,5 +528,7 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     </Dialog>
   )
 }
+
+    
 
     

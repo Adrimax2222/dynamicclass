@@ -21,7 +21,7 @@ import {
 import { fullSchedule } from "@/lib/data";
 import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy, BookX } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
@@ -45,6 +45,8 @@ export default function HomePage() {
   const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
   const [upcomingClassesDay, setUpcomingClassesDay] = useState<string>("Próximas Clases");
 
+  const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
+
 
   useEffect(() => {
     // Only show the modal if the user is new and the state is not already open
@@ -54,6 +56,8 @@ export default function HomePage() {
   }, [user, isModalOpen]);
 
   useEffect(() => {
+    if (!isScheduleAvailable) return;
+
     const getUpcomingClasses = (): { classes: UpcomingClass[], dayTitle: string } => {
         const now = new Date();
         const dayOfWeek = now.getDay(); // 0 (Sun) - 6 (Sat)
@@ -121,7 +125,7 @@ export default function HomePage() {
     const { classes, dayTitle } = getUpcomingClasses();
     setUpcomingClasses(classes);
     setUpcomingClassesDay(dayTitle);
-  }, []);
+  }, [isScheduleAvailable]);
 
   const handleProfileCompletionSave = async (updatedData?: Partial<User>) => {
     if (user && firestore) {
@@ -235,43 +239,55 @@ export default function HomePage() {
       </div>
 
       <section className="mb-10">
-        <h3 className="text-xl font-semibold font-headline mb-4">{upcomingClassesDay}</h3>
+        <h3 className="text-xl font-semibold font-headline mb-4">{isScheduleAvailable ? upcomingClassesDay : "Próximas Clases"}</h3>
         <div className="space-y-4">
-          {upcomingClasses.length > 0 ? (
-            upcomingClasses.map((item) => (
-              <ScheduleDialog 
-                  key={item.id} 
-                  scheduleData={fullSchedule} 
-                  selectedClassId={item.id}
-                  userCourse={user.course}
-                  userClassName={user.className}
-              >
-                  <Card className="overflow-hidden transition-all hover:shadow-md cursor-pointer">
-                      <div className="block hover:bg-muted/50">
-                          <CardContent className="p-4">
-                              <div className="flex flex-col gap-2">
-                                  <div className="flex items-start justify-between">
-                                      <h4 className="font-semibold">{item.subject}</h4>
-                                      {item.grade && <Badge variant="secondary">{item.grade}</Badge>}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground space-y-1">
-                                      <p>{item.teacher}</p>
-                                      <p>{item.time}</p>
-                                  </div>
-                                  <div className="flex items-center justify-between mt-2">
-                                    <p className="text-sm italic text-muted-foreground line-clamp-2">{item.notes}</p>
-                                    <ArrowRight className="h-5 w-5 text-primary shrink-0 ml-4" />
-                                  </div>
-                              </div>
-                          </CardContent>
-                      </div>
-                  </Card>
-              </ScheduleDialog>
-            ))
+          {isScheduleAvailable ? (
+            upcomingClasses.length > 0 ? (
+              upcomingClasses.map((item) => (
+                <ScheduleDialog 
+                    key={item.id} 
+                    scheduleData={fullSchedule} 
+                    selectedClassId={item.id}
+                    userCourse={user.course}
+                    userClassName={user.className}
+                >
+                    <Card className="overflow-hidden transition-all hover:shadow-md cursor-pointer">
+                        <div className="block hover:bg-muted/50">
+                            <CardContent className="p-4">
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-start justify-between">
+                                        <h4 className="font-semibold">{item.subject}</h4>
+                                        {item.grade && <Badge variant="secondary">{item.grade}</Badge>}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground space-y-1">
+                                        <p>{item.teacher}</p>
+                                        <p>{item.time}</p>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2">
+                                      <p className="text-sm italic text-muted-foreground line-clamp-2">{item.notes}</p>
+                                      <ArrowRight className="h-5 w-5 text-primary shrink-0 ml-4" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </div>
+                    </Card>
+                </ScheduleDialog>
+              ))
+            ) : (
+               <Card>
+                  <CardContent className="p-4 text-center text-muted-foreground">
+                      No hay más clases programadas por hoy. ¡Disfruta de tu tarde!
+                  </CardContent>
+              </Card>
+            )
           ) : (
              <Card>
-                <CardContent className="p-4 text-center text-muted-foreground">
-                    No hay más clases programadas por hoy. ¡Disfruta de tu tarde!
+                <CardContent className="flex flex-col items-center justify-center text-center p-8">
+                  <BookX className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <p className="font-semibold">Horario no disponible</p>
+                  <p className="text-sm text-muted-foreground">
+                      Actualmente, el horario solo está disponible para el grupo 4ºB.
+                  </p>
                 </CardContent>
             </Card>
           )}
@@ -360,5 +376,7 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
+    
 
     
