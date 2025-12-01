@@ -6,12 +6,19 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Schedule } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Building, Info, User } from "lucide-react";
+import { Building, Info, User, Sandwich } from "lucide-react";
 
 interface FullScheduleViewProps {
     scheduleData: Schedule;
     selectedClassId?: string;
 }
+
+const PatioSeparator = () => (
+    <div className="flex items-center justify-center gap-2 my-2 rounded-md bg-blue-500/10 py-2 px-4 text-sm font-semibold text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">
+        <Sandwich className="h-4 w-4" />
+        <span>PATIO</span>
+    </div>
+);
 
 export function FullScheduleView({ scheduleData, selectedClassId }: FullScheduleViewProps) {
     const today = new Date().toLocaleString('es-ES', { weekday: 'long' });
@@ -68,6 +75,41 @@ export function FullScheduleView({ scheduleData, selectedClassId }: FullSchedule
         return null;
     }
 
+    const renderScheduleEntry = (entry: any) => {
+        const isSelected = entry.id === selectedClassId;
+        return (
+            <div key={entry.id} ref={(node) => itemRefs.current.set(`item-${entry.id}`, node)}>
+                <AccordionItem 
+                    value={`item-${entry.id}`} 
+                    className={cn(isSelected && 'border-primary rounded-lg bg-primary/10')}
+                >
+                    <AccordionTrigger className="hover:no-underline px-4">
+                        <div className="flex-1 text-left">
+                            <p className="font-bold">{entry.subject}</p>
+                            <p className="text-sm text-muted-foreground">{entry.time}</p>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-2 px-4">
+                        <div className="flex items-center gap-2 text-sm">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span>{entry.teacher}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                            <Building className="h-4 w-4 text-muted-foreground" />
+                            <span>{entry.room}</span>
+                        </div>
+                        {entry.details && (
+                            <div className="flex items-start gap-2 text-sm pt-2">
+                                <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                <p className="italic">{entry.details}</p>
+                            </div>
+                        )}
+                    </AccordionContent>
+                </AccordionItem>
+            </div>
+        );
+    };
+
     return (
         <Tabs defaultValue={defaultTab} className="w-full flex-1 flex flex-col min-h-0">
             <div className="px-6">
@@ -82,40 +124,9 @@ export function FullScheduleView({ scheduleData, selectedClassId }: FullSchedule
                     {Object.entries(scheduleData).map(([day, entries]) => (
                         <TabsContent key={day} value={day} className="mt-0">
                             <Accordion type="single" collapsible defaultValue={selectedClassId ? `item-${selectedClassId}` : undefined}>
-                                {entries.map(entry => {
-                                    const isSelected = entry.id === selectedClassId;
-                                    return (
-                                        <div key={entry.id} ref={(node) => itemRefs.current.set(`item-${entry.id}`, node)}>
-                                            <AccordionItem 
-                                                value={`item-${entry.id}`} 
-                                                className={cn(isSelected && 'border-primary rounded-lg bg-primary/10')}
-                                            >
-                                                <AccordionTrigger className="hover:no-underline px-4">
-                                                    <div className="flex-1 text-left">
-                                                        <p className="font-bold">{entry.subject}</p>
-                                                        <p className="text-sm text-muted-foreground">{entry.time}</p>
-                                                    </div>
-                                                </AccordionTrigger>
-                                                <AccordionContent className="space-y-2 px-4">
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <User className="h-4 w-4 text-muted-foreground" />
-                                                        <span>{entry.teacher}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <Building className="h-4 w-4 text-muted-foreground" />
-                                                        <span>{entry.room}</span>
-                                                    </div>
-                                                    {entry.details && (
-                                                        <div className="flex items-start gap-2 text-sm pt-2">
-                                                            <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                                            <p className="italic">{entry.details}</p>
-                                                        </div>
-                                                    )}
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        </div>
-                                    )
-                                })}
+                                {entries.slice(0, 3).map(renderScheduleEntry)}
+                                <PatioSeparator />
+                                {entries.slice(3).map(renderScheduleEntry)}
                             </Accordion>
                         </TabsContent>
                     ))}
