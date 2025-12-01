@@ -18,8 +18,8 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { upcomingClasses, fullSchedule } from "@/lib/data";
-import type { SummaryCardData, Schedule, User } from "@/lib/types";
+import { fullSchedule } from "@/lib/data";
+import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy } from "lucide-react";
 import Link from "next/link";
@@ -42,6 +42,9 @@ export default function HomePage() {
   const firestore = useFirestore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showWelcomeAfterCompletion, setShowWelcomeAfterCompletion] = useState(false);
+  const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
+  const [upcomingClassesDay, setUpcomingClassesDay] = useState<string>("Próximas Clases");
+
 
   useEffect(() => {
     // Only show the modal if the user is new and the state is not already open
@@ -49,6 +52,76 @@ export default function HomePage() {
       setIsModalOpen(true);
     }
   }, [user, isModalOpen]);
+
+  useEffect(() => {
+    const getUpcomingClasses = (): { classes: UpcomingClass[], dayTitle: string } => {
+        const now = new Date();
+        const dayOfWeek = now.getDay(); // 0 (Sun) - 6 (Sat)
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        const currentTime = hour * 60 + minute;
+
+        const weekDays = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+        const scheduleDays = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+
+        let targetDayIndex: number;
+        let showRemainingToday = false;
+
+        // After 2:40 PM on Friday, or on Saturday/Sunday, show Monday's classes
+        if ((dayOfWeek === 5 && currentTime >= 14 * 60 + 40) || dayOfWeek === 6 || dayOfWeek === 0) {
+            targetDayIndex = 1; // Monday
+        } 
+        // On a weekday, but after class hours
+        else if (dayOfWeek >= 1 && dayOfWeek <= 5 && currentTime >= 14 * 60 + 40) {
+            targetDayIndex = dayOfWeek + 1;
+        } 
+        // During school hours on a weekday
+        else if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+            targetDayIndex = dayOfWeek;
+            showRemainingToday = true;
+        } 
+        // Default to Monday if something is off
+        else {
+            targetDayIndex = 1;
+        }
+        
+        const targetDayName = weekDays[targetDayIndex] as keyof Schedule;
+        let classesForDay: ScheduleEntry[] = fullSchedule[targetDayName] || [];
+
+        if (showRemainingToday) {
+            classesForDay = classesForDay.filter(c => {
+                const [startHour] = c.time.split(':').map(Number);
+                return startHour >= hour;
+            });
+        }
+        
+        const dayTitle = targetDayIndex === dayOfWeek ? "Clases de Hoy" : `Clases del ${targetDayName}`;
+
+        // If today's classes are all done, show tomorrow's
+        if (classesForDay.length === 0 && dayOfWeek >= 1 && dayOfWeek < 5) {
+             const nextDayName = weekDays[dayOfWeek + 1] as keyof Schedule;
+             return {
+                 classes: (fullSchedule[nextDayName] || []).slice(0, 3),
+                 dayTitle: `Clases del ${nextDayName}`
+             };
+        }
+        
+        // If it's after hours on friday or weekend
+        if (classesForDay.length === 0 && (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0)) {
+            const nextDayName = weekDays[1] as keyof Schedule; // Monday
+            return {
+                classes: (fullSchedule[nextDayName] || []).slice(0, 3),
+                dayTitle: `Clases del ${nextDayName}`
+            };
+        }
+
+        return { classes: classesForDay.slice(0, 3), dayTitle };
+    };
+
+    const { classes, dayTitle } = getUpcomingClasses();
+    setUpcomingClasses(classes);
+    setUpcomingClassesDay(dayTitle);
+  }, []);
 
   const handleProfileCompletionSave = async (updatedData?: Partial<User>) => {
     if (user && firestore) {
@@ -162,38 +235,46 @@ export default function HomePage() {
       </div>
 
       <section className="mb-10">
-        <h3 className="text-xl font-semibold font-headline mb-4">Próximas Clases</h3>
+        <h3 className="text-xl font-semibold font-headline mb-4">{upcomingClassesDay}</h3>
         <div className="space-y-4">
-          {upcomingClasses.map((item) => (
-             <ScheduleDialog 
-                key={item.id} 
-                scheduleData={fullSchedule} 
-                selectedClassId={item.id}
-                userCourse={user.course}
-                userClassName={user.className}
-             >
-                <Card className="overflow-hidden transition-all hover:shadow-md cursor-pointer">
-                     <div className="block hover:bg-muted/50">
-                        <CardContent className="p-4">
-                            <div className="flex flex-col gap-2">
-                                <div className="flex items-start justify-between">
-                                    <h4 className="font-semibold">{item.subject}</h4>
-                                    {item.grade && <Badge variant="secondary">{item.grade}</Badge>}
-                                </div>
-                                <div className="text-sm text-muted-foreground space-y-1">
-                                    <p>{item.teacher}</p>
-                                    <p>{item.time}</p>
-                                </div>
-                                <div className="flex items-center justify-between mt-2">
-                                   <p className="text-sm italic text-muted-foreground line-clamp-2">{item.notes}</p>
-                                   <ArrowRight className="h-5 w-5 text-primary shrink-0 ml-4" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </div>
-                </Card>
-             </ScheduleDialog>
-          ))}
+          {upcomingClasses.length > 0 ? (
+            upcomingClasses.map((item) => (
+              <ScheduleDialog 
+                  key={item.id} 
+                  scheduleData={fullSchedule} 
+                  selectedClassId={item.id}
+                  userCourse={user.course}
+                  userClassName={user.className}
+              >
+                  <Card className="overflow-hidden transition-all hover:shadow-md cursor-pointer">
+                      <div className="block hover:bg-muted/50">
+                          <CardContent className="p-4">
+                              <div className="flex flex-col gap-2">
+                                  <div className="flex items-start justify-between">
+                                      <h4 className="font-semibold">{item.subject}</h4>
+                                      {item.grade && <Badge variant="secondary">{item.grade}</Badge>}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground space-y-1">
+                                      <p>{item.teacher}</p>
+                                      <p>{item.time}</p>
+                                  </div>
+                                  <div className="flex items-center justify-between mt-2">
+                                    <p className="text-sm italic text-muted-foreground line-clamp-2">{item.notes}</p>
+                                    <ArrowRight className="h-5 w-5 text-primary shrink-0 ml-4" />
+                                  </div>
+                              </div>
+                          </CardContent>
+                      </div>
+                  </Card>
+              </ScheduleDialog>
+            ))
+          ) : (
+             <Card>
+                <CardContent className="p-4 text-center text-muted-foreground">
+                    No hay más clases programadas por hoy. ¡Disfruta de tu tarde!
+                </CardContent>
+            </Card>
+          )}
         </div>
       </section>
 
