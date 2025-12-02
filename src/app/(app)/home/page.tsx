@@ -470,6 +470,7 @@ export default function HomePage() {
               events={getCategorizedEvents(card.title as Category)}
               isLoading={isLoadingVariables}
               onMarkAsComplete={handleMarkAsComplete}
+              cardData={card}
             >
               <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -570,7 +571,7 @@ export default function HomePage() {
   );
 }
 
-function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }: { title: string, children: React.ReactNode, events: (ParsedEvent | Announcement)[], isLoading: boolean, onMarkAsComplete: (eventId: string) => void }) {
+function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete, cardData }: { title: string, children: React.ReactNode, events: (ParsedEvent | Announcement)[], isLoading: boolean, onMarkAsComplete: (eventId: string) => void, cardData: SummaryCardData }) {
     
     const groupedEvents = (events as ParsedEvent[]).reduce((acc, event) => {
         const dateStr = format(event.date, 'yyyy-MM-dd');
@@ -583,8 +584,6 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }:
 
     const getDayLabel = (dateStr: string) => {
         const date = new Date(dateStr);
-        // The date from iCal is UTC, but we want to compare it with the user's local "today"
-        // so we create a new date with the same year, month, day in the local timezone.
         const localDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
         
         if (isToday(localDate)) return "Hoy";
@@ -592,17 +591,31 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }:
         return format(localDate, "EEEE, d 'de' MMMM", { locale: es });
     };
 
+    const HeaderIcon = cardData.icon;
+
+    const headerColorClasses = {
+        "text-blue-500": "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+        "text-red-500": "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
+        "text-yellow-500": "bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300",
+        "text-green-500": "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
+    };
+
     return (
         <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="max-w-md w-[95vw]">
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription>
-                        {`Listado de tus ${title.toLowerCase()} para las próximas 2 semanas.`}
-                    </DialogDescription>
+            <DialogContent className="max-w-md w-[95vw] p-0">
+                <DialogHeader className={cn("p-6 text-left flex-row items-center gap-4", headerColorClasses[cardData.color as keyof typeof headerColorClasses])}>
+                    <div className="rounded-lg p-2 bg-background/50">
+                        <HeaderIcon className={cn("h-6 w-6", cardData.color)} />
+                    </div>
+                    <div>
+                        <DialogTitle>{title}</DialogTitle>
+                        <DialogDescription className="text-current/80">
+                            {`Listado de tus ${title.toLowerCase()} para las próximas 2 semanas.`}
+                        </DialogDescription>
+                    </div>
                 </DialogHeader>
-                <div className="my-4 max-h-[60vh] overflow-y-auto pr-2 -mr-4">
+                <div className="my-4 max-h-[60vh] overflow-y-auto px-6">
                  {isLoading ? (
                     <div className="flex items-center justify-center p-8">
                         <Loader2 className="h-8 w-8 animate-spin" />
@@ -615,7 +628,7 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }:
                                 <h3 className="text-sm font-bold text-muted-foreground px-1 pt-2">{getDayLabel(dateStr)}</h3>
                                 <div className="space-y-2">
                                     {dayEvents.map(event => (
-                                      <div key={event.id} className="flex items-center gap-2 group p-3 rounded-lg transition-colors border border-transparent hover:bg-muted/50 hover:border-border">
+                                      <div key={event.id} className="flex items-center gap-2 group p-3 rounded-lg transition-colors border bg-card hover:bg-muted/50 hover:border-border shadow-sm">
                                         <div className="flex-1">
                                           <p className="font-semibold leading-tight">{event.title}</p>
                                           <p className="text-xs text-muted-foreground">{formatDistanceToNow(event.date, { locale: es, addSuffix: true })}</p>
@@ -694,3 +707,4 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
