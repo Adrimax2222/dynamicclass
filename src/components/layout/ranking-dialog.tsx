@@ -32,7 +32,7 @@ export function RankingDialog({ children, user }: { children: React.ReactNode; u
 
     const fetchRanking = async () => {
         // Temporarily disable ranking and show error message
-        setError("Debes estar en el grupo del centro para ver el ranking. Añade el código de centro en tu perfil.");
+        setError("Para mantener la equidad en el lanzamiento oficial, el ranking de trofeos está desactivado durante la fase beta. ¡No te preocupes! Los trofeos que consigas se guardarán y todos los beta testers recibiréis una bonificación especial como agradecimiento por vuestra ayuda.");
         return;
 
         /*
@@ -90,10 +90,10 @@ export function RankingDialog({ children, user }: { children: React.ReactNode; u
                         </div>
                     )}
                     {error && (
-                         <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg my-4 bg-destructive/10 border-destructive/50">
-                            <ShieldAlert className="h-12 w-12 text-destructive mb-4" />
-                            <p className="font-semibold text-destructive">Acceso Denegado</p>
-                            <p className="text-sm text-destructive/80">
+                         <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg my-4 bg-yellow-500/5 border-yellow-500/30">
+                            <ShieldAlert className="h-12 w-12 text-yellow-500 mb-4" />
+                            <p className="font-semibold text-yellow-600 dark:text-yellow-400">Función Desactivada (Beta)</p>
+                            <p className="text-sm text-muted-foreground">
                                {error}
                             </p>
                         </div>
