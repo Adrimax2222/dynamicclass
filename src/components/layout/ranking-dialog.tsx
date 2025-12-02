@@ -16,9 +16,10 @@ import type { User } from "@/lib/types";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ShieldAlert, Trophy, Gem, Medal } from "lucide-react";
+import { ShieldAlert, Trophy, Gem, Medal, Infinity } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
 
 export function RankingDialog({ children, user }: { children: React.ReactNode; user: User }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -127,6 +128,7 @@ export function RankingDialog({ children, user }: { children: React.ReactNode; u
 function PodiumPlace({ user, place }: { user?: User; place: 1 | 2 | 3 }) {
     if (!user) return <div />;
 
+    const isAdmin = ADMIN_EMAILS.includes(user.email);
     const placeStyles = {
         1: { icon: Gem, color: "text-amber-400", size: "h-32 w-32", text: "text-4xl", shadow: "shadow-amber-400/50" },
         2: { icon: Medal, color: "text-slate-400", size: "h-24 w-24", text: "text-3xl", shadow: "shadow-slate-400/50" },
@@ -150,7 +152,9 @@ function PodiumPlace({ user, place }: { user?: User; place: 1 | 2 | 3 }) {
             <p className="font-bold text-sm truncate w-full">{user.name.split(' ')[0]}</p>
             <div className="flex items-center gap-1">
                  <Trophy className="h-4 w-4 text-yellow-400" />
-                <span className="font-bold text-lg">{user.trophies}</span>
+                <span className="font-bold text-lg">
+                    {isAdmin ? <Infinity className="h-5 w-5" /> : user.trophies}
+                </span>
             </div>
         </div>
     );
@@ -158,6 +162,7 @@ function PodiumPlace({ user, place }: { user?: User; place: 1 | 2 | 3 }) {
 
 
 function RankingItem({ user, rank, isCurrentUser }: { user: User; rank: number; isCurrentUser: boolean }) {
+    const isAdmin = ADMIN_EMAILS.includes(user.email);
     return (
         <div className={cn("flex items-center gap-4 rounded-lg p-3", isCurrentUser ? "bg-primary/10 border border-primary/50" : "bg-muted/50")}>
             <div className="text-lg font-bold text-muted-foreground w-6 text-center">{rank}</div>
@@ -168,9 +173,10 @@ function RankingItem({ user, rank, isCurrentUser }: { user: User; rank: number; 
             <p className="flex-1 font-medium truncate">{user.name}</p>
             <div className="flex items-center gap-1.5 font-bold">
                 <Trophy className="h-4 w-4 text-yellow-500" />
-                <span>{user.trophies}</span>
+                <span>
+                    {isAdmin ? <Infinity className="h-5 w-5" /> : user.trophies}
+                </span>
             </div>
         </div>
     );
 }
-

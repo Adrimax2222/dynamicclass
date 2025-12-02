@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy, NotebookText, FileCheck2, ListChecks, Medal, Star } from "lucide-react";
+import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy, NotebookText, FileCheck2, ListChecks, Medal, Star, Infinity } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,6 +39,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
 
+const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
 
 export default function ProfilePage() {
   const { user } = useApp();
@@ -87,6 +88,8 @@ export default function ProfilePage() {
     { title: 'Exámenes Superados', value: user.exams, icon: FileCheck2, color: 'text-green-400' },
   ];
 
+  const isAdmin = ADMIN_EMAILS.includes(user.email);
+
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
       <header className="mb-8 flex items-center justify-between">
@@ -97,7 +100,9 @@ export default function ProfilePage() {
             <RankingDialog user={user}>
                  <div className="flex items-center gap-2 rounded-full border bg-card p-2 shadow-sm cursor-pointer hover:bg-muted transition-colors">
                     <Trophy className="h-5 w-5 text-yellow-400" />
-                    <span className="font-bold">{user.trophies}</span>
+                    <span className="font-bold">
+                        {isAdmin ? <Infinity className="h-5 w-5" /> : user.trophies}
+                    </span>
                 </div>
             </RankingDialog>
             <Button variant="ghost" size="icon" asChild>
@@ -162,7 +167,9 @@ export default function ProfilePage() {
                   <Trophy className={cn("h-5 w-5 text-muted-foreground", "text-yellow-400")} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{user.trophies}</div>
+                  <div className="text-2xl font-bold">
+                    {isAdmin ? <Infinity className="h-6 w-6" /> : user.trophies}
+                  </div>
                 </CardContent>
               </Card>
             </RankingDialog>

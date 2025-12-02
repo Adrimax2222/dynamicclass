@@ -32,7 +32,7 @@ import {
 import { fullSchedule } from "@/lib/data";
 import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent, Announcement } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, Infinity } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
@@ -61,6 +61,8 @@ const keywords = {
     exam: ['examen', 'exam', 'prueba', 'control', 'prova'],
     task: ['tarea', 'ejercicios', 'deberes', 'lliurament', 'fitxa', 'feina', 'deures', 'entrega', 'presentació', 'actividad', 'proyecto', 'sortida', 'exposició', 'projecte'],
 };
+
+const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
 
 export default function HomePage() {
   const { user, updateUser } = useApp();
@@ -114,8 +116,9 @@ export default function HomePage() {
       let eventKeywords: string[] = [];
       let isDefaultCategory = false;
 
-      if (category === 'Exámenes') eventKeywords = keywords.exam;
-      else if (category === 'Tareas') {
+      if (category === 'Exámenes') {
+        eventKeywords = keywords.exam;
+      } else if (category === 'Tareas') {
         isDefaultCategory = true;
       }
       
@@ -123,7 +126,7 @@ export default function HomePage() {
         .filter(event => {
             const title = event.title.toLowerCase();
             if (isDefaultCategory) {
-                // Es "Tarea" si no es ni examen ni actividad
+                // Es "Tarea" si no es ni examen
                 const isExam = keywords.exam.some(kw => title.includes(kw));
                 return !isExam;
             }
@@ -136,35 +139,27 @@ export default function HomePage() {
     return getCategorizedEvents(category).length;
   }
   
-  const handleMarkAsComplete = (eventId: string, category: Category) => {
+  const handleMarkAsComplete = (eventId: string) => {
     if (!firestore || !user) return;
     
-    // Update local state and localStorage
     const newCompletedIds = [...completedEventIds, eventId];
     setCompletedEventIds(newCompletedIds);
     localStorage.setItem('completedEventIds', JSON.stringify(newCompletedIds));
     
-    // Update user stats in Firestore
     const userDocRef = doc(firestore, 'users', user.uid);
-    let fieldToIncrement: string | null = null;
-    
-    // Determine which field to increment based on the original category, not just "Pendientes"
     const event = allEvents.find(e => e.id === eventId);
     if (event) {
         const title = event.title.toLowerCase();
+        let fieldToIncrement: string;
         if (keywords.exam.some(kw => title.includes(kw))) {
              fieldToIncrement = 'exams';
         } else {
-             // Default to task if not exam
              fieldToIncrement = 'tasks';
         }
-    }
-
-
-    if (fieldToIncrement) {
+        
         updateDoc(userDocRef, {
             [fieldToIncrement]: increment(1),
-            trophies: increment(1), // Also increment trophies
+            trophies: increment(1),
         }).catch(err => console.error("Error updating user stats:", err));
     }
   };
@@ -368,11 +363,11 @@ export default function HomePage() {
   }
 
   const handleAnnouncementsClick = () => {
-    const announcementIds = allAnnouncements.map(ann => ann.id);
+    const announcementIds = getCategorizedEvents('Anuncios').map(ann => ann.id);
     const newReadIds = Array.from(new Set([...readAnnouncementIds, ...announcementIds]));
     setReadAnnouncementIds(newReadIds);
     localStorage.setItem('readAnnouncementIds', JSON.stringify(newReadIds));
-    router.push('/courses'); // Navigate to the announcements page
+    router.push('/courses');
   };
 
   
@@ -398,8 +393,8 @@ export default function HomePage() {
     { title: 'Anuncios', value: getCategoryCount('Anuncios'), icon: MessageSquare, color: 'text-green-500', isAnnouncement: true },
   ];
 
-  // Determine if profile is incomplete (for Google sign-up case)
   const isProfileIncomplete = user.isNewUser && (user.course === "default" || user.className === "default" || user.ageRange === "default");
+  const isAdmin = ADMIN_EMAILS.includes(user.email);
 
 
   return (
@@ -430,7 +425,9 @@ export default function HomePage() {
             <RankingDialog user={user}>
                  <div className="flex items-center gap-2 rounded-full border bg-card p-2 shadow-sm cursor-pointer hover:bg-muted transition-colors">
                     <Trophy className="h-5 w-5 text-yellow-400" />
-                    <span className="font-bold">{user.trophies}</span>
+                    <span className="font-bold">
+                        {isAdmin ? <Infinity className="h-5 w-5" /> : user.trophies}
+                    </span>
                 </div>
             </RankingDialog>
           <ThemeToggle />
@@ -472,7 +469,7 @@ export default function HomePage() {
               title={card.title}
               events={getCategorizedEvents(card.title as Category)}
               isLoading={isLoadingVariables}
-              onMarkAsComplete={(eventId) => handleMarkAsComplete(eventId, card.title as Category)}
+              onMarkAsComplete={handleMarkAsComplete}
             >
               <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -575,8 +572,6 @@ export default function HomePage() {
 
 function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }: { title: string, children: React.ReactNode, events: (ParsedEvent | Announcement)[], isLoading: boolean, onMarkAsComplete: (eventId: string) => void }) {
     
-    const isAnnouncementDialog = title === 'Anuncios';
-    
     return (
         <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
@@ -584,7 +579,7 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }:
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>
-                         {isAnnouncementDialog ? "Nuevos anuncios que no has leído." : `Listado de tus ${title.toLowerCase()} para las próximas 2 semanas.`}
+                        {`Listado de tus ${title.toLowerCase()} para las próximas 2 semanas.`}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="my-4 max-h-[50vh] overflow-y-auto pr-4">
@@ -628,7 +623,7 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }:
                               </div>
                             )
                           }
-                          return null; // Should not happen if used correctly
+                          return null;
                         })}
                     </div>
                  ) : (
@@ -636,7 +631,7 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }:
                         <CalendarIcon className="h-12 w-12 text-muted-foreground/50 mb-4" />
                         <p className="font-semibold">¡Todo despejado!</p>
                         <p className="text-sm text-muted-foreground">
-                           {isAnnouncementDialog ? "No tienes anuncios nuevos." : `No tienes ${title.toLowerCase()} en las próximas dos semanas.`}
+                           {`No tienes ${title.toLowerCase()} en las próximas dos semanas.`}
                         </p>
                     </div>
                  )}
