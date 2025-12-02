@@ -39,6 +39,11 @@ Actualmente estás especializado en el tema de {{subject}}.
 {{#if responseLength}}
 La respuesta debe ser de longitud {{responseLength}}.
 {{/if}}
+Al responder, formatea el texto para que sea claro y fácil de leer:
+- **Usa negrita** para resaltar los conceptos más importantes.
+- Estructura la respuesta en **párrafos separados** para no abrumar al usuario.
+- No saludes al usuario, ve directamente a la respuesta.
+
 Responde a la siguiente consulta: {{{query}}}`,
 });
 
