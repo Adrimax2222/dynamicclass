@@ -46,9 +46,9 @@ interface ParsedEvent extends CalendarEvent {
 }
 
 const keywords = {
-    exam: ['examen', 'exam', 'prueba', 'control'],
-    task: ['tarea', 'ejercicios', 'deberes', 'lliurament'],
-    activity: ['actividad', 'proyecto', 'presentación', 'sortida', 'exposició']
+    exam: ['examen', 'exam', 'prueba', 'control', 'prova'],
+    task: ['tarea', 'ejercicios', 'deberes', 'lliurament', 'fitxa', 'feina', 'deures'],
+    activity: ['actividad', 'proyecto', 'presentación', 'sortida', 'exposició', 'projecte']
 };
 
 export default function HomePage() {
@@ -145,10 +145,10 @@ export default function HomePage() {
 
   useEffect(() => {
     const fetchAndCalculateVars = async () => {
-        if (!isScheduleAvailable) {
-            setIsLoadingVariables(false);
-            return;
-        };
+        if (user?.center !== SCHOOL_VERIFICATION_CODE) {
+             setIsLoadingVariables(false);
+             return;
+        }
 
         setIsLoadingVariables(true);
         try {
@@ -169,7 +169,7 @@ export default function HomePage() {
     
     fetchAndCalculateVars();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isScheduleAvailable]);
+  }, [user]);
 
 
   useEffect(() => {
@@ -525,6 +525,8 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
+    
 
     
 
