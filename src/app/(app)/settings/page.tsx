@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, FileShield } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore } from "@/firebase";
@@ -41,6 +41,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 
 export default function SettingsPage() {
@@ -188,9 +189,9 @@ export default function SettingsPage() {
 
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><LifeBuoy />Soporte</CardTitle>
+                <CardTitle className="flex items-center gap-2"><LifeBuoy />Soporte y Legal</CardTitle>
                 <CardDescription>
-                ¿Necesitas ayuda o tienes alguna sugerencia? Contáctanos.
+                Ayuda, sugerencias y políticas de la aplicación.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -208,6 +209,7 @@ export default function SettingsPage() {
                     </div>
                     <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </a>
+                <PrivacyPolicyDialog />
             </CardContent>
         </Card>
 
@@ -468,5 +470,82 @@ function ChangePasswordDialog() {
     </Dialog>
   );
 }
+
+function PrivacyPolicyDialog() {
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <button className="flex w-full items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50 text-left">
+                    <div className="flex items-center gap-3">
+                        <FileShield className="h-5 w-5 text-primary" />
+                        <span className="font-medium">Políticas de Privacidad y Seguridad</span>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                </button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl w-[95vw] max-h-[80vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle>Políticas de Privacidad y Seguridad de Dynamic Class</DialogTitle>
+                    <DialogDescription>
+                        Última actualización: 24 de Mayo de 2024
+                    </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="flex-1 -mx-6">
+                    <div className="px-6 space-y-4 text-sm text-muted-foreground">
+                        <p>Bienvenido a Dynamic Class. Tu privacidad es de suma importancia para nosotros. Esta política describe cómo recopilamos, usamos y protegemos tu información personal.</p>
+
+                        <h3 className="font-bold text-foreground">1. Quiénes Somos</h3>
+                        <p>Dynamic Class es una aplicación desarrollada por <span className="font-semibold">Adrià Navarro</span> y <span className="font-semibold">Luc Rota</span>, como parte de la iniciativa <span className="font-semibold">Proyecto Adrimax</span>. Nuestro objetivo es proporcionar herramientas educativas innovadoras y seguras.</p>
+
+                        <h3 className="font-bold text-foreground">2. Información que Recopilamos</h3>
+                        <p>Para ofrecer una experiencia personalizada y funcional, recopilamos los siguientes datos:</p>
+                        <ul className="list-disc list-inside space-y-1 pl-4">
+                            <li><strong>Información de Perfil:</strong> Nombre completo, correo electrónico, rango de edad, curso, clase y código de centro educativo.</li>
+                            <li><strong>Datos de Autenticación:</strong> Tu correo y una contraseña encriptada. El proceso está gestionado por Firebase Authentication, un servicio de Google.</li>
+                            <li><strong>Contenido Generado por el Usuario:</strong> Anotaciones personales, historial de conversaciones con el chatbot de IA y la URL de tu calendario iCal personal.</li>
+                            <li><strong>Datos de Uso:</strong> Información anónima sobre cómo interactúas con la aplicación para identificar errores y mejorar la experiencia.</li>
+                        </ul>
+
+                        <h3 className="font-bold text-foreground">3. Cómo Usamos tu Información</h3>
+                        <ul className="list-disc list-inside space-y-1 pl-4">
+                            <li>Para personalizar tu experiencia, como mostrar el horario de tu clase.</li>
+                            <li>Para proporcionar las funcionalidades principales de la aplicación (anotaciones, calendario, IA).</li>
+                            <li>Para comunicarnos contigo acerca de actualizaciones importantes o notificaciones.</li>
+                            <li>Para mejorar la seguridad y la estabilidad de la aplicación.</li>
+                        </ul>
+
+                        <h3 className="font-bold text-foreground">4. Seguridad de los Datos</h3>
+                        <p>La seguridad de tus datos es nuestra máxima prioridad. La aplicación está construida sobre la infraestructura de <span className="font-semibold">Google Cloud</span> y <span className="font-semibold">Firebase</span>, lo que garantiza:</p>
+                        <ul className="list-disc list-inside space-y-1 pl-4">
+                            <li><strong>Encriptación:</strong> Toda la información, incluida tu contraseña, se almacena de forma encriptada en los servidores seguros de Google. Nosotros no tenemos acceso a tus contraseñas en texto plano.</li>
+                            <li><strong>Autenticación Segura:</strong> El inicio de sesión y la verificación de correo están gestionados por Firebase Authentication, un sistema robusto y probado.</li>
+                            <li><strong>Reglas de Acceso:</strong> Implementamos estrictas reglas de seguridad en nuestra base de datos (Firestore) para asegurar que solo tú puedas acceder a tu propia información personal.</li>
+                        </ul>
+
+                        <h3 className="font-bold text-foreground">5. Uso de Modelos de Inteligencia Artificial</h3>
+                        <p>La funcionalidad de chatbot utiliza modelos de IA avanzados como <span className="font-semibold">Gemini de Google</span>. Cuando interactúas con el chatbot, tus consultas son procesadas por estos modelos para generar una respuesta. No almacenamos permanentemente estas conversaciones con fines de entrenamiento de modelos sin tu consentimiento explícito. Tu historial de chat se guarda en tu cuenta personal para tu conveniencia y está protegido por las mismas medidas de seguridad.</p>
+
+                        <h3 className="font-bold text-foreground">6. Tus Derechos y Control</h3>
+                        <p>Tienes control total sobre tus datos:</p>
+                        <ul className="list-disc list-inside space-y-1 pl-4">
+                            <li><strong>Acceso y Modificación:</strong> Puedes ver y editar tu información de perfil en cualquier momento desde la sección "Perfil".</li>
+                            <li><strong>Eliminación:</strong> Puedes eliminar tus anotaciones, chats y, en última instancia, tu cuenta completa desde la sección "Ajustes". La eliminación de la cuenta es un proceso permanente e irreversible que borra todos tus datos de nuestros sistemas.</li>
+                        </ul>
+
+                        <h3 className="font-bold text-foreground">7. Contacto</h3>
+                        <p>Si tienes alguna pregunta sobre esta política de privacidad, no dudes en contactarnos a través del <span className="font-semibold">Formulario de Asistencia</span> disponible en la sección de Soporte.</p>
+                    </div>
+                </ScrollArea>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button>Entendido</Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+    
 
     
