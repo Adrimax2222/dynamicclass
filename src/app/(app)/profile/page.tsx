@@ -82,10 +82,9 @@ export default function ProfilePage() {
   
   const displayCenter = user.center === SCHOOL_VERIFICATION_CODE ? SCHOOL_NAME : user.center;
 
-  const achievements: SummaryCardData[] = [
+  const achievements: Omit<SummaryCardData, 'isAnnouncement'>[] = [
     { title: 'Tareas Completadas', value: user.tasks, icon: NotebookText, color: 'text-blue-400' },
     { title: 'Exámenes Superados', value: user.exams, icon: FileCheck2, color: 'text-green-400' },
-    { title: 'Actividades Realizadas', value: user.activities, icon: ListChecks, color: 'text-purple-400' },
   ];
 
   return (
@@ -439,7 +438,7 @@ function EditProfileDialog() {
 }
 
 
-function AchievementCard({ title, value, icon: Icon, color }: SummaryCardData) {
+function AchievementCard({ title, value, icon: Icon, color }: Omit<SummaryCardData, 'isAnnouncement'>) {
     return (
       <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

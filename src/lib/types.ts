@@ -26,6 +26,7 @@ export type SummaryCardData = {
   value: number;
   icon: LucideIcon;
   color: string;
+  isAnnouncement: boolean;
 };
 
 export type UpcomingClass = {
@@ -98,3 +99,5 @@ export type Announcement = {
   createdAt: { seconds: number, nanoseconds: number };
   scope: AnnouncementScope;
 }
+
+    

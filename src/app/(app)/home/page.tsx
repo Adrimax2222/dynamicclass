@@ -30,9 +30,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { fullSchedule } from "@/lib/data";
-import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent } from "@/lib/types";
+import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent, Announcement } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
@@ -40,15 +40,16 @@ import { Button } from "@/components/ui/button";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Logo } from "@/components/icons";
 import WelcomeModal from "@/components/layout/welcome-modal";
-import { doc, updateDoc, increment } from "firebase/firestore";
+import { doc, updateDoc, increment, collection, query, orderBy, getDocs } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { FullScheduleView } from "@/components/layout/full-schedule-view";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
 import CompleteProfileModal from "@/components/layout/complete-profile-modal";
 import { startOfWeek, endOfWeek, addWeeks, isWithinInterval, format, startOfToday } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useRouter } from "next/navigation";
 
-type Category = "Tareas" | "Exámenes" | "Pendientes" | "Actividades";
+type Category = "Tareas" | "Exámenes" | "Pendientes" | "Anuncios";
 const SCHOOL_ICAL_URL = "https://calendar.google.com/calendar/ical/iestorredelpalau.cat_9vm0113gitbs90a9l7p4c3olh4%40group.calendar.google.com/public/basic.ics";
 
 interface ParsedEvent extends CalendarEvent {
@@ -58,21 +59,23 @@ interface ParsedEvent extends CalendarEvent {
 
 const keywords = {
     exam: ['examen', 'exam', 'prueba', 'control', 'prova'],
-    task: ['tarea', 'ejercicios', 'deberes', 'lliurament', 'fitxa', 'feina', 'deures', 'entrega', 'presentació'],
-    activity: ['actividad', 'proyecto', 'sortida', 'exposició', 'projecte']
+    task: ['tarea', 'ejercicios', 'deberes', 'lliurament', 'fitxa', 'feina', 'deures', 'entrega', 'presentació', 'actividad', 'proyecto', 'sortida', 'exposició', 'projecte'],
 };
 
 export default function HomePage() {
   const { user, updateUser } = useApp();
   const firestore = useFirestore();
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showWelcomeAfterCompletion, setShowWelcomeAfterCompletion] = useState(false);
   const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
   const [upcomingClassesDay, setUpcomingClassesDay] = useState<string>("Próximas Clases");
   
   const [allEvents, setAllEvents] = useState<ParsedEvent[]>([]);
+  const [allAnnouncements, setAllAnnouncements] = useState<Announcement[]>([]);
   const [isLoadingVariables, setIsLoadingVariables] = useState(true);
   const [completedEventIds, setCompletedEventIds] = useState<string[]>([]);
+  const [readAnnouncementIds, setReadAnnouncementIds] = useState<string[]>([]);
 
   const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
 
@@ -82,10 +85,19 @@ export default function HomePage() {
     if (storedCompletedIds) {
       setCompletedEventIds(JSON.parse(storedCompletedIds));
     }
+    const storedReadAnnouncementIds = localStorage.getItem('readAnnouncementIds');
+    if (storedReadAnnouncementIds) {
+      setReadAnnouncementIds(JSON.parse(storedReadAnnouncementIds));
+    }
   }, []);
     
-  const getCategorizedEvents = (category: Category): ParsedEvent[] => {
+  const getCategorizedEvents = (category: Category): (ParsedEvent | Announcement)[] => {
       const today = startOfToday();
+      
+      if (category === 'Anuncios') {
+        return allAnnouncements.filter(ann => !readAnnouncementIds.includes(ann.id));
+      }
+
       const endOfNextWeek = endOfWeek(addWeeks(today, 1), { weekStartsOn: 1 });
 
       const relevantEvents = allEvents.filter(event => 
@@ -96,12 +108,6 @@ export default function HomePage() {
       
       if (category === 'Pendientes') {
           return relevantEvents
-            .filter(event => {
-              const title = event.title.toLowerCase();
-              // Es pendiente si no es una actividad (los examenes y tareas lo son)
-              const isActivity = keywords.activity.some(kw => title.includes(kw));
-              return !isActivity;
-            })
             .sort((a, b) => a.date.getTime() - b.date.getTime());
       }
       
@@ -109,7 +115,6 @@ export default function HomePage() {
       let isDefaultCategory = false;
 
       if (category === 'Exámenes') eventKeywords = keywords.exam;
-      else if (category === 'Actividades') eventKeywords = keywords.activity;
       else if (category === 'Tareas') {
         isDefaultCategory = true;
       }
@@ -120,8 +125,7 @@ export default function HomePage() {
             if (isDefaultCategory) {
                 // Es "Tarea" si no es ni examen ni actividad
                 const isExam = keywords.exam.some(kw => title.includes(kw));
-                const isActivity = keywords.activity.some(kw => title.includes(kw));
-                return !isExam && !isActivity;
+                return !isExam;
             }
             return eventKeywords.some(kw => title.includes(kw));
         })
@@ -150,10 +154,8 @@ export default function HomePage() {
         const title = event.title.toLowerCase();
         if (keywords.exam.some(kw => title.includes(kw))) {
              fieldToIncrement = 'exams';
-        } else if (keywords.activity.some(kw => title.includes(kw))) {
-             fieldToIncrement = 'activities';
         } else {
-             // Default to task if not exam or activity
+             // Default to task if not exam
              fieldToIncrement = 'tasks';
         }
     }
@@ -224,31 +226,51 @@ export default function HomePage() {
 
   useEffect(() => {
     const fetchAndCalculateVars = async () => {
-        if (user?.center !== SCHOOL_VERIFICATION_CODE) {
-             setIsLoadingVariables(false);
-             return;
-        }
+        if (!firestore) return;
 
         setIsLoadingVariables(true);
-        try {
-            const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(SCHOOL_ICAL_URL)}`);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch calendar: ${response.status}`);
+        // Fetch calendar events
+        if (user?.center === SCHOOL_VERIFICATION_CODE) {
+            try {
+                const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(SCHOOL_ICAL_URL)}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch calendar: ${response.status}`);
+                }
+                const icalData = await response.text();
+                const parsedEvents = parseIcal(icalData);
+                setAllEvents(parsedEvents);
+            } catch (error) {
+                console.error("Error fetching or processing calendar for variables:", error);
+                setAllEvents([]);
             }
-            const icalData = await response.text();
-            const parsedEvents = parseIcal(icalData);
-            setAllEvents(parsedEvents);
-        } catch (error) {
-            console.error("Error fetching or processing calendar for variables:", error);
-            setAllEvents([]);
-        } finally {
-            setIsLoadingVariables(false);
         }
+
+        // Fetch announcements
+        try {
+            const announcementsRef = collection(firestore, "announcements");
+            const q = query(announcementsRef, orderBy("createdAt", "desc"));
+            const querySnapshot = await getDocs(q);
+            const announcementsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Announcement));
+            
+            const userIsInCenter = user?.center === SCHOOL_VERIFICATION_CODE;
+            const filteredAnnouncements = announcementsList.filter(ann => {
+              if (!userIsInCenter) {
+                return ann.scope === 'general';
+              }
+              return true;
+            });
+            setAllAnnouncements(filteredAnnouncements);
+        } catch (error) {
+            console.error("Error fetching announcements:", error);
+            setAllAnnouncements([]);
+        }
+        
+        setIsLoadingVariables(false);
     };
     
     fetchAndCalculateVars();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, firestore]);
 
 
   useEffect(() => {
@@ -345,6 +367,14 @@ export default function HomePage() {
     setShowWelcomeAfterCompletion(false);
   }
 
+  const handleAnnouncementsClick = () => {
+    const announcementIds = allAnnouncements.map(ann => ann.id);
+    const newReadIds = Array.from(new Set([...readAnnouncementIds, ...announcementIds]));
+    setReadAnnouncementIds(newReadIds);
+    localStorage.setItem('readAnnouncementIds', JSON.stringify(newReadIds));
+    router.push('/courses'); // Navigate to the announcements page
+  };
+
   
   if (!user) {
     return null; // Or a loading spinner
@@ -362,10 +392,10 @@ export default function HomePage() {
   const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 
   const summaryCards: SummaryCardData[] = [
-    { title: 'Tareas', value: getCategoryCount('Tareas'), icon: NotebookText, color: 'text-blue-500' },
-    { title: 'Exámenes', value: getCategoryCount('Exámenes'), icon: FileCheck2, color: 'text-red-500' },
-    { title: 'Pendientes', value: getCategoryCount('Pendientes'), icon: Clock, color: 'text-yellow-500' },
-    { title: 'Actividades', value: getCategoryCount('Actividades'), icon: ListChecks, color: 'text-green-500' },
+    { title: 'Tareas', value: getCategoryCount('Tareas'), icon: NotebookText, color: 'text-blue-500', isAnnouncement: false },
+    { title: 'Exámenes', value: getCategoryCount('Exámenes'), icon: FileCheck2, color: 'text-red-500', isAnnouncement: false },
+    { title: 'Pendientes', value: getCategoryCount('Pendientes'), icon: Clock, color: 'text-yellow-500', isAnnouncement: false },
+    { title: 'Anuncios', value: getCategoryCount('Anuncios'), icon: MessageSquare, color: 'text-green-500', isAnnouncement: true },
   ];
 
   // Determine if profile is incomplete (for Google sign-up case)
@@ -419,29 +449,47 @@ export default function HomePage() {
 
 
       <div className="mb-10 grid grid-cols-2 gap-4">
-        {summaryCards.map((card) => (
-          <DetailsDialog 
-            key={card.title} 
-            title={card.title}
-            events={getCategorizedEvents(card.title as Category)}
-            isLoading={isLoadingVariables}
-            onMarkAsComplete={(eventId) => handleMarkAsComplete(eventId, card.title as Category)}
-          >
-            <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-                    <card.icon className={cn("h-5 w-5 text-muted-foreground", card.color)} />
-                </CardHeader>
-                <CardContent>
-                    {isLoadingVariables ? (
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                    ) : (
-                        <div className="text-2xl font-bold">{card.value}</div>
-                    )}
-                </CardContent>
-            </Card>
-          </DetailsDialog>
-        ))}
+        {summaryCards.map((card) => 
+          card.isAnnouncement ? (
+            <div key={card.title} onClick={handleAnnouncementsClick} className="cursor-pointer">
+              <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+                      <card.icon className={cn("h-5 w-5 text-muted-foreground", card.color)} />
+                  </CardHeader>
+                  <CardContent>
+                      {isLoadingVariables ? (
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                      ) : (
+                          <div className="text-2xl font-bold">{card.value}</div>
+                      )}
+                  </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <DetailsDialog 
+              key={card.title} 
+              title={card.title}
+              events={getCategorizedEvents(card.title as Category)}
+              isLoading={isLoadingVariables}
+              onMarkAsComplete={(eventId) => handleMarkAsComplete(eventId, card.title as Category)}
+            >
+              <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+                      <card.icon className={cn("h-5 w-5 text-muted-foreground", card.color)} />
+                  </CardHeader>
+                  <CardContent>
+                      {isLoadingVariables ? (
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                      ) : (
+                          <div className="text-2xl font-bold">{card.value}</div>
+                      )}
+                  </CardContent>
+              </Card>
+            </DetailsDialog>
+          )
+        )}
       </div>
 
       <section className="mb-10">
@@ -525,7 +573,10 @@ export default function HomePage() {
   );
 }
 
-function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }: { title: string, children: React.ReactNode, events: ParsedEvent[], isLoading: boolean, onMarkAsComplete: (eventId: string) => void }) {
+function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }: { title: string, children: React.ReactNode, events: (ParsedEvent | Announcement)[], isLoading: boolean, onMarkAsComplete: (eventId: string) => void }) {
+    
+    const isAnnouncementDialog = title === 'Anuncios';
+    
     return (
         <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
@@ -533,7 +584,7 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }:
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>
-                        Listado de tus {title.toLowerCase()} para las próximas 2 semanas.
+                         {isAnnouncementDialog ? "Nuevos anuncios que no has leído." : `Listado de tus ${title.toLowerCase()} para las próximas 2 semanas.`}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="my-4 max-h-[50vh] overflow-y-auto pr-4">
@@ -543,44 +594,49 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }:
                     </div>
                  ) : events.length > 0 ? (
                     <div className="space-y-3">
-                        {events.map(event => (
-                            <div key={event.id} className="flex items-center gap-3 group">
+                        {events.map(event => {
+                          if ('date' in event) { // It's a ParsedEvent
+                            return (
+                              <div key={event.id} className="flex items-center gap-3 group">
                                 <div className="flex flex-col items-center justify-center bg-muted p-2 rounded-md h-12 w-12 shrink-0">
-                                    <span className="text-xs font-bold uppercase text-red-500">{format(event.date, 'MMM', { locale: es })}</span>
-                                    <span className="text-lg font-bold">{format(event.date, 'dd')}</span>
+                                  <span className="text-xs font-bold uppercase text-red-500">{format(event.date, 'MMM', { locale: es })}</span>
+                                  <span className="text-lg font-bold">{format(event.date, 'dd')}</span>
                                 </div>
                                 <div className="flex-1">
-                                    <p className="font-semibold">{event.title}</p>
-                                    <p className="text-sm text-muted-foreground">{format(event.date, "EEEE, d 'de' MMMM", { locale: es })}</p>
+                                  <p className="font-semibold">{event.title}</p>
+                                  <p className="text-sm text-muted-foreground">{format(event.date, "EEEE, d 'de' MMMM", { locale: es })}</p>
                                 </div>
-                                 <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground/50 hover:text-green-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <CheckCircle className="h-5 w-5" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>¿Marcar como completado?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Esta acción eliminará el elemento de esta lista y sumará 1 trofeo a tu perfil.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => onMarkAsComplete(event.id)}>Confirmar</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground/50 hover:text-green-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <CheckCircle className="h-5 w-5" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>¿Marcar como completado?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Esta acción eliminará el elemento de esta lista y sumará 1 trofeo a tu perfil.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => onMarkAsComplete(event.id)}>Confirmar</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
                                 </AlertDialog>
-                            </div>
-                        ))}
+                              </div>
+                            )
+                          }
+                          return null; // Should not happen if used correctly
+                        })}
                     </div>
                  ) : (
                     <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
                         <CalendarIcon className="h-12 w-12 text-muted-foreground/50 mb-4" />
                         <p className="font-semibold">¡Todo despejado!</p>
                         <p className="text-sm text-muted-foreground">
-                           No tienes {title.toLowerCase()} en las próximas dos semanas.
+                           {isAnnouncementDialog ? "No tienes anuncios nuevos." : `No tienes ${title.toLowerCase()} en las próximas dos semanas.`}
                         </p>
                     </div>
                  )}
@@ -624,7 +680,5 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
-
-    
 
     
