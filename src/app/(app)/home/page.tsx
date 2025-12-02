@@ -48,6 +48,7 @@ import CompleteProfileModal from "@/components/layout/complete-profile-modal";
 import { startOfWeek, endOfWeek, addWeeks, isWithinInterval, format, startOfToday, isToday, isTomorrow, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useRouter } from "next/navigation";
+import { Separator } from "@/components/ui/separator";
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Anuncios";
 const SCHOOL_ICAL_URL = "https://calendar.google.com/calendar/ical/iestorredelpalau.cat_9vm0113gitbs90a9l7p4c3olh4%40group.calendar.google.com/public/basic.ics";
@@ -582,9 +583,13 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }:
 
     const getDayLabel = (dateStr: string) => {
         const date = new Date(dateStr);
-        if (isToday(date)) return "Hoy";
-        if (isTomorrow(date)) return "Mañana";
-        return format(date, "EEEE, d 'de' MMMM", { locale: es });
+        // The date from iCal is UTC, but we want to compare it with the user's local "today"
+        // so we create a new date with the same year, month, day in the local timezone.
+        const localDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+        
+        if (isToday(localDate)) return "Hoy";
+        if (isTomorrow(localDate)) return "Mañana";
+        return format(localDate, "EEEE, d 'de' MMMM", { locale: es });
     };
 
     return (
@@ -597,26 +602,27 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }:
                         {`Listado de tus ${title.toLowerCase()} para las próximas 2 semanas.`}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="my-4 max-h-[50vh] overflow-y-auto pr-2 -mr-4">
+                <div className="my-4 max-h-[60vh] overflow-y-auto pr-2 -mr-4">
                  {isLoading ? (
                     <div className="flex items-center justify-center p-8">
                         <Loader2 className="h-8 w-8 animate-spin" />
                     </div>
                  ) : events.length > 0 ? (
-                    <div className="space-y-4">
-                        {Object.entries(groupedEvents).map(([dateStr, dayEvents]) => (
-                            <div key={dateStr}>
-                                <h3 className="text-sm font-semibold text-muted-foreground mb-2 px-3">{getDayLabel(dateStr)}</h3>
-                                <div className="space-y-1">
+                    <div className="space-y-6">
+                        {Object.entries(groupedEvents).map(([dateStr, dayEvents], index) => (
+                            <div key={dateStr} className="space-y-3">
+                                {index > 0 && <Separator />}
+                                <h3 className="text-sm font-bold text-muted-foreground px-1 pt-2">{getDayLabel(dateStr)}</h3>
+                                <div className="space-y-2">
                                     {dayEvents.map(event => (
-                                      <div key={event.id} className="flex items-center gap-2 group p-3 rounded-lg transition-colors hover:bg-muted/50">
+                                      <div key={event.id} className="flex items-center gap-2 group p-3 rounded-lg transition-colors border border-transparent hover:bg-muted/50 hover:border-border">
                                         <div className="flex-1">
                                           <p className="font-semibold leading-tight">{event.title}</p>
                                           <p className="text-xs text-muted-foreground">{formatDistanceToNow(event.date, { locale: es, addSuffix: true })}</p>
                                         </div>
                                         <AlertDialog>
                                           <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground/50 hover:text-primary transition-colors rounded-full hover:bg-primary/10">
+                                            <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground/50 hover:text-green-500 hover:bg-green-500/10 transition-colors rounded-full">
                                               <CheckCircle className="h-6 w-6" />
                                             </Button>
                                           </AlertDialogTrigger>
@@ -640,7 +646,7 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }:
                         ))}
                     </div>
                  ) : (
-                    <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
+                    <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg min-h-[200px]">
                         <CalendarIcon className="h-12 w-12 text-muted-foreground/50 mb-4" />
                         <p className="font-semibold">¡Todo despejado!</p>
                         <p className="text-sm text-muted-foreground">
@@ -688,5 +694,3 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
-
-    
