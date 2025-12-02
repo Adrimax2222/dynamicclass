@@ -42,10 +42,10 @@ export default function CalendarPage() {
   const [error, setError] = useState<string | null>(null);
   const [date, setDate] = useState<Date | undefined>(new Date());
   
-  const [calendarType, setCalendarType] = useState<CalendarType>("personal");
-  const [isPersonalCalendarConnected, setIsPersonalCalendarConnected] = useState(false);
-
   const userIsInCenter = user?.center === SCHOOL_VERIFICATION_CODE;
+  
+  const [calendarType, setCalendarType] = useState<CalendarType>(userIsInCenter ? "class" : "personal");
+  const [isPersonalCalendarConnected, setIsPersonalCalendarConnected] = useState(false);
 
   // Load personal iCal URL from localStorage on mount
   useEffect(() => {
@@ -53,8 +53,10 @@ export default function CalendarPage() {
     if (savedIcalUrl) {
       setPersonalIcalUrl(savedIcalUrl);
       setIsPersonalCalendarConnected(true);
-      // We trigger the fetch here if a URL is found on load
-      handleFetchEvents('personal', savedIcalUrl);
+      // If default is personal, fetch it on load
+      if (calendarType === 'personal') {
+          handleFetchEvents('personal', savedIcalUrl);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -191,8 +193,20 @@ export default function CalendarPage() {
     localStorage.removeItem('icalUrl');
     setIsPersonalCalendarConnected(false);
     setPersonalIcalUrl("");
-    setProcessedEvents([]);
-    setError(null);
+    // If the current view is 'personal', we need to switch away from it
+    if (calendarType === 'personal') {
+      if (userIsInCenter) {
+        setCalendarType('class');
+      } else {
+        // No other calendar to switch to, just clear personal view
+        setProcessedEvents([]);
+        setError(null);
+      }
+    } else {
+        // We were on 'class' view, just remove personal calendar data
+        const currentEvents = processedEvents.filter(e => e.type !== 'personal');
+        setProcessedEvents(currentEvents);
+    }
   };
 
   const eventsOnSelectedDate = processedEvents.filter(
@@ -209,7 +223,7 @@ export default function CalendarPage() {
             <p className="text-muted-foreground">Gestiona tus eventos personales y de clase.</p>
         </div>
          <div className="w-full flex items-center gap-2">
-          <Select onValueChange={(value: CalendarType) => setCalendarType(value)} defaultValue="personal">
+          <Select onValueChange={(value: CalendarType) => setCalendarType(value)} value={calendarType}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Seleccionar calendario" />
             </SelectTrigger>
