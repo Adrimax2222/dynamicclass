@@ -483,15 +483,15 @@ function PrivacyPolicyDialog() {
                     <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl w-[95vw] max-h-[80vh] flex flex-col">
-                <DialogHeader>
+            <DialogContent className="max-w-2xl w-[95vw] max-h-[80vh] flex flex-col p-0">
+                <DialogHeader className="p-6 pb-4 border-b">
                     <DialogTitle>Políticas de Privacidad y Seguridad de Dynamic Class</DialogTitle>
                     <DialogDescription>
                         Última actualización: 24 de Mayo de 2024
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="flex-1 -mx-6">
-                    <div className="px-6 space-y-4 text-sm text-muted-foreground">
+                <ScrollArea className="flex-1">
+                    <div className="px-6 py-4 space-y-4 text-sm text-muted-foreground">
                         <p>Bienvenido a Dynamic Class. Tu privacidad es de suma importancia para nosotros. Esta política describe cómo recopilamos, usamos y protegemos tu información personal.</p>
 
                         <h3 className="font-bold text-foreground">1. Quiénes Somos</h3>
@@ -536,7 +536,7 @@ function PrivacyPolicyDialog() {
                         <p>Si tienes alguna pregunta sobre esta política de privacidad, no dudes en contactarnos a través del <span className="font-semibold">Formulario de Asistencia</span> disponible en la sección de Soporte.</p>
                     </div>
                 </ScrollArea>
-                <DialogFooter>
+                <DialogFooter className="p-6 pt-4 border-t">
                     <DialogClose asChild>
                         <Button>Entendido</Button>
                     </DialogClose>
@@ -545,11 +545,3 @@ function PrivacyPolicyDialog() {
         </Dialog>
     );
 }
-
-    
-
-    
-
-    
-
-    
