@@ -9,7 +9,7 @@ const logoSvgDataUri = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/
 
 export const metadata: Metadata = {
   title: 'Dynamic Class',
-  description: 'Tu asistente para Dynamic Class.',
+  description: '¡Revoluciona tu vida académica con Dynamic Class! Tu asistente educativo todo en uno: organiza tu horario, gestiona calendarios, toma apuntes y obtén ayuda instantánea con nuestro chatbot de IA. ¡Descarga y transforma tu manera de aprender!',
   icons: {
     icon: logoSvgDataUri,
   },
