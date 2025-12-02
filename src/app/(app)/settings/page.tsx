@@ -490,7 +490,7 @@ function PrivacyPolicyDialog() {
                         Última actualización: 24 de Mayo de 2024
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="flex-1">
+                <ScrollArea className="flex-1 overflow-y-auto">
                     <div className="px-6 py-4 space-y-4 text-sm text-muted-foreground">
                         <p>Bienvenido a Dynamic Class. Tu privacidad es de suma importancia para nosotros. Esta política describe cómo recopilamos, usamos y protegemos tu información personal.</p>
 
@@ -545,3 +545,5 @@ function PrivacyPolicyDialog() {
         </Dialog>
     );
 }
+
+    
