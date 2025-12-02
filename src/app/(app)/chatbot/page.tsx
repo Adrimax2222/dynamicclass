@@ -210,18 +210,6 @@ export default function ChatbotPage() {
                  </h1>
                 <Badge variant="outline">Beta</Badge>
             </div>
-            <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                <Select onValueChange={(value: ResponseLength) => setResponseLength(value)} defaultValue={responseLength}>
-                    <SelectTrigger className="w-[120px] h-9">
-                        <SelectValue placeholder="Respuesta..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="breve">Breve</SelectItem>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="detallada">Detallada</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
         </header>
 
         <ScrollArea className="flex-1" ref={scrollAreaRef}>
@@ -297,26 +285,38 @@ export default function ChatbotPage() {
             )}
             </div>
         </ScrollArea>
-        <div className="mt-auto border-t bg-background p-4">
+        <div className="mt-auto border-t bg-background p-4 space-y-2">
             <div className="relative">
-            <Textarea
-                placeholder={placeholderText}
-                className="pr-12"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                }
-                }}
-                disabled={isMessagesLoading}
-            />
-            <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
-                <Button size="icon" onClick={handleSend} disabled={isSending || !input.trim()}>
-                <Send className="h-5 w-5" />
-                </Button>
+                <Textarea
+                    placeholder={placeholderText}
+                    className="pr-12"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend();
+                    }
+                    }}
+                    disabled={isMessagesLoading}
+                />
+                <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
+                    <Button size="icon" onClick={handleSend} disabled={isSending || !input.trim()}>
+                        <Send className="h-5 w-5" />
+                    </Button>
+                </div>
             </div>
+            <div className="flex items-center gap-2">
+                 <Select onValueChange={(value: ResponseLength) => setResponseLength(value)} defaultValue={responseLength}>
+                    <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Respuesta..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="breve">Breve</SelectItem>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="detallada">Detallada</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
         </div>
     </div>
@@ -397,3 +397,5 @@ function ChatHistorySheet({ chats, isChatsLoading, activeChatId, setActiveChatId
         </Sheet>
     );
 }
+
+    
