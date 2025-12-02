@@ -592,19 +592,19 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }:
                         {events.map(event => {
                           if ('date' in event) { // It's a ParsedEvent
                             return (
-                              <div key={event.id} className="flex items-center gap-3 group">
-                                <div className="flex flex-col items-center justify-center bg-muted p-2 rounded-md h-12 w-12 shrink-0">
+                              <div key={event.id} className="flex items-center gap-4 group p-3 rounded-lg transition-colors hover:bg-muted/50">
+                                <div className="flex flex-col items-center justify-center bg-muted p-2 rounded-md h-14 w-14 shrink-0 border">
                                   <span className="text-xs font-bold uppercase text-red-500">{format(event.date, 'MMM', { locale: es })}</span>
-                                  <span className="text-lg font-bold">{format(event.date, 'dd')}</span>
+                                  <span className="text-2xl font-bold tracking-tighter">{format(event.date, 'dd')}</span>
                                 </div>
                                 <div className="flex-1">
-                                  <p className="font-semibold">{event.title}</p>
+                                  <p className="font-semibold leading-tight">{event.title}</p>
                                   <p className="text-sm text-muted-foreground">{format(event.date, "EEEE, d 'de' MMMM", { locale: es })}</p>
                                 </div>
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground/50 hover:text-green-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <CheckCircle className="h-5 w-5" />
+                                    <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground/50 hover:text-green-500 transition-colors rounded-full">
+                                      <CheckCircle className="h-6 w-6" />
                                     </Button>
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
@@ -675,5 +675,3 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
-
-    
