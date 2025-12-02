@@ -19,9 +19,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { fullSchedule } from "@/lib/data";
-import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass } from "@/lib/types";
+import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy, BookX } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy, BookX, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
@@ -34,8 +34,15 @@ import { useFirestore } from "@/firebase";
 import { FullScheduleView } from "@/components/layout/full-schedule-view";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
 import CompleteProfileModal from "@/components/layout/complete-profile-modal";
+import { getWeek, addWeeks, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Actividades";
+const SCHOOL_ICAL_URL = "https://calendar.google.com/calendar/ical/iestorredelpalau.cat_9vm0113gitbs90a9l7p4c3olh4%40group.calendar.google.com/public/basic.ics";
+
+interface ParsedEvent extends CalendarEvent {
+    // an extension of the base type to ensure date is a Date object during processing
+    date: Date;
+}
 
 export default function HomePage() {
   const { user, updateUser } = useApp();
@@ -44,9 +51,104 @@ export default function HomePage() {
   const [showWelcomeAfterCompletion, setShowWelcomeAfterCompletion] = useState(false);
   const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
   const [upcomingClassesDay, setUpcomingClassesDay] = useState<string>("Próximas Clases");
+  
+  // State for educational variables
+  const [educationalVariables, setEducationalVariables] = useState({
+    tasks: 0,
+    exams: 0,
+    pending: 0,
+    activities: 0,
+  });
+  const [isLoadingVariables, setIsLoadingVariables] = useState(true);
+
 
   const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
 
+  // Moved parser and fetch logic inside useEffect or as standalone functions within the component
+    const parseIcal = (icalData: string): ParsedEvent[] => {
+        const events: ParsedEvent[] = [];
+        const lines = icalData.split(/\r\n|\n|\r/);
+        let currentEvent: any = null;
+
+        for (const line of lines) {
+            if (line.startsWith('BEGIN:VEVENT')) {
+                currentEvent = {};
+            } else if (line.startsWith('END:VEVENT')) {
+                if (currentEvent && currentEvent.dtstart && currentEvent.summary) {
+                    try {
+                        const dateStrRaw = currentEvent.dtstart.split(':')[1];
+                        const dateStr = dateStrRaw.split('T')[0].replace(';VALUE=DATE', '');
+                        const year = parseInt(dateStr.substring(0, 4), 10);
+                        const month = parseInt(dateStr.substring(4, 6), 10) - 1;
+                        const day = parseInt(dateStr.substring(6, 8), 10);
+                        
+                        const eventDate = new Date(Date.UTC(year, month, day));
+                        
+                        events.push({
+                            id: currentEvent.uid || Math.random().toString(),
+                            title: currentEvent.summary,
+                            description: (currentEvent.description || 'No hay descripción.').replace(/\\n/g, '\n'),
+                            date: eventDate,
+                            type: 'class'
+                        });
+                    } catch(e) {
+                        console.error("Could not parse event date:", currentEvent.dtstart, e);
+                    }
+                }
+                currentEvent = null;
+            } else if (currentEvent) {
+                const [key, ...valueParts] = line.split(':');
+                const value = valueParts.join(':');
+                const mainKey = key.split(';')[0]; 
+
+                switch (mainKey) {
+                    case 'UID': currentEvent.uid = value; break;
+                    case 'SUMMARY': currentEvent.summary = value; break;
+                    case 'DESCRIPTION': currentEvent.description = value; break;
+                    case 'DTSTART': currentEvent.dtstart = line; break;
+                }
+            }
+        }
+        return events;
+    };
+
+    const calculateEducationalVariables = (events: ParsedEvent[]) => {
+        const now = new Date();
+        const startOfThisWeek = startOfWeek(now, { weekStartsOn: 1 });
+        const endOfNextWeek = endOfWeek(addWeeks(now, 1), { weekStartsOn: 1 });
+
+        let tasks = 0;
+        let exams = 0;
+        let activities = 0;
+
+        const keywords = {
+            exam: ['examen', 'exam', 'prueba', 'control'],
+            task: ['tarea', 'ejercicios', 'deberes', 'lliurament'],
+            activity: ['actividad', 'proyecto', 'presentación', 'sortida', 'exposició']
+        };
+
+        for (const event of events) {
+             if (isWithinInterval(event.date, { start: startOfThisWeek, end: endOfNextWeek })) {
+                const title = event.title.toLowerCase();
+
+                if (keywords.exam.some(kw => title.includes(kw))) {
+                    exams++;
+                } else if (keywords.task.some(kw => title.includes(kw))) {
+                    tasks++;
+                } else if (keywords.activity.some(kw => title.includes(kw))) {
+                    activities++;
+                }
+            }
+        }
+        
+        setEducationalVariables({
+            tasks: tasks,
+            exams: exams,
+            pending: tasks + exams,
+            activities: activities,
+        });
+        setIsLoadingVariables(false);
+    };
 
   useEffect(() => {
     // Only show the modal if the user is new and the state is not already open
@@ -54,6 +156,34 @@ export default function HomePage() {
       setIsModalOpen(true);
     }
   }, [user, isModalOpen]);
+
+  useEffect(() => {
+    const fetchAndCalculateVars = async () => {
+        if (!isScheduleAvailable) {
+            setIsLoadingVariables(false);
+            return;
+        };
+
+        setIsLoadingVariables(true);
+        try {
+            const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(SCHOOL_ICAL_URL)}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch calendar: ${response.status}`);
+            }
+            const icalData = await response.text();
+            const parsedEvents = parseIcal(icalData);
+            calculateEducationalVariables(parsedEvents);
+        } catch (error) {
+            console.error("Error fetching or processing calendar for variables:", error);
+            setEducationalVariables({ tasks: 0, exams: 0, pending: 0, activities: 0 });
+            setIsLoadingVariables(false);
+        }
+    };
+    
+    fetchAndCalculateVars();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isScheduleAvailable]);
+
 
   useEffect(() => {
     if (!isScheduleAvailable) return;
@@ -166,10 +296,10 @@ export default function HomePage() {
   const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 
   const summaryCards: SummaryCardData[] = [
-    { title: 'Tareas', value: user.tasks, icon: NotebookText, color: 'text-blue-500' },
-    { title: 'Exámenes', value: user.exams, icon: FileCheck2, color: 'text-red-500' },
-    { title: 'Pendientes', value: user.pending, icon: Clock, color: 'text-yellow-500' },
-    { title: 'Actividades', value: user.activities, icon: ListChecks, color: 'text-green-500' },
+    { title: 'Tareas', value: educationalVariables.tasks, icon: NotebookText, color: 'text-blue-500' },
+    { title: 'Exámenes', value: educationalVariables.exams, icon: FileCheck2, color: 'text-red-500' },
+    { title: 'Pendientes', value: educationalVariables.pending, icon: Clock, color: 'text-yellow-500' },
+    { title: 'Actividades', value: educationalVariables.activities, icon: ListChecks, color: 'text-green-500' },
   ];
 
   // Determine if profile is incomplete (for Google sign-up case)
@@ -231,7 +361,11 @@ export default function HomePage() {
                     <card.icon className={cn("h-5 w-5 text-muted-foreground", card.color)} />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{card.value}</div>
+                    {isLoadingVariables ? (
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                        <div className="text-2xl font-bold">{card.value}</div>
+                    )}
                 </CardContent>
             </Card>
           </DetailsDialog>
@@ -376,6 +510,8 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
+    
 
     
 
