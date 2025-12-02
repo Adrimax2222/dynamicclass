@@ -75,6 +75,14 @@ export default function HomePage() {
   const [completedEventIds, setCompletedEventIds] = useState<string[]>([]);
 
   const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
+
+  useEffect(() => {
+    // On mount, load completed IDs from localStorage
+    const storedCompletedIds = localStorage.getItem('completedEventIds');
+    if (storedCompletedIds) {
+      setCompletedEventIds(JSON.parse(storedCompletedIds));
+    }
+  }, []);
     
   const getCategorizedEvents = (category: Category): ParsedEvent[] => {
       const today = startOfToday();
@@ -90,10 +98,9 @@ export default function HomePage() {
           return relevantEvents
             .filter(event => {
               const title = event.title.toLowerCase();
-              // Es pendiente si es un examen o una tarea (implícitamente)
-              const isExam = keywords.exam.some(kw => title.includes(kw));
-              const isTask = !isExam && !keywords.activity.some(kw => title.includes(kw));
-              return isExam || isTask;
+              // Es pendiente si no es una actividad (los examenes y tareas lo son)
+              const isActivity = keywords.activity.some(kw => title.includes(kw));
+              return !isActivity;
             })
             .sort((a, b) => a.date.getTime() - b.date.getTime());
       }
@@ -128,19 +135,29 @@ export default function HomePage() {
   const handleMarkAsComplete = (eventId: string, category: Category) => {
     if (!firestore || !user) return;
     
-    setCompletedEventIds(prev => [...prev, eventId]);
+    // Update local state and localStorage
+    const newCompletedIds = [...completedEventIds, eventId];
+    setCompletedEventIds(newCompletedIds);
+    localStorage.setItem('completedEventIds', JSON.stringify(newCompletedIds));
     
     // Update user stats in Firestore
     const userDocRef = doc(firestore, 'users', user.uid);
     let fieldToIncrement: string | null = null;
     
-    if (category === 'Tareas') {
-        fieldToIncrement = 'tasks';
-    } else if (category === 'Exámenes') {
-        fieldToIncrement = 'exams';
-    } else if (category === 'Actividades') {
-        fieldToIncrement = 'activities';
+    // Determine which field to increment based on the original category, not just "Pendientes"
+    const event = allEvents.find(e => e.id === eventId);
+    if (event) {
+        const title = event.title.toLowerCase();
+        if (keywords.exam.some(kw => title.includes(kw))) {
+             fieldToIncrement = 'exams';
+        } else if (keywords.activity.some(kw => title.includes(kw))) {
+             fieldToIncrement = 'activities';
+        } else {
+             // Default to task if not exam or activity
+             fieldToIncrement = 'tasks';
+        }
     }
+
 
     if (fieldToIncrement) {
         updateDoc(userDocRef, {
@@ -607,5 +624,7 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
+    
 
     
