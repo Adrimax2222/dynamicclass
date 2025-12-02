@@ -18,10 +18,21 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { fullSchedule } from "@/lib/data";
 import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy, BookX, Loader2, CalendarIcon } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
@@ -47,8 +58,8 @@ interface ParsedEvent extends CalendarEvent {
 
 const keywords = {
     exam: ['examen', 'exam', 'prueba', 'control', 'prova'],
-    task: ['tarea', 'ejercicios', 'deberes', 'lliurament', 'fitxa', 'feina', 'deures', 'entrega'],
-    activity: ['actividad', 'proyecto', 'presentación', 'sortida', 'exposició', 'projecte', 'presentació']
+    task: ['tarea', 'ejercicios', 'deberes', 'lliurament', 'fitxa', 'feina', 'deures', 'entrega', 'presentació'],
+    activity: ['actividad', 'proyecto', 'sortida', 'exposició', 'projecte']
 };
 
 export default function HomePage() {
@@ -61,6 +72,7 @@ export default function HomePage() {
   
   const [allEvents, setAllEvents] = useState<ParsedEvent[]>([]);
   const [isLoadingVariables, setIsLoadingVariables] = useState(true);
+  const [completedEventIds, setCompletedEventIds] = useState<string[]>([]);
 
   const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
     
@@ -70,15 +82,19 @@ export default function HomePage() {
       const endOfNextWeek = endOfWeek(addWeeks(now, 1), { weekStartsOn: 1 });
 
       const relevantEvents = allEvents.filter(event => 
-        isWithinInterval(event.date, { start: startOfThisWeek, end: endOfNextWeek })
+        isWithinInterval(event.date, { start: startOfThisWeek, end: endOfNextWeek }) &&
+        !completedEventIds.includes(event.id)
       );
       
       if (category === 'Pendientes') {
           return relevantEvents
             .filter(event => {
               const title = event.title.toLowerCase();
-              return [...keywords.exam, ...keywords.task].some(kw => title.includes(kw)) ||
-                     !([...keywords.exam, ...keywords.activity].some(kw => title.includes(kw)));
+              // Es pendiente si es un examen o una tarea (implícitamente)
+              const isExam = keywords.exam.some(kw => title.includes(kw));
+              const isTask = keywords.task.some(kw => title.includes(kw)) || 
+                             ![...keywords.exam, ...keywords.activity].some(kw => title.includes(kw));
+              return isExam || isTask;
             })
             .sort((a, b) => a.date.getTime() - b.date.getTime());
       }
@@ -89,22 +105,19 @@ export default function HomePage() {
       if (category === 'Exámenes') eventKeywords = keywords.exam;
       else if (category === 'Actividades') eventKeywords = keywords.activity;
       else if (category === 'Tareas') {
-        eventKeywords = keywords.task;
         isDefaultCategory = true;
       }
       
       return relevantEvents
         .filter(event => {
             const title = event.title.toLowerCase();
-            const isInCategory = eventKeywords.some(kw => title.includes(kw));
-
             if (isDefaultCategory) {
-                // It's a "Tarea" if it includes a task keyword OR if it's not an exam or activity.
+                // Es "Tarea" si no es ni examen ni actividad
                 const isExam = keywords.exam.some(kw => title.includes(kw));
                 const isActivity = keywords.activity.some(kw => title.includes(kw));
-                return isInCategory || (!isExam && !isActivity);
+                return !isExam && !isActivity;
             }
-            return isInCategory;
+            return eventKeywords.some(kw => title.includes(kw));
         })
         .sort((a, b) => a.date.getTime() - b.date.getTime());
   };
@@ -112,6 +125,10 @@ export default function HomePage() {
   const getCategoryCount = (category: Category): number => {
     return getCategorizedEvents(category).length;
   }
+  
+  const handleMarkAsComplete = (eventId: string) => {
+    setCompletedEventIds(prev => [...prev, eventId]);
+  };
 
   // Moved parser and fetch logic inside useEffect or as standalone functions within the component
     const parseIcal = (icalData: string): ParsedEvent[] => {
@@ -371,6 +388,7 @@ export default function HomePage() {
             title={card.title}
             events={getCategorizedEvents(card.title as Category)}
             isLoading={isLoadingVariables}
+            onMarkAsComplete={handleMarkAsComplete}
           >
             <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -470,7 +488,7 @@ export default function HomePage() {
   );
 }
 
-function DetailsDialog({ title, children, events, isLoading }: { title: string, children: React.ReactNode, events: ParsedEvent[], isLoading: boolean }) {
+function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }: { title: string, children: React.ReactNode, events: ParsedEvent[], isLoading: boolean, onMarkAsComplete: (eventId: string) => void }) {
     return (
         <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
@@ -489,8 +507,8 @@ function DetailsDialog({ title, children, events, isLoading }: { title: string, 
                  ) : events.length > 0 ? (
                     <div className="space-y-3">
                         {events.map(event => (
-                            <div key={event.id} className="flex items-start gap-3">
-                                <div className="flex flex-col items-center justify-center bg-muted p-2 rounded-md h-12 w-12">
+                            <div key={event.id} className="flex items-center gap-3 group">
+                                <div className="flex flex-col items-center justify-center bg-muted p-2 rounded-md h-12 w-12 shrink-0">
                                     <span className="text-xs font-bold uppercase text-red-500">{format(event.date, 'MMM', { locale: es })}</span>
                                     <span className="text-lg font-bold">{format(event.date, 'dd')}</span>
                                 </div>
@@ -498,6 +516,25 @@ function DetailsDialog({ title, children, events, isLoading }: { title: string, 
                                     <p className="font-semibold">{event.title}</p>
                                     <p className="text-sm text-muted-foreground">{format(event.date, "EEEE, d 'de' MMMM", { locale: es })}</p>
                                 </div>
+                                 <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground/50 hover:text-green-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <CheckCircle className="h-5 w-5" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>¿Marcar como completado?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Esta acción eliminará el elemento de esta lista.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => onMarkAsComplete(event.id)}>Confirmar</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </div>
                         ))}
                     </div>
@@ -550,11 +587,5 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
-
-    
-
-    
-
-    
 
     
