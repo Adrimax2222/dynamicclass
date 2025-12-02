@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, FileShield } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore } from "@/firebase";
@@ -477,7 +477,7 @@ function PrivacyPolicyDialog() {
             <DialogTrigger asChild>
                 <button className="flex w-full items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50 text-left">
                     <div className="flex items-center gap-3">
-                        <FileShield className="h-5 w-5 text-primary" />
+                        <Shield className="h-5 w-5 text-primary" />
                         <span className="font-medium">Políticas de Privacidad y Seguridad</span>
                     </div>
                     <ExternalLink className="h-4 w-4 text-muted-foreground" />
@@ -545,6 +545,10 @@ function PrivacyPolicyDialog() {
         </Dialog>
     );
 }
+
+    
+
+    
 
     
 
