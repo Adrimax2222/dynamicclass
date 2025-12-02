@@ -45,7 +45,7 @@ import { useFirestore } from "@/firebase";
 import { FullScheduleView } from "@/components/layout/full-schedule-view";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
 import CompleteProfileModal from "@/components/layout/complete-profile-modal";
-import { startOfWeek, endOfWeek, addWeeks, isWithinInterval, format, startOfToday } from 'date-fns';
+import { startOfWeek, endOfWeek, addWeeks, isWithinInterval, format, startOfToday, isToday, isTomorrow, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useRouter } from "next/navigation";
 
@@ -126,7 +126,6 @@ export default function HomePage() {
         .filter(event => {
             const title = event.title.toLowerCase();
             if (isDefaultCategory) {
-                // Es "Tarea" si no es ni examen
                 const isExam = keywords.exam.some(kw => title.includes(kw));
                 return !isExam;
             }
@@ -572,6 +571,22 @@ export default function HomePage() {
 
 function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }: { title: string, children: React.ReactNode, events: (ParsedEvent | Announcement)[], isLoading: boolean, onMarkAsComplete: (eventId: string) => void }) {
     
+    const groupedEvents = (events as ParsedEvent[]).reduce((acc, event) => {
+        const dateStr = format(event.date, 'yyyy-MM-dd');
+        if (!acc[dateStr]) {
+            acc[dateStr] = [];
+        }
+        acc[dateStr].push(event);
+        return acc;
+    }, {} as Record<string, ParsedEvent[]>);
+
+    const getDayLabel = (dateStr: string) => {
+        const date = new Date(dateStr);
+        if (isToday(date)) return "Hoy";
+        if (isTomorrow(date)) return "Mañana";
+        return format(date, "EEEE, d 'de' MMMM", { locale: es });
+    };
+
     return (
         <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
@@ -582,49 +597,47 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }:
                         {`Listado de tus ${title.toLowerCase()} para las próximas 2 semanas.`}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="my-4 max-h-[50vh] overflow-y-auto pr-4">
+                <div className="my-4 max-h-[50vh] overflow-y-auto pr-2 -mr-4">
                  {isLoading ? (
                     <div className="flex items-center justify-center p-8">
                         <Loader2 className="h-8 w-8 animate-spin" />
                     </div>
                  ) : events.length > 0 ? (
-                    <div className="space-y-3">
-                        {events.map(event => {
-                          if ('date' in event) { // It's a ParsedEvent
-                            return (
-                              <div key={event.id} className="flex items-center gap-4 group p-3 rounded-lg transition-colors hover:bg-muted/50">
-                                <div className="flex flex-col items-center justify-center bg-muted p-2 rounded-md h-14 w-14 shrink-0 border">
-                                  <span className="text-xs font-bold uppercase text-red-500">{format(event.date, 'MMM', { locale: es })}</span>
-                                  <span className="text-2xl font-bold tracking-tighter">{format(event.date, 'dd')}</span>
+                    <div className="space-y-4">
+                        {Object.entries(groupedEvents).map(([dateStr, dayEvents]) => (
+                            <div key={dateStr}>
+                                <h3 className="text-sm font-semibold text-muted-foreground mb-2 px-3">{getDayLabel(dateStr)}</h3>
+                                <div className="space-y-1">
+                                    {dayEvents.map(event => (
+                                      <div key={event.id} className="flex items-center gap-2 group p-3 rounded-lg transition-colors hover:bg-muted/50">
+                                        <div className="flex-1">
+                                          <p className="font-semibold leading-tight">{event.title}</p>
+                                          <p className="text-xs text-muted-foreground">{formatDistanceToNow(event.date, { locale: es, addSuffix: true })}</p>
+                                        </div>
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground/50 hover:text-primary transition-colors rounded-full hover:bg-primary/10">
+                                              <CheckCircle className="h-6 w-6" />
+                                            </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>¿Marcar como completado?</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                Esta acción eliminará el elemento de esta lista y sumará 1 trofeo a tu perfil.
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                              <AlertDialogAction onClick={() => onMarkAsComplete(event.id)}>Confirmar</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      </div>
+                                    ))}
                                 </div>
-                                <div className="flex-1">
-                                  <p className="font-semibold leading-tight">{event.title}</p>
-                                  <p className="text-sm text-muted-foreground">{format(event.date, "EEEE, d 'de' MMMM", { locale: es })}</p>
-                                </div>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground/50 hover:text-green-500 transition-colors rounded-full">
-                                      <CheckCircle className="h-6 w-6" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>¿Marcar como completado?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Esta acción eliminará el elemento de esta lista y sumará 1 trofeo a tu perfil.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => onMarkAsComplete(event.id)}>Confirmar</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
-                            )
-                          }
-                          return null;
-                        })}
+                            </div>
+                        ))}
                     </div>
                  ) : (
                     <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
@@ -675,3 +688,5 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
+    
