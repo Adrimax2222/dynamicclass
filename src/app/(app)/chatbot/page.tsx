@@ -12,13 +12,14 @@ import {
   PanelLeftOpen,
   History,
   AlertTriangle,
+  MessageCircle,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import type { ChatMessage, Chat } from "@/lib/types";
+import type { ChatMessage, Chat, ResponseLength } from "@/lib/types";
 import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance";
 import { useApp } from "@/lib/hooks/use-app";
 import { Logo } from "@/components/icons";
@@ -63,12 +64,14 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 export default function ChatbotPage() {
   const { user, activeChatId, setActiveChatId, chats, isChatsLoading } = useApp();
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [responseLength, setResponseLength] = useState<ResponseLength>('normal');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const firestore = useFirestore();
 
@@ -157,7 +160,7 @@ export default function ChatbotPage() {
       const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
       await addDoc(messagesRef, userMessage);
       
-      const result = await aiChatbotAssistance({ query: currentInput });
+      const result = await aiChatbotAssistance({ query: currentInput, responseLength });
       
       const assistantMessage: Omit<ChatMessage, 'id'> = {
         role: "assistant",
@@ -191,7 +194,7 @@ export default function ChatbotPage() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
-        <header className="border-b p-4 text-center flex items-center justify-between relative">
+        <header className="border-b p-4 flex items-center justify-between relative">
             <ChatHistorySheet 
                 chats={chats} 
                 isChatsLoading={isChatsLoading} 
@@ -207,7 +210,18 @@ export default function ChatbotPage() {
                  </h1>
                 <Badge variant="outline">Beta</Badge>
             </div>
-            <div className="w-10"></div>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                <Select onValueChange={(value: ResponseLength) => setResponseLength(value)} defaultValue={responseLength}>
+                    <SelectTrigger className="w-[120px] h-9">
+                        <SelectValue placeholder="Respuesta..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="breve">Breve</SelectItem>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="detallada">Detallada</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
         </header>
 
         <ScrollArea className="flex-1" ref={scrollAreaRef}>

@@ -71,6 +71,8 @@ export type Chat = {
   userId: string;
 };
 
+export type ResponseLength = 'breve' | 'normal' | 'detallada';
+
 export type ChatMessage = {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -96,5 +98,3 @@ export type Announcement = {
   createdAt: { seconds: number, nanoseconds: number };
   scope: AnnouncementScope;
 }
-
-    

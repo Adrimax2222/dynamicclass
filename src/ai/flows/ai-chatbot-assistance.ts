@@ -14,6 +14,7 @@ import {z} from 'genkit';
 const AIChatbotAssistanceInputSchema = z.object({
   query: z.string().describe('La consulta para el chatbot de IA.'),
   subject: z.string().optional().describe('Materia o tema opcional.'),
+  responseLength: z.enum(['breve', 'normal', 'detallada']).optional().describe('La longitud deseada de la respuesta.'),
 });
 export type AIChatbotAssistanceInput = z.infer<typeof AIChatbotAssistanceInputSchema>;
 
@@ -34,6 +35,9 @@ const prompt = ai.definePrompt({
   prompt: `Eres un asistente de chatbot de IA, competente en educación. Eres entusiasta por ayudar a los estudiantes a aprender.
 {{#if subject}}
 Actualmente estás especializado en el tema de {{subject}}.
+{{/if}}
+{{#if responseLength}}
+La respuesta debe ser de longitud {{responseLength}}.
 {{/if}}
 Responde a la siguiente consulta: {{{query}}}`,
 });
