@@ -47,8 +47,8 @@ interface ParsedEvent extends CalendarEvent {
 
 const keywords = {
     exam: ['examen', 'exam', 'prueba', 'control', 'prova'],
-    task: ['tarea', 'ejercicios', 'deberes', 'lliurament', 'fitxa', 'feina', 'deures'],
-    activity: ['actividad', 'proyecto', 'presentación', 'sortida', 'exposició', 'projecte']
+    task: ['tarea', 'ejercicios', 'deberes', 'lliurament', 'fitxa', 'feina', 'deures', 'entrega'],
+    activity: ['actividad', 'proyecto', 'presentación', 'sortida', 'exposició', 'projecte', 'presentació']
 };
 
 export default function HomePage() {
@@ -65,21 +65,46 @@ export default function HomePage() {
   const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
     
   const getCategorizedEvents = (category: Category): ParsedEvent[] => {
-      let eventKeywords: string[] = [];
-      if (category === 'Tareas') eventKeywords = keywords.task;
-      else if (category === 'Exámenes') eventKeywords = keywords.exam;
-      else if (category === 'Actividades') eventKeywords = keywords.activity;
-      // For 'Pendientes', we combine tasks and exams
-      else if (category === 'Pendientes') eventKeywords = [...keywords.task, ...keywords.exam];
-      
       const now = new Date();
       const startOfThisWeek = startOfWeek(now, { weekStartsOn: 1 });
       const endOfNextWeek = endOfWeek(addWeeks(now, 1), { weekStartsOn: 1 });
 
-      return allEvents
+      const relevantEvents = allEvents.filter(event => 
+        isWithinInterval(event.date, { start: startOfThisWeek, end: endOfNextWeek })
+      );
+      
+      if (category === 'Pendientes') {
+          return relevantEvents
+            .filter(event => {
+              const title = event.title.toLowerCase();
+              return [...keywords.exam, ...keywords.task].some(kw => title.includes(kw)) ||
+                     !([...keywords.exam, ...keywords.activity].some(kw => title.includes(kw)));
+            })
+            .sort((a, b) => a.date.getTime() - b.date.getTime());
+      }
+      
+      let eventKeywords: string[] = [];
+      let isDefaultCategory = false;
+
+      if (category === 'Exámenes') eventKeywords = keywords.exam;
+      else if (category === 'Actividades') eventKeywords = keywords.activity;
+      else if (category === 'Tareas') {
+        eventKeywords = keywords.task;
+        isDefaultCategory = true;
+      }
+      
+      return relevantEvents
         .filter(event => {
             const title = event.title.toLowerCase();
-            return eventKeywords.some(kw => title.includes(kw)) && isWithinInterval(event.date, { start: startOfThisWeek, end: endOfNextWeek });
+            const isInCategory = eventKeywords.some(kw => title.includes(kw));
+
+            if (isDefaultCategory) {
+                // It's a "Tarea" if it includes a task keyword OR if it's not an exam or activity.
+                const isExam = keywords.exam.some(kw => title.includes(kw));
+                const isActivity = keywords.activity.some(kw => title.includes(kw));
+                return isInCategory || (!isExam && !isActivity);
+            }
+            return isInCategory;
         })
         .sort((a, b) => a.date.getTime() - b.date.getTime());
   };
@@ -525,6 +550,8 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
+    
 
     
 
