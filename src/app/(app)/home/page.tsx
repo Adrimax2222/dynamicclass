@@ -40,12 +40,12 @@ import { Button } from "@/components/ui/button";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Logo } from "@/components/icons";
 import WelcomeModal from "@/components/layout/welcome-modal";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, increment } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { FullScheduleView } from "@/components/layout/full-schedule-view";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
 import CompleteProfileModal from "@/components/layout/complete-profile-modal";
-import { startOfWeek, endOfWeek, addWeeks, isWithinInterval, format } from 'date-fns';
+import { startOfWeek, endOfWeek, addWeeks, isWithinInterval, format, startOfToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Actividades";
@@ -77,12 +77,12 @@ export default function HomePage() {
   const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
     
   const getCategorizedEvents = (category: Category): ParsedEvent[] => {
-      const now = new Date();
-      const startOfThisWeek = startOfWeek(now, { weekStartsOn: 1 });
-      const endOfNextWeek = endOfWeek(addWeeks(now, 1), { weekStartsOn: 1 });
+      const today = startOfToday();
+      const endOfNextWeek = endOfWeek(addWeeks(today, 1), { weekStartsOn: 1 });
 
       const relevantEvents = allEvents.filter(event => 
-        isWithinInterval(event.date, { start: startOfThisWeek, end: endOfNextWeek }) &&
+        event.date >= today &&
+        isWithinInterval(event.date, { start: today, end: endOfNextWeek }) &&
         !completedEventIds.includes(event.id)
       );
       
@@ -92,8 +92,7 @@ export default function HomePage() {
               const title = event.title.toLowerCase();
               // Es pendiente si es un examen o una tarea (implícitamente)
               const isExam = keywords.exam.some(kw => title.includes(kw));
-              const isTask = keywords.task.some(kw => title.includes(kw)) || 
-                             ![...keywords.exam, ...keywords.activity].some(kw => title.includes(kw));
+              const isTask = !isExam && !keywords.activity.some(kw => title.includes(kw));
               return isExam || isTask;
             })
             .sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -126,8 +125,29 @@ export default function HomePage() {
     return getCategorizedEvents(category).length;
   }
   
-  const handleMarkAsComplete = (eventId: string) => {
+  const handleMarkAsComplete = (eventId: string, category: Category) => {
+    if (!firestore || !user) return;
+    
     setCompletedEventIds(prev => [...prev, eventId]);
+    
+    // Update user stats in Firestore
+    const userDocRef = doc(firestore, 'users', user.uid);
+    let fieldToIncrement: string | null = null;
+    
+    if (category === 'Tareas') {
+        fieldToIncrement = 'tasks';
+    } else if (category === 'Exámenes') {
+        fieldToIncrement = 'exams';
+    } else if (category === 'Actividades') {
+        fieldToIncrement = 'activities';
+    }
+
+    if (fieldToIncrement) {
+        updateDoc(userDocRef, {
+            [fieldToIncrement]: increment(1),
+            trophies: increment(1), // Also increment trophies
+        }).catch(err => console.error("Error updating user stats:", err));
+    }
   };
 
   // Moved parser and fetch logic inside useEffect or as standalone functions within the component
@@ -388,7 +408,7 @@ export default function HomePage() {
             title={card.title}
             events={getCategorizedEvents(card.title as Category)}
             isLoading={isLoadingVariables}
-            onMarkAsComplete={handleMarkAsComplete}
+            onMarkAsComplete={(eventId) => handleMarkAsComplete(eventId, card.title as Category)}
           >
             <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -526,7 +546,7 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete }:
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>¿Marcar como completado?</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                Esta acción eliminará el elemento de esta lista.
+                                                Esta acción eliminará el elemento de esta lista y sumará 1 trofeo a tu perfil.
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>

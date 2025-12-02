@@ -22,10 +22,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { achievements } from "@/lib/data";
 import type { SummaryCardData } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy } from "lucide-react";
+import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy, NotebookText, FileCheck2, ListChecks, Medal, Star } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -82,6 +81,12 @@ export default function ProfilePage() {
   }
   
   const displayCenter = user.center === SCHOOL_VERIFICATION_CODE ? SCHOOL_NAME : user.center;
+
+  const achievements: SummaryCardData[] = [
+    { title: 'Tareas Completadas', value: user.tasks, icon: NotebookText, color: 'text-blue-400' },
+    { title: 'Exámenes Superados', value: user.exams, icon: FileCheck2, color: 'text-green-400' },
+    { title: 'Actividades Realizadas', value: user.activities, icon: ListChecks, color: 'text-purple-400' },
+  ];
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
@@ -162,7 +167,7 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
             </RankingDialog>
-            {achievements.filter(a => a.title !== 'Trofeos Ganados').map(card => (
+            {achievements.map(card => (
                 <AchievementCard key={card.title} {...card} />
             ))}
         </div>
