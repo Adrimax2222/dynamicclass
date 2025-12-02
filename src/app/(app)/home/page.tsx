@@ -21,7 +21,7 @@ import {
 import { fullSchedule } from "@/lib/data";
 import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy, BookX, Loader2 } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, ListChecks, LifeBuoy, BookX, Loader2, CalendarIcon } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
@@ -34,7 +34,8 @@ import { useFirestore } from "@/firebase";
 import { FullScheduleView } from "@/components/layout/full-schedule-view";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
 import CompleteProfileModal from "@/components/layout/complete-profile-modal";
-import { getWeek, addWeeks, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
+import { startOfWeek, endOfWeek, addWeeks, isWithinInterval, format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Actividades";
 const SCHOOL_ICAL_URL = "https://calendar.google.com/calendar/ical/iestorredelpalau.cat_9vm0113gitbs90a9l7p4c3olh4%40group.calendar.google.com/public/basic.ics";
@@ -44,6 +45,12 @@ interface ParsedEvent extends CalendarEvent {
     date: Date;
 }
 
+const keywords = {
+    exam: ['examen', 'exam', 'prueba', 'control'],
+    task: ['tarea', 'ejercicios', 'deberes', 'lliurament'],
+    activity: ['actividad', 'proyecto', 'presentación', 'sortida', 'exposició']
+};
+
 export default function HomePage() {
   const { user, updateUser } = useApp();
   const firestore = useFirestore();
@@ -52,17 +59,33 @@ export default function HomePage() {
   const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
   const [upcomingClassesDay, setUpcomingClassesDay] = useState<string>("Próximas Clases");
   
-  // State for educational variables
-  const [educationalVariables, setEducationalVariables] = useState({
-    tasks: 0,
-    exams: 0,
-    pending: 0,
-    activities: 0,
-  });
+  const [allEvents, setAllEvents] = useState<ParsedEvent[]>([]);
   const [isLoadingVariables, setIsLoadingVariables] = useState(true);
 
-
   const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
+    
+  const getCategorizedEvents = (category: Category): ParsedEvent[] => {
+      let eventKeywords: string[] = [];
+      if (category === 'Tareas') eventKeywords = keywords.task;
+      else if (category === 'Exámenes') eventKeywords = keywords.exam;
+      else if (category === 'Actividades') eventKeywords = keywords.activity;
+      else if (category === 'Pendientes') eventKeywords = [...keywords.task, ...keywords.exam];
+      
+      const now = new Date();
+      const startOfThisWeek = startOfWeek(now, { weekStartsOn: 1 });
+      const endOfNextWeek = endOfWeek(addWeeks(now, 1), { weekStartsOn: 1 });
+
+      return allEvents
+        .filter(event => {
+            const title = event.title.toLowerCase();
+            return eventKeywords.some(kw => title.includes(kw)) && isWithinInterval(event.date, { start: startOfThisWeek, end: endOfNextWeek });
+        })
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+  };
+
+  const getCategoryCount = (category: Category): number => {
+    return getCategorizedEvents(category).length;
+  }
 
   // Moved parser and fetch logic inside useEffect or as standalone functions within the component
     const parseIcal = (icalData: string): ParsedEvent[] => {
@@ -112,44 +135,6 @@ export default function HomePage() {
         return events;
     };
 
-    const calculateEducationalVariables = (events: ParsedEvent[]) => {
-        const now = new Date();
-        const startOfThisWeek = startOfWeek(now, { weekStartsOn: 1 });
-        const endOfNextWeek = endOfWeek(addWeeks(now, 1), { weekStartsOn: 1 });
-
-        let tasks = 0;
-        let exams = 0;
-        let activities = 0;
-
-        const keywords = {
-            exam: ['examen', 'exam', 'prueba', 'control'],
-            task: ['tarea', 'ejercicios', 'deberes', 'lliurament'],
-            activity: ['actividad', 'proyecto', 'presentación', 'sortida', 'exposició']
-        };
-
-        for (const event of events) {
-             if (isWithinInterval(event.date, { start: startOfThisWeek, end: endOfNextWeek })) {
-                const title = event.title.toLowerCase();
-
-                if (keywords.exam.some(kw => title.includes(kw))) {
-                    exams++;
-                } else if (keywords.task.some(kw => title.includes(kw))) {
-                    tasks++;
-                } else if (keywords.activity.some(kw => title.includes(kw))) {
-                    activities++;
-                }
-            }
-        }
-        
-        setEducationalVariables({
-            tasks: tasks,
-            exams: exams,
-            pending: tasks + exams,
-            activities: activities,
-        });
-        setIsLoadingVariables(false);
-    };
-
   useEffect(() => {
     // Only show the modal if the user is new and the state is not already open
     if (user?.isNewUser && !isModalOpen) {
@@ -172,10 +157,11 @@ export default function HomePage() {
             }
             const icalData = await response.text();
             const parsedEvents = parseIcal(icalData);
-            calculateEducationalVariables(parsedEvents);
+            setAllEvents(parsedEvents);
         } catch (error) {
             console.error("Error fetching or processing calendar for variables:", error);
-            setEducationalVariables({ tasks: 0, exams: 0, pending: 0, activities: 0 });
+            setAllEvents([]);
+        } finally {
             setIsLoadingVariables(false);
         }
     };
@@ -296,10 +282,10 @@ export default function HomePage() {
   const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 
   const summaryCards: SummaryCardData[] = [
-    { title: 'Tareas', value: educationalVariables.tasks, icon: NotebookText, color: 'text-blue-500' },
-    { title: 'Exámenes', value: educationalVariables.exams, icon: FileCheck2, color: 'text-red-500' },
-    { title: 'Pendientes', value: educationalVariables.pending, icon: Clock, color: 'text-yellow-500' },
-    { title: 'Actividades', value: educationalVariables.activities, icon: ListChecks, color: 'text-green-500' },
+    { title: 'Tareas', value: getCategoryCount('Tareas'), icon: NotebookText, color: 'text-blue-500' },
+    { title: 'Exámenes', value: getCategoryCount('Exámenes'), icon: FileCheck2, color: 'text-red-500' },
+    { title: 'Pendientes', value: getCategoryCount('Pendientes'), icon: Clock, color: 'text-yellow-500' },
+    { title: 'Actividades', value: getCategoryCount('Actividades'), icon: ListChecks, color: 'text-green-500' },
   ];
 
   // Determine if profile is incomplete (for Google sign-up case)
@@ -354,7 +340,12 @@ export default function HomePage() {
 
       <div className="mb-10 grid grid-cols-2 gap-4">
         {summaryCards.map((card) => (
-          <DetailsDialog key={card.title} title={card.title}>
+          <DetailsDialog 
+            key={card.title} 
+            title={card.title}
+            events={getCategorizedEvents(card.title as Category)}
+            isLoading={isLoadingVariables}
+          >
             <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
@@ -453,23 +444,46 @@ export default function HomePage() {
   );
 }
 
-function DetailsDialog({ title, children }: { title: string, children: React.ReactNode }) {
+function DetailsDialog({ title, children, events, isLoading }: { title: string, children: React.ReactNode, events: ParsedEvent[], isLoading: boolean }) {
     return (
         <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-md w-[95vw]">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>
-                        Aquí verás el listado de tus {title.toLowerCase()}.
+                        Listado de tus {title.toLowerCase()} para las próximas 2 semanas.
                     </DialogDescription>
                 </DialogHeader>
-                 <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg my-4">
-                    <Logo className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <p className="font-semibold">Próximamente</p>
-                    <p className="text-sm text-muted-foreground">
-                       Esta sección está en construcción.
-                    </p>
+                <div className="my-4 max-h-[50vh] overflow-y-auto pr-4">
+                 {isLoading ? (
+                    <div className="flex items-center justify-center p-8">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                    </div>
+                 ) : events.length > 0 ? (
+                    <div className="space-y-3">
+                        {events.map(event => (
+                            <div key={event.id} className="flex items-start gap-3">
+                                <div className="flex flex-col items-center justify-center bg-muted p-2 rounded-md h-12 w-12">
+                                    <span className="text-xs font-bold uppercase text-red-500">{format(event.date, 'MMM', { locale: es })}</span>
+                                    <span className="text-lg font-bold">{format(event.date, 'dd')}</span>
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold">{event.title}</p>
+                                    <p className="text-sm text-muted-foreground">{format(event.date, "EEEE, d 'de' MMMM", { locale: es })}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                 ) : (
+                    <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
+                        <CalendarIcon className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                        <p className="font-semibold">¡Todo despejado!</p>
+                        <p className="text-sm text-muted-foreground">
+                           No tienes {title.toLowerCase()} en las próximas dos semanas.
+                        </p>
+                    </div>
+                 )}
                 </div>
             </DialogContent>
         </Dialog>
@@ -510,9 +524,5 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
-
-    
-
-    
 
     
