@@ -69,6 +69,7 @@ export default function HomePage() {
       if (category === 'Tareas') eventKeywords = keywords.task;
       else if (category === 'Exámenes') eventKeywords = keywords.exam;
       else if (category === 'Actividades') eventKeywords = keywords.activity;
+      // For 'Pendientes', we combine tasks and exams
       else if (category === 'Pendientes') eventKeywords = [...keywords.task, ...keywords.exam];
       
       const now = new Date();
@@ -524,5 +525,7 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
+    
 
     
