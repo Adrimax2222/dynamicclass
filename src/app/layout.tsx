@@ -9,7 +9,7 @@ const logoSvgDataUri = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/
 
 export const metadata: Metadata = {
   title: 'Dynamic Class',
-  description: '¡Revoluciona tu vida académica con Dynamic Class! Tu asistente educativo todo en uno: organiza tu horario, gestiona calendarios, toma apuntes y obtén ayuda instantánea con nuestro chatbot de IA. ¡Descarga y transforma tu manera de aprender!',
+  description: '¡Revoluciona tu vida académica con Dynamic Class! ¿Cansado de hacer malabares con horarios, fechas de exámenes y apuntes desordenados? Dynamic Class es tu asistente educativo personal todo en uno. Organiza tu horario de clases y sincroniza tu calendario personal con el del instituto. Toma apuntes al instante. Recibe anuncios importantes y mantente siempre informado. ¿Atascado con una duda? Nuestro potente chatbot de IA, "ADRIMAX", está disponible 24/7 para ayudarte a entender cualquier concepto. Además, gana trofeos, sube en el ranking de tu centro y mantén la motivación al máximo. Con una interfaz moderna, segura y personalizable, Dynamic Class es la herramienta definitiva para el estudiante de hoy. ¡Descarga y transforma tu manera de aprender!',
   icons: {
     icon: logoSvgDataUri,
   },
