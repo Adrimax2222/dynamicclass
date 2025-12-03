@@ -330,7 +330,6 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
     const [isEditingSubjectName, setIsEditingSubjectName] = useState(false);
     const [newSubjectName, setNewSubjectName] = useState('');
 
-    const [result, setResult] = useState<ResultState | null>(null);
     
     // Load from localStorage on mount
     useEffect(() => {
@@ -355,8 +354,6 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
             if (allSubjects.length > 0) {
                 const firstSubject = allSubjects[0];
                 setActiveSubject(firstSubject);
-                // Load result for the first subject if it exists
-                setResult(parsedConfigs[firstSubject]?.result || null);
             }
 
         } catch (error) {
@@ -394,10 +391,8 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
             const newConfig = { grades: [{id: 1, title: "", grade: "", weight: ""}], desiredGrade: "5", result: null };
             setAllConfigs(prev => ({ ...prev, [defaultNewName]: newConfig }));
             setActiveSubject(defaultNewName);
-            setResult(null); // Reset result for new subject
         } else {
             setActiveSubject(subjectName);
-            setResult(allConfigs[subjectName]?.result || null); // Load result for selected subject
         }
     };
     
@@ -438,7 +433,6 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
 
         if (isNaN(desired) || desired < 0 || desired > 10) {
             newResult = { status: 'error', title: "Error de Formato", description: "La nota final deseada debe ser un número entre 0 y 10." };
-            setResult(newResult);
             updateActiveConfig({ result: newResult });
             return;
         }
@@ -451,7 +445,6 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
             const weight = parseFloat(g.weight);
              if (isNaN(weight) || g.weight.trim() === '') {
                 newResult = { status: 'error', title: "Error en Porcentaje", description: `Hay un porcentaje vacío o no válido. Todos los campos de porcentaje deben estar rellenos.` };
-                setResult(newResult);
                 updateActiveConfig({ result: newResult });
                 return;
             }
@@ -463,7 +456,6 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
                 const grade = parseFloat(g.grade);
                 if (isNaN(grade) || grade < 0 || grade > 10) {
                      newResult = { status: 'error', title: "Error en Nota", description: `La nota '${g.grade}' no es válida. Deben ser números entre 0 y 10.` };
-                     setResult(newResult);
                      updateActiveConfig({ result: newResult });
                      return;
                 }
@@ -473,7 +465,6 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
         
         if (Math.abs(totalWeight - 100) > 0.01) {
             newResult = { status: 'error', title: "Error en la Suma", description: `La suma de los porcentajes debe ser 100%, pero es ${totalWeight.toFixed(2)}%.` };
-            setResult(newResult);
             updateActiveConfig({ result: newResult });
             return;
         }
@@ -525,14 +516,13 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
                 description: "Para calcular, deja solo un campo de nota en blanco. Para ver tu media actual, rellena todas las notas." 
             };
         }
-        setResult(newResult);
         updateActiveConfig({ result: newResult });
     };
 
     return (
         <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="max-w-md w-[95vw]">
+            <DialogContent className="max-w-md w-[95vw] flex flex-col max-h-[85vh]">
                 <DialogHeader>
                     <DialogTitle>Calculadora de Notas Ponderada</DialogTitle>
                     <DialogDescription>
@@ -540,125 +530,126 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4">
-                    <Label>Asignatura</Label>
-                    <div className="flex items-center gap-2">
-                        <Select onValueChange={handleSubjectChange} value={activeSubject}>
-                            <SelectTrigger>
-                                <div className="flex items-center gap-2">
-                                    <BookCopy className="h-4 w-4" />
-                                    <SelectValue placeholder="Selecciona una asignatura..." />
-                                </div>
-                            </SelectTrigger>
-                            <SelectContent>
-                                {subjects.map(subject => (
-                                    <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                                ))}
-                                <Separator className="my-1" />
-                                <SelectItem value="new-subject">
-                                    <span className="flex items-center gap-2 text-primary">
-                                        <Plus className="h-4 w-4"/>Crear nueva
-                                    </span>
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon" disabled={!activeSubject}><Pencil className="h-4 w-4" /></Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Renombrar Asignatura</DialogTitle>
-                                </DialogHeader>
-                                <Input 
-                                    defaultValue={activeSubject}
-                                    onChange={(e) => setNewSubjectName(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleRenameSubject()}
-                                />
-                                <DialogFooter>
-                                    <DialogClose asChild>
-                                        <Button variant="outline">Cancelar</Button>
-                                    </DialogClose>
-                                    <DialogClose asChild>
-                                        <Button onClick={handleRenameSubject}>Guardar</Button>
-                                    </DialogClose>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
-                </div>
-                
-                <ScrollArea className="py-4 max-h-[35vh] pr-4 -mr-4">
+                <div className="flex-1 overflow-hidden flex flex-col gap-4">
                     <div className="space-y-4">
-                        {activeConfig.grades.map((g, index) => (
-                            <div key={g.id} className="p-3 border rounded-lg space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <Input
-                                        id={`title-${g.id}`}
-                                        type="text"
-                                        placeholder={`Examen / Tarea ${index + 1}`}
-                                        value={g.title}
-                                        onChange={e => handleGradeChange(g.id, 'title', e.target.value)}
-                                        className="text-sm font-semibold border-0 bg-transparent px-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
+                        <Label>Asignatura</Label>
+                        <div className="flex items-center gap-2">
+                            <Select onValueChange={handleSubjectChange} value={activeSubject}>
+                                <SelectTrigger>
+                                    <div className="flex items-center gap-2">
+                                        <BookCopy className="h-4 w-4" />
+                                        <SelectValue placeholder="Selecciona una asignatura..." />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {subjects.map(subject => (
+                                        <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                                    ))}
+                                    <Separator className="my-1" />
+                                    <SelectItem value="new-subject">
+                                        <span className="flex items-center gap-2 text-primary">
+                                            <Plus className="h-4 w-4"/>Crear nueva
+                                        </span>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" disabled={!activeSubject}><Pencil className="h-4 w-4" /></Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Renombrar Asignatura</DialogTitle>
+                                    </DialogHeader>
+                                    <Input 
+                                        defaultValue={activeSubject}
+                                        onChange={(e) => setNewSubjectName(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleRenameSubject()}
                                     />
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => removeGrade(g.id)}
-                                        disabled={activeConfig.grades.length === 1}
-                                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <div className="flex-1 space-y-1">
-                                        <Label htmlFor={`grade-${g.id}`} className="text-xs">Nota</Label>
-                                        <Input
-                                            id={`grade-${g.id}`}
-                                            type="number"
-                                            placeholder="0-10"
-                                            value={g.grade}
-                                            onChange={e => handleGradeChange(g.id, 'grade', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="w-24 space-y-1">
-                                        <Label htmlFor={`weight-${g.id}`} className="text-xs">Peso %</Label>
-                                        <Input
-                                            id={`weight-${g.id}`}
-                                            type="number"
-                                            placeholder="%"
-                                            value={g.weight}
-                                            onChange={e => handleGradeChange(g.id, 'weight', e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        <Button variant="outline" onClick={addGrade} className="w-full border-dashed" disabled={!activeSubject}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Añadir evaluación
-                        </Button>
+                                    <DialogFooter>
+                                        <DialogClose asChild>
+                                            <Button variant="outline">Cancelar</Button>
+                                        </DialogClose>
+                                        <DialogClose asChild>
+                                            <Button onClick={handleRenameSubject}>Guardar</Button>
+                                        </DialogClose>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
                     </div>
-                </ScrollArea>
                 
-                <div className="space-y-2 pt-2">
-                    <Label htmlFor="desired-grade">Nota Final Deseada</Label>
-                    <div className="relative">
-                        <Flag className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input
-                            id="desired-grade"
-                            type="number"
-                            value={activeConfig.desiredGrade}
-                            onChange={e => updateActiveConfig({ ...activeConfig, desiredGrade: e.target.value })}
-                            className="pl-10 font-bold text-base bg-muted"
-                            disabled={!activeSubject}
-                        />
+                    <ScrollArea className="flex-1 -mr-6 -ml-1 pr-7 pl-1">
+                        <div className="space-y-4">
+                            {activeConfig.grades.map((g, index) => (
+                                <div key={g.id} className="p-3 border rounded-lg space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            id={`title-${g.id}`}
+                                            type="text"
+                                            placeholder={`Examen / Tarea ${index + 1}`}
+                                            value={g.title}
+                                            onChange={e => handleGradeChange(g.id, 'title', e.target.value)}
+                                            className="text-sm font-semibold border-0 bg-transparent px-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
+                                        />
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => removeGrade(g.id)}
+                                            disabled={activeConfig.grades.length === 1}
+                                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 space-y-1">
+                                            <Label htmlFor={`grade-${g.id}`} className="text-xs">Nota</Label>
+                                            <Input
+                                                id={`grade-${g.id}`}
+                                                type="number"
+                                                placeholder="0-10"
+                                                value={g.grade}
+                                                onChange={e => handleGradeChange(g.id, 'grade', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="w-24 space-y-1">
+                                            <Label htmlFor={`weight-${g.id}`} className="text-xs">Peso %</Label>
+                                            <Input
+                                                id={`weight-${g.id}`}
+                                                type="number"
+                                                placeholder="%"
+                                                value={g.weight}
+                                                onChange={e => handleGradeChange(g.id, 'weight', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            <Button variant="outline" onClick={addGrade} className="w-full border-dashed" disabled={!activeSubject}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Añadir evaluación
+                            </Button>
+                             {activeConfig.result && <ResultPanel result={activeConfig.result} />}
+                        </div>
+                    </ScrollArea>
+                
+                    <div className="space-y-2 pt-2">
+                        <Label htmlFor="desired-grade">Nota Final Deseada</Label>
+                        <div className="relative">
+                            <Flag className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input
+                                id="desired-grade"
+                                type="number"
+                                value={activeConfig.desiredGrade}
+                                onChange={e => updateActiveConfig({ ...activeConfig, desiredGrade: e.target.value })}
+                                className="pl-10 font-bold text-base bg-muted"
+                                disabled={!activeSubject}
+                            />
+                        </div>
                     </div>
                 </div>
-
-                {result && <ResultPanel result={result} />}
                 
                 <DialogFooter className="pt-4">
                     <DialogClose asChild>
@@ -696,5 +687,3 @@ function ResultPanel({ result }: { result: ResultState }) {
         </div>
     );
 }
-
-    
