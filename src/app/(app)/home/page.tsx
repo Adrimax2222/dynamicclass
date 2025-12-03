@@ -34,7 +34,7 @@ import {
 import { fullSchedule } from "@/lib/data";
 import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent, Announcement } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, Infinity, BrainCircuit } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
@@ -493,41 +493,16 @@ export default function HomePage() {
       </div>
 
        <section className="mb-10">
-        <Dialog>
-            <DialogTrigger asChild>
-                <div className="relative rounded-lg p-6 bg-gradient-to-br from-primary to-accent text-primary-foreground cursor-pointer transition-transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
-                     <div className="absolute top-4 right-4 bg-white/20 text-white text-xs font-bold py-1 px-2 rounded-full">
-                        BETA
-                    </div>
-                    <BrainCircuit className="h-8 w-8 mb-3" />
-                    <h3 className="text-xl font-bold font-headline">Modo Estudio</h3>
-                    <p className="opacity-80 text-sm">Concéntrate, organiza y gana recompensas.</p>
-                </div>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader className="items-center text-center">
-                    <Logo className="h-16 w-16 text-primary mb-2" />
-                    <DialogTitle className="text-2xl font-headline">Modo Estudio: ¡Próximamente!</DialogTitle>
-                    <DialogDescription>
-                        Esta función se encuentra en desarrollo activo.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-4 text-sm text-center text-muted-foreground space-y-2">
-                    <p>Prepárate para una nueva forma de estudiar. El <span className="font-bold text-foreground">Modo Estudio</span> te ayudará a concentrarte con herramientas como:</p>
-                    <ul className="list-disc list-inside text-left px-4 font-medium text-foreground/90">
-                        <li>Temporizador Pomodoro integrado</li>
-                        <li>Sistema de recompensas y logros</li>
-                        <li>Estadísticas de tus sesiones de estudio</li>
-                    </ul>
-                     <p className="pt-2">¡Agradecemos tu paciencia mientras preparamos esta increíble función para ti!</p>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button className="w-full">Entendido</Button>
-                    </DialogClose>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <Link href="/study" className="block">
+          <div className="relative rounded-lg p-6 bg-gradient-to-br from-primary to-accent text-primary-foreground cursor-pointer transition-transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
+                <div className="absolute top-4 right-4 bg-white/20 text-white text-xs font-bold py-1 px-2 rounded-full">
+                  BETA
+              </div>
+              <BrainCircuit className="h-8 w-8 mb-3" />
+              <h3 className="text-xl font-bold font-headline">Modo Estudio</h3>
+              <p className="opacity-80 text-sm">Concéntrate, organiza y gana recompensas.</p>
+          </div>
+        </Link>
       </section>
 
       <section className="mb-10">
