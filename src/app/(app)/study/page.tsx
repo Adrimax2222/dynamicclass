@@ -414,17 +414,17 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
 
     const addGrade = () => {
         const newGrades = [...activeConfig.grades, { id: Date.now(), title: "", grade: "", weight: "" }];
-        updateActiveConfig({ grades: newGrades });
+        updateActiveConfig({ grades: newGrades, result: null });
     };
 
     const removeGrade = (id: number) => {
         const newGrades = activeConfig.grades.filter(g => g.id !== id);
-        updateActiveConfig({ grades: newGrades });
+        updateActiveConfig({ grades: newGrades, result: null });
     };
 
     const handleGradeChange = (id: number, field: keyof Grade, value: string) => {
         const newGrades = activeConfig.grades.map(g => g.id === id ? { ...g, [field]: value } : g);
-        updateActiveConfig({ grades: newGrades });
+        updateActiveConfig({ grades: newGrades, result: null });
     };
 
     const calculateGrade = () => {
@@ -475,16 +475,16 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
 
             let status: ResultStatus = 'info';
             let title = 'Nota Necesaria';
-            let description = `Para obtener un ${desired}, necesitas sacar un ${neededGrade.toFixed(2)}.`;
+            let description = `Para un ${desired}, necesitas un ${neededGrade.toFixed(2)}.`;
             
             if (neededGrade > 10) {
                 status = 'danger';
                 title = '¡Objetivo Difícil!';
-                description = `Necesitas un ${neededGrade.toFixed(2)}. ¡Es un reto, pero no imposible!`;
+                description = `¡Un ${neededGrade.toFixed(2)}! Es un reto, pero no imposible.`;
             } else if (neededGrade < 0) {
                  status = 'success';
                  title = '¡Ya Aprobaste!';
-                 description = `¡Felicidades! Ya has alcanzado tu nota deseada, incluso con un 0.`;
+                 description = `¡Felicidades! Ya tienes tu nota, incluso con un 0.`;
             } else {
                 if (neededGrade < 5) status = 'success';
                 if (neededGrade >= 5 && neededGrade < 7) status = 'warning';
@@ -496,7 +496,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
             const currentAverage = weightedSum / 100;
             let status: ResultStatus = 'info';
             let title = 'Tu Media Actual';
-            let description = `Con las notas introducidas, tu media ponderada es de un ${currentAverage.toFixed(2)}.`;
+            let description = `Tu media ponderada actual es un ${currentAverage.toFixed(2)}.`;
 
             if (currentAverage >= 7) status = 'success';
             if (currentAverage >= 5 && currentAverage < 7) status = 'warning';
@@ -513,7 +513,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
              newResult = { 
                 status: 'error', 
                 title: 'Error de Cálculo', 
-                description: "Para calcular, deja solo un campo de nota en blanco. Para ver tu media actual, rellena todas las notas." 
+                description: "Deja solo un campo de nota en blanco para calcular, o rellena todos para ver tu media." 
             };
         }
         updateActiveConfig({ result: newResult });
@@ -643,7 +643,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
                                 id="desired-grade"
                                 type="number"
                                 value={activeConfig.desiredGrade}
-                                onChange={e => updateActiveConfig({ ...activeConfig, desiredGrade: e.target.value })}
+                                onChange={e => updateActiveConfig({ ...activeConfig, desiredGrade: e.target.value, result: null })}
                                 className="pl-10 font-bold text-base bg-muted"
                                 disabled={!activeSubject}
                             />
@@ -675,15 +675,18 @@ function ResultPanel({ result }: { result: ResultState }) {
     const Icon = config.icon;
     
     return (
-        <div className={cn("p-4 mt-4 rounded-lg border flex flex-col items-center text-center space-y-2", config.bg, config.border)}>
-            <Icon className={cn("h-8 w-8 mb-1", config.color)} />
-            <h3 className="text-base font-bold">{result.title}</h3>
-            {result.grade !== undefined && (
-                <p className={cn("text-5xl font-bold font-mono tracking-tighter", config.color)}>
-                    {result.grade < 0 ? '0.00' : result.grade.toFixed(2)}
-                </p>
-            )}
-            <p className="text-xs text-muted-foreground max-w-xs">{result.description}</p>
+        <div className={cn("p-4 mt-4 rounded-lg border", config.bg, config.border)}>
+            <div className="flex items-center gap-3">
+                 <Icon className={cn("h-6 w-6", config.color)} />
+                 <h3 className="text-base font-bold flex-1">{result.title}</h3>
+                 {result.grade !== undefined && (
+                    <p className={cn("text-3xl font-bold font-mono tracking-tighter", config.color)}>
+                        {result.grade < 0 ? '0.00' : result.grade.toFixed(2)}
+                    </p>
+                )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 pl-9">{result.description}</p>
         </div>
     );
 }
+
