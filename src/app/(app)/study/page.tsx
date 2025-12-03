@@ -527,6 +527,17 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
         }
         updateActiveConfig({ result: newResult });
     };
+    
+    const statusColors = {
+        success: "bg-green-500/80",
+        warning: "bg-yellow-500/80",
+        danger: "bg-red-500/80",
+        info: "bg-blue-500/80",
+        error: "bg-red-500/80",
+    };
+
+    const latestGrade = activeConfig.result?.grade;
+    const latestStatus = activeConfig.result?.status;
 
     return (
         <Dialog>
@@ -575,6 +586,11 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
                                               </SelectItem>
                                           </SelectContent>
                                       </Select>
+                                       {latestGrade !== undefined && latestStatus && (
+                                            <Badge className={cn("text-base", statusColors[latestStatus])}>
+                                                {latestGrade.toFixed(1)}
+                                            </Badge>
+                                        )}
                                       <Dialog>
                                           <DialogTrigger asChild>
                                               <Button variant="ghost" size="icon" disabled={!activeSubject}><Pencil className="h-4 w-4" /></Button>
@@ -830,3 +846,5 @@ function ReportTab({ allConfigs, user }: { allConfigs: AllSubjectConfigs, user: 
         </ScrollArea>
     );
 }
+
+    
