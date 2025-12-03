@@ -532,7 +532,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
         <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col max-h-[85vh]">
-                <Tabs defaultValue="calculator">
+                <Tabs defaultValue="calculator" className="flex flex-col flex-1 min-h-0">
                     <DialogHeader className="p-6 pb-0">
                         <DialogTitle>Herramientas de Notas</DialogTitle>
                         <DialogDescription>
@@ -550,7 +550,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
                         </TabsList>
                     </DialogHeader>
 
-                    <TabsContent value="calculator" className="mt-0">
+                    <TabsContent value="calculator" className="mt-0 flex-1 flex flex-col min-h-0">
                         <ScrollArea className="flex-1">
                           <div className="px-6 space-y-6 py-4">
                               <div className="space-y-2">
@@ -655,7 +655,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
                                   Añadir evaluación
                               </Button>
 
-                              <div className="space-y-2">
+                                <div className="space-y-2">
                                   <Label htmlFor="desired-grade">Nota Final Deseada</Label>
                                   <div className="relative">
                                       <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -679,7 +679,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
                             <Button onClick={calculateGrade} disabled={!activeSubject}>Calcular</Button>
                         </DialogFooter>
                     </TabsContent>
-                    <TabsContent value="report" className="mt-0">
+                    <TabsContent value="report" className="mt-0 flex-1 flex flex-col min-h-0">
                        <ReportTab allConfigs={allConfigs} user={user} />
                         <DialogFooter className="p-6 pt-4 border-t">
                              <DialogClose asChild>
@@ -729,16 +729,26 @@ function ReportTab({ allConfigs, user }: { allConfigs: AllSubjectConfigs, user: 
     const calculatedSubjects = useMemo(() => {
         return Object.entries(allConfigs)
             .map(([subject, config]) => {
-                if (config.result?.status !== 'error' && config.result?.grade !== undefined) {
-                    return {
+                const filledGrades = config.grades.filter(g => g.grade.trim() !== '' && g.weight.trim() !== '');
+                if (filledGrades.length > 0) {
+                    const weightedSum = filledGrades.reduce((acc, g) => acc + (parseFloat(g.grade.replace(',', '.')) * parseFloat(g.weight.replace(',', '.'))), 0);
+                    const totalWeight = filledGrades.reduce((acc, g) => acc + parseFloat(g.weight.replace(',', '.')), 0);
+                    if (totalWeight > 0) {
+                        const average = weightedSum / totalWeight;
+                         return {
+                            subject,
+                            grade: average,
+                        };
+                    }
+                } else if (config.result?.status !== 'error' && config.result?.grade !== undefined) {
+                     return {
                         subject,
                         grade: config.result.grade,
-                        status: config.result.status
                     };
                 }
                 return null;
             })
-            .filter((item): item is { subject: string; grade: number; status: ResultStatus } => item !== null);
+            .filter((item): item is { subject: string; grade: number } => item !== null);
     }, [allConfigs]);
 
     const overallAverage = useMemo(() => {
@@ -797,7 +807,7 @@ function ReportTab({ allConfigs, user }: { allConfigs: AllSubjectConfigs, user: 
                     <h4 className="mb-2 font-semibold text-sm text-muted-foreground">DESGLOSE POR ASIGNATURAS</h4>
                     {calculatedSubjects.length > 0 ? (
                         <div className="space-y-2">
-                            {calculatedSubjects.map(({ subject, grade, status }) => {
+                            {calculatedSubjects.map(({ subject, grade }) => {
                                 const subjectStatus = getOverallStatus(grade);
                                 const SubjectIcon = statusConfig[subjectStatus].icon;
                                 return (
@@ -820,7 +830,3 @@ function ReportTab({ allConfigs, user }: { allConfigs: AllSubjectConfigs, user: 
         </ScrollArea>
     );
 }
-
-    
-
-    
