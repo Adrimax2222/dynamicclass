@@ -330,7 +330,6 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
     const [newSubjectName, setNewSubjectName] = useState('');
 
     const [result, setResult] = useState<ResultState | null>(null);
-    const [isAlertOpen, setIsAlertOpen] = useState(false);
     
     // Load from localStorage on mount
     useEffect(() => {
@@ -369,6 +368,12 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
             console.error("Failed to save grade configurations to localStorage", error);
         }
     }, [allConfigs]);
+    
+    // Reset result when active subject changes
+    useEffect(() => {
+        setResult(null);
+    }, [activeSubject]);
+
 
     const activeConfig = useMemo(() => {
         return allConfigs[activeSubject] || { grades: [{ id: 1, title: "", grade: "", weight: "" }], desiredGrade: "5" };
@@ -428,7 +433,6 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
         const desired = parseFloat(activeConfig.desiredGrade);
         if (isNaN(desired) || desired < 0 || desired > 10) {
             setResult({ status: 'error', title: "Error de Formato", description: "La nota final deseada debe ser un número entre 0 y 10." });
-            setIsAlertOpen(true);
             return;
         }
 
@@ -440,7 +444,6 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
             const weight = parseFloat(g.weight);
              if (isNaN(weight) || g.weight.trim() === '') {
                 setResult({ status: 'error', title: "Error en Porcentaje", description: `Hay un porcentaje vacío o no válido. Todos los campos de porcentaje deben estar rellenos.` });
-                setIsAlertOpen(true);
                 return;
             }
             totalWeight += weight;
@@ -451,7 +454,6 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
                 const grade = parseFloat(g.grade);
                 if (isNaN(grade) || grade < 0 || grade > 10) {
                      setResult({ status: 'error', title: "Error en Nota", description: `La nota '${g.grade}' no es válida. Deben ser números entre 0 y 10.` });
-                     setIsAlertOpen(true);
                      return;
                 }
                 weightedSum += (grade * weight);
@@ -460,7 +462,6 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
         
         if (Math.abs(totalWeight - 100) > 0.01) {
             setResult({ status: 'error', title: "Error en la Suma", description: `La suma de los porcentajes debe ser 100%, pero es ${totalWeight.toFixed(2)}%.` });
-            setIsAlertOpen(true);
             return;
         }
 
@@ -468,33 +469,24 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
             const unknownWeight = parseFloat(unknownGrades[0].weight);
             const neededGrade = (desired * 100 - weightedSum) / unknownWeight;
 
+            let status: ResultStatus = 'info';
+            let title = 'Nota Necesaria';
+            let description = `Para obtener un ${desired}, necesitas sacar un ${neededGrade.toFixed(2)}.`;
+            
             if (neededGrade > 10) {
-                setResult({ 
-                    status: 'danger',
-                    title: '¡Objetivo Difícil!', 
-                    description: `Para alcanzar un ${desired}, necesitas un esfuerzo extra. ¡Ánimo!`,
-                    grade: neededGrade
-                });
+                status = 'danger';
+                title = '¡Objetivo Difícil!';
+                description = `Necesitas un ${neededGrade.toFixed(2)}. ¡Es un reto, pero no imposible!`;
             } else if (neededGrade < 0) {
-                 setResult({ 
-                    status: 'success',
-                    title: '¡Ya Aprobaste!',
-                    description: `Felicidades, ya has alcanzado tu nota deseada, incluso con un 0.`,
-                    grade: neededGrade
-                 });
+                 status = 'success';
+                 title = '¡Ya Aprobaste!';
+                 description = `¡Felicidades! Ya has alcanzado tu nota deseada, incluso con un 0.`;
             } else {
-                let status: ResultStatus = 'info';
                 if (neededGrade < 5) status = 'success';
                 if (neededGrade >= 5 && neededGrade < 7) status = 'warning';
                 if (neededGrade >= 7) status = 'danger';
-
-                 setResult({ 
-                    status,
-                    title: 'Nota Necesaria', 
-                    description: `Para obtener un ${desired}, necesitas sacar un ${neededGrade.toFixed(2)}.`,
-                    grade: neededGrade
-                });
             }
+             setResult({ status, title, description, grade: neededGrade });
         } 
         else if (unknownGrades.length === 0) {
             const currentAverage = weightedSum / 100;
@@ -517,237 +509,174 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
                 description: "Para calcular, deja solo un campo de nota en blanco. Para ver tu media actual, rellena todas las notas." 
             });
         }
-        setIsAlertOpen(true);
     };
 
     return (
-        <>
-            <Dialog>
-                <DialogTrigger asChild>{children}</DialogTrigger>
-                <DialogContent className="max-w-md w-[95vw]">
-                    <DialogHeader>
-                        <DialogTitle>Calculadora de Notas Ponderada</DialogTitle>
-                        <DialogDescription>
-                            Organiza tus notas por asignatura y guarda tus configuraciones.
-                        </DialogDescription>
-                    </DialogHeader>
+        <Dialog>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogContent className="max-w-md w-[95vw]">
+                <DialogHeader>
+                    <DialogTitle>Calculadora de Notas Ponderada</DialogTitle>
+                    <DialogDescription>
+                        Organiza tus notas por asignatura y guarda tus configuraciones.
+                    </DialogDescription>
+                </DialogHeader>
 
-                     <div className="space-y-4">
-                        <Label>Asignatura</Label>
-                         <div className="flex items-center gap-2">
-                             <Select onValueChange={handleSubjectChange} value={activeSubject}>
-                                 <SelectTrigger>
-                                     <div className="flex items-center gap-2">
-                                         <BookCopy className="h-4 w-4" />
-                                         <SelectValue placeholder="Selecciona una asignatura..." />
-                                     </div>
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                     {subjects.map(subject => (
-                                         <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                                     ))}
-                                     <Separator className="my-1" />
-                                     <SelectItem value="new-subject">
-                                        <span className="flex items-center gap-2 text-primary">
-                                            <Plus className="h-4 w-4"/>Crear nueva
-                                        </span>
-                                     </SelectItem>
-                                 </SelectContent>
-                             </Select>
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" disabled={!activeSubject}><Pencil className="h-4 w-4" /></Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Renombrar Asignatura</DialogTitle>
-                                    </DialogHeader>
-                                    <Input 
-                                        defaultValue={activeSubject}
-                                        onChange={(e) => setNewSubjectName(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleRenameSubject()}
-                                    />
-                                    <DialogFooter>
-                                        <DialogClose asChild>
-                                            <Button variant="outline">Cancelar</Button>
-                                        </DialogClose>
-                                        <DialogClose asChild>
-                                            <Button onClick={handleRenameSubject}>Guardar</Button>
-                                        </DialogClose>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                         </div>
+                <div className="space-y-4">
+                    <Label>Asignatura</Label>
+                    <div className="flex items-center gap-2">
+                        <Select onValueChange={handleSubjectChange} value={activeSubject}>
+                            <SelectTrigger>
+                                <div className="flex items-center gap-2">
+                                    <BookCopy className="h-4 w-4" />
+                                    <SelectValue placeholder="Selecciona una asignatura..." />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {subjects.map(subject => (
+                                    <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                                ))}
+                                <Separator className="my-1" />
+                                <SelectItem value="new-subject">
+                                    <span className="flex items-center gap-2 text-primary">
+                                        <Plus className="h-4 w-4"/>Crear nueva
+                                    </span>
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="ghost" size="icon" disabled={!activeSubject}><Pencil className="h-4 w-4" /></Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Renombrar Asignatura</DialogTitle>
+                                </DialogHeader>
+                                <Input 
+                                    defaultValue={activeSubject}
+                                    onChange={(e) => setNewSubjectName(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleRenameSubject()}
+                                />
+                                <DialogFooter>
+                                    <DialogClose asChild>
+                                        <Button variant="outline">Cancelar</Button>
+                                    </DialogClose>
+                                    <DialogClose asChild>
+                                        <Button onClick={handleRenameSubject}>Guardar</Button>
+                                    </DialogClose>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     </div>
-                    
-                    <ScrollArea className="py-4 max-h-[40vh] pr-4 -mr-4">
-                        <div className="space-y-4">
-                            {activeConfig.grades.map((g, index) => (
-                                <div key={g.id} className="p-3 border rounded-lg space-y-2">
-                                     <div className="flex items-center gap-2">
-                                         <Input
-                                            id={`title-${g.id}`}
-                                            type="text"
-                                            placeholder={`Examen / Tarea ${index + 1}`}
-                                            value={g.title}
-                                            onChange={e => handleGradeChange(g.id, 'title', e.target.value)}
-                                            className="text-sm font-semibold border-0 bg-transparent px-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
-                                        />
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => removeGrade(g.id)}
-                                            disabled={activeConfig.grades.length === 1}
-                                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
+                </div>
+                
+                <ScrollArea className="py-4 max-h-[35vh] pr-4 -mr-4">
+                    <div className="space-y-4">
+                        {activeConfig.grades.map((g, index) => (
+                            <div key={g.id} className="p-3 border rounded-lg space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        id={`title-${g.id}`}
+                                        type="text"
+                                        placeholder={`Examen / Tarea ${index + 1}`}
+                                        value={g.title}
+                                        onChange={e => handleGradeChange(g.id, 'title', e.target.value)}
+                                        className="text-sm font-semibold border-0 bg-transparent px-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
+                                    />
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => removeGrade(g.id)}
+                                        disabled={activeConfig.grades.length === 1}
+                                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
 
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex-1 space-y-1">
-                                            <Label htmlFor={`grade-${g.id}`} className="text-xs">Nota</Label>
-                                            <Input
-                                                id={`grade-${g.id}`}
-                                                type="number"
-                                                placeholder="0-10"
-                                                value={g.grade}
-                                                onChange={e => handleGradeChange(g.id, 'grade', e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="w-24 space-y-1">
-                                            <Label htmlFor={`weight-${g.id}`} className="text-xs">Peso %</Label>
-                                            <Input
-                                                id={`weight-${g.id}`}
-                                                type="number"
-                                                placeholder="%"
-                                                value={g.weight}
-                                                onChange={e => handleGradeChange(g.id, 'weight', e.target.value)}
-                                            />
-                                        </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1 space-y-1">
+                                        <Label htmlFor={`grade-${g.id}`} className="text-xs">Nota</Label>
+                                        <Input
+                                            id={`grade-${g.id}`}
+                                            type="number"
+                                            placeholder="0-10"
+                                            value={g.grade}
+                                            onChange={e => handleGradeChange(g.id, 'grade', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="w-24 space-y-1">
+                                        <Label htmlFor={`weight-${g.id}`} className="text-xs">Peso %</Label>
+                                        <Input
+                                            id={`weight-${g.id}`}
+                                            type="number"
+                                            placeholder="%"
+                                            value={g.weight}
+                                            onChange={e => handleGradeChange(g.id, 'weight', e.target.value)}
+                                        />
                                     </div>
                                 </div>
-                            ))}
-                             <Button variant="outline" onClick={addGrade} className="w-full border-dashed" disabled={!activeSubject}>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Añadir evaluación
-                            </Button>
-                        </div>
-                    </ScrollArea>
-
-                    <div className="space-y-2 pt-4">
-                        <Label htmlFor="desired-grade">Nota Final Deseada</Label>
-                        <div className="relative">
-                           <Flag className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input
-                                id="desired-grade"
-                                type="number"
-                                value={activeConfig.desiredGrade}
-                                onChange={e => updateActiveConfig({ desiredGrade: e.target.value })}
-                                className="pl-10 font-bold text-base bg-primary/10"
-                                disabled={!activeSubject}
-                            />
-                        </div>
+                            </div>
+                        ))}
+                        <Button variant="outline" onClick={addGrade} className="w-full border-dashed" disabled={!activeSubject}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Añadir evaluación
+                        </Button>
                     </div>
+                </ScrollArea>
+                
+                <div className="space-y-2 pt-2">
+                    <Label htmlFor="desired-grade">Nota Final Deseada</Label>
+                    <div className="relative">
+                        <Flag className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                            id="desired-grade"
+                            type="number"
+                            value={activeConfig.desiredGrade}
+                            onChange={e => updateActiveConfig({ desiredGrade: e.target.value })}
+                            className="pl-10 font-bold text-base bg-muted"
+                            disabled={!activeSubject}
+                        />
+                    </div>
+                </div>
 
-                     <DialogFooter>
-                        <DialogClose asChild>
-                           <Button variant="outline">Cerrar</Button>
-                        </DialogClose>
-                        <Button onClick={calculateGrade} disabled={!activeSubject}>Calcular</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {result && (
-                <ResultDialog 
-                    isOpen={isAlertOpen} 
-                    onOpenChange={setIsAlertOpen} 
-                    result={result} 
-                />
-            )}
-        </>
+                {result && <ResultPanel result={result} />}
+                
+                <DialogFooter className="pt-4">
+                    <DialogClose asChild>
+                        <Button variant="outline">Cerrar</Button>
+                    </DialogClose>
+                    <Button onClick={calculateGrade} disabled={!activeSubject}>Calcular</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
 
-function ResultDialog({ isOpen, onOpenChange, result }: { isOpen: boolean, onOpenChange: (open: boolean) => void, result: ResultState }) {
-
+function ResultPanel({ result }: { result: ResultState }) {
     const statusConfig = {
-        success: {
-            icon: Award,
-            color: "text-green-500",
-            borderColor: "border-t-green-500",
-            message: "¡Excelente trabajo! Sigue así."
-        },
-        warning: {
-            icon: TrendingUp,
-            color: "text-yellow-500",
-            borderColor: "border-t-yellow-500",
-            message: "¡Vas por buen camino! Un poco más de esfuerzo y lo conseguirás."
-        },
-        danger: {
-            icon: TrendingDown,
-            color: "text-red-500",
-            borderColor: "border-t-red-500",
-            message: "¡Cuidado! Necesitas esforzarte más para alcanzar tu objetivo."
-        },
-        info: {
-            icon: Info,
-            color: "text-blue-500",
-            borderColor: "border-t-blue-500",
-            message: "Aquí tienes la información que necesitas."
-        },
-        error: {
-            icon: Info,
-            color: "text-red-500",
-            borderColor: "border-t-red-500",
-            message: "Por favor, revisa los datos introducidos."
-        }
+        success: { icon: Award, color: "text-green-500", bg: "bg-green-500/10", border: "border-green-500/30" },
+        warning: { icon: TrendingUp, color: "text-yellow-500", bg: "bg-yellow-500/10", border: "border-yellow-500/30" },
+        danger: { icon: TrendingDown, color: "text-red-500", bg: "bg-red-500/10", border: "border-red-500/30" },
+        info: { icon: Info, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/30" },
+        error: { icon: Info, color: "text-red-500", bg: "bg-red-500/10", border: "border-red-500/30" },
     };
     
     const config = statusConfig[result.status];
     const Icon = config.icon;
-
-    // Specific message for high needed grades
-    let finalDescription = result.description;
-    if (result.status === 'danger' && result.grade && result.grade > 10) {
-        finalDescription = `Necesitas sacar un ${result.grade.toFixed(2)}. ¡Es un reto, pero no imposible!`;
-    } else if (result.status === 'success' && result.grade && result.grade < 0) {
-        finalDescription = `¡Felicidades! Ya has superado tu objetivo, no necesitas nota.`;
-    }
-
+    
     return (
-        <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-            <AlertDialogContent className={cn("p-0 overflow-hidden", config.borderColor, "border-t-4")}>
-                <div className="p-6 text-center space-y-4">
-                    <div className="mx-auto w-fit p-3 bg-muted rounded-full">
-                        <Icon className={cn("h-10 w-10", config.color)} />
-                    </div>
-                    <AlertDialogHeader className="space-y-1">
-                        <AlertDialogTitle className="text-xl">{result.title}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            {config.message}
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    
-                    {result.grade !== undefined && (
-                        <div className="py-4">
-                            <p className={cn("text-7xl font-bold font-mono tracking-tighter", config.color)}>
-                                {result.grade < 0 ? '0.00' : result.grade.toFixed(2)}
-                            </p>
-                        </div>
-                    )}
-                    
-                    <p className="text-sm text-muted-foreground">{finalDescription}</p>
-
-                </div>
-                <AlertDialogFooter className="bg-muted/50 p-4">
-                    <AlertDialogAction onClick={() => onOpenChange(false)} className="w-full">Entendido</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+        <div className={cn("p-4 mt-4 rounded-lg border flex flex-col items-center text-center space-y-2", config.bg, config.border)}>
+            <Icon className={cn("h-8 w-8 mb-1", config.color)} />
+            <h3 className="text-base font-bold">{result.title}</h3>
+            {result.grade !== undefined && (
+                <p className={cn("text-5xl font-bold font-mono tracking-tighter", config.color)}>
+                    {result.grade < 0 ? '0.00' : result.grade.toFixed(2)}
+                </p>
+            )}
+            <p className="text-xs text-muted-foreground max-w-xs">{result.description}</p>
+        </div>
     );
 }
-
 
     
