@@ -30,6 +30,8 @@ import {
   Plus,
   Trash2,
   Flag,
+  BookCopy,
+  Pencil,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -38,6 +40,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { fullSchedule } from "@/lib/data";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 
 type TimerMode = "pomodoro" | "long" | "deep";
@@ -139,6 +144,7 @@ export default function StudyPage() {
   if (!user) return null;
 
   const isAdmin = ADMIN_EMAILS.includes(user.email);
+  const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
 
   const phaseColors = phase === 'focus' 
     ? "from-primary to-accent" 
@@ -259,7 +265,7 @@ export default function StudyPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
-                   <GradeCalculatorDialog>
+                   <GradeCalculatorDialog isScheduleAvailable={isScheduleAvailable}>
                      <div className="relative p-4 rounded-lg bg-gradient-to-br from-red-400 to-pink-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform">
                           <div className="relative z-10">
                               <h3 className="font-bold">Nota Necesaria</h3>
@@ -288,32 +294,124 @@ export default function StudyPage() {
 
 interface Grade {
   id: number;
+  title: string;
   grade: string;
   weight: string;
 }
 
-function GradeCalculatorDialog({ children }: { children: React.ReactNode }) {
-    const [grades, setGrades] = useState<Grade[]>([
-        { id: 1, grade: "", weight: "" },
-    ]);
-    const [desiredGrade, setDesiredGrade] = useState<string>("5");
+interface SubjectConfig {
+    grades: Grade[];
+    desiredGrade: string;
+}
+
+interface AllSubjectConfigs {
+    [subjectName: string]: SubjectConfig;
+}
+
+function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: React.ReactNode, isScheduleAvailable: boolean }) {
+    const [allConfigs, setAllConfigs] = useState<AllSubjectConfigs>({});
+    const [subjects, setSubjects] = useState<string[]>([]);
+    const [activeSubject, setActiveSubject] = useState<string>('');
+    const [isEditingSubjectName, setIsEditingSubjectName] = useState(false);
+    const [newSubjectName, setNewSubjectName] = useState('');
+
     const [result, setResult] = useState<{ title: string; description: string; } | null>(null);
     const [isAlertOpen, setIsAlertOpen] = useState(false);
+    
+    // Load from localStorage on mount
+    useEffect(() => {
+        try {
+            const savedConfigs = localStorage.getItem("gradeConfigs");
+            const parsedConfigs: AllSubjectConfigs = savedConfigs ? JSON.parse(savedConfigs) : {};
+            setAllConfigs(parsedConfigs);
+
+            let initialSubjects: string[];
+            if (isScheduleAvailable) {
+                const scheduleSubjects = Object.values(fullSchedule).flat().map(c => c.subject);
+                const uniqueScheduleSubjects = [...new Set(scheduleSubjects)];
+                initialSubjects = uniqueScheduleSubjects;
+            } else {
+                initialSubjects = [];
+            }
+            
+            const savedSubjects = Object.keys(parsedConfigs);
+            const allSubjects = [...new Set([...initialSubjects, ...savedSubjects])];
+
+            setSubjects(allSubjects);
+            if (allSubjects.length > 0) {
+                setActiveSubject(allSubjects[0]);
+            }
+
+        } catch (error) {
+            console.error("Failed to load or parse grade configurations from localStorage", error);
+        }
+    }, [isScheduleAvailable]);
+
+    // Save to localStorage whenever configs change
+    useEffect(() => {
+        try {
+            localStorage.setItem("gradeConfigs", JSON.stringify(allConfigs));
+        } catch (error) {
+            console.error("Failed to save grade configurations to localStorage", error);
+        }
+    }, [allConfigs]);
+
+    const activeConfig = useMemo(() => {
+        return allConfigs[activeSubject] || { grades: [{ id: 1, title: "", grade: "", weight: "" }], desiredGrade: "5" };
+    }, [allConfigs, activeSubject]);
+
+    const updateActiveConfig = (newConfig: Partial<SubjectConfig>) => {
+        if (!activeSubject) return;
+        setAllConfigs(prev => ({
+            ...prev,
+            [activeSubject]: { ...activeConfig, ...newConfig },
+        }));
+    };
+
+    const handleSubjectChange = (subjectName: string) => {
+        if (subjectName === "new-subject") {
+            const defaultNewName = `Nueva Asignatura ${subjects.filter(s => s.startsWith("Nueva Asignatura")).length + 1}`;
+            setSubjects(prev => [...prev, defaultNewName]);
+            setAllConfigs(prev => ({ ...prev, [defaultNewName]: { grades: [{id: 1, title: "", grade: "", weight: ""}], desiredGrade: "5" } }));
+            setActiveSubject(defaultNewName);
+        } else {
+            setActiveSubject(subjectName);
+        }
+    };
+    
+    const handleRenameSubject = () => {
+        if (!newSubjectName || newSubjectName === activeSubject || subjects.includes(newSubjectName)) return;
+        
+        const oldConfigs = {...allConfigs};
+        const subjectData = oldConfigs[activeSubject];
+        delete oldConfigs[activeSubject];
+        
+        const newConfigs = { ...oldConfigs, [newSubjectName]: subjectData };
+        setAllConfigs(newConfigs);
+
+        const newSubjects = subjects.map(s => s === activeSubject ? newSubjectName : s);
+        setSubjects(newSubjects);
+        setActiveSubject(newSubjectName);
+        setIsEditingSubjectName(false);
+    };
 
     const addGrade = () => {
-        setGrades([...grades, { id: Date.now(), grade: "", weight: "" }]);
+        const newGrades = [...activeConfig.grades, { id: Date.now(), title: "", grade: "", weight: "" }];
+        updateActiveConfig({ grades: newGrades });
     };
 
     const removeGrade = (id: number) => {
-        setGrades(grades.filter(g => g.id !== id));
+        const newGrades = activeConfig.grades.filter(g => g.id !== id);
+        updateActiveConfig({ grades: newGrades });
     };
 
-    const handleGradeChange = (id: number, field: 'grade' | 'weight', value: string) => {
-        setGrades(grades.map(g => g.id === id ? { ...g, [field]: value } : g));
+    const handleGradeChange = (id: number, field: keyof Grade, value: string) => {
+        const newGrades = activeConfig.grades.map(g => g.id === id ? { ...g, [field]: value } : g);
+        updateActiveConfig({ grades: newGrades });
     };
-    
+
     const calculateGrade = () => {
-        const desired = parseFloat(desiredGrade);
+        const desired = parseFloat(activeConfig.desiredGrade);
         if (isNaN(desired) || desired < 0 || desired > 10) {
             setResult({ title: "Error", description: "La nota final deseada debe ser un número entre 0 y 10." });
             setIsAlertOpen(true);
@@ -324,7 +422,7 @@ function GradeCalculatorDialog({ children }: { children: React.ReactNode }) {
         let weightedSum = 0;
         const unknownGrades = [];
         
-        for (const g of grades) {
+        for (const g of activeConfig.grades) {
             const weight = parseFloat(g.weight);
              if (isNaN(weight) || g.weight.trim() === '') {
                 setResult({ title: "Error", description: `Hay un porcentaje vacío o no válido. Todos los campos de porcentaje deben estar rellenos.` });
@@ -347,49 +445,30 @@ function GradeCalculatorDialog({ children }: { children: React.ReactNode }) {
         }
         
         if (Math.abs(totalWeight - 100) > 0.01) {
-            setResult({ title: "Error", description: `La suma de los porcentajes debe ser 100%, pero es ${totalWeight}%.` });
+            setResult({ title: "Error", description: `La suma de los porcentajes debe ser 100%, pero es ${totalWeight.toFixed(2)}%.` });
             setIsAlertOpen(true);
             return;
         }
 
-        // Case 1: Calculate needed grade
         if (unknownGrades.length === 1) {
             const unknownWeight = parseFloat(unknownGrades[0].weight);
             const neededGrade = (desired * 100 - weightedSum) / unknownWeight;
 
             if (neededGrade > 10) {
-                setResult({
-                    title: "¡Objetivo Difícil!",
-                    description: `Necesitas sacar un ${neededGrade.toFixed(2)} en el último examen. ¡Es un reto, pero no imposible con esfuerzo extra!`
-                });
+                setResult({ title: "¡Objetivo Difícil!", description: `Necesitas sacar un ${neededGrade.toFixed(2)} en la evaluación restante. ¡Es un reto, pero no imposible con esfuerzo extra!` });
             } else if (neededGrade < 0) {
-                 setResult({
-                    title: "¡Ya Aprobaste!",
-                    description: `Felicidades, ya has alcanzado tu nota deseada. ¡Incluso si sacas un 0 en el último examen, tu nota final será superior!`
-                });
+                 setResult({ title: "¡Ya Aprobaste!", description: `Felicidades, ya has alcanzado tu nota deseada. ¡Incluso si sacas un 0 en la última evaluación, tu nota final será superior!` });
             } else {
-                 setResult({
-                    title: "Nota Necesaria",
-                    description: `Para obtener un ${desired} de nota final, necesitas sacar un ${neededGrade.toFixed(2)} en el último examen.`
-                });
+                 setResult({ title: "Nota Necesaria", description: `Para obtener un ${desired} de nota final, necesitas sacar un ${neededGrade.toFixed(2)} en la evaluación restante.` });
             }
         } 
-        // Case 2: Calculate current average
         else if (unknownGrades.length === 0) {
             const currentAverage = weightedSum / 100;
-             setResult({
-                title: "Tu Media Actual",
-                description: `Con todas las notas introducidas, tu nota media ponderada actual es de un ${currentAverage.toFixed(2)}.`
-            });
+             setResult({ title: "Tu Media Actual", description: `Con todas las notas introducidas, tu nota media ponderada actual es de un ${currentAverage.toFixed(2)}.` });
         }
-        // Case 3: Error
         else {
-             setResult({
-                title: "Error de Cálculo",
-                description: "Para calcular la nota necesaria, deja solo un campo de nota en blanco. Para ver tu media actual, rellena todas las notas."
-            });
+             setResult({ title: "Error de Cálculo", description: "Para calcular la nota necesaria, deja solo un campo de nota en blanco. Para ver tu media actual, rellena todas las notas." });
         }
-
         setIsAlertOpen(true);
     };
 
@@ -399,69 +478,135 @@ function GradeCalculatorDialog({ children }: { children: React.ReactNode }) {
                 <DialogTrigger asChild>{children}</DialogTrigger>
                 <DialogContent className="max-w-md w-[95vw]">
                     <DialogHeader>
-                        <DialogTitle>Calculadora de Notas</DialogTitle>
+                        <DialogTitle>Calculadora de Notas Ponderada</DialogTitle>
                         <DialogDescription>
-                            Añade tus notas parciales y porcentajes para saber qué necesitas.
+                            Organiza tus notas por asignatura y guarda tus configuraciones.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto px-1">
-                        {grades.map((g, index) => (
-                            <div key={g.id} className="flex items-center gap-2">
-                                <div className="flex-1 space-y-1">
-                                    {index === 0 && <Label htmlFor={`grade-${g.id}`}>Nota</Label>}
-                                    <Input
-                                        id={`grade-${g.id}`}
-                                        type="number"
-                                        placeholder="Nota (0-10)"
-                                        value={g.grade}
-                                        onChange={e => handleGradeChange(g.id, 'grade', e.target.value)}
-                                    />
-                                </div>
-                                <div className="w-24 space-y-1">
-                                     {index === 0 && <Label htmlFor={`weight-${g.id}`}>Peso %</Label>}
-                                    <Input
-                                        id={`weight-${g.id}`}
-                                        type="number"
-                                        placeholder="%"
-                                        value={g.weight}
-                                        onChange={e => handleGradeChange(g.id, 'weight', e.target.value)}
-                                    />
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => removeGrade(g.id)}
-                                    disabled={grades.length === 1}
-                                    className="self-end text-muted-foreground hover:text-destructive"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        ))}
-                         <Button variant="outline" onClick={addGrade} className="w-full border-dashed">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Añadir examen/trabajo
-                        </Button>
 
-                        <div className="space-y-2 pt-4">
-                            <Label htmlFor="desired-grade">Nota Final Deseada</Label>
-                            <div className="relative">
-                               <Flag className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                <Input
-                                    id="desired-grade"
-                                    type="number"
-                                    value={desiredGrade}
-                                    onChange={e => setDesiredGrade(e.target.value)}
-                                    className="pl-10 font-bold text-base bg-primary/10"
-                                />
-                            </div>
+                     <div className="space-y-4">
+                        <Label>Asignatura</Label>
+                         <div className="flex items-center gap-2">
+                             <Select onValueChange={handleSubjectChange} value={activeSubject}>
+                                 <SelectTrigger>
+                                     <div className="flex items-center gap-2">
+                                         <BookCopy className="h-4 w-4" />
+                                         <SelectValue placeholder="Selecciona una asignatura..." />
+                                     </div>
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                     {subjects.map(subject => (
+                                         <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                                     ))}
+                                     <Separator className="my-1" />
+                                     <SelectItem value="new-subject">
+                                        <span className="flex items-center gap-2 text-primary">
+                                            <Plus className="h-4 w-4"/>Crear nueva
+                                        </span>
+                                     </SelectItem>
+                                 </SelectContent>
+                             </Select>
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" disabled={!activeSubject}><Pencil className="h-4 w-4" /></Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Renombrar Asignatura</DialogTitle>
+                                    </DialogHeader>
+                                    <Input 
+                                        defaultValue={activeSubject}
+                                        onChange={(e) => setNewSubjectName(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleRenameSubject()}
+                                    />
+                                    <DialogFooter>
+                                        <DialogClose asChild>
+                                            <Button variant="outline">Cancelar</Button>
+                                        </DialogClose>
+                                        <DialogClose asChild>
+                                            <Button onClick={handleRenameSubject}>Guardar</Button>
+                                        </DialogClose>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                         </div>
+                    </div>
+                    
+                    <ScrollArea className="py-4 max-h-[40vh] pr-4 -mr-4">
+                        <div className="space-y-4">
+                            {activeConfig.grades.map((g, index) => (
+                                <div key={g.id} className="p-3 border rounded-lg space-y-2">
+                                     <div className="flex items-center gap-2">
+                                         <Input
+                                            id={`title-${g.id}`}
+                                            type="text"
+                                            placeholder={`Examen / Tarea ${index + 1}`}
+                                            value={g.title}
+                                            onChange={e => handleGradeChange(g.id, 'title', e.target.value)}
+                                            className="text-sm font-semibold border-0 bg-transparent px-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
+                                        />
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => removeGrade(g.id)}
+                                            disabled={activeConfig.grades.length === 1}
+                                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 space-y-1">
+                                            <Label htmlFor={`grade-${g.id}`} className="text-xs">Nota</Label>
+                                            <Input
+                                                id={`grade-${g.id}`}
+                                                type="number"
+                                                placeholder="0-10"
+                                                value={g.grade}
+                                                onChange={e => handleGradeChange(g.id, 'grade', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="w-24 space-y-1">
+                                            <Label htmlFor={`weight-${g.id}`} className="text-xs">Peso %</Label>
+                                            <Input
+                                                id={`weight-${g.id}`}
+                                                type="number"
+                                                placeholder="%"
+                                                value={g.weight}
+                                                onChange={e => handleGradeChange(g.id, 'weight', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                             <Button variant="outline" onClick={addGrade} className="w-full border-dashed" disabled={!activeSubject}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Añadir evaluación
+                            </Button>
+                        </div>
+                    </ScrollArea>
+
+                    <div className="space-y-2 pt-4">
+                        <Label htmlFor="desired-grade">Nota Final Deseada</Label>
+                        <div className="relative">
+                           <Flag className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input
+                                id="desired-grade"
+                                type="number"
+                                value={activeConfig.desiredGrade}
+                                onChange={e => updateActiveConfig({ desiredGrade: e.target.value })}
+                                className="pl-10 font-bold text-base bg-primary/10"
+                                disabled={!activeSubject}
+                            />
                         </div>
                     </div>
+
                      <DialogFooter>
                         <DialogClose asChild>
                            <Button variant="outline">Cerrar</Button>
                         </DialogClose>
-                        <Button onClick={calculateGrade}>Calcular</Button>
+                        <Button onClick={calculateGrade} disabled={!activeSubject}>Calcular</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -484,3 +629,4 @@ function GradeCalculatorDialog({ children }: { children: React.ReactNode }) {
         </>
     );
 }
+
