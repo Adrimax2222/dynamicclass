@@ -320,36 +320,29 @@ function GradeCalculatorDialog({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        const knownGrades = grades.filter(g => g.grade !== "" && g.weight !== "");
-        const unknownGrades = grades.filter(g => g.grade === "" && g.weight !== "");
-
-        if (unknownGrades.length === 0) {
-            setResult({ title: "Error", description: "Debes dejar la nota de al menos un examen en blanco para calcularla." });
-            setIsAlertOpen(true);
-            return;
-        }
-        if (unknownGrades.length > 1) {
-            setResult({ title: "Error", description: "Solo puedes dejar la nota de un examen en blanco para el cálculo." });
-            setIsAlertOpen(true);
-            return;
-        }
-
         let totalWeight = 0;
         let weightedSum = 0;
+        const unknownGrades = [];
         
         for (const g of grades) {
             const weight = parseFloat(g.weight);
-            if (isNaN(weight)) continue;
+             if (isNaN(weight) || g.weight.trim() === '') {
+                setResult({ title: "Error", description: `Hay un porcentaje vacío o no válido. Todos los campos de porcentaje deben estar rellenos.` });
+                setIsAlertOpen(true);
+                return;
+            }
             totalWeight += weight;
 
-            if (g.grade !== "") {
+            if (g.grade.trim() === '') {
+                unknownGrades.push(g);
+            } else {
                 const grade = parseFloat(g.grade);
                 if (isNaN(grade) || grade < 0 || grade > 10) {
                      setResult({ title: "Error", description: `La nota '${g.grade}' no es válida. Deben ser números entre 0 y 10.` });
                      setIsAlertOpen(true);
                      return;
                 }
-                weightedSum += (grade * weight) / 100;
+                weightedSum += (grade * weight);
             }
         }
         
@@ -359,31 +352,44 @@ function GradeCalculatorDialog({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        const unknownWeight = parseFloat(unknownGrades[0].weight);
-        if (isNaN(unknownWeight) || unknownWeight <= 0) {
-            setResult({ title: "Error", description: "El examen a calcular debe tener un porcentaje válido y mayor que cero." });
-            setIsAlertOpen(true);
-            return;
+        // Case 1: Calculate needed grade
+        if (unknownGrades.length === 1) {
+            const unknownWeight = parseFloat(unknownGrades[0].weight);
+            const neededGrade = (desired * 100 - weightedSum) / unknownWeight;
+
+            if (neededGrade > 10) {
+                setResult({
+                    title: "¡Objetivo Difícil!",
+                    description: `Necesitas sacar un ${neededGrade.toFixed(2)} en el último examen. ¡Es un reto, pero no imposible con esfuerzo extra!`
+                });
+            } else if (neededGrade < 0) {
+                 setResult({
+                    title: "¡Ya Aprobaste!",
+                    description: `Felicidades, ya has alcanzado tu nota deseada. ¡Incluso si sacas un 0 en el último examen, tu nota final será superior!`
+                });
+            } else {
+                 setResult({
+                    title: "Nota Necesaria",
+                    description: `Para obtener un ${desired} de nota final, necesitas sacar un ${neededGrade.toFixed(2)} en el último examen.`
+                });
+            }
+        } 
+        // Case 2: Calculate current average
+        else if (unknownGrades.length === 0) {
+            const currentAverage = weightedSum / 100;
+             setResult({
+                title: "Tu Media Actual",
+                description: `Con todas las notas introducidas, tu nota media ponderada actual es de un ${currentAverage.toFixed(2)}.`
+            });
+        }
+        // Case 3: Error
+        else {
+             setResult({
+                title: "Error de Cálculo",
+                description: "Para calcular la nota necesaria, deja solo un campo de nota en blanco. Para ver tu media actual, rellena todas las notas."
+            });
         }
 
-        const neededGrade = ((desired - weightedSum) * 100) / unknownWeight;
-
-        if (neededGrade > 10) {
-            setResult({
-                title: "¡Objetivo Difícil!",
-                description: `Necesitas sacar un ${neededGrade.toFixed(2)} en el último examen. ¡Es un reto, pero no imposible con esfuerzo extra!`
-            });
-        } else if (neededGrade < 0) {
-             setResult({
-                title: "¡Ya Aprobaste!",
-                description: `Felicidades, ya has alcanzado tu nota deseada. ¡Incluso si sacas un 0 en el último examen, tu nota final será superior!`
-            });
-        } else {
-             setResult({
-                title: "Nota Necesaria",
-                description: `Para obtener un ${desired} de nota final, necesitas sacar un ${neededGrade.toFixed(2)} en el último examen.`
-            });
-        }
         setIsAlertOpen(true);
     };
 
@@ -478,5 +484,3 @@ function GradeCalculatorDialog({ children }: { children: React.ReactNode }) {
         </>
     );
 }
-
-    
