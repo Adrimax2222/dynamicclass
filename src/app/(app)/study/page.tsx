@@ -529,11 +529,11 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
     };
     
     const statusColors = {
-        success: "bg-green-500/80",
-        warning: "bg-yellow-500/80",
-        danger: "bg-red-500/80",
-        info: "bg-blue-500/80",
-        error: "bg-red-500/80",
+        success: "bg-green-500",
+        warning: "bg-yellow-500",
+        danger: "bg-red-500",
+        info: "bg-blue-500",
+        error: "bg-red-500",
     };
 
     const latestGrade = activeConfig.result?.grade;
@@ -544,7 +544,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col max-h-[85vh]">
                 <Tabs defaultValue="calculator" className="flex flex-col flex-1 min-h-0">
-                    <DialogHeader className="p-6 pb-0">
+                    <DialogHeader className="p-6 pb-0 flex-shrink-0">
                         <DialogTitle>Herramientas de Notas</DialogTitle>
                         <DialogDescription>
                             Calcula tus notas y revisa tu progreso académico.
@@ -688,21 +688,20 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
                               {activeConfig.result && <ResultPanel result={activeConfig.result} />}
                           </div>
                         </ScrollArea>
-                        <DialogFooter className="p-6 pt-4 border-t">
-                            <DialogClose asChild>
-                                <Button variant="outline">Cerrar</Button>
-                            </DialogClose>
-                            <Button onClick={calculateGrade} disabled={!activeSubject}>Calcular</Button>
-                        </DialogFooter>
                     </TabsContent>
+                    
                     <TabsContent value="report" className="mt-0 flex-1 flex flex-col min-h-0">
-                       <ReportTab allConfigs={allConfigs} user={user} />
-                        <DialogFooter className="p-6 pt-4 border-t">
-                             <DialogClose asChild>
-                                <Button variant="outline">Cerrar</Button>
-                            </DialogClose>
-                        </DialogFooter>
+                       <ScrollArea className="flex-1">
+                          <ReportTab allConfigs={allConfigs} user={user} />
+                       </ScrollArea>
                     </TabsContent>
+
+                    <DialogFooter className="p-6 pt-4 border-t flex-shrink-0">
+                        <DialogClose asChild>
+                            <Button variant="outline">Cerrar</Button>
+                        </DialogClose>
+                        <Button onClick={calculateGrade} disabled={!activeSubject}>Calcular</Button>
+                    </DialogFooter>
                 </Tabs>
             </DialogContent>
         </Dialog>
@@ -796,54 +795,52 @@ function ReportTab({ allConfigs, user }: { allConfigs: AllSubjectConfigs, user: 
     const OverallIcon = statusConfig[overallStatus].icon;
 
     return (
-        <ScrollArea className="flex-1">
-            <div className="px-6 space-y-6 py-4">
-                <div className="text-center">
-                    <h3 className="text-lg font-semibold">Informe de Notas de {user.name.split(' ')[0]}</h3>
-                    <p className="text-sm text-muted-foreground">Un resumen de tu progreso académico.</p>
-                </div>
+        <div className="px-6 space-y-6 py-4">
+            <div className="text-center">
+                <h3 className="text-lg font-semibold">Informe de Notas de {user.name.split(' ')[0]}</h3>
+                <p className="text-sm text-muted-foreground">Un resumen de tu progreso académico.</p>
+            </div>
 
-                <div className={cn("p-4 rounded-lg border", statusConfig[overallStatus].bg, statusConfig[overallStatus].border)}>
-                    <div className="flex flex-col items-center text-center gap-2">
-                        <OverallIcon className={cn("h-8 w-8", statusConfig[overallStatus].color)} />
-                        <div>
-                            <p className="text-sm font-bold text-muted-foreground">MEDIA GLOBAL</p>
-                            <p className={cn("text-5xl font-bold font-mono tracking-tighter", statusConfig[overallStatus].color)}>
-                                {overallAverage.toFixed(2)}
-                            </p>
-                        </div>
-                        <div>
-                            <h4 className="font-semibold">{overallFeedback.title}</h4>
-                            <p className="text-xs text-muted-foreground">{overallFeedback.description}</p>
-                        </div>
+            <div className={cn("p-4 rounded-lg border", statusConfig[overallStatus].bg, statusConfig[overallStatus].border)}>
+                <div className="flex flex-col items-center text-center gap-2">
+                    <OverallIcon className={cn("h-8 w-8", statusConfig[overallStatus].color)} />
+                    <div>
+                        <p className="text-sm font-bold text-muted-foreground">MEDIA GLOBAL</p>
+                        <p className={cn("text-5xl font-bold font-mono tracking-tighter", statusConfig[overallStatus].color)}>
+                            {overallAverage.toFixed(2)}
+                        </p>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold">{overallFeedback.title}</h4>
+                        <p className="text-xs text-muted-foreground">{overallFeedback.description}</p>
                     </div>
                 </div>
-
-                <div>
-                    <h4 className="mb-2 font-semibold text-sm text-muted-foreground">DESGLOSE POR ASIGNATURAS</h4>
-                    {calculatedSubjects.length > 0 ? (
-                        <div className="space-y-2">
-                            {calculatedSubjects.map(({ subject, grade }) => {
-                                const subjectStatus = getOverallStatus(grade);
-                                const SubjectIcon = statusConfig[subjectStatus].icon;
-                                return (
-                                    <div key={subject} className={cn("flex items-center p-3 rounded-md border", statusConfig[subjectStatus].bg, statusConfig[subjectStatus].border)}>
-                                        <SubjectIcon className={cn("h-5 w-5 mr-3", statusConfig[subjectStatus].color)} />
-                                        <p className="flex-1 font-semibold text-sm">{subject}</p>
-                                        <p className={cn("font-bold text-lg font-mono", statusConfig[subjectStatus].color)}>{Math.max(0, grade).toFixed(1)}</p>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className="text-center py-8 text-sm text-muted-foreground border-2 border-dashed rounded-lg">
-                            <p>Aún no has calculado ninguna nota final.</p>
-                            <p>Usa la calculadora para empezar.</p>
-                        </div>
-                    )}
-                </div>
             </div>
-        </ScrollArea>
+
+            <div>
+                <h4 className="mb-2 font-semibold text-sm text-muted-foreground">DESGLOSE POR ASIGNATURAS</h4>
+                {calculatedSubjects.length > 0 ? (
+                    <div className="space-y-2">
+                        {calculatedSubjects.map(({ subject, grade }) => {
+                            const subjectStatus = getOverallStatus(grade);
+                            const SubjectIcon = statusConfig[subjectStatus].icon;
+                            return (
+                                <div key={subject} className={cn("flex items-center p-3 rounded-md border", statusConfig[subjectStatus].bg, statusConfig[subjectStatus].border)}>
+                                    <SubjectIcon className={cn("h-5 w-5 mr-3", statusConfig[subjectStatus].color)} />
+                                    <p className="flex-1 font-semibold text-sm">{subject}</p>
+                                    <p className={cn("font-bold text-lg font-mono", statusConfig[subjectStatus].color)}>{Math.max(0, grade).toFixed(1)}</p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="text-center py-8 text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                        <p>Aún no has calculado ninguna nota final.</p>
+                        <p>Usa la calculadora para empezar.</p>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }
 
