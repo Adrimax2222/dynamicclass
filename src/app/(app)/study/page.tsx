@@ -473,34 +473,42 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
             const unknownWeight = parseFloat(unknownGrades[0].weight);
             const neededGrade = (desired * 100 - weightedSum) / unknownWeight;
 
-            let status: ResultStatus = 'info';
-            let title = 'Nota Necesaria';
-            let description = `Para un ${desired}, necesitas un ${neededGrade.toFixed(2)}.`;
+            let status: ResultStatus;
+            let title: string;
+            let description: string;
             
             if (neededGrade > 10) {
                 status = 'danger';
                 title = '¡Objetivo Difícil!';
-                description = `¡Un ${neededGrade.toFixed(2)}! Es un reto, pero no imposible.`;
-            } else if (neededGrade < 0) {
+                description = `Un ${neededGrade.toFixed(2)} es un reto. ¡A por todas!`;
+            } else if (neededGrade >= 7) {
+                status = 'success';
+                title = '¡Lo Tienes!';
+                description = `Necesitas un ${neededGrade.toFixed(2)}. ¡Sigue así!`;
+            } else if (neededGrade >= 5) {
+                status = 'warning';
+                title = '¡Casi Hecho!';
+                description = `Con un ${neededGrade.toFixed(2)} es suficiente. ¡Puedes hacerlo!`;
+            } else if (neededGrade >= 0) {
+                 status = 'success';
+                 title = '¡Fácil!';
+                 description = `Solo necesitas un ${neededGrade.toFixed(2)}. ¡Pan comido!`;
+            } else {
                  status = 'success';
                  title = '¡Ya Aprobaste!';
-                 description = `¡Felicidades! Ya tienes tu nota, incluso con un 0.`;
-            } else {
-                if (neededGrade < 5) status = 'success';
-                if (neededGrade >= 5 && neededGrade < 7) status = 'warning';
-                if (neededGrade >= 7) status = 'danger';
+                 description = '¡Felicidades! Ya tienes tu objetivo, incluso con un 0.';
             }
             newResult = { status, title, description, grade: neededGrade };
         } 
         else if (unknownGrades.length === 0) {
             const currentAverage = weightedSum / 100;
-            let status: ResultStatus = 'info';
+            let status: ResultStatus;
             let title = 'Tu Media Actual';
             let description = `Tu media ponderada actual es un ${currentAverage.toFixed(2)}.`;
 
             if (currentAverage >= 7) status = 'success';
-            if (currentAverage >= 5 && currentAverage < 7) status = 'warning';
-            if (currentAverage < 5) status = 'danger';
+            else if (currentAverage >= 5) status = 'warning';
+            else status = 'danger';
 
             newResult = { 
                 status,
@@ -522,64 +530,64 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
     return (
         <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="max-w-md w-[95vw] flex flex-col max-h-[85vh]">
-                <DialogHeader>
+            <DialogContent className="max-w-md w-[95vw] flex flex-col max-h-[85vh] p-0">
+                <DialogHeader className="p-6 pb-4">
                     <DialogTitle>Calculadora de Notas Ponderada</DialogTitle>
                     <DialogDescription>
                         Organiza tus notas por asignatura y guarda tus configuraciones.
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-hidden flex flex-col gap-4">
-                    <div className="space-y-4">
-                        <Label>Asignatura</Label>
-                        <div className="flex items-center gap-2">
-                            <Select onValueChange={handleSubjectChange} value={activeSubject}>
-                                <SelectTrigger>
-                                    <div className="flex items-center gap-2">
-                                        <BookCopy className="h-4 w-4" />
-                                        <SelectValue placeholder="Selecciona una asignatura..." />
-                                    </div>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {subjects.map(subject => (
-                                        <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                                    ))}
-                                    <Separator className="my-1" />
-                                    <SelectItem value="new-subject">
-                                        <span className="flex items-center gap-2 text-primary">
-                                            <Plus className="h-4 w-4"/>Crear nueva
-                                        </span>
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Dialog>
-                                <DialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" disabled={!activeSubject}><Pencil className="h-4 w-4" /></Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Renombrar Asignatura</DialogTitle>
-                                    </DialogHeader>
-                                    <Input 
-                                        defaultValue={activeSubject}
-                                        onChange={(e) => setNewSubjectName(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleRenameSubject()}
-                                    />
-                                    <DialogFooter>
-                                        <DialogClose asChild>
-                                            <Button variant="outline">Cancelar</Button>
-                                        </DialogClose>
-                                        <DialogClose asChild>
-                                            <Button onClick={handleRenameSubject}>Guardar</Button>
-                                        </DialogClose>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
+                <ScrollArea className="flex-1 px-6">
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <Label>Asignatura</Label>
+                            <div className="flex items-center gap-2">
+                                <Select onValueChange={handleSubjectChange} value={activeSubject}>
+                                    <SelectTrigger>
+                                        <div className="flex items-center gap-2">
+                                            <BookCopy className="h-4 w-4" />
+                                            <SelectValue placeholder="Selecciona una asignatura..." />
+                                        </div>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {subjects.map(subject => (
+                                            <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                                        ))}
+                                        <Separator className="my-1" />
+                                        <SelectItem value="new-subject">
+                                            <span className="flex items-center gap-2 text-primary">
+                                                <Plus className="h-4 w-4"/>Crear nueva
+                                            </span>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" disabled={!activeSubject}><Pencil className="h-4 w-4" /></Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Renombrar Asignatura</DialogTitle>
+                                        </DialogHeader>
+                                        <Input 
+                                            defaultValue={activeSubject}
+                                            onChange={(e) => setNewSubjectName(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleRenameSubject()}
+                                        />
+                                        <DialogFooter>
+                                            <DialogClose asChild>
+                                                <Button variant="outline">Cancelar</Button>
+                                            </DialogClose>
+                                            <DialogClose asChild>
+                                                <Button onClick={handleRenameSubject}>Guardar</Button>
+                                            </DialogClose>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
                         </div>
-                    </div>
-                
-                    <ScrollArea className="flex-1 -mr-6 -ml-1 pr-7 pl-1">
+                    
                         <div className="space-y-4">
                             {activeConfig.grades.map((g, index) => (
                                 <div key={g.id} className="p-3 border rounded-lg space-y-2">
@@ -627,31 +635,33 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
                                     </div>
                                 </div>
                             ))}
-                            <Button variant="outline" onClick={addGrade} className="w-full border-dashed" disabled={!activeSubject}>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Añadir evaluación
-                            </Button>
-                             {activeConfig.result && <ResultPanel result={activeConfig.result} />}
                         </div>
-                    </ScrollArea>
-                
-                    <div className="space-y-2 pt-2">
-                        <Label htmlFor="desired-grade">Nota Final Deseada</Label>
-                        <div className="relative">
-                            <Flag className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input
-                                id="desired-grade"
-                                type="number"
-                                value={activeConfig.desiredGrade}
-                                onChange={e => updateActiveConfig({ ...activeConfig, desiredGrade: e.target.value, result: null })}
-                                className="pl-10 font-bold text-base bg-muted"
-                                disabled={!activeSubject}
-                            />
+                        
+                        <Button variant="outline" onClick={addGrade} className="w-full border-dashed" disabled={!activeSubject}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Añadir evaluación
+                        </Button>
+                        
+                        {activeConfig.result && <ResultPanel result={activeConfig.result} />}
+                        
+                        <div className="space-y-2 !mt-6">
+                            <Label htmlFor="desired-grade">Nota Final Deseada</Label>
+                            <div className="relative">
+                                <Flag className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                <Input
+                                    id="desired-grade"
+                                    type="number"
+                                    value={activeConfig.desiredGrade}
+                                    onChange={e => updateActiveConfig({ ...activeConfig, desiredGrade: e.target.value, result: null })}
+                                    className="pl-10 font-bold text-base bg-muted"
+                                    disabled={!activeSubject}
+                                />
+                            </div>
                         </div>
                     </div>
-                </div>
+                </ScrollArea>
                 
-                <DialogFooter className="pt-4">
+                <DialogFooter className="p-6 pt-4 border-t">
                     <DialogClose asChild>
                         <Button variant="outline">Cerrar</Button>
                     </DialogClose>
@@ -675,18 +685,19 @@ function ResultPanel({ result }: { result: ResultState }) {
     const Icon = config.icon;
     
     return (
-        <div className={cn("p-4 mt-4 rounded-lg border", config.bg, config.border)}>
-            <div className="flex items-center gap-3">
-                 <Icon className={cn("h-6 w-6", config.color)} />
-                 <h3 className="text-base font-bold flex-1">{result.title}</h3>
+        <div className={cn("p-3 !mt-6 rounded-lg border", config.bg, config.border)}>
+            <div className="flex items-start gap-3">
+                 <Icon className={cn("h-5 w-5 flex-shrink-0", config.color)} />
+                 <div className="flex-1">
+                    <h3 className="text-sm font-bold flex-1">{result.title}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{result.description}</p>
+                 </div>
                  {result.grade !== undefined && (
-                    <p className={cn("text-3xl font-bold font-mono tracking-tighter", config.color)}>
+                    <p className={cn("text-4xl font-bold font-mono tracking-tighter", config.color)}>
                         {result.grade < 0 ? '0.00' : result.grade.toFixed(2)}
                     </p>
                 )}
             </div>
-            <p className="text-xs text-muted-foreground mt-2 pl-9">{result.description}</p>
         </div>
     );
 }
-
