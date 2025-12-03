@@ -303,15 +303,6 @@ interface Grade {
   weight: string;
 }
 
-interface SubjectConfig {
-    grades: Grade[];
-    desiredGrade: string;
-}
-
-interface AllSubjectConfigs {
-    [subjectName: string]: SubjectConfig;
-}
-
 type ResultStatus = "success" | "warning" | "danger" | "info" | "error";
 
 interface ResultState {
@@ -319,6 +310,16 @@ interface ResultState {
     title: string;
     description: string;
     grade?: number;
+}
+
+interface SubjectConfig {
+    grades: Grade[];
+    desiredGrade: string;
+    result: ResultState | null;
+}
+
+interface AllSubjectConfigs {
+    [subjectName: string]: SubjectConfig;
 }
 
 
@@ -352,7 +353,10 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
 
             setSubjects(allSubjects);
             if (allSubjects.length > 0) {
-                setActiveSubject(allSubjects[0]);
+                const firstSubject = allSubjects[0];
+                setActiveSubject(firstSubject);
+                // Load result for the first subject if it exists
+                setResult(parsedConfigs[firstSubject]?.result || null);
             }
 
         } catch (error) {
@@ -363,20 +367,16 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
     // Save to localStorage whenever configs change
     useEffect(() => {
         try {
-            localStorage.setItem("gradeConfigs", JSON.stringify(allConfigs));
+            if (Object.keys(allConfigs).length > 0) {
+              localStorage.setItem("gradeConfigs", JSON.stringify(allConfigs));
+            }
         } catch (error) {
             console.error("Failed to save grade configurations to localStorage", error);
         }
     }, [allConfigs]);
     
-    // Reset result when active subject changes
-    useEffect(() => {
-        setResult(null);
-    }, [activeSubject]);
-
-
     const activeConfig = useMemo(() => {
-        return allConfigs[activeSubject] || { grades: [{ id: 1, title: "", grade: "", weight: "" }], desiredGrade: "5" };
+        return allConfigs[activeSubject] || { grades: [{ id: 1, title: "", grade: "", weight: "" }], desiredGrade: "5", result: null };
     }, [allConfigs, activeSubject]);
 
     const updateActiveConfig = (newConfig: Partial<SubjectConfig>) => {
@@ -386,15 +386,18 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
             [activeSubject]: { ...activeConfig, ...newConfig },
         }));
     };
-
+    
     const handleSubjectChange = (subjectName: string) => {
         if (subjectName === "new-subject") {
             const defaultNewName = `Nueva Asignatura ${subjects.filter(s => s.startsWith("Nueva Asignatura")).length + 1}`;
             setSubjects(prev => [...prev, defaultNewName]);
-            setAllConfigs(prev => ({ ...prev, [defaultNewName]: { grades: [{id: 1, title: "", grade: "", weight: ""}], desiredGrade: "5" } }));
+            const newConfig = { grades: [{id: 1, title: "", grade: "", weight: ""}], desiredGrade: "5", result: null };
+            setAllConfigs(prev => ({ ...prev, [defaultNewName]: newConfig }));
             setActiveSubject(defaultNewName);
+            setResult(null); // Reset result for new subject
         } else {
             setActiveSubject(subjectName);
+            setResult(allConfigs[subjectName]?.result || null); // Load result for selected subject
         }
     };
     
@@ -430,9 +433,13 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
     };
 
     const calculateGrade = () => {
+        let newResult: ResultState | null = null;
         const desired = parseFloat(activeConfig.desiredGrade);
+
         if (isNaN(desired) || desired < 0 || desired > 10) {
-            setResult({ status: 'error', title: "Error de Formato", description: "La nota final deseada debe ser un número entre 0 y 10." });
+            newResult = { status: 'error', title: "Error de Formato", description: "La nota final deseada debe ser un número entre 0 y 10." };
+            setResult(newResult);
+            updateActiveConfig({ result: newResult });
             return;
         }
 
@@ -443,7 +450,9 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
         for (const g of activeConfig.grades) {
             const weight = parseFloat(g.weight);
              if (isNaN(weight) || g.weight.trim() === '') {
-                setResult({ status: 'error', title: "Error en Porcentaje", description: `Hay un porcentaje vacío o no válido. Todos los campos de porcentaje deben estar rellenos.` });
+                newResult = { status: 'error', title: "Error en Porcentaje", description: `Hay un porcentaje vacío o no válido. Todos los campos de porcentaje deben estar rellenos.` };
+                setResult(newResult);
+                updateActiveConfig({ result: newResult });
                 return;
             }
             totalWeight += weight;
@@ -453,7 +462,9 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
             } else {
                 const grade = parseFloat(g.grade);
                 if (isNaN(grade) || grade < 0 || grade > 10) {
-                     setResult({ status: 'error', title: "Error en Nota", description: `La nota '${g.grade}' no es válida. Deben ser números entre 0 y 10.` });
+                     newResult = { status: 'error', title: "Error en Nota", description: `La nota '${g.grade}' no es válida. Deben ser números entre 0 y 10.` };
+                     setResult(newResult);
+                     updateActiveConfig({ result: newResult });
                      return;
                 }
                 weightedSum += (grade * weight);
@@ -461,7 +472,9 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
         }
         
         if (Math.abs(totalWeight - 100) > 0.01) {
-            setResult({ status: 'error', title: "Error en la Suma", description: `La suma de los porcentajes debe ser 100%, pero es ${totalWeight.toFixed(2)}%.` });
+            newResult = { status: 'error', title: "Error en la Suma", description: `La suma de los porcentajes debe ser 100%, pero es ${totalWeight.toFixed(2)}%.` };
+            setResult(newResult);
+            updateActiveConfig({ result: newResult });
             return;
         }
 
@@ -486,29 +499,34 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
                 if (neededGrade >= 5 && neededGrade < 7) status = 'warning';
                 if (neededGrade >= 7) status = 'danger';
             }
-             setResult({ status, title, description, grade: neededGrade });
+            newResult = { status, title, description, grade: neededGrade };
         } 
         else if (unknownGrades.length === 0) {
             const currentAverage = weightedSum / 100;
             let status: ResultStatus = 'info';
+            let title = 'Tu Media Actual';
+            let description = `Con las notas introducidas, tu media ponderada es de un ${currentAverage.toFixed(2)}.`;
+
             if (currentAverage >= 7) status = 'success';
             if (currentAverage >= 5 && currentAverage < 7) status = 'warning';
             if (currentAverage < 5) status = 'danger';
 
-             setResult({ 
+            newResult = { 
                 status,
-                title: 'Tu Media Actual', 
-                description: `Con las notas introducidas, tu media ponderada es de un ${currentAverage.toFixed(2)}.`,
+                title, 
+                description,
                 grade: currentAverage
-            });
+            };
         }
         else {
-             setResult({ 
+             newResult = { 
                 status: 'error', 
                 title: 'Error de Cálculo', 
                 description: "Para calcular, deja solo un campo de nota en blanco. Para ver tu media actual, rellena todas las notas." 
-            });
+            };
         }
+        setResult(newResult);
+        updateActiveConfig({ result: newResult });
     };
 
     return (
@@ -633,7 +651,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
                             id="desired-grade"
                             type="number"
                             value={activeConfig.desiredGrade}
-                            onChange={e => updateActiveConfig({ desiredGrade: e.target.value })}
+                            onChange={e => updateActiveConfig({ ...activeConfig, desiredGrade: e.target.value })}
                             className="pl-10 font-bold text-base bg-muted"
                             disabled={!activeSubject}
                         />
