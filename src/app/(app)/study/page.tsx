@@ -32,6 +32,10 @@ import {
   Flag,
   BookCopy,
   Pencil,
+  Award,
+  TrendingUp,
+  TrendingDown,
+  Info,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -308,6 +312,16 @@ interface AllSubjectConfigs {
     [subjectName: string]: SubjectConfig;
 }
 
+type ResultStatus = "success" | "warning" | "danger" | "info" | "error";
+
+interface ResultState {
+    status: ResultStatus;
+    title: string;
+    description: string;
+    grade?: number;
+}
+
+
 function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: React.ReactNode, isScheduleAvailable: boolean }) {
     const [allConfigs, setAllConfigs] = useState<AllSubjectConfigs>({});
     const [subjects, setSubjects] = useState<string[]>([]);
@@ -315,7 +329,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
     const [isEditingSubjectName, setIsEditingSubjectName] = useState(false);
     const [newSubjectName, setNewSubjectName] = useState('');
 
-    const [result, setResult] = useState<{ title: string; description: string; } | null>(null);
+    const [result, setResult] = useState<ResultState | null>(null);
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     
     // Load from localStorage on mount
@@ -413,7 +427,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
     const calculateGrade = () => {
         const desired = parseFloat(activeConfig.desiredGrade);
         if (isNaN(desired) || desired < 0 || desired > 10) {
-            setResult({ title: "Error", description: "La nota final deseada debe ser un número entre 0 y 10." });
+            setResult({ status: 'error', title: "Error de Formato", description: "La nota final deseada debe ser un número entre 0 y 10." });
             setIsAlertOpen(true);
             return;
         }
@@ -425,7 +439,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
         for (const g of activeConfig.grades) {
             const weight = parseFloat(g.weight);
              if (isNaN(weight) || g.weight.trim() === '') {
-                setResult({ title: "Error", description: `Hay un porcentaje vacío o no válido. Todos los campos de porcentaje deben estar rellenos.` });
+                setResult({ status: 'error', title: "Error en Porcentaje", description: `Hay un porcentaje vacío o no válido. Todos los campos de porcentaje deben estar rellenos.` });
                 setIsAlertOpen(true);
                 return;
             }
@@ -436,7 +450,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
             } else {
                 const grade = parseFloat(g.grade);
                 if (isNaN(grade) || grade < 0 || grade > 10) {
-                     setResult({ title: "Error", description: `La nota '${g.grade}' no es válida. Deben ser números entre 0 y 10.` });
+                     setResult({ status: 'error', title: "Error en Nota", description: `La nota '${g.grade}' no es válida. Deben ser números entre 0 y 10.` });
                      setIsAlertOpen(true);
                      return;
                 }
@@ -445,7 +459,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
         }
         
         if (Math.abs(totalWeight - 100) > 0.01) {
-            setResult({ title: "Error", description: `La suma de los porcentajes debe ser 100%, pero es ${totalWeight.toFixed(2)}%.` });
+            setResult({ status: 'error', title: "Error en la Suma", description: `La suma de los porcentajes debe ser 100%, pero es ${totalWeight.toFixed(2)}%.` });
             setIsAlertOpen(true);
             return;
         }
@@ -455,19 +469,53 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
             const neededGrade = (desired * 100 - weightedSum) / unknownWeight;
 
             if (neededGrade > 10) {
-                setResult({ title: "¡Objetivo Difícil!", description: `Necesitas sacar un ${neededGrade.toFixed(2)} en la evaluación restante. ¡Es un reto, pero no imposible con esfuerzo extra!` });
+                setResult({ 
+                    status: 'danger',
+                    title: '¡Objetivo Difícil!', 
+                    description: `Para alcanzar un ${desired}, necesitas un esfuerzo extra. ¡Ánimo!`,
+                    grade: neededGrade
+                });
             } else if (neededGrade < 0) {
-                 setResult({ title: "¡Ya Aprobaste!", description: `Felicidades, ya has alcanzado tu nota deseada. ¡Incluso si sacas un 0 en la última evaluación, tu nota final será superior!` });
+                 setResult({ 
+                    status: 'success',
+                    title: '¡Ya Aprobaste!',
+                    description: `Felicidades, ya has alcanzado tu nota deseada, incluso con un 0.`,
+                    grade: neededGrade
+                 });
             } else {
-                 setResult({ title: "Nota Necesaria", description: `Para obtener un ${desired} de nota final, necesitas sacar un ${neededGrade.toFixed(2)} en la evaluación restante.` });
+                let status: ResultStatus = 'info';
+                if (neededGrade < 5) status = 'success';
+                if (neededGrade >= 5 && neededGrade < 7) status = 'warning';
+                if (neededGrade >= 7) status = 'danger';
+
+                 setResult({ 
+                    status,
+                    title: 'Nota Necesaria', 
+                    description: `Para obtener un ${desired}, necesitas sacar un ${neededGrade.toFixed(2)}.`,
+                    grade: neededGrade
+                });
             }
         } 
         else if (unknownGrades.length === 0) {
             const currentAverage = weightedSum / 100;
-             setResult({ title: "Tu Media Actual", description: `Con todas las notas introducidas, tu nota media ponderada actual es de un ${currentAverage.toFixed(2)}.` });
+            let status: ResultStatus = 'info';
+            if (currentAverage >= 7) status = 'success';
+            if (currentAverage >= 5 && currentAverage < 7) status = 'warning';
+            if (currentAverage < 5) status = 'danger';
+
+             setResult({ 
+                status,
+                title: 'Tu Media Actual', 
+                description: `Con las notas introducidas, tu media ponderada es de un ${currentAverage.toFixed(2)}.`,
+                grade: currentAverage
+            });
         }
         else {
-             setResult({ title: "Error de Cálculo", description: "Para calcular la nota necesaria, deja solo un campo de nota en blanco. Para ver tu media actual, rellena todas las notas." });
+             setResult({ 
+                status: 'error', 
+                title: 'Error de Cálculo', 
+                description: "Para calcular, deja solo un campo de nota en blanco. Para ver tu media actual, rellena todas las notas." 
+            });
         }
         setIsAlertOpen(true);
     };
@@ -612,21 +660,94 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
             </Dialog>
 
             {result && (
-                <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>{result.title}</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                {result.description}
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogAction onClick={() => setIsAlertOpen(false)}>Entendido</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                <ResultDialog 
+                    isOpen={isAlertOpen} 
+                    onOpenChange={setIsAlertOpen} 
+                    result={result} 
+                />
             )}
         </>
     );
 }
 
+function ResultDialog({ isOpen, onOpenChange, result }: { isOpen: boolean, onOpenChange: (open: boolean) => void, result: ResultState }) {
+
+    const statusConfig = {
+        success: {
+            icon: Award,
+            color: "text-green-500",
+            borderColor: "border-t-green-500",
+            message: "¡Excelente trabajo! Sigue así."
+        },
+        warning: {
+            icon: TrendingUp,
+            color: "text-yellow-500",
+            borderColor: "border-t-yellow-500",
+            message: "¡Vas por buen camino! Un poco más de esfuerzo y lo conseguirás."
+        },
+        danger: {
+            icon: TrendingDown,
+            color: "text-red-500",
+            borderColor: "border-t-red-500",
+            message: "¡Cuidado! Necesitas esforzarte más para alcanzar tu objetivo."
+        },
+        info: {
+            icon: Info,
+            color: "text-blue-500",
+            borderColor: "border-t-blue-500",
+            message: "Aquí tienes la información que necesitas."
+        },
+        error: {
+            icon: Info,
+            color: "text-red-500",
+            borderColor: "border-t-red-500",
+            message: "Por favor, revisa los datos introducidos."
+        }
+    };
+    
+    const config = statusConfig[result.status];
+    const Icon = config.icon;
+
+    // Specific message for high needed grades
+    let finalDescription = result.description;
+    if (result.status === 'danger' && result.grade && result.grade > 10) {
+        finalDescription = `Necesitas sacar un ${result.grade.toFixed(2)}. ¡Es un reto, pero no imposible!`;
+    } else if (result.status === 'success' && result.grade && result.grade < 0) {
+        finalDescription = `¡Felicidades! Ya has superado tu objetivo, no necesitas nota.`;
+    }
+
+    return (
+        <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+            <AlertDialogContent className={cn("p-0 overflow-hidden", config.borderColor, "border-t-4")}>
+                <div className="p-6 text-center space-y-4">
+                    <div className="mx-auto w-fit p-3 bg-muted rounded-full">
+                        <Icon className={cn("h-10 w-10", config.color)} />
+                    </div>
+                    <AlertDialogHeader className="space-y-1">
+                        <AlertDialogTitle className="text-xl">{result.title}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {config.message}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    
+                    {result.grade !== undefined && (
+                        <div className="py-4">
+                            <p className={cn("text-7xl font-bold font-mono tracking-tighter", config.color)}>
+                                {result.grade < 0 ? '0.00' : result.grade.toFixed(2)}
+                            </p>
+                        </div>
+                    )}
+                    
+                    <p className="text-sm text-muted-foreground">{finalDescription}</p>
+
+                </div>
+                <AlertDialogFooter className="bg-muted/50 p-4">
+                    <AlertDialogAction onClick={() => onOpenChange(false)} className="w-full">Entendido</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
+
+    
