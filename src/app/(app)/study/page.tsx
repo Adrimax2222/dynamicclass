@@ -327,7 +327,6 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
     const [allConfigs, setAllConfigs] = useState<AllSubjectConfigs>({});
     const [subjects, setSubjects] = useState<string[]>([]);
     const [activeSubject, setActiveSubject] = useState<string>('');
-    const [isEditingSubjectName, setIsEditingSubjectName] = useState(false);
     const [newSubjectName, setNewSubjectName] = useState('');
 
     
@@ -409,7 +408,6 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
         const newSubjects = subjects.map(s => s === activeSubject ? newSubjectName : s);
         setSubjects(newSubjects);
         setActiveSubject(newSubjectName);
-        setIsEditingSubjectName(false);
     };
 
     const addGrade = () => {
@@ -429,7 +427,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
 
     const calculateGrade = () => {
         let newResult: ResultState | null = null;
-        const desired = parseFloat(activeConfig.desiredGrade);
+        const desired = parseFloat(activeConfig.desiredGrade.replace(',', '.'));
 
         if (isNaN(desired) || desired < 0 || desired > 10) {
             newResult = { status: 'error', title: "Error de Formato", description: "La nota final deseada debe ser un número entre 0 y 10." };
@@ -442,7 +440,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
         const unknownGrades = [];
         
         for (const g of activeConfig.grades) {
-            const weight = parseFloat(g.weight);
+            const weight = parseFloat(g.weight.replace(',', '.'));
              if (isNaN(weight) || g.weight.trim() === '') {
                 newResult = { status: 'error', title: "Error en Porcentaje", description: `Hay un porcentaje vacío o no válido. Todos los campos de porcentaje deben estar rellenos.` };
                 updateActiveConfig({ result: newResult });
@@ -453,7 +451,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
             if (g.grade.trim() === '') {
                 unknownGrades.push(g);
             } else {
-                const grade = parseFloat(g.grade);
+                const grade = parseFloat(g.grade.replace(',', '.'));
                 if (isNaN(grade) || grade < 0 || grade > 10) {
                      newResult = { status: 'error', title: "Error en Nota", description: `La nota '${g.grade}' no es válida. Deben ser números entre 0 y 10.` };
                      updateActiveConfig({ result: newResult });
@@ -470,7 +468,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
         }
 
         if (unknownGrades.length === 1) {
-            const unknownWeight = parseFloat(unknownGrades[0].weight);
+            const unknownWeight = parseFloat(unknownGrades[0].weight.replace(',', '.'));
             const neededGrade = (desired * 100 - weightedSum) / unknownWeight;
 
             let status: ResultStatus;
@@ -530,7 +528,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
     return (
         <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="max-w-md w-[95vw] flex flex-col max-h-[85vh] p-0">
+            <DialogContent className="max-w-md w-[95vw] p-0">
                 <DialogHeader className="p-6 pb-4">
                     <DialogTitle>Calculadora de Notas Ponderada</DialogTitle>
                     <DialogDescription>
@@ -538,8 +536,8 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
                     </DialogDescription>
                 </DialogHeader>
 
-                <ScrollArea className="flex-1 px-6">
-                    <div className="space-y-6">
+                <ScrollArea className="max-h-[60vh] px-6">
+                    <div className="space-y-6 py-4">
                         <div className="space-y-2">
                             <Label>Asignatura</Label>
                             <div className="flex items-center gap-2">
@@ -616,7 +614,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
                                             <Label htmlFor={`grade-${g.id}`} className="text-xs">Nota</Label>
                                             <Input
                                                 id={`grade-${g.id}`}
-                                                type="number"
+                                                type="text"
                                                 placeholder="0-10"
                                                 value={g.grade}
                                                 onChange={e => handleGradeChange(g.id, 'grade', e.target.value)}
@@ -626,7 +624,7 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
                                             <Label htmlFor={`weight-${g.id}`} className="text-xs">Peso %</Label>
                                             <Input
                                                 id={`weight-${g.id}`}
-                                                type="number"
+                                                type="text"
                                                 placeholder="%"
                                                 value={g.weight}
                                                 onChange={e => handleGradeChange(g.id, 'weight', e.target.value)}
@@ -644,13 +642,13 @@ function GradeCalculatorDialog({ children, isScheduleAvailable }: { children: Re
                         
                         {activeConfig.result && <ResultPanel result={activeConfig.result} />}
                         
-                        <div className="space-y-2 !mt-6">
+                        <div className="space-y-2">
                             <Label htmlFor="desired-grade">Nota Final Deseada</Label>
                             <div className="relative">
                                 <Flag className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                 <Input
                                     id="desired-grade"
-                                    type="number"
+                                    type="text"
                                     value={activeConfig.desiredGrade}
                                     onChange={e => updateActiveConfig({ ...activeConfig, desiredGrade: e.target.value, result: null })}
                                     className="pl-10 font-bold text-base bg-muted"
@@ -685,12 +683,14 @@ function ResultPanel({ result }: { result: ResultState }) {
     const Icon = config.icon;
     
     return (
-        <div className={cn("p-3 !mt-6 rounded-lg border", config.bg, config.border)}>
-            <div className="flex items-start gap-3">
-                 <Icon className={cn("h-5 w-5 flex-shrink-0", config.color)} />
+        <div className={cn("p-4 rounded-lg border", config.bg, config.border)}>
+            <div className="flex items-start gap-4">
+                 <div className={cn("p-2 rounded-full", config.bg)}>
+                    <Icon className={cn("h-6 w-6", config.color)} />
+                 </div>
                  <div className="flex-1">
-                    <h3 className="text-sm font-bold flex-1">{result.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{result.description}</p>
+                    <h3 className="font-bold flex-1">{result.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{result.description}</p>
                  </div>
                  {result.grade !== undefined && (
                     <p className={cn("text-4xl font-bold font-mono tracking-tighter", config.color)}>
@@ -701,3 +701,5 @@ function ResultPanel({ result }: { result: ResultState }) {
         </div>
     );
 }
+
+    
