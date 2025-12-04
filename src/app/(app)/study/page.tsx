@@ -528,27 +528,36 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
         updateActiveConfig({ result: newResult });
     };
     
-    const statusColors = {
-        success: "bg-green-500",
-        warning: "bg-yellow-500",
-        danger: "bg-red-500",
-        info: "bg-blue-500",
-        error: "bg-red-500",
+    const statusColors: Record<ResultStatus, string> = {
+        success: "bg-green-500/10 border-green-500/20 text-green-700 dark:text-green-400",
+        warning: "bg-yellow-500/10 border-yellow-500/20 text-yellow-700 dark:text-yellow-400",
+        danger: "bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400",
+        error: "bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400",
+        info: "bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-400",
     };
 
     const latestGrade = activeConfig.result?.grade;
     const latestStatus = activeConfig.result?.status;
 
+    const getBadgeColor = (grade: number | undefined) => {
+        if (grade === undefined) return "hidden";
+        if (grade < 5) return "bg-red-500/80";
+        if (grade < 7) return "bg-yellow-500/80 text-black";
+        return "bg-green-500/80";
+    }
+
     return (
         <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col max-h-[85vh]">
+                <DialogHeader className="p-6 pb-0">
+                    <DialogTitle>Herramientas de Notas</DialogTitle>
+                    <DialogDescription>
+                        Calcula tus notas y revisa tu progreso académico.
+                    </DialogDescription>
+                </DialogHeader>
                 <Tabs defaultValue="calculator" className="flex flex-col flex-1 min-h-0">
-                    <DialogHeader className="p-6 pb-0 flex-shrink-0">
-                        <DialogTitle>Herramientas de Notas</DialogTitle>
-                        <DialogDescription>
-                            Calcula tus notas y revisa tu progreso académico.
-                        </DialogDescription>
+                    <div className="px-6">
                         <TabsList className="grid w-full grid-cols-2 mt-4">
                             <TabsTrigger value="calculator">
                                 <Calculator className="h-4 w-4 mr-2" />
@@ -559,10 +568,10 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
                                 Informe
                             </TabsTrigger>
                         </TabsList>
-                    </DialogHeader>
+                    </div>
 
-                    <TabsContent value="calculator" className="mt-0 flex-1 flex flex-col min-h-0">
-                        <ScrollArea className="flex-1">
+                    <TabsContent value="calculator" className="mt-0 flex-1 overflow-hidden">
+                        <ScrollArea className="h-full">
                           <div className="px-6 space-y-6 py-4">
                               <div className="space-y-2">
                                   <Label>Asignatura</Label>
@@ -587,8 +596,8 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
                                           </SelectContent>
                                       </Select>
                                        {latestGrade !== undefined && latestStatus && (
-                                            <Badge className={cn("text-base", statusColors[latestStatus])}>
-                                                {latestGrade.toFixed(1)}
+                                            <Badge className={cn("text-base font-bold text-white", getBadgeColor(latestGrade))}>
+                                                {latestGrade < 0 ? "0.0" : latestGrade.toFixed(1)}
                                             </Badge>
                                         )}
                                       <Dialog>
@@ -684,25 +693,26 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
                                           disabled={!activeSubject}
                                       />
                                   </div>
-                              </div>
-                              {activeConfig.result && <ResultPanel result={activeConfig.result} />}
+                                </div>
+
+                                {activeConfig.result && <ResultPanel result={activeConfig.result} />}
                           </div>
                         </ScrollArea>
                     </TabsContent>
                     
-                    <TabsContent value="report" className="mt-0 flex-1 flex flex-col min-h-0">
-                       <ScrollArea className="flex-1">
+                    <TabsContent value="report" className="mt-0 flex-1 overflow-hidden">
+                       <ScrollArea className="h-full">
                           <ReportTab allConfigs={allConfigs} user={user} />
                        </ScrollArea>
                     </TabsContent>
 
-                    <DialogFooter className="p-6 pt-4 border-t flex-shrink-0">
-                        <DialogClose asChild>
-                            <Button variant="outline">Cerrar</Button>
-                        </DialogClose>
-                        <Button onClick={calculateGrade} disabled={!activeSubject}>Calcular</Button>
-                    </DialogFooter>
                 </Tabs>
+                <DialogFooter className="p-6 pt-4 border-t">
+                    <DialogClose asChild>
+                        <Button variant="outline">Cerrar</Button>
+                    </DialogClose>
+                    <Button onClick={calculateGrade} disabled={!activeSubject}>Calcular</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
@@ -721,21 +731,16 @@ function ResultPanel({ result }: { result: ResultState }) {
     const Icon = config.icon;
     
     return (
-        <div className={cn("p-4 rounded-lg border", config.bg, config.border)}>
-            <div className="flex items-start gap-4">
-                 <div className={cn("p-2 rounded-full", config.bg)}>
-                    <Icon className={cn("h-6 w-6", config.color)} />
-                 </div>
-                 <div className="flex-1">
-                    <h3 className="font-bold flex-1">{result.title}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{result.description}</p>
-                 </div>
-                 {result.grade !== undefined && (
-                    <p className={cn("text-4xl font-bold font-mono tracking-tighter", config.color)}>
-                        {result.grade < 0 ? '0.0' : result.grade.toFixed(1)}
-                    </p>
-                )}
-            </div>
+        <div className={cn("p-4 rounded-lg border flex items-start gap-4", config.bg, config.border)}>
+             <div className="flex-1">
+                <h3 className="font-bold flex items-center gap-2"><Icon className={cn("h-5 w-5", config.color)} />{result.title}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{result.description}</p>
+             </div>
+             {result.grade !== undefined && (
+                <p className={cn("text-4xl font-bold font-mono tracking-tighter", config.color)}>
+                    {result.grade < 0 ? '0.0' : result.grade.toFixed(1)}
+                </p>
+            )}
         </div>
     );
 }
@@ -843,7 +848,5 @@ function ReportTab({ allConfigs, user }: { allConfigs: AllSubjectConfigs, user: 
         </div>
     );
 }
-
-    
 
     
