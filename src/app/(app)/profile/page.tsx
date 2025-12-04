@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy, NotebookText, FileCheck2, ListChecks, Medal, Star, Infinity, LineChart, Flame, BrainCircuit } from "lucide-react";
+import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy, NotebookText, FileCheck2, ListChecks, Medal, Star, Infinity, LineChart, Flame, BrainCircuit, Clock } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -92,6 +92,17 @@ export default function ProfilePage() {
   const isAdmin = ADMIN_EMAILS.includes(user.email);
   const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
   const streakCount = user.streak || 0;
+  
+  const formatStudyTime = (totalMinutes: number = 0) => {
+    if (totalMinutes < 1) return "0m";
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  };
+
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
@@ -169,14 +180,6 @@ export default function ProfilePage() {
       <section>
         <h3 className="text-xl font-semibold font-headline mb-4">Logros</h3>
         
-        <Link href="/study" className="block mb-4">
-          <div className="relative rounded-lg p-6 bg-gradient-to-br from-primary to-accent text-primary-foreground cursor-pointer transition-transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
-              <BrainCircuit className="h-8 w-8 mb-3" />
-              <h3 className="text-xl font-bold font-headline">Modo Estudio</h3>
-              <p className="opacity-80 text-sm">Concéntrate, organiza y gana recompensas.</p>
-          </div>
-        </Link>
-        
         <div className="grid grid-cols-2 gap-4">
             <RankingDialog user={user}>
               <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
@@ -205,6 +208,20 @@ export default function ProfilePage() {
                     </CardContent>
                 </Card>
             </GradeCalculatorDialog>
+            
+            <AchievementCard 
+                title="Tiempo de Estudio"
+                value={formatStudyTime(user.studyMinutes)}
+                icon={Clock}
+                color="text-teal-400"
+            />
+
+            <AchievementCard 
+                title="Racha de Estudio"
+                value={streakCount}
+                icon={Flame}
+                color={streakCount > 0 ? "text-orange-500" : "text-muted-foreground"}
+            />
 
             {achievements.map(card => (
                 <AchievementCard key={card.title} {...card} />
@@ -478,7 +495,7 @@ function EditProfileDialog() {
 }
 
 
-function AchievementCard({ title, value, icon: Icon, color }: Omit<SummaryCardData, 'isAnnouncement'>) {
+function AchievementCard({ title, value, icon: Icon, color }: { title: string; value: string | number; icon: React.ElementType; color: string; }) {
     return (
       <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -491,5 +508,7 @@ function AchievementCard({ title, value, icon: Icon, color }: Omit<SummaryCardDa
       </Card>
     );
   }
+
+    
 
     
