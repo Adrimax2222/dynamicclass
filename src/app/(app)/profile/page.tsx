@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy, NotebookText, FileCheck2, ListChecks, Medal, Star, Infinity } from "lucide-react";
+import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy, NotebookText, FileCheck2, ListChecks, Medal, Star, Infinity, LineChart } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,6 +38,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
+import { GradeCalculatorDialog } from "@/components/layout/grade-calculator-dialog";
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
 
@@ -89,6 +90,7 @@ export default function ProfilePage() {
   ];
 
   const isAdmin = ADMIN_EMAILS.includes(user.email);
+  const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
@@ -173,6 +175,21 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
             </RankingDialog>
+            
+            <GradeCalculatorDialog isScheduleAvailable={isScheduleAvailable} user={user} openTo="report">
+                <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Mi Evaluación</CardTitle>
+                        <LineChart className="h-5 w-5 text-muted-foreground text-purple-400" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold flex items-center gap-2">
+                           Ver Informe <span aria-hidden="true">→</span>
+                        </div>
+                    </CardContent>
+                </Card>
+            </GradeCalculatorDialog>
+
             {achievements.map(card => (
                 <AchievementCard key={card.title} {...card} />
             ))}
