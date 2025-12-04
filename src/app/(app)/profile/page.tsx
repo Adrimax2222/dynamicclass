@@ -209,19 +209,23 @@ export default function ProfilePage() {
                 </Card>
             </GradeCalculatorDialog>
             
-            <AchievementCard 
-                title="Tiempo de Estudio"
-                value={formatStudyTime(user.studyMinutes)}
-                icon={Clock}
-                color="text-teal-400"
-            />
+            <Link href="/study" className="cursor-pointer">
+              <AchievementCard 
+                  title="Tiempo de Estudio"
+                  value={formatStudyTime(user.studyMinutes)}
+                  icon={Clock}
+                  color="text-teal-400"
+              />
+            </Link>
 
-            <AchievementCard 
-                title="Racha de Estudio"
-                value={streakCount}
-                icon={Flame}
-                color={streakCount > 0 ? "text-orange-500" : "text-muted-foreground"}
-            />
+            <Link href="/study" className="cursor-pointer">
+                <AchievementCard 
+                    title="Racha de Estudio"
+                    value={streakCount}
+                    icon={Flame}
+                    color={streakCount > 0 ? "text-orange-500" : "text-muted-foreground"}
+                />
+            </Link>
 
             {achievements.map(card => (
                 <AchievementCard key={card.title} {...card} />
