@@ -542,14 +542,14 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
     const getBadgeColor = (grade: number | undefined) => {
         if (grade === undefined) return "hidden";
         if (grade < 5) return "bg-red-500/80";
-        if (grade < 7) return "bg-yellow-500/80 text-black";
+        if (grade < 7) return "bg-orange-500/80 text-white";
         return "bg-green-500/80";
     }
 
     return (
         <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col max-h-[85vh]">
+            <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col h-[90vh]">
                 <DialogHeader className="p-6 pb-0">
                     <DialogTitle>Herramientas de Notas</DialogTitle>
                     <DialogDescription>
@@ -570,8 +570,8 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
                         </TabsList>
                     </div>
 
-                    <TabsContent value="calculator" className="mt-0 flex-1 overflow-hidden">
-                        <ScrollArea className="h-full">
+                    <TabsContent value="calculator" className="mt-0 flex-1 flex flex-col min-h-0">
+                        <ScrollArea className="flex-1">
                           <div className="px-6 space-y-6 py-4">
                               <div className="space-y-2">
                                   <Label>Asignatura</Label>
@@ -700,8 +700,8 @@ function GradeCalculatorDialog({ children, isScheduleAvailable, user }: { childr
                         </ScrollArea>
                     </TabsContent>
                     
-                    <TabsContent value="report" className="mt-0 flex-1 overflow-hidden">
-                       <ScrollArea className="h-full">
+                    <TabsContent value="report" className="mt-0 flex-1 flex flex-col min-h-0">
+                       <ScrollArea className="flex-1">
                           <ReportTab allConfigs={allConfigs} user={user} />
                        </ScrollArea>
                     </TabsContent>
@@ -751,7 +751,11 @@ function ReportTab({ allConfigs, user }: { allConfigs: AllSubjectConfigs, user: 
             .map(([subject, config]) => {
                 const filledGrades = config.grades.filter(g => g.grade.trim() !== '' && g.weight.trim() !== '');
                 if (filledGrades.length > 0) {
-                    const weightedSum = filledGrades.reduce((acc, g) => acc + (parseFloat(g.grade.replace(',', '.')) * parseFloat(g.weight.replace(',', '.'))), 0);
+                    const weightedSum = filledGrades.reduce((acc, g) => {
+                        const grade = parseFloat(g.grade.replace(',', '.'));
+                        const weight = parseFloat(g.weight.replace(',', '.'));
+                        return acc + (grade * weight);
+                    }, 0);
                     const totalWeight = filledGrades.reduce((acc, g) => acc + parseFloat(g.weight.replace(',', '.')), 0);
                     if (totalWeight > 0) {
                         const average = weightedSum / totalWeight;
@@ -848,5 +852,3 @@ function ReportTab({ allConfigs, user }: { allConfigs: AllSubjectConfigs, user: 
         </div>
     );
 }
-
-    
