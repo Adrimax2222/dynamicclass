@@ -248,8 +248,8 @@ export default function StudyPage() {
                     <Clock className="h-4 w-4"/>
                     <span>{formatStudyTime(user.studyMinutes)}</span>
                 </Badge>
-                <Badge variant="outline" className={cn("flex items-center gap-1.5", streakCount > 1 ? "bg-orange-100 dark:bg-orange-900/50 border-orange-300 dark:border-orange-700" : "")}>
-                    <Flame className={cn("h-4 w-4", streakCount > 1 ? "text-orange-500" : "text-muted-foreground")} />
+                <Badge variant="outline" className={cn("flex items-center gap-1.5", streakCount > 0 ? "bg-orange-100 dark:bg-orange-900/50 border-orange-300 dark:border-orange-700" : "")}>
+                    <Flame className={cn("h-4 w-4", streakCount > 0 ? "text-orange-500" : "text-muted-foreground")} />
                     <span className="font-bold">{streakCount}</span>
                 </Badge>
                 <Badge variant="outline" className="flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/50 border-amber-300 dark:border-amber-700">
