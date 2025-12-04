@@ -27,6 +27,7 @@ import {
   Percent,
   Calculator,
   ScanLine,
+  Flame,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -34,6 +35,7 @@ import { Slider } from "@/components/ui/slider";
 import { GradeCalculatorDialog } from "@/components/layout/grade-calculator-dialog";
 import { useFirestore } from "@/firebase";
 import { doc, updateDoc, increment } from "firebase/firestore";
+import { format as formatDate, subDays, isSameDay } from 'date-fns';
 
 
 type TimerMode = "pomodoro" | "long" | "deep";
@@ -68,6 +70,9 @@ export default function StudyPage() {
 
   // Ref to track if a minute has been logged
   const lastLoggedMinuteRef = useRef<number | null>(null);
+  
+  // Ref to track if streak has been updated today
+  const streakUpdatedTodayRef = useRef<boolean>(false);
 
   const getInitialTime = useCallback(() => {
     return modes[mode][phase] * 60;
@@ -78,6 +83,46 @@ export default function StudyPage() {
   useEffect(() => {
     setTimeLeft(getInitialTime());
   }, [mode, phase, getInitialTime]);
+
+  // Handle streak logic
+  const handleStreak = useCallback(async () => {
+    if (!firestore || !user || streakUpdatedTodayRef.current) return;
+    
+    const today = new Date();
+    const todayStr = formatDate(today, 'yyyy-MM-dd');
+    const lastStudyDay = user.lastStudyDay ? new Date(user.lastStudyDay) : null;
+
+    // To prevent multiple updates on the same day after a page refresh
+    if (lastStudyDay && isSameDay(today, lastStudyDay)) {
+        streakUpdatedTodayRef.current = true;
+        return;
+    }
+
+    const yesterday = subDays(today, 1);
+    let newStreak = user.streak || 0;
+
+    if (lastStudyDay && isSameDay(yesterday, lastStudyDay)) {
+        // Streak continues
+        newStreak++;
+    } else {
+        // Streak is broken or it's the first day
+        newStreak = 1;
+    }
+    
+    const userDocRef = doc(firestore, 'users', user.uid);
+    try {
+        await updateDoc(userDocRef, {
+            streak: newStreak,
+            lastStudyDay: todayStr,
+        });
+        updateUser({ streak: newStreak, lastStudyDay: todayStr });
+        streakUpdatedTodayRef.current = true;
+        console.log("Streak updated:", newStreak);
+    } catch (err) {
+        console.error("Failed to update streak:", err);
+    }
+  }, [firestore, user, updateUser]);
+
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -104,9 +149,14 @@ export default function StudyPage() {
     };
   }, [isActive, timeLeft, mode, phase, toast]);
 
-  // Effect to log study minutes
+  // Effect to log study minutes and handle streak
   useEffect(() => {
     if (!firestore || !user || !isActive || phase !== 'focus') return;
+
+    // Handle streak on first active focus second of the day
+    if (!streakUpdatedTodayRef.current) {
+        handleStreak();
+    }
 
     const currentMinute = Math.floor((modes[mode].focus * 60 - timeLeft) / 60);
 
@@ -125,7 +175,7 @@ export default function StudyPage() {
         });
     }
 
-  }, [timeLeft, isActive, phase, firestore, user, mode, updateUser]);
+  }, [timeLeft, isActive, phase, firestore, user, mode, updateUser, handleStreak]);
 
 
   const handleModeChange = (newMode: TimerMode) => {
@@ -178,6 +228,7 @@ export default function StudyPage() {
 
   const isAdmin = ADMIN_EMAILS.includes(user.email);
   const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
+  const streakCount = user.streak || 0;
 
   const phaseColors = phase === 'focus' 
     ? "from-primary to-accent" 
@@ -196,6 +247,10 @@ export default function StudyPage() {
                 <Badge variant="outline" className="flex items-center gap-1.5">
                     <Clock className="h-4 w-4"/>
                     <span>{formatStudyTime(user.studyMinutes)}</span>
+                </Badge>
+                <Badge variant="outline" className={cn("flex items-center gap-1.5", streakCount > 1 ? "bg-orange-100 dark:bg-orange-900/50 border-orange-300 dark:border-orange-700" : "")}>
+                    <Flame className={cn("h-4 w-4", streakCount > 1 ? "text-orange-500" : "text-muted-foreground")} />
+                    <span className="font-bold">{streakCount}</span>
                 </Badge>
                 <Badge variant="outline" className="flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/50 border-amber-300 dark:border-amber-700">
                     <Trophy className="h-4 w-4 text-amber-500"/>

@@ -4,7 +4,7 @@ import { createContext, useState, useEffect, useCallback, type ReactNode } from 
 import type { User, Chat } from '@/lib/types';
 import { useAuth, useFirestore } from '@/firebase';
 import { onAuthStateChanged, type User as FirebaseUser, deleteUser } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, deleteDoc, collection, query, orderBy } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, deleteDoc, collection, query, orderBy, updateDoc } from 'firebase/firestore';
 
 export type Theme = 'light' | 'dark';
 
@@ -71,8 +71,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
             const unsubSnapshot = onSnapshot(userDocRef, async (docSnap) => {
               if (docSnap.exists()) {
                 let userData = { uid: docSnap.id, ...docSnap.data() } as User;
-                if (isAdmin) {
-                    userData.role = 'admin';
+                
+                // Ensure streak and studyMinutes are numbers
+                userData.streak = userData.streak || 0;
+                userData.studyMinutes = userData.studyMinutes || 0;
+
+                if (isAdmin && userData.role !== 'admin') {
+                   await updateDoc(userDocRef, { role: 'admin' });
+                   userData.role = 'admin';
                 }
                 setUser(userData);
               } else {

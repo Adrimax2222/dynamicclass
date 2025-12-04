@@ -21,7 +21,9 @@
         "activities": { "type": "number" },
         "organizationId": { "type": "string" },
         "isNewUser": { "type": "boolean" },
-        "studyMinutes": { "type": "number" }
+        "studyMinutes": { "type": "number" },
+        "streak": { "type": "number" },
+        "lastStudyDay": { "type": "string", "format": "date" }
       },
       "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange", "isNewUser"]
     },

@@ -18,6 +18,8 @@ export type User = {
   pending: number;
   activities: number;
   studyMinutes?: number;
+  streak?: number;
+  lastStudyDay?: string;
   organizationId?: string; // e.g., 'ies-torre-del-palau'
   isNewUser?: boolean;
 };

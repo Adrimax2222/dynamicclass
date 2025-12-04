@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -202,6 +203,9 @@ export default function AuthPage() {
           pending: 0,
           activities: 0,
           isNewUser: true,
+          studyMinutes: 0,
+          streak: 0,
+          lastStudyDay: '',
       };
 
       await setDoc(doc(firestore, 'users', firebaseUser.uid), newUser);
@@ -318,6 +322,9 @@ export default function AuthPage() {
             pending: 0,
             activities: 0,
             isNewUser: true, // This will trigger the profile completion modal
+            studyMinutes: 0,
+            streak: 0,
+            lastStudyDay: '',
         };
         await setDoc(userDocRef, newUser);
       }
