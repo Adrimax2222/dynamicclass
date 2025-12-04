@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy, NotebookText, FileCheck2, ListChecks, Medal, Star, Infinity, LineChart } from "lucide-react";
+import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy, NotebookText, FileCheck2, ListChecks, Medal, Star, Infinity, LineChart, Flame } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -91,6 +91,7 @@ export default function ProfilePage() {
 
   const isAdmin = ADMIN_EMAILS.includes(user.email);
   const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
+  const streakCount = user.streak || 0;
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
@@ -99,14 +100,20 @@ export default function ProfilePage() {
           Mi Perfil
         </h1>
         <div className="flex items-center gap-2">
-            <RankingDialog user={user}>
-                 <div className="flex items-center gap-2 rounded-full border bg-card p-2 shadow-sm cursor-pointer hover:bg-muted transition-colors">
-                    <Trophy className="h-5 w-5 text-yellow-400" />
-                    <span className="font-bold">
-                        {isAdmin ? <Infinity className="h-5 w-5" /> : user.trophies}
-                    </span>
+             <div className="flex items-center gap-2 rounded-full border bg-card p-1 pr-2 shadow-sm">
+                <RankingDialog user={user}>
+                   <div className="flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors">
+                      <Trophy className="h-5 w-5 text-yellow-400" />
+                      <span className="font-bold text-sm">
+                          {isAdmin ? <Infinity className="h-4 w-4" /> : user.trophies}
+                      </span>
+                  </div>
+                </RankingDialog>
+                <div className={cn("flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors", streakCount > 0 ? "bg-orange-100/50 dark:bg-orange-900/20" : "")}>
+                    <Flame className={cn("h-5 w-5", streakCount > 0 ? "text-orange-500" : "text-muted-foreground")} />
+                    <span className="font-bold text-sm">{streakCount}</span>
                 </div>
-            </RankingDialog>
+            </div>
             <Button variant="ghost" size="icon" asChild>
                 <Link href="/settings" aria-label="Ajustes">
                     <Settings />
@@ -475,5 +482,8 @@ function AchievementCard({ title, value, icon: Icon, color }: Omit<SummaryCardDa
       </Card>
     );
   }
+
+    
+
 
     
