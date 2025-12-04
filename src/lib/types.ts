@@ -17,6 +17,7 @@ export type User = {
   exams: number;
   pending: number;
   activities: number;
+  studyMinutes?: number;
   organizationId?: string; // e.g., 'ies-torre-del-palau'
   isNewUser?: boolean;
 };

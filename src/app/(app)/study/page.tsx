@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/hooks/use-app";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,8 @@ import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { GradeCalculatorDialog } from "@/components/layout/grade-calculator-dialog";
+import { useFirestore } from "@/firebase";
+import { doc, updateDoc, increment } from "firebase/firestore";
 
 
 type TimerMode = "pomodoro" | "long" | "deep";
@@ -54,14 +56,18 @@ const sounds = [
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
 
 export default function StudyPage() {
-  const { user } = useApp();
+  const { user, updateUser } = useApp();
   const router = useRouter();
+  const firestore = useFirestore();
   const { toast } = useToast();
 
   const [mode, setMode] = useState<TimerMode>("pomodoro");
   const [phase, setPhase] = useState<Phase>("focus");
   const [isActive, setIsActive] = useState(false);
   const [selectedSound, setSelectedSound] = useState<Sound>("rain");
+
+  // Ref to track if a minute has been logged
+  const lastLoggedMinuteRef = useRef<number | null>(null);
 
   const getInitialTime = useCallback(() => {
     return modes[mode][phase] * 60;
@@ -98,6 +104,30 @@ export default function StudyPage() {
     };
   }, [isActive, timeLeft, mode, phase, toast]);
 
+  // Effect to log study minutes
+  useEffect(() => {
+    if (!firestore || !user || !isActive || phase !== 'focus') return;
+
+    const currentMinute = Math.floor((modes[mode].focus * 60 - timeLeft) / 60);
+
+    if (currentMinute > 0 && currentMinute !== lastLoggedMinuteRef.current) {
+        lastLoggedMinuteRef.current = currentMinute;
+        
+        const userDocRef = doc(firestore, 'users', user.uid);
+        updateDoc(userDocRef, {
+            studyMinutes: increment(1)
+        }).then(() => {
+            console.log('Study minute logged');
+            // Update context locally to avoid re-fetching user data
+            updateUser({ studyMinutes: (user.studyMinutes || 0) + 1 });
+        }).catch(err => {
+            console.error("Failed to log study minute:", err);
+        });
+    }
+
+  }, [timeLeft, isActive, phase, firestore, user, mode, updateUser]);
+
+
   const handleModeChange = (newMode: TimerMode) => {
     setIsActive(false);
     setMode(newMode);
@@ -105,11 +135,18 @@ export default function StudyPage() {
     setTimeLeft(modes[newMode].focus * 60);
   };
 
-  const handleToggle = () => setIsActive(!isActive);
+  const handleToggle = () => {
+    // Reset minute tracker when timer starts from a paused state
+    if (!isActive) {
+        lastLoggedMinuteRef.current = Math.floor((modes[mode].focus * 60 - timeLeft) / 60);
+    }
+    setIsActive(!isActive);
+  }
 
   const handleReset = () => {
     setIsActive(false);
     setTimeLeft(getInitialTime());
+    lastLoggedMinuteRef.current = null;
   };
 
   const handleSkip = () => {
@@ -117,12 +154,19 @@ export default function StudyPage() {
     const nextPhase = phase === "focus" ? "break" : "focus";
     setPhase(nextPhase);
     setTimeLeft(modes[mode][nextPhase] * 60);
+    lastLoggedMinuteRef.current = null;
   };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
+
+   const formatStudyTime = (totalMinutes: number = 0) => {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours}h ${minutes}m`;
   };
 
   const progress = useMemo(() => {
@@ -151,7 +195,7 @@ export default function StudyPage() {
             <div className="flex items-center gap-2">
                 <Badge variant="outline" className="flex items-center gap-1.5">
                     <Clock className="h-4 w-4"/>
-                    <span>14h 20m</span>
+                    <span>{formatStudyTime(user.studyMinutes)}</span>
                 </Badge>
                 <Badge variant="outline" className="flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/50 border-amber-300 dark:border-amber-700">
                     <Trophy className="h-4 w-4 text-amber-500"/>
@@ -279,3 +323,4 @@ export default function StudyPage() {
     </div>
   );
 }
+

@@ -20,7 +20,8 @@
         "pending": { "type": "number" },
         "activities": { "type": "number" },
         "organizationId": { "type": "string" },
-        "isNewUser": { "type": "boolean" }
+        "isNewUser": { "type": "boolean" },
+        "studyMinutes": { "type": "number" }
       },
       "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange", "isNewUser"]
     },
