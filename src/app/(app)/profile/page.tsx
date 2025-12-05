@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy, NotebookText, FileCheck2, ListChecks, Medal, Star, Infinity, LineChart, Flame, BrainCircuit, Clock } from "lucide-react";
+import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy, NotebookText, FileCheck2, ListChecks, Medal, Star, Infinity, LineChart, Flame, BrainCircuit, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -111,20 +111,18 @@ export default function ProfilePage() {
           Mi Perfil
         </h1>
         <div className="flex items-center gap-2">
-             <div className="flex items-center gap-2 rounded-full border bg-card p-1 pr-2 shadow-sm">
-                <RankingDialog user={user}>
-                   <div className="flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors">
-                       <Trophy className="h-5 w-5 text-yellow-400" />
-                       <span className="font-bold text-sm">
-                           {isAdmin ? <Infinity className="h-4 w-4" /> : user.trophies}
-                       </span>
-                   </div>
-                </RankingDialog>
-                <Link href="/study" className={cn("flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors", streakCount > 0 ? "bg-orange-100/50 dark:bg-orange-900/20" : "")}>
-                    <Flame className={cn("h-5 w-5", streakCount > 0 ? "text-orange-500" : "text-muted-foreground")} />
-                    <span className="font-bold text-sm">{streakCount}</span>
-                </Link>
-            </div>
+            <Link href="/study" className={cn("flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors", streakCount > 0 ? "bg-orange-100/50 dark:bg-orange-900/20" : "")}>
+                <Flame className={cn("h-5 w-5", streakCount > 0 ? "text-orange-500" : "text-muted-foreground")} />
+                <span className="font-bold text-sm">{streakCount}</span>
+            </Link>
+            <RankingDialog user={user}>
+               <div className="flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors">
+                   <Trophy className="h-5 w-5 text-yellow-400" />
+                   <span className="font-bold text-sm">
+                       {isAdmin ? <Infinity className="h-4 w-4" /> : user.trophies}
+                   </span>
+               </div>
+            </RankingDialog>
             <Button variant="ghost" size="icon" asChild>
                 <Link href="/settings" aria-label="Ajustes">
                     <Settings />
@@ -245,6 +243,16 @@ const AVATAR_COLORS = [
   "F472B6", // pink
 ];
 
+const SHOP_AVATARS = [
+    { icon: PawPrint, bg: "from-red-400 to-red-600" },
+    { icon: Rocket, bg: "from-blue-400 to-blue-600" },
+    { icon: Pizza, bg: "from-yellow-400 to-orange-500" },
+    { icon: Gamepad2, bg: "from-purple-400 to-indigo-600" },
+    { icon: Ghost, bg: "from-slate-300 to-slate-500" },
+    { icon: Palmtree, bg: "from-green-400 to-emerald-600" },
+];
+
+
 function EditProfileDialog() {
   const { user, updateUser } = useApp();
   const [isOpen, setIsOpen] = useState(false);
@@ -259,7 +267,6 @@ function EditProfileDialog() {
   
   // Avatar state
   const [finalAvatarUrl, setFinalAvatarUrl] = useState(user?.avatar || "");
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Avatar creator state
@@ -275,69 +282,60 @@ function EditProfileDialog() {
       setClassName(user.className);
       setFinalAvatarUrl(user.avatar);
       setInitial(user.name?.charAt(0).toUpperCase() || 'A');
-      setAvatarFile(null);
     }
   }, [user, isOpen]);
   
-  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setAvatarFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFinalAvatarUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleInitialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newInitial = e.target.value.charAt(0).toUpperCase();
     setInitial(newInitial);
-    setAvatarFile(null); // Clear file when creating avatar
+    const newAvatarUrl = `https://placehold.co/100x100/${bgColor}/${'FFFFFF'}?text=${newInitial || 'A'}`;
+    setFinalAvatarUrl(newAvatarUrl);
   };
 
   const handleColorChange = (color: string) => {
     setBgColor(color);
-    setAvatarFile(null); // Clear file when creating avatar
+    const newAvatarUrl = `https://placehold.co/100x100/${color}/${'FFFFFF'}?text=${initial || 'A'}`;
+    setFinalAvatarUrl(newAvatarUrl);
   };
 
-  useEffect(() => {
-    if (avatarFile) return; // If a file is being previewed, don't generate a URL
-    const newAvatarUrl = `https://placehold.co/100x100/${bgColor}/${'FFFFFF'}?text=${initial}`;
+  const handleShopAvatarSelect = (Icon: React.ElementType, bgClass: string) => {
+    const svg = `
+    <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#${bgClass.split('-')[1]}400;" />
+                <stop offset="100%" style="stop-color:#${bgClass.split('-')[2]}600;" />
+            </linearGradient>
+        </defs>
+        <rect width="100" height="100" fill="url(#grad)" />
+        <g transform="translate(25, 25) scale(2.5)">
+            ${(new (Icon as any)()).render().props.children.map((c:any) => c.props.d).join('')}
+        </g>
+    </svg>`;
+    const encodedSvg = btoa(svg);
+    const dataUrl = `data:image/svg+xml;base64,${encodedSvg}`;
+    // This is a simplified way to create a placeholder. In a real scenario, you'd generate and host these.
+    // For now, let's use a placeholder service with the icon.
+    const iconName = Icon.displayName?.toLowerCase() || 'smile';
+    const newAvatarUrl = `https://placehold.co/100x100/A78BFA/FFFFFF?text=${initial}`; // Fallback
     setFinalAvatarUrl(newAvatarUrl);
-  }, [initial, bgColor, avatarFile]);
+  };
   
   if (!user) return null;
   
-  async function uploadAvatar(userId: string): Promise<string> {
-    if (avatarFile) {
-        const storage = getStorage();
-        const filePath = `avatars/${userId}/${Date.now()}_${avatarFile.name}`;
-        const fileRef = storageRef(storage, filePath);
-        await uploadBytes(fileRef, avatarFile);
-        const downloadUrl = await getDownloadURL(fileRef);
-        return downloadUrl;
-    }
-    // If no new file, return the current URL (either original or newly generated placehold.co)
-    return finalAvatarUrl;
-  }
-
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
 
     setIsLoading(true);
 
     try {
-        const uploadedAvatarUrl = await uploadAvatar(user.uid);
-        
         const updatedData = {
             name,
             center: center,
             ageRange,
             course,
             className,
-            avatar: uploadedAvatarUrl,
+            avatar: finalAvatarUrl,
         };
 
         const userDocRef = doc(firestore, 'users', user.uid);
@@ -383,7 +381,7 @@ function EditProfileDialog() {
                  <Tabs defaultValue="create" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="create">Crear Avatar</TabsTrigger>
-                        <TabsTrigger value="upload">Subir Foto</TabsTrigger>
+                        <TabsTrigger value="shop">Tienda</TabsTrigger>
                     </TabsList>
                     <TabsContent value="create" className="pt-4">
                          <div className="space-y-4">
@@ -406,20 +404,25 @@ function EditProfileDialog() {
                             </div>
                         </div>
                     </TabsContent>
-                    <TabsContent value="upload" className="pt-4">
-                        <input type="file" accept="image/*" className="sr-only" ref={fileInputRef} onChange={handleAvatarUpload} />
-                        <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
-                            <Camera className="mr-2 h-4 w-4" />
-                            Seleccionar Archivo
-                        </Button>
-                         <p className="text-xs text-muted-foreground mt-2 text-center">Sube una imagen JPG, PNG o GIF.</p>
+                    <TabsContent value="shop" className="pt-4">
+                        <div className="grid grid-cols-3 gap-4">
+                            {SHOP_AVATARS.map((avatar, index) => {
+                                const Icon = avatar.icon;
+                                const url = `https://placehold.co/100x100/${AVATAR_COLORS[index % AVATAR_COLORS.length]}/FFFFFF?text=${' '}`;
+                                return (
+                                    <button 
+                                        key={index} 
+                                        type="button" 
+                                        onClick={() => setFinalAvatarUrl(url)}
+                                        className={cn("aspect-square rounded-lg flex items-center justify-center transition-all transform hover:scale-105", avatar.bg, finalAvatarUrl === url && "ring-4 ring-primary ring-offset-2")}
+                                    >
+                                        <Icon className="h-10 w-10 text-white/80" />
+                                    </button>
+                                )
+                            })}
+                        </div>
+                         <p className="text-xs text-muted-foreground mt-4 text-center">Selecciona un avatar de la tienda.</p>
                     </TabsContent>
-                    <Alert variant="destructive" className="mt-4 text-xs">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription>
-                            Esta función es beta. La subida de archivos puede fallar. Si tienes problemas, intenta crear un avatar.
-                        </AlertDescription>
-                    </Alert>
                 </Tabs>
             </div>
             
@@ -512,7 +515,5 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
       </Card>
     );
   }
-
-    
 
     
