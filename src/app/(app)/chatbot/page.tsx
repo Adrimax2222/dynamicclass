@@ -191,6 +191,9 @@ export default function ChatbotPage() {
   };
 
   const placeholderText = "Pregúntame sobre cualquier tema...";
+  
+  const showWelcomeScreen = !isChatsLoading && (!activeChatId || (activeChatId && messages.length === 0 && !isMessagesLoading));
+
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
@@ -214,7 +217,7 @@ export default function ChatbotPage() {
 
         <ScrollArea className="flex-1" ref={scrollAreaRef}>
             <div className="space-y-6 p-4">
-            {!activeChatId && !isChatsLoading ? (
+            {showWelcomeScreen ? (
                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 mt-16">
                     <div className="relative mb-4">
                         <Logo className="h-20 w-20 text-primary" />
@@ -397,5 +400,7 @@ function ChatHistorySheet({ chats, isChatsLoading, activeChatId, setActiveChatId
         </Sheet>
     );
 }
+
+    
 
     
