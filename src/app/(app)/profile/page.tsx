@@ -112,7 +112,7 @@ export default function ProfilePage() {
           Mi Perfil
         </h1>
         <div className="flex items-center gap-2">
-            <Link href="/study" className={cn("flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors", streakCount > 0 ? "bg-orange-100/50 dark:bg-orange-900/20" : "")}>
+             <Link href="/study" className={cn("flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors", streakCount > 0 ? "bg-orange-100/50 dark:bg-orange-900/20" : "")}>
                 <Flame className={cn("h-5 w-5", streakCount > 0 ? "text-orange-500" : "text-muted-foreground")} />
                 <span className="font-bold text-sm">{streakCount}</span>
             </Link>
@@ -244,12 +244,12 @@ const AVATAR_COLORS = [
 ];
 
 const SHOP_AVATARS = [
-    { id: 'paw', icon: PawPrint, price: 50, url: 'https://placehold.co/100x100/f87171/FFFFFF?text=🐾' },
-    { id: 'rocket', icon: Rocket, price: 75, url: 'https://placehold.co/100x100/60a5fa/FFFFFF?text=🚀' },
-    { id: 'pizza', icon: Pizza, price: 25, url: 'https://placehold.co/100x100/fbbf24/FFFFFF?text=🍕' },
-    { id: 'gamepad', icon: Gamepad2, price: 100, url: 'https://placehold.co/100x100/a78bfa/FFFFFF?text=🎮' },
-    { id: 'ghost', icon: Ghost, price: 150, url: 'https://placehold.co/100x100/d1d5db/FFFFFF?text=👻' },
-    { id: 'palmtree', icon: Palmtree, price: 60, url: 'https://placehold.co/100x100/34d399/FFFFFF?text=🌴' },
+    { id: 'paw', icon: PawPrint, price: 50, url: 'https://picsum.photos/seed/avatar1/100/100' },
+    { id: 'rocket', icon: Rocket, price: 75, url: 'https://picsum.photos/seed/avatar2/100/100' },
+    { id: 'pizza', icon: Pizza, price: 25, url: 'https://picsum.photos/seed/avatar3/100/100' },
+    { id: 'gamepad', icon: Gamepad2, price: 100, url: 'https://picsum.photos/seed/avatar4/100/100' },
+    { id: 'ghost', icon: Ghost, price: 150, url: 'https://picsum.photos/seed/avatar5/100/100' },
+    { id: 'palmtree', icon: Palmtree, price: 60, url: 'https://picsum.photos/seed/avatar6/100/100' },
 ];
 
 function EditProfileDialog() {
@@ -490,7 +490,7 @@ function EditProfileDialog() {
                                             onClick={() => setSelectedAvatarUrl(avatar.url)}
                                             className={cn("w-full aspect-square rounded-lg flex items-center justify-center transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
                                         >
-                                            <img src={avatar.url} alt={avatar.id} className="rounded-md object-cover" />
+                                            <img src={avatar.url} alt={avatar.id} className="rounded-md object-cover w-full h-full" />
                                         </button>
                                         <div className="mt-2 text-center">
                                             {isOwned ? (
@@ -561,5 +561,8 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
     
 
     
+
+    
+
 
     
