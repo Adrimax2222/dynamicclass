@@ -23,6 +23,7 @@ import { ShieldAlert, Trophy, Gem, Medal, Infinity, ShoppingCart, Star, Sparkles
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Card } from "../ui/card";
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
 
@@ -135,7 +136,7 @@ function ShopTab({ user }: { user: User }) {
 
     return (
          <div className="p-6 pt-2 space-y-6">
-            <div className="text-center sticky top-0 bg-background/80 backdrop-blur-sm py-4">
+            <div className="text-center sticky top-0 bg-background/80 backdrop-blur-sm py-4 z-10">
                  <p className="text-sm text-muted-foreground">Tus trofeos</p>
                  <div className="flex items-center justify-center gap-2">
                      <Trophy className="h-6 w-6 text-yellow-400"/>
@@ -165,35 +166,37 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
     const canAfford = userTrophies >= cost;
 
     return (
-        <div className="border rounded-lg p-4 flex flex-col sm:flex-row items-center gap-4 bg-card shadow-sm">
-            <div className="w-24 h-16 flex items-center justify-center bg-white rounded-md p-2 shadow-inner">
-                <img src={item.imageUrl} alt={item.name} className="max-w-full max-h-full object-contain" />
-            </div>
-            <div className="flex-1 w-full">
-                <h4 className="font-bold">{`Tarjeta Regalo ${item.name}`}</h4>
-                 <div className="flex items-center gap-2 mt-2">
-                    <Select onValueChange={setSelectedValue} defaultValue={selectedValue}>
-                        <SelectTrigger className="w-full sm:w-[120px]">
-                            <SelectValue placeholder="Valor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {item.values.map(value => (
-                                <SelectItem key={value} value={value.toString()}>{`${value}€`}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <div className="flex items-center gap-1.5 font-bold text-lg">
-                        <Trophy className="h-4 w-4 text-yellow-500" />
-                        <span>{cost}</span>
+        <Card className="overflow-hidden transition-all hover:shadow-md transform hover:-translate-y-1 shadow-sm">
+            <div className="p-4 flex flex-col sm:flex-row items-center gap-4">
+                 <div className="w-full sm:w-28 h-20 flex-shrink-0 flex items-center justify-center bg-white rounded-lg p-2 shadow-inner border">
+                    <img src={item.imageUrl} alt={item.name} className="max-w-full max-h-full object-contain" />
+                </div>
+                <div className="flex-1 w-full text-center sm:text-left">
+                    <h4 className="font-bold">{`Tarjeta Regalo ${item.name}`}</h4>
+                    <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2 mt-2">
+                        <Select onValueChange={setSelectedValue} defaultValue={selectedValue}>
+                            <SelectTrigger className="w-full sm:w-[120px]">
+                                <SelectValue placeholder="Valor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {item.values.map(value => (
+                                    <SelectItem key={value} value={value.toString()}>{`${value}€`}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <div className="flex items-center gap-1.5 font-bold text-lg">
+                            <Trophy className="h-4 w-4 text-yellow-500" />
+                            <span>{cost}</span>
+                        </div>
                     </div>
                 </div>
+                <div className="w-full sm:w-auto mt-4 sm:mt-0">
+                    <Button className="w-full" disabled={!canAfford}>
+                        Canjear
+                    </Button>
+                </div>
             </div>
-            <div className="w-full sm:w-auto">
-                 <Button className="w-full" disabled={!canAfford}>
-                    Canjear
-                </Button>
-            </div>
-        </div>
+        </Card>
     );
 }
 
@@ -253,3 +256,5 @@ function RankingItem({ user, rank, isCurrentUser }: { user: User; rank: number; 
         </div>
     );
 }
+
+    
