@@ -429,7 +429,7 @@ export default function HomePage() {
                     <div className="flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors">
                         <Trophy className="h-5 w-5 text-yellow-400" />
                         <span className="font-bold text-sm">
-                            {isAdmin ? <Infinity className="h-4 w-4" /> : user.trophies}
+                            {user.trophies}
                         </span>
                     </div>
                 </RankingDialog>

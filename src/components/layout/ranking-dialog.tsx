@@ -188,7 +188,7 @@ function PodiumPlace({ user, place }: { user?: User; place: 1 | 2 | 3 }) {
             <div className="flex items-center gap-1">
                  <Trophy className="h-4 w-4 text-yellow-400" />
                 <span className="font-bold text-lg">
-                    {isAdmin ? <Infinity className="h-5 w-5" /> : user.trophies}
+                    {user.trophies}
                 </span>
             </div>
         </div>
@@ -209,7 +209,7 @@ function RankingItem({ user, rank, isCurrentUser }: { user: User; rank: number; 
             <div className="flex items-center gap-1.5 font-bold">
                 <Trophy className="h-4 w-4 text-yellow-500" />
                 <span>
-                    {isAdmin ? <Infinity className="h-5 w-5" /> : user.trophies}
+                    {user.trophies}
                 </span>
             </div>
         </div>

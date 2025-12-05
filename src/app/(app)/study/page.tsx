@@ -255,7 +255,7 @@ export default function StudyPage() {
                 <Badge variant="outline" className="flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/50 border-amber-300 dark:border-amber-700">
                     <Trophy className="h-4 w-4 text-amber-500"/>
                     <span className="font-bold">
-                        {isAdmin ? <Infinity className="h-4 w-4"/> : user.trophies}
+                        {user.trophies}
                     </span>
                 </Badge>
             </div>
