@@ -188,8 +188,8 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
                         </div>
                     </div>
                 </div>
-                <Button size="sm" className="w-full mt-3 h-8" disabled={!canAfford}>
-                    Canjear
+                <Button size="sm" className="w-full mt-3 h-8" disabled>
+                    No Disponible
                 </Button>
             </div>
         </Card>
@@ -254,5 +254,6 @@ function RankingItem({ user, rank, isCurrentUser }: { user: User; rank: number; 
 }
 
     
+
 
 
