@@ -126,7 +126,7 @@ const shopItems = [
     { id: 'inditex', name: 'Inditex', imageUrl: 'https://www.inditex.com/itxcomweb/api/media/bfc0fb15-b15c-47bf-b467-8ec4aea4169f/inditex.png?t=1657543184830', values: [5, 10, 15, 20, 25] },
     { id: 'abacus', name: 'Abacus', imageUrl: 'https://www.baricentro.es/wp-content/uploads/sites/8//Abacus-logo.png', values: [5, 10, 15, 20] },
     { id: 'bureau-vallee', name: 'Bureau Vallée', imageUrl: 'https://www.uvimark.com/wp-content/uploads/2024/10/Logo-bureau-vallee-2021.png', values: [5, 10, 15, 20] },
-    { id: 'cinesa', name: 'Cinesa', imageUrl: 'https://www.aquacentre.com/wp-content/uploads/2022/10/Cinesa-logo-300x129.png', values: [5, 10, 15, 20] },
+    { id: 'cinesa', name: 'Cinesa', imageUrl: 'https://www.cclasrosas.es/wp-content/uploads/2017/12/logo-cinesa.jpg', values: [5, 10, 15, 20] },
 ];
 
 function ShopTab({ user }: { user: User }) {
@@ -165,8 +165,8 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
 
     return (
         <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-            <div className="aspect-[16/9] flex-shrink-0 bg-gradient-to-br from-muted to-background p-4 flex items-center justify-center">
-                 <img src={item.imageUrl} alt={item.name} className="max-w-full max-h-12 object-contain" />
+            <div className="aspect-[16/9] flex-shrink-0 bg-gradient-to-br from-muted to-background p-4 flex items-center justify-center shadow-inner rounded-t-lg">
+                 <img src={item.imageUrl} alt={item.name} className="max-w-full max-h-16 object-contain" />
             </div>
             <div className="flex-1 p-3 flex flex-col justify-between bg-card">
                 <div className="space-y-2">
@@ -254,3 +254,4 @@ function RankingItem({ user, rank, isCurrentUser }: { user: User; rank: number; 
 }
 
     
+
