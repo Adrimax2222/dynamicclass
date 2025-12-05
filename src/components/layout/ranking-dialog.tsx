@@ -9,6 +9,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogTrigger,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFirestore } from "@/firebase";
@@ -17,9 +19,10 @@ import type { User } from "@/lib/types";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ShieldAlert, Trophy, Gem, Medal, Infinity, ShoppingCart, Star, Sparkles, Zap, Atom } from "lucide-react";
+import { ShieldAlert, Trophy, Gem, Medal, Infinity, ShoppingCart, Star, Sparkles, Zap, Atom, Gift, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
 
@@ -117,46 +120,81 @@ function RankingTab({ user }: { user: User }) {
 }
 
 const shopItems = [
-    { id: 'cosmic', name: 'Amanecer Cósmico', price: 150, icon: Sparkles, gradient: 'from-purple-500 to-indigo-600' },
-    { id: 'neon', name: 'Bosque Neón', price: 200, icon: Star, gradient: 'from-emerald-400 to-teal-600' },
-    { id: 'sunset', name: 'Atardecer Vibrante', price: 120, icon: Zap, gradient: 'from-orange-400 to-rose-500' },
-    { id: 'atomic', name: 'Energía Atómica', price: 250, icon: Atom, gradient: 'from-sky-400 to-blue-600' },
+    { id: 'amazon', name: 'Amazon', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg', values: [5, 10] },
+    { id: 'game', name: 'GAME', imageUrl: 'https://www.cclasrosas.es/wp-content/uploads/2017/12/logo-game.jpg', values: [5, 10] },
+    { id: 'shein', name: 'Shein', imageUrl: 'https://e01-elmundo.uecdn.es/assets/multimedia/imagenes/2023/11/28/17011685734882.png', values: [5, 10, 15] },
+    { id: 'druni', name: 'Druni', imageUrl: 'https://sevilla.secompraonline.com/wp-content/uploads/sites/5/2023/06/354068035_638603531636870_8081465420058888362_n.png', values: [5, 10, 15] },
+    { id: 'inditex', name: 'Inditex', imageUrl: 'https://www.inditex.com/itxcomweb/api/media/bfc0fb15-b15c-47bf-b467-8ec4aea4169f/inditex.png?t=1657543184830', values: [5, 10, 15, 20, 25] },
+    { id: 'abacus', name: 'Abacus', imageUrl: 'https://www.baricentro.es/wp-content/uploads/sites/8//Abacus-logo.png', values: [5, 10, 15, 20] },
+    { id: 'bureau-vallee', name: 'Bureau Vallée', imageUrl: 'https://www.uvimark.com/wp-content/uploads/2024/10/Logo-bureau-vallee-2021.png', values: [5, 10, 15, 20] },
+    { id: 'cinesa', name: 'Cinesa', imageUrl: 'https://www.aquacentre.com/wp-content/uploads/2022/10/Cinesa-logo-300x129.png', values: [5, 10, 15, 20] },
 ];
 
 function ShopTab({ user }: { user: User }) {
+    const TROPHIES_PER_EURO = 100;
+
     return (
          <div className="p-6 pt-2 space-y-6">
-            <div className="text-center">
+            <div className="text-center sticky top-0 bg-background/80 backdrop-blur-sm py-4">
                  <p className="text-sm text-muted-foreground">Tus trofeos</p>
                  <div className="flex items-center justify-center gap-2">
                      <Trophy className="h-6 w-6 text-yellow-400"/>
                      <p className="text-2xl font-bold">{user.trophies}</p>
                  </div>
             </div>
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+             <div className="grid grid-cols-1 gap-4">
                  {shopItems.map(item => (
-                    <div key={item.id} className="relative rounded-lg overflow-hidden border group transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-2xl">
-                         <div className={cn("absolute inset-0 bg-gradient-to-br opacity-80", item.gradient)} />
-                         <div className="relative p-4 flex flex-col justify-between h-32 text-white">
-                             <div>
-                                 <item.icon className="h-6 w-6 mb-2 opacity-70"/>
-                                 <h4 className="font-bold text-sm">{item.name}</h4>
-                             </div>
-                             <div className="flex justify-end">
-                                 <Button size="sm" className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm">
-                                     <ShoppingCart className="h-4 w-4 mr-2"/>
-                                     {item.price}
-                                 </Button>
-                             </div>
-                         </div>
-                    </div>
+                    <ShopItemCard 
+                        key={item.id} 
+                        item={item} 
+                        trophiesPerEuro={TROPHIES_PER_EURO} 
+                        userTrophies={user.trophies}
+                    />
                  ))}
              </div>
              <p className="text-xs text-muted-foreground text-center pt-2">
-                Las tarjetas de perfil son un elemento cosmético que estará disponible próximamente.
+                Las recompensas son gestionadas externamente. El equipo se pondrá en contacto contigo tras el canjeo.
              </p>
         </div>
     )
+}
+
+function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof shopItems[0], trophiesPerEuro: number, userTrophies: number }) {
+    const [selectedValue, setSelectedValue] = useState(item.values[0].toString());
+    const cost = parseInt(selectedValue) * trophiesPerEuro;
+    const canAfford = userTrophies >= cost;
+
+    return (
+        <div className="border rounded-lg p-4 flex flex-col sm:flex-row items-center gap-4 bg-card shadow-sm">
+            <div className="w-24 h-16 flex items-center justify-center bg-white rounded-md p-2 shadow-inner">
+                <img src={item.imageUrl} alt={item.name} className="max-w-full max-h-full object-contain" />
+            </div>
+            <div className="flex-1 w-full">
+                <h4 className="font-bold">{`Tarjeta Regalo ${item.name}`}</h4>
+                 <div className="flex items-center gap-2 mt-2">
+                    <Select onValueChange={setSelectedValue} defaultValue={selectedValue}>
+                        <SelectTrigger className="w-full sm:w-[120px]">
+                            <SelectValue placeholder="Valor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {item.values.map(value => (
+                                <SelectItem key={value} value={value.toString()}>{`${value}€`}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <div className="flex items-center gap-1.5 font-bold text-lg">
+                        <Trophy className="h-4 w-4 text-yellow-500" />
+                        <span>{cost}</span>
+                    </div>
+                </div>
+            </div>
+            <div className="w-full sm:w-auto">
+                 <Button className="w-full" disabled={!canAfford}>
+                    Canjear
+                </Button>
+            </div>
+        </div>
+    );
 }
 
 
