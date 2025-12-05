@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Link, AlertTriangle, Loader2, Info, Pencil } from "lucide-react";
+import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -24,6 +24,7 @@ import { useApp } from "@/lib/hooks/use-app";
 import { SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 type CalendarType = "personal" | "class";
 
@@ -292,7 +293,7 @@ export default function CalendarPage() {
                 )}
 
                 <Button onClick={handlePersonalCalendarConnect} disabled={isLoading || !personalIcalUrl} className="w-full">
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link className="mr-2 h-4 w-4" />}
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LinkIcon className="mr-2 h-4 w-4" />}
                     Cargar Eventos del Calendario
                 </Button>
             </div>
@@ -359,8 +360,22 @@ export default function CalendarPage() {
                 </CardContent>
             </Card>
         </div>
+        <section className="mt-8">
+          <Link href="/study" className="block">
+            <div className="relative rounded-lg p-6 bg-gradient-to-br from-primary to-accent text-primary-foreground cursor-pointer transition-transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
+                  <div className="absolute top-4 right-4 bg-white/20 text-white text-xs font-bold py-1 px-2 rounded-full">
+                    BETA
+                </div>
+                <BrainCircuit className="h-8 w-8 mb-3" />
+                <h3 className="text-xl font-bold font-headline">Modo Estudio</h3>
+                <p className="opacity-80 text-sm">Concéntrate, organiza y gana recompensas.</p>
+            </div>
+          </Link>
+        </section>
         </div>
       )}
     </div>
   );
 }
+
+    

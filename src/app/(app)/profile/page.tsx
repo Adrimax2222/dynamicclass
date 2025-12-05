@@ -178,16 +178,6 @@ export default function ProfilePage() {
       
       <section>
         <h3 className="text-xl font-semibold font-headline mb-4">Logros</h3>
-        <Link href="/study" className="block mb-4">
-          <div className="relative rounded-lg p-6 bg-gradient-to-br from-primary to-accent text-primary-foreground cursor-pointer transition-transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
-                <div className="absolute top-4 right-4 bg-white/20 text-white text-xs font-bold py-1 px-2 rounded-full">
-                  BETA
-              </div>
-              <BrainCircuit className="h-8 w-8 mb-3" />
-              <h3 className="text-xl font-bold font-headline">Modo Estudio</h3>
-              <p className="opacity-80 text-sm">Concéntrate, organiza y gana recompensas.</p>
-          </div>
-        </Link>
         <div className="grid grid-cols-2 gap-4">
             <RankingDialog user={user}>
               <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
@@ -567,6 +557,8 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
       </Card>
     );
   }
+
+    
 
     
 
