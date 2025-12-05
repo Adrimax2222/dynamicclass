@@ -1,3 +1,4 @@
+
 "use client";
 
 import { createContext, useState, useEffect, useCallback, type ReactNode } from 'react';
@@ -80,6 +81,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
                    await updateDoc(userDocRef, { role: 'admin' });
                    userData.role = 'admin';
                 }
+
+                if (isAdmin) {
+                    await updateDoc(userDocRef, { trophies: 9999 });
+                    userData.trophies = 9999;
+                }
+
                 setUser(userData);
               } else {
                 console.warn("User document not found for authenticated user.");
