@@ -403,11 +403,11 @@ function EditProfileDialog() {
                 </div>
                  <Tabs defaultValue="create" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="create">Crear Avatar</TabsTrigger>
+                        <TabsTrigger value="create">Editar</TabsTrigger>
                         <TabsTrigger value="shop">Tienda</TabsTrigger>
                     </TabsList>
                     <TabsContent value="create" className="pt-4">
-                         <div className="space-y-4">
+                        <div className="space-y-4">
                             <div className="grid grid-cols-3 gap-4 items-center">
                                <Label className="text-right">Inicial</Label>
                                 <Input 
@@ -424,6 +424,67 @@ function EditProfileDialog() {
                                         <button key={color} type="button" onClick={() => handleColorChange(color)} className={cn("w-8 h-8 rounded-full border", bgColor === color && "ring-2 ring-primary ring-offset-2")} style={{ backgroundColor: `#${color}` }} />
                                     ))}
                                 </div>
+                            </div>
+                            
+                            <div className="space-y-2 pt-4">
+                                <Label htmlFor="name">Nombre Completo</Label>
+                                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="center">Código de Centro Educativo</Label>
+                                <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} placeholder="123-456" />
+                                 <p className="text-xs text-muted-foreground">
+                                    Introduce el código proporcionado por tu centro para unirte a su grupo.
+                                </p>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="ageRange">Rango de Edad</Label>
+                                <Select onValueChange={setAgeRange} value={ageRange}>
+                                    <SelectTrigger id="ageRange">
+                                        <SelectValue placeholder="Selecciona tu rango de edad" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="12-15">12-15 años</SelectItem>
+                                        <SelectItem value="16-18">16-18 años</SelectItem>
+                                        <SelectItem value="19-22">19-22 años</SelectItem>
+                                        <SelectItem value="23+">23+ años</SelectItem>
+                                        <SelectItem value="No especificado">No especificado</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="course">Curso</Label>
+                                    <Select onValueChange={setCourse} value={course}>
+                                        <SelectTrigger id="course"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="1eso">1º ESO</SelectItem>
+                                            <SelectItem value="2eso">2º ESO</SelectItem>
+                                            <SelectItem value="3eso">3º ESO</SelectItem>
+                                            <SelectItem value="4eso">4º ESO</SelectItem>
+                                            <SelectItem value="1bach">1º Bachillerato</SelectItem>
+                                            <SelectItem value="2bach">2º Bachillerato</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="className">Clase</Label>
+                                    <Select onValueChange={setClassName} value={className}>
+                                        <SelectTrigger id="className"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="A">A</SelectItem>
+                                            <SelectItem value="B">B</SelectItem>
+                                            <SelectItem value="C">C</SelectItem>
+                                            <SelectItem value="D">D</SelectItem>
+                                            <SelectItem value="E">E</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Correo Electrónico</Label>
+                                <Input id="email" value={user.email} disabled />
+                                <p className="text-xs text-muted-foreground">El correo electrónico no se puede cambiar.</p>
                             </div>
                         </div>
                     </TabsContent>
@@ -477,67 +538,6 @@ function EditProfileDialog() {
                     </TabsContent>
                 </Tabs>
             </div>
-            
-            <div className="space-y-2">
-                <Label htmlFor="name">Nombre Completo</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="center">Código de Centro Educativo</Label>
-                <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} placeholder="123-456" />
-                 <p className="text-xs text-muted-foreground">
-                    Introduce el código proporcionado por tu centro para unirte a su grupo.
-                </p>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="ageRange">Rango de Edad</Label>
-                <Select onValueChange={setAgeRange} value={ageRange}>
-                    <SelectTrigger id="ageRange">
-                        <SelectValue placeholder="Selecciona tu rango de edad" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="12-15">12-15 años</SelectItem>
-                        <SelectItem value="16-18">16-18 años</SelectItem>
-                        <SelectItem value="19-22">19-22 años</SelectItem>
-                        <SelectItem value="23+">23+ años</SelectItem>
-                        <SelectItem value="No especificado">No especificado</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="course">Curso</Label>
-                    <Select onValueChange={setCourse} value={course}>
-                        <SelectTrigger id="course"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="1eso">1º ESO</SelectItem>
-                            <SelectItem value="2eso">2º ESO</SelectItem>
-                            <SelectItem value="3eso">3º ESO</SelectItem>
-                            <SelectItem value="4eso">4º ESO</SelectItem>
-                            <SelectItem value="1bach">1º Bachillerato</SelectItem>
-                            <SelectItem value="2bach">2º Bachillerato</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="className">Clase</Label>
-                    <Select onValueChange={setClassName} value={className}>
-                        <SelectTrigger id="className"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="A">A</SelectItem>
-                            <SelectItem value="B">B</SelectItem>
-                            <SelectItem value="C">C</SelectItem>
-                            <SelectItem value="D">D</SelectItem>
-                            <SelectItem value="E">E</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="email">Correo Electrónico</Label>
-                <Input id="email" value={user.email} disabled />
-                <p className="text-xs text-muted-foreground">El correo electrónico no se puede cambiar.</p>
-            </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
@@ -567,5 +567,7 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
       </Card>
     );
   }
+
+    
 
     
