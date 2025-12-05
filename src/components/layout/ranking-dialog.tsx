@@ -166,7 +166,7 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
     return (
         <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
             <div className="aspect-video relative flex-shrink-0 bg-gradient-to-br from-muted/30 to-background p-4 flex items-center justify-center shadow-inner rounded-t-lg">
-                 <img src={item.imageUrl} alt={item.name} className="max-w-full max-h-20 object-contain" />
+                 <img src={item.imageUrl} alt={item.name} className="max-w-full max-h-24 object-contain" />
             </div>
             <div className="flex-1 p-3 flex flex-col justify-between bg-card">
                 <div className="space-y-2">
@@ -254,4 +254,5 @@ function RankingItem({ user, rank, isCurrentUser }: { user: User; rank: number; 
 }
 
     
+
 
