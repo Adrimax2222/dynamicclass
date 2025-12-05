@@ -206,6 +206,7 @@ export default function AuthPage() {
           studyMinutes: 0,
           streak: 0,
           lastStudyDay: '',
+          ownedAvatars: [],
       };
 
       await setDoc(doc(firestore, 'users', firebaseUser.uid), newUser);
@@ -325,6 +326,7 @@ export default function AuthPage() {
             studyMinutes: 0,
             streak: 0,
             lastStudyDay: '',
+            ownedAvatars: [],
         };
         await setDoc(userDocRef, newUser);
       }
@@ -595,3 +597,4 @@ export default function AuthPage() {
     
 
     
+

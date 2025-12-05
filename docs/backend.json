@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -23,7 +24,8 @@
         "isNewUser": { "type": "boolean" },
         "studyMinutes": { "type": "number" },
         "streak": { "type": "number" },
-        "lastStudyDay": { "type": "string", "format": "date" }
+        "lastStudyDay": { "type": "string", "format": "date" },
+        "ownedAvatars": { "type": "array", "items": { "type": "string", "format": "uri" } }
       },
       "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange", "isNewUser"]
     },

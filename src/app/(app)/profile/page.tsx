@@ -22,20 +22,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { SummaryCardData } from "@/lib/types";
+import type { SummaryCardData, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy, NotebookText, FileCheck2, ListChecks, Medal, Star, Infinity, LineChart, Flame, BrainCircuit, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree } from "lucide-react";
+import { Edit, Settings, Loader2, Camera, AlertTriangle, Trophy, NotebookText, FileCheck2, ListChecks, Medal, Star, Infinity, LineChart, Flame, BrainCircuit, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect, useRef } from "react";
-import { doc, updateDoc } from "firebase/firestore";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { doc, updateDoc, arrayUnion, increment } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
 import { GradeCalculatorDialog } from "@/components/layout/grade-calculator-dialog";
@@ -244,14 +244,13 @@ const AVATAR_COLORS = [
 ];
 
 const SHOP_AVATARS = [
-    { icon: PawPrint, bg: "from-red-400 to-red-600" },
-    { icon: Rocket, bg: "from-blue-400 to-blue-600" },
-    { icon: Pizza, bg: "from-yellow-400 to-orange-500" },
-    { icon: Gamepad2, bg: "from-purple-400 to-indigo-600" },
-    { icon: Ghost, bg: "from-slate-300 to-slate-500" },
-    { icon: Palmtree, bg: "from-green-400 to-emerald-600" },
+    { id: 'paw', icon: PawPrint, price: 50, url: 'https://placehold.co/100x100/f87171/FFFFFF?text=🐾' },
+    { id: 'rocket', icon: Rocket, price: 75, url: 'https://placehold.co/100x100/60a5fa/FFFFFF?text=🚀' },
+    { id: 'pizza', icon: Pizza, price: 25, url: 'https://placehold.co/100x100/fbbf24/FFFFFF?text=🍕' },
+    { id: 'gamepad', icon: Gamepad2, price: 100, url: 'https://placehold.co/100x100/a78bfa/FFFFFF?text=🎮' },
+    { id: 'ghost', icon: Ghost, price: 150, url: 'https://placehold.co/100x100/d1d5db/FFFFFF?text=👻' },
+    { id: 'palmtree', icon: Palmtree, price: 60, url: 'https://placehold.co/100x100/34d399/FFFFFF?text=🌴' },
 ];
-
 
 function EditProfileDialog() {
   const { user, updateUser } = useApp();
@@ -266,12 +265,21 @@ function EditProfileDialog() {
   const { toast } = useToast();
   
   // Avatar state
-  const [finalAvatarUrl, setFinalAvatarUrl] = useState(user?.avatar || "");
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState(user?.avatar || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Avatar creator state
   const [initial, setInitial] = useState(user?.name?.charAt(0).toUpperCase() || 'A');
   const [bgColor, setBgColor] = useState(AVATAR_COLORS[0]);
+  
+  const isSaveDisabled = useMemo(() => {
+    if (!user) return true;
+    const selectedShopAvatar = SHOP_AVATARS.find(a => a.url === selectedAvatarUrl);
+    if (selectedShopAvatar && !(user.ownedAvatars || []).includes(selectedShopAvatar.url)) {
+        return true; // Cannot save if selected avatar is from shop and not owned
+    }
+    return false;
+  }, [selectedAvatarUrl, user]);
 
   useEffect(() => {
     if (user && isOpen) {
@@ -280,7 +288,7 @@ function EditProfileDialog() {
       setAgeRange(user.ageRange);
       setCourse(user.course);
       setClassName(user.className);
-      setFinalAvatarUrl(user.avatar);
+      setSelectedAvatarUrl(user.avatar);
       setInitial(user.name?.charAt(0).toUpperCase() || 'A');
     }
   }, [user, isOpen]);
@@ -289,53 +297,58 @@ function EditProfileDialog() {
     const newInitial = e.target.value.charAt(0).toUpperCase();
     setInitial(newInitial);
     const newAvatarUrl = `https://placehold.co/100x100/${bgColor}/${'FFFFFF'}?text=${newInitial || 'A'}`;
-    setFinalAvatarUrl(newAvatarUrl);
+    setSelectedAvatarUrl(newAvatarUrl);
   };
 
   const handleColorChange = (color: string) => {
     setBgColor(color);
     const newAvatarUrl = `https://placehold.co/100x100/${color}/${'FFFFFF'}?text=${initial || 'A'}`;
-    setFinalAvatarUrl(newAvatarUrl);
+    setSelectedAvatarUrl(newAvatarUrl);
   };
 
-  const handleShopAvatarSelect = (Icon: React.ElementType, bgClass: string) => {
-    const svg = `
-    <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#${bgClass.split('-')[1]}400;" />
-                <stop offset="100%" style="stop-color:#${bgClass.split('-')[2]}600;" />
-            </linearGradient>
-        </defs>
-        <rect width="100" height="100" fill="url(#grad)" />
-        <g transform="translate(25, 25) scale(2.5)">
-            ${(new (Icon as any)()).render().props.children.map((c:any) => c.props.d).join('')}
-        </g>
-    </svg>`;
-    const encodedSvg = btoa(svg);
-    const dataUrl = `data:image/svg+xml;base64,${encodedSvg}`;
-    // This is a simplified way to create a placeholder. In a real scenario, you'd generate and host these.
-    // For now, let's use a placeholder service with the icon.
-    const iconName = Icon.displayName?.toLowerCase() || 'smile';
-    const newAvatarUrl = `https://placehold.co/100x100/A78BFA/FFFFFF?text=${initial}`; // Fallback
-    setFinalAvatarUrl(newAvatarUrl);
-  };
+  const handlePurchaseAvatar = async (avatar: typeof SHOP_AVATARS[0]) => {
+     if (!firestore || !user || user.trophies < avatar.price) {
+        toast({ title: "Fondos insuficientes", description: "No tienes suficientes trofeos para comprar este avatar.", variant: "destructive"});
+        return;
+     }
+     
+     setIsLoading(true);
+     try {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await updateDoc(userDocRef, {
+            trophies: increment(-avatar.price),
+            ownedAvatars: arrayUnion(avatar.url),
+        });
+        updateUser({ trophies: user.trophies - avatar.price, ownedAvatars: [...(user.ownedAvatars || []), avatar.url] });
+        toast({ title: "¡Compra realizada!", description: `Has adquirido el avatar ${avatar.id}.`});
+     } catch (error) {
+        console.error("Error purchasing avatar:", error);
+        toast({ title: "Error", description: "No se pudo completar la compra.", variant: "destructive"});
+     } finally {
+        setIsLoading(false);
+     }
+  }
   
   if (!user) return null;
   
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
 
+    if (isSaveDisabled) {
+        toast({ title: "Avatar no adquirido", description: "Debes comprar este avatar antes de poder guardarlo.", variant: "destructive"});
+        return;
+    }
+
     setIsLoading(true);
 
     try {
-        const updatedData = {
+        const updatedData: Partial<User> = {
             name,
             center: center,
             ageRange,
             course,
             className,
-            avatar: finalAvatarUrl,
+            avatar: selectedAvatarUrl,
         };
 
         const userDocRef = doc(firestore, 'users', user.uid);
@@ -372,11 +385,11 @@ function EditProfileDialog() {
         <DialogHeader>
           <DialogTitle>Editar tu Perfil</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
+        <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto px-1 pr-4">
             <div className="space-y-2">
                 <Label>Foto de Perfil</Label>
                 <div className="flex justify-center py-4">
-                    <img src={finalAvatarUrl} alt="Avatar Preview" width={100} height={100} className="rounded-full aspect-square object-cover ring-4 ring-primary ring-offset-2" />
+                    <img src={selectedAvatarUrl} alt="Avatar Preview" width={100} height={100} className="rounded-full aspect-square object-cover ring-4 ring-primary ring-offset-2" />
                 </div>
                  <Tabs defaultValue="create" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
@@ -407,21 +420,50 @@ function EditProfileDialog() {
                     <TabsContent value="shop" className="pt-4">
                         <div className="grid grid-cols-3 gap-4">
                             {SHOP_AVATARS.map((avatar, index) => {
-                                const Icon = avatar.icon;
-                                const url = `https://placehold.co/100x100/${AVATAR_COLORS[index % AVATAR_COLORS.length]}/FFFFFF?text=${' '}`;
+                                const isOwned = user.ownedAvatars?.includes(avatar.url);
+                                const isSelected = selectedAvatarUrl === avatar.url;
                                 return (
-                                    <button 
-                                        key={index} 
-                                        type="button" 
-                                        onClick={() => setFinalAvatarUrl(url)}
-                                        className={cn("aspect-square rounded-lg flex items-center justify-center transition-all transform hover:scale-105", avatar.bg, finalAvatarUrl === url && "ring-4 ring-primary ring-offset-2")}
-                                    >
-                                        <Icon className="h-10 w-10 text-white/80" />
-                                    </button>
+                                    <div key={avatar.id} className="relative group">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setSelectedAvatarUrl(avatar.url)}
+                                            className={cn("w-full aspect-square rounded-lg flex items-center justify-center transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
+                                        >
+                                            <img src={avatar.url} alt={avatar.id} className="rounded-md object-cover" />
+                                        </button>
+                                        <div className="mt-2 text-center">
+                                            {isOwned ? (
+                                                <Badge variant="secondary" className="flex items-center gap-1">
+                                                    <CheckCircle className="h-3 w-3 text-green-500" />
+                                                    Adquirido
+                                                </Badge>
+                                            ) : (
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button size="sm" variant="outline" className="h-8 w-full" disabled={isLoading}>
+                                                            <Trophy className="h-4 w-4 mr-1 text-yellow-400" />
+                                                            {avatar.price}
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                ¿Quieres comprar este avatar por {avatar.price} trofeos? Tus trofeos actuales son {user.trophies}.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handlePurchaseAvatar(avatar)}>Comprar</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            )}
+                                        </div>
+                                    </div>
                                 )
                             })}
                         </div>
-                         <p className="text-xs text-muted-foreground mt-4 text-center">Selecciona un avatar de la tienda.</p>
                     </TabsContent>
                 </Tabs>
             </div>
@@ -491,7 +533,7 @@ function EditProfileDialog() {
           <DialogClose asChild>
             <Button variant="outline" disabled={isLoading}>Cancelar</Button>
           </DialogClose>
-          <Button onClick={handleSaveChanges} disabled={isLoading}>
+          <Button onClick={handleSaveChanges} disabled={isLoading || isSaveDisabled}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Guardar Cambios
           </Button>
