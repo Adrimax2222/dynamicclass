@@ -9,8 +9,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogTrigger,
-  DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFirestore } from "@/firebase";
@@ -19,7 +17,7 @@ import type { User } from "@/lib/types";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ShieldAlert, Trophy, Gem, Medal, Infinity, ShoppingCart, Star, Sparkles, Zap, Atom, Gift, ChevronDown } from "lucide-react";
+import { ShieldAlert, Trophy, Gem, Medal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -143,7 +141,7 @@ function ShopTab({ user }: { user: User }) {
                      <p className="text-2xl font-bold">{user.trophies}</p>
                  </div>
             </div>
-             <div className="grid grid-cols-1 gap-4">
+             <div className="grid grid-cols-2 gap-4">
                  {shopItems.map(item => (
                     <ShopItemCard 
                         key={item.id} 
@@ -166,16 +164,16 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
     const canAfford = userTrophies >= cost;
 
     return (
-        <Card className="overflow-hidden transition-all hover:shadow-md transform hover:-translate-y-1 shadow-sm">
-            <div className="p-4 flex flex-col sm:flex-row items-center gap-4">
-                 <div className="w-full sm:w-28 h-20 flex-shrink-0 flex items-center justify-center bg-white rounded-lg p-2 shadow-inner border">
-                    <img src={item.imageUrl} alt={item.name} className="max-w-full max-h-full object-contain" />
-                </div>
-                <div className="flex-1 w-full text-center sm:text-left">
-                    <h4 className="font-bold">{`Tarjeta Regalo ${item.name}`}</h4>
-                    <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2 mt-2">
-                        <Select onValueChange={setSelectedValue} defaultValue={selectedValue}>
-                            <SelectTrigger className="w-full sm:w-[120px]">
+        <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+            <div className="aspect-[16/9] flex-shrink-0 bg-gradient-to-br from-muted to-background p-4 flex items-center justify-center">
+                 <img src={item.imageUrl} alt={item.name} className="max-w-full max-h-12 object-contain" />
+            </div>
+            <div className="flex-1 p-3 flex flex-col justify-between bg-card">
+                <div className="space-y-2">
+                    <h4 className="font-bold text-sm truncate">{`Tarjeta ${item.name}`}</h4>
+                    <div className="flex items-center gap-2">
+                         <Select onValueChange={setSelectedValue} defaultValue={selectedValue}>
+                            <SelectTrigger className="flex-1 h-8 text-xs">
                                 <SelectValue placeholder="Valor" />
                             </SelectTrigger>
                             <SelectContent>
@@ -184,17 +182,15 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
                                 ))}
                             </SelectContent>
                         </Select>
-                        <div className="flex items-center gap-1.5 font-bold text-lg">
-                            <Trophy className="h-4 w-4 text-yellow-500" />
+                        <div className="flex items-center gap-1 font-bold text-sm text-yellow-500">
+                            <Trophy className="h-4 w-4" />
                             <span>{cost}</span>
                         </div>
                     </div>
                 </div>
-                <div className="w-full sm:w-auto mt-4 sm:mt-0">
-                    <Button className="w-full" disabled={!canAfford}>
-                        Canjear
-                    </Button>
-                </div>
+                <Button size="sm" className="w-full mt-3 h-8" disabled={!canAfford}>
+                    Canjear
+                </Button>
             </div>
         </Card>
     );
