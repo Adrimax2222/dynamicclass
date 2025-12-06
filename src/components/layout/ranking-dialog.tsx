@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -35,10 +34,13 @@ export function RankingDialog({ children, user, openTo = "ranking" }: { children
             <DialogContent className="max-w-md w-[95vw] p-0">
                  <Tabs defaultValue={openTo} className="w-full">
                     <DialogHeader className="p-6 pb-0">
-                        <DialogTitle className="flex items-center gap-2">
-                            <Trophy className="text-yellow-400" />
-                            Trofeos y Recompensas
-                        </DialogTitle>
+                        <div className="flex items-center gap-3">
+                            <DialogTitle className="flex items-center gap-2">
+                                <Trophy className="text-yellow-400" />
+                                Trofeos y Recompensas
+                            </DialogTitle>
+                            <Badge variant="secondary">Beta</Badge>
+                        </div>
                         <DialogDescription>
                             Consulta tu posición en el ranking y canjea tus trofeos.
                         </DialogDescription>
@@ -142,7 +144,6 @@ function ShopTab({ user }: { user: User }) {
                      <Trophy className="h-6 w-6 text-yellow-400"/>
                      <p className="text-2xl font-bold">{isAdmin ? '∞' : user.trophies}</p>
                  </div>
-                 <Badge variant="secondary" className="mt-2">Tienda Beta</Badge>
             </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                  {shopItems.map(item => (
