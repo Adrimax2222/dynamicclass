@@ -34,7 +34,7 @@ import {
 import { fullSchedule } from "@/lib/data";
 import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent, Announcement } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity, Flame } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity, Flame, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
@@ -429,7 +429,7 @@ export default function HomePage() {
                     <div className="flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors">
                         <Trophy className="h-5 w-5 text-yellow-400" />
                         <span className="font-bold text-sm">
-                            {user.trophies}
+                            {isAdmin ? <Infinity className="h-4 w-4" /> : user.trophies}
                         </span>
                     </div>
                 </RankingDialog>
@@ -565,6 +565,31 @@ export default function HomePage() {
             </Card>
           )}
         </div>
+      </section>
+
+      <section className="mb-4">
+        <RankingDialog user={user} openTo="shop">
+          <Card className="bg-muted/50 cursor-pointer hover:bg-muted/80 transition-colors">
+              <CardHeader className="flex-row items-center justify-between space-y-0">
+                  <div className="space-y-1">
+                      <CardTitle className="text-base flex items-center gap-2">
+                          <ShoppingCart className="h-5 w-5 text-accent" />
+                          Canjear Trofeos
+                          <Badge variant="secondary">Beta</Badge>
+                      </CardTitle>
+                      <CardDescription className="text-xs pl-7">
+                          Usa tus trofeos para conseguir recompensas.
+                      </CardDescription>
+                  </div>
+                  <Button asChild size="sm" variant="outline">
+                      <span className="flex items-center">
+                        Tienda
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </span>
+                  </Button>
+              </CardHeader>
+          </Card>
+        </RankingDialog>
       </section>
 
       <section>

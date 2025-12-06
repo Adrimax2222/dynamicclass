@@ -17,22 +17,23 @@ import type { User } from "@/lib/types";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ShieldAlert, Trophy, Gem, Medal } from "lucide-react";
+import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Card } from "../ui/card";
+import { Badge } from "../ui/badge";
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
 
-export function RankingDialog({ children, user }: { children: React.ReactNode; user: User }) {
+export function RankingDialog({ children, user, openTo = "ranking" }: { children: React.ReactNode; user: User, openTo?: "ranking" | "shop" }) {
     const [isOpen, setIsOpen] = useState(false);
     
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="max-w-md w-[95vw] p-0">
-                 <Tabs defaultValue="ranking" className="w-full">
+                 <Tabs defaultValue={openTo} className="w-full">
                     <DialogHeader className="p-6 pb-0">
                         <DialogTitle className="flex items-center gap-2">
                             <Trophy className="text-yellow-400" />
@@ -131,6 +132,7 @@ const shopItems = [
 
 function ShopTab({ user }: { user: User }) {
     const TROPHIES_PER_EURO = 100;
+    const isAdmin = ADMIN_EMAILS.includes(user.email);
 
     return (
          <div className="p-6 pt-2 space-y-6">
@@ -138,10 +140,11 @@ function ShopTab({ user }: { user: User }) {
                  <p className="text-sm text-muted-foreground">Tus trofeos</p>
                  <div className="flex items-center justify-center gap-2">
                      <Trophy className="h-6 w-6 text-yellow-400"/>
-                     <p className="text-2xl font-bold">{user.trophies}</p>
+                     <p className="text-2xl font-bold">{isAdmin ? '∞' : user.trophies}</p>
                  </div>
+                 <Badge variant="secondary" className="mt-2">Tienda Beta</Badge>
             </div>
-             <div className="grid grid-cols-2 gap-4">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                  {shopItems.map(item => (
                     <ShopItemCard 
                         key={item.id} 
@@ -252,8 +255,3 @@ function RankingItem({ user, rank, isCurrentUser }: { user: User; rank: number; 
         </div>
     );
 }
-
-    
-
-
-
