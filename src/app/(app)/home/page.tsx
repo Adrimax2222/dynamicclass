@@ -524,24 +524,30 @@ export default function HomePage() {
                     userCourse={user.course}
                     userClassName={user.className}
                 >
-                    <Card className="overflow-hidden transition-all hover:shadow-md cursor-pointer">
-                        <div className="block hover:bg-muted/50">
-                            <CardContent className="p-4">
-                                <div className="flex flex-col gap-2">
-                                    <div className="flex items-start justify-between">
-                                        <h4 className="font-semibold">{item.subject}</h4>
-                                        {item.grade && <Badge variant="secondary">{item.grade}</Badge>}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground space-y-1">
-                                        <p>{item.teacher}</p>
-                                        <p>{item.time}</p>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-2">
-                                      <p className="text-sm italic text-muted-foreground line-clamp-2">{item.notes}</p>
-                                      <ArrowRight className="h-5 w-5 text-primary shrink-0 ml-4" />
-                                    </div>
+                    <Card className="overflow-hidden transition-all hover:shadow-md cursor-pointer flex flex-col">
+                        <div className="block hover:bg-muted/50 p-4 flex-1">
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-start justify-between">
+                                    <h4 className="font-semibold">{item.subject}</h4>
+                                    {item.grade && <Badge variant="secondary">{item.grade}</Badge>}
                                 </div>
-                            </CardContent>
+                                <div className="text-sm text-muted-foreground space-y-1">
+                                    <p>{item.teacher}</p>
+                                    <p>{item.time}</p>
+                                </div>
+                                <div className="flex items-center justify-between mt-2">
+                                  <p className="text-sm italic text-muted-foreground line-clamp-2">{item.notes}</p>
+                                  <ArrowRight className="h-5 w-5 text-primary shrink-0 ml-4" />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="px-4 pb-4">
+                            <Button asChild className="w-full bg-gradient-to-br from-primary to-accent text-primary-foreground">
+                                <Link href="/study">
+                                    <BrainCircuit className="h-4 w-4 mr-2" />
+                                    Estudiar
+                                </Link>
+                            </Button>
                         </div>
                     </Card>
                 </ScheduleDialog>
