@@ -3,8 +3,9 @@
 
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 const AVATAR_COLORS = [
     { name: 'Red', value: 'F87171' },
@@ -14,6 +15,8 @@ const AVATAR_COLORS = [
     { name: 'Violet', value: 'A78BFA' },
     { name: 'Pink', value: 'F472B6' },
 ];
+
+const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
 
 interface AvatarCreatorProps {
     currentAvatarUrl: string;
@@ -51,10 +54,10 @@ export function AvatarCreator({ currentAvatarUrl, onAvatarChange }: AvatarCreato
         setColor(newColor);
     }, [currentAvatarUrl]);
 
-    const handleInitialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newInitial = e.target.value.trim().toUpperCase() || 'A';
-        setInitial(newInitial);
-        const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${newInitial}`;
+    const handleInitialChange = (newInitial: string) => {
+        const finalInitial = newInitial.trim().toUpperCase() || 'A';
+        setInitial(finalInitial);
+        const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${finalInitial}`;
         onAvatarChange(newAvatarUrl);
     };
     
@@ -67,14 +70,19 @@ export function AvatarCreator({ currentAvatarUrl, onAvatarChange }: AvatarCreato
     return (
         <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4 items-center">
-                <Label htmlFor="initial-input" className="text-right">Inicial</Label>
-                <Input 
-                    id="initial-input"
-                    value={initial}
-                    onChange={handleInitialChange}
-                    maxLength={1}
-                    className="col-span-2"
-                />
+                <Label htmlFor="initial-select" className="text-right">Inicial</Label>
+                <div className="col-span-2">
+                    <Select onValueChange={handleInitialChange} value={initial}>
+                        <SelectTrigger id="initial-select">
+                            <SelectValue placeholder="Selecciona una letra" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {ALPHABET.map(letter => (
+                                <SelectItem key={letter} value={letter}>{letter}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
             <div className="grid grid-cols-3 gap-4 items-center">
                 <Label className="text-right">Color</Label>
@@ -94,5 +102,3 @@ export function AvatarCreator({ currentAvatarUrl, onAvatarChange }: AvatarCreato
         </div>
     );
 }
-
-    
