@@ -31,10 +31,10 @@ const extractUrlParams = (url: string): { initial: string; color: string } => {
         }
         const urlObj = new URL(url);
         const pathParts = urlObj.pathname.split('/');
-        const color = pathParts[2] || 'A78BFA';
+        const colorHex = pathParts[2] || 'A78BFA';
         const textParam = urlObj.searchParams.get('text');
-        const initial = textParam ? textParam.charAt(0).toUpperCase() : 'A';
-        return { initial, color };
+        const initialChar = textParam ? textParam.charAt(0).toUpperCase() : 'A';
+        return { initial: initialChar, color: colorHex };
     } catch (e) {
         console.error("Failed to parse avatar URL, returning defaults", e);
         return { initial: 'A', color: 'A78BFA' };
@@ -42,37 +42,34 @@ const extractUrlParams = (url: string): { initial: string; color: string } => {
 };
 
 export function AvatarCreator({ currentAvatarUrl, onAvatarChange }: AvatarCreatorProps) {
-    const { initial: initialInitial, color: initialColor } = extractUrlParams(currentAvatarUrl);
-    
-    const [initial, setInitial] = useState(initialInitial);
-    const [color, setColor] = useState(initialColor);
+    const [initial, setInitial] = useState('A');
+    const [color, setColor] = useState('A78BFA');
 
-    // Effect to update local state if the prop changes from outside (e.g., switching tabs)
+    // Effect to parse the incoming URL and set initial state
     useEffect(() => {
         const { initial: newInitial, color: newColor } = extractUrlParams(currentAvatarUrl);
         setInitial(newInitial);
         setColor(newColor);
     }, [currentAvatarUrl]);
-
-    const handleInitialChange = (newInitial: string) => {
-        const finalInitial = newInitial.trim().toUpperCase() || 'A';
-        setInitial(finalInitial);
-        const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${finalInitial}`;
-        onAvatarChange(newAvatarUrl);
-    };
     
-    const handleColorChange = (newColor: string) => {
-        setColor(newColor);
-        const newAvatarUrl = `https://placehold.co/100x100/${newColor}/FFFFFF?text=${initial}`;
+    // Effect to build and emit the new URL whenever initial or color changes
+    useEffect(() => {
+        // Don't emit changes if the component is just initializing
+        const { initial: currentInitial, color: currentColor } = extractUrlParams(currentAvatarUrl);
+        if (initial === currentInitial && color === currentColor) {
+            return;
+        }
+
+        const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${initial}`;
         onAvatarChange(newAvatarUrl);
-    };
+    }, [initial, color, onAvatarChange, currentAvatarUrl]);
 
     return (
         <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4 items-center">
                 <Label htmlFor="initial-select" className="text-right">Inicial</Label>
                 <div className="col-span-2">
-                    <Select onValueChange={handleInitialChange} value={initial}>
+                    <Select onValueChange={setInitial} value={initial}>
                         <SelectTrigger id="initial-select">
                             <SelectValue placeholder="Selecciona una letra" />
                         </SelectTrigger>
@@ -91,7 +88,7 @@ export function AvatarCreator({ currentAvatarUrl, onAvatarChange }: AvatarCreato
                         <button 
                             key={c.value} 
                             type="button" 
-                            onClick={() => handleColorChange(c.value)} 
+                            onClick={() => setColor(c.value)} 
                             className={cn("w-8 h-8 rounded-full border", color === c.value && "ring-2 ring-primary ring-offset-2")} 
                             style={{ backgroundColor: `#${c.value}` }}
                             aria-label={`Select ${c.name} color`}
