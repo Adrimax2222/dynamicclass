@@ -250,7 +250,6 @@ const AVATAR_COLORS = [
 
 function AvatarDisplay({ user }: { user: User }) {
     const { avatar: avatarUrl, name } = user;
-    const isUrl = avatarUrl?.startsWith('https');
     
     // Check if it's an icon-based avatar (e.g., "pizza_F87171")
     const [iconId, colorHex] = avatarUrl.split('_');
@@ -268,6 +267,7 @@ function AvatarDisplay({ user }: { user: User }) {
     }
     
     // Fallback to URL-based or default letter
+    const isUrl = avatarUrl?.startsWith('https');
     return (
         <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
             <AvatarImage src={isUrl ? avatarUrl : undefined} alt={name} />
@@ -276,11 +276,10 @@ function AvatarDisplay({ user }: { user: User }) {
     );
 }
 
-
 type EditableAvatar = {
   type: 'url' | 'icon';
-  value: string; // URL for 'url', icon ID for 'icon'
-  color: string; // Hex color (without #)
+  value: string; 
+  color: string; 
   initial: string;
 };
 
@@ -308,7 +307,6 @@ function AvatarDisplayPreview({ avatar }: { avatar: EditableAvatar }) {
     );
   }
   
-  // Fallback for an icon not found
   return (
     <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
       <AvatarFallback>?</AvatarFallback>
@@ -338,76 +336,80 @@ function EditProfileDialog() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const extractAvatarInfo = (avatarString: string): Omit<EditableAvatar, 'value'> => {
-    if (avatarString.startsWith('https')) {
-        const urlParams = new URLSearchParams(avatarString.split('?')[1]);
-        return {
-            type: 'url',
-            initial: urlParams.get('text') || 'A',
-            color: urlParams.get('bg') || 'A78BFA',
-        };
+  const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+
+  const initializeState = () => {
+    if (user) {
+        setName(user.name);
+        setCenter(user.center);
+        setAgeRange(user.ageRange);
+        setCourse(user.course);
+        setClassName(user.className);
+        
+        const [id, color] = user.avatar.split('_');
+        
+        if (shopAvatarMap.has(id)) {
+            setEditableAvatar({
+                type: 'icon',
+                value: id,
+                color: color || '737373',
+                initial: '',
+            });
+        } else if (user.avatar.startsWith('https://')) {
+            const urlParams = new URLSearchParams(user.avatar.split('?')[1]);
+            setEditableAvatar({
+                type: 'url',
+                value: user.avatar,
+                color: urlParams.get('bg') || 'A78BFA',
+                initial: urlParams.get('text') || user.name.charAt(0) || 'A',
+            });
+        } else {
+            // Fallback for old or corrupted data
+            setEditableAvatar({
+                type: 'url',
+                value: `https://placehold.co/100x100/A78BFA/FFFFFF?text=${user.name.charAt(0)}`,
+                color: 'A78BFA',
+                initial: user.name.charAt(0) || 'A',
+            });
+        }
     }
-    const [iconId, colorHex] = avatarString.split('_');
-    if (shopAvatarMap.has(iconId)) {
-        return {
-            type: 'icon',
-            initial: '',
-            color: colorHex || '737373',
-        };
-    }
-    // Fallback for corrupted data or old format
-    return { type: 'url', initial: user?.name.charAt(0) || 'A', color: 'A78BFA' };
   };
-
-
+  
   useEffect(() => {
-    if (user && isOpen) {
-      setName(user.name);
-      setCenter(user.center);
-      setAgeRange(user.ageRange);
-      setCourse(user.course);
-      setClassName(user.className);
-      
-      const info = extractAvatarInfo(user.avatar);
-      setEditableAvatar({
-          ...info,
-          value: user.avatar, // Store original value
-      });
+    if (isOpen) {
+        initializeState();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isOpen]);
   
   
-  const handleInitialChange = (newInitial: string) => {
-    const initial = newInitial.charAt(0).toUpperCase();
-    const newUrl = `https://placehold.co/100x100/${editableAvatar.color}/FFFFFF?text=${initial}`;
-    setEditableAvatar({
-        type: 'url',
-        value: newUrl,
-        color: editableAvatar.color,
-        initial: initial,
-    });
-  }
+  const handleInitialSelect = (newInitial: string) => {
+    if (newInitial) {
+        const newUrl = `https://placehold.co/100x100/${editableAvatar.color}/FFFFFF?text=${newInitial}`;
+        setEditableAvatar({
+            type: 'url',
+            value: newUrl,
+            color: editableAvatar.color,
+            initial: newInitial,
+        });
+    }
+  };
 
   const handleColorChange = (newColor: string) => {
     if (editableAvatar.type === 'url') {
       const newUrl = `https://placehold.co/100x100/${newColor}/FFFFFF?text=${editableAvatar.initial}`;
       setEditableAvatar(prev => ({ ...prev, value: newUrl, color: newColor }));
     } else { // type is 'icon'
-      const iconId = editableAvatar.value.split('_')[0];
-      const newIconString = `${iconId}_${newColor}`;
-      setEditableAvatar(prev => ({ ...prev, value: newIconString, color: newColor }));
+      setEditableAvatar(prev => ({ ...prev, color: newColor }));
     }
   };
   
   const handleSelectShopAvatar = (avatarId: string) => {
-    // When selecting a shop avatar, default its color to gray
-    const newColor = '737373';
-    const newAvatarString = `${avatarId}_${newColor}`;
      setEditableAvatar({
         type: 'icon',
-        value: newAvatarString,
-        color: newColor,
-        initial: '',
+        value: avatarId,
+        color: editableAvatar.color,
+        initial: '', // Clear initial when selecting an icon
     });
   };
 
@@ -446,16 +448,19 @@ function EditProfileDialog() {
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
     
-    // For icon avatars, check ownership before saving
+    let finalAvatarString = '';
+
     if (editableAvatar.type === 'icon') {
-        const iconId = editableAvatar.value.split('_')[0];
-        const shopItem = shopAvatarMap.get(iconId);
-        const isOwned = user.ownedAvatars?.includes(iconId);
+        const shopItem = shopAvatarMap.get(editableAvatar.value);
+        const isOwned = user.ownedAvatars?.includes(editableAvatar.value);
         
         if (shopItem && shopItem.price > 0 && !isOwned) {
             toast({ title: "Avatar no adquirido", description: "Debes comprar este avatar antes de poder usarlo.", variant: "destructive"});
             return;
         }
+        finalAvatarString = `${editableAvatar.value}_${editableAvatar.color}`;
+    } else {
+        finalAvatarString = editableAvatar.value;
     }
 
     setIsLoading(true);
@@ -467,7 +472,7 @@ function EditProfileDialog() {
             ageRange,
             course,
             className,
-            avatar: editableAvatar.value,
+            avatar: finalAvatarString,
         };
 
         const userDocRef = doc(firestore, 'users', user.uid);
@@ -491,6 +496,8 @@ function EditProfileDialog() {
         setIsLoading(false);
     }
   };
+  
+  const isIconSelected = editableAvatar.type === 'icon';
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -506,30 +513,33 @@ function EditProfileDialog() {
         </DialogHeader>
         <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto px-1 pr-4">
             
-            {/* Avatar Preview */}
             <div className="flex justify-center py-4">
                <AvatarDisplayPreview avatar={editableAvatar} />
             </div>
 
-            {/* Avatar Options */}
             <div className="space-y-4 pt-4 border-t">
                 <Label>Avatar</Label>
-                 <div className="space-y-2">
-                    <Label htmlFor="initial-input" className="text-xs text-muted-foreground">Elige una Letra</Label>
-                    <Input
-                        id="initial-input"
-                        maxLength={1}
-                        placeholder="Escribe una letra..."
-                        defaultValue={editableAvatar.type === 'url' ? editableAvatar.initial : ''}
-                        onChange={(e) => handleInitialChange(e.target.value)}
-                        className="w-24 text-center"
-                    />
+                <div className="space-y-2">
+                    <Label htmlFor="initial-select" className="text-xs text-muted-foreground">Elige una Letra</Label>
+                    <Select
+                        onValueChange={handleInitialSelect}
+                        value={isIconSelected ? '' : editableAvatar.initial}
+                        disabled={isIconSelected}
+                    >
+                        <SelectTrigger id="initial-select" className="w-48">
+                            <SelectValue placeholder="Selecciona una letra..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {ALPHABET.map(letter => (
+                                <SelectItem key={letter} value={letter}>{letter}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                  <div className="grid grid-cols-3 gap-4">
                     {SHOP_AVATARS.map((avatar) => {
                         const isOwned = user.ownedAvatars?.includes(avatar.id);
-                        const [selectedIconId] = editableAvatar.value.split('_');
-                        const isSelected = editableAvatar.type === 'icon' && selectedIconId === avatar.id;
+                        const isSelected = isIconSelected && editableAvatar.value === avatar.id;
                         const Icon = avatar.icon;
                         const isFree = avatar.price === 0;
 
@@ -539,7 +549,6 @@ function EditProfileDialog() {
                                     type="button" 
                                     onClick={() => handleSelectShopAvatar(avatar.id)}
                                     className={cn("w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
-                                    disabled={!isOwned && !isFree}
                                 >
                                    <div className="w-full h-full flex items-center justify-center">
                                         <Icon className="h-10 w-10 text-muted-foreground" />
@@ -583,7 +592,6 @@ function EditProfileDialog() {
                 </div>
             </div>
 
-            {/* Color Palette */}
             <div className="space-y-4 pt-4 border-t">
                 <Label>Color de Fondo</Label>
                 <div className="flex flex-wrap gap-3">
@@ -603,7 +611,6 @@ function EditProfileDialog() {
                 </div>
             </div>
             
-            {/* Profile Fields Section */}
             <div className="space-y-4 pt-6 border-t">
                  <Label>Editor de Perfil</Label>
                 <div className="space-y-2">
@@ -696,8 +703,3 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
       </Card>
     );
   }
-
-    
-    
-
-    
