@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart } from "lucide-react";
+import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,7 +33,6 @@ import { doc, updateDoc, arrayUnion, increment } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
@@ -230,10 +229,10 @@ export default function ProfilePage() {
 
 const SHOP_AVATARS = [
     { id: 'paw', icon: PawPrint, price: 5 },
-    { id: 'rocket', icon: Rocket, price: 10 },
-    { id: 'pizza', icon: Pizza, price: 15 },
     { id: 'gamepad', icon: Gamepad2, price: 12 },
     { id: 'ghost', icon: Ghost, price: 8 },
+    { id: 'rocket', icon: Rocket, price: 10 },
+    { id: 'pizza', icon: Pizza, price: 15 },
     { id: 'palmtree', icon: Palmtree, price: 0 },
 ];
 
@@ -251,64 +250,77 @@ const AVATAR_COLORS = [
 function AvatarDisplay({ user }: { user: User }) {
     const { avatar: avatarUrl, name } = user;
     
-    const [iconId, colorHex] = avatarUrl.split('_');
-    const shopItem = shopAvatarMap.get(iconId);
-    const Icon = shopItem?.icon;
+    const [id, color] = avatarUrl.split('_');
+    const isLetter = id === 'letter';
+    const Icon = shopAvatarMap.get(id)?.icon;
+
+    if (isLetter) {
+      const letter = color ? color[0] : name[0];
+      const bgColor = color ? `#${color.substring(1)}` : '#737373';
+      return (
+          <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
+              <div className="w-full h-full flex items-center justify-center font-bold text-4xl text-white" style={{ backgroundColor: bgColor }}>
+                  {letter}
+              </div>
+          </Avatar>
+      );
+    }
 
     if (Icon) {
         return (
             <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
-                <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: colorHex ? `#${colorHex}` : '#737373' }}>
+                <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: color ? `#${color}` : '#737373' }}>
                     <Icon className="h-12 w-12 text-white" />
                 </div>
             </Avatar>
         );
     }
     
-    const isUrl = avatarUrl?.startsWith('https');
+    // Fallback for original URL-based avatars
     return (
         <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
-            <AvatarImage src={isUrl ? avatarUrl : undefined} alt={name} />
+            <AvatarImage src={avatarUrl} alt={name} />
             <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
     );
 }
 
-type EditableAvatar = {
-  type: 'url' | 'icon';
-  value: string; 
-  color: string; 
-};
+function AvatarDisplayPreview({ avatarId, color }: { avatarId: string; color: string }) {
+    const isLetter = avatarId.startsWith('letter');
+    const Icon = shopAvatarMap.get(avatarId)?.icon;
 
-function AvatarDisplayPreview({ avatar }: { avatar: EditableAvatar }) {
-  if (avatar.type === 'url') {
-    return (
-      <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
-        <AvatarImage src={avatar.value} key={avatar.value} />
-        <AvatarFallback>{avatar.value.slice(-1)}</AvatarFallback>
-      </Avatar>
-    );
-  }
+    if (isLetter) {
+        const letter = avatarId.split('_')[1] || 'A';
+        return (
+            <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
+                <div 
+                    className="w-full h-full flex items-center justify-center font-bold text-4xl text-white" 
+                    style={{ backgroundColor: `#${color}` }}
+                >
+                    {letter}
+                </div>
+            </Avatar>
+        );
+    }
 
-  const Icon = shopAvatarMap.get(avatar.value)?.icon;
-  if (Icon) {
+    if (Icon) {
+        return (
+            <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
+                <div 
+                  className="w-full h-full flex items-center justify-center" 
+                  style={{ backgroundColor: `#${color}` }}
+                >
+                    <Icon className="h-12 w-12 text-white" />
+                </div>
+            </Avatar>
+        );
+    }
+
     return (
-      <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
-        <div 
-          className="w-full h-full flex items-center justify-center" 
-          style={{ backgroundColor: `#${avatar.color}` }}
-        >
-          <Icon className="h-12 w-12 text-white" />
-        </div>
-      </Avatar>
+        <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
+            <AvatarFallback>?</AvatarFallback>
+        </Avatar>
     );
-  }
-  
-  return (
-    <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
-      <AvatarFallback>?</AvatarFallback>
-    </Avatar>
-  );
 }
 
 
@@ -317,11 +329,8 @@ function EditProfileDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const [editableAvatar, setEditableAvatar] = useState<EditableAvatar>({
-    type: 'url',
-    value: '',
-    color: 'A78BFA',
-  });
+  const [selectedAvatarId, setSelectedAvatarId] = useState('');
+  const [selectedColor, setSelectedColor] = useState('A78BFA');
 
   const [name, setName] = useState(user?.name || "");
   const [center, setCenter] = useState(user?.center || "");
@@ -343,27 +352,18 @@ function EditProfileDialog() {
         setClassName(user.className);
         
         const [id, color] = user.avatar.split('_');
-        
-        if (shopAvatarMap.has(id)) {
-            setEditableAvatar({
-                type: 'icon',
-                value: id,
-                color: color || '737373',
-            });
-        } else if (user.avatar.startsWith('https://')) {
-            const urlParams = new URLSearchParams(user.avatar.split('?')[1]);
-            setEditableAvatar({
-                type: 'url',
-                value: user.avatar,
-                color: urlParams.get('bg') || 'A78BFA',
-            });
+
+        if (id === 'letter') {
+           setSelectedAvatarId(user.avatar);
+           setSelectedColor(color ? color.substring(1) : 'A78BFA');
+        } else if (shopAvatarMap.has(id)) {
+            setSelectedAvatarId(id);
+            setSelectedColor(color || '737373');
         } else {
+            // Fallback for old URL avatars
             const initial = user.name.charAt(0).toUpperCase() || 'A';
-            setEditableAvatar({
-                type: 'url',
-                value: `https://placehold.co/100x100/A78BFA/FFFFFF?text=${initial}`,
-                color: 'A78BFA',
-            });
+            setSelectedAvatarId(`letter_${initial}`);
+            setSelectedColor('A78BFA');
         }
     }
   };
@@ -372,36 +372,15 @@ function EditProfileDialog() {
     if (isOpen) {
         initializeState();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isOpen]);
   
-  
-  const handleInitialSelect = (newInitial: string) => {
-    if (newInitial) {
-        const newUrl = `https://placehold.co/100x100/${editableAvatar.color}/FFFFFF?text=${newInitial}`;
-        setEditableAvatar({
-            type: 'url',
-            value: newUrl,
-            color: editableAvatar.color,
-        });
-    }
+  const handleLetterSelect = (letter: string) => {
+    setSelectedAvatarId(`letter_${letter}`);
   };
 
-  const handleColorChange = (newColor: string) => {
-    if (editableAvatar.type === 'url') {
-      const currentInitial = new URL(editableAvatar.value).searchParams.get('text') || 'A';
-      const newUrl = `https://placehold.co/100x100/${newColor}/FFFFFF?text=${currentInitial}`;
-      setEditableAvatar(prev => ({ ...prev, value: newUrl, color: newColor }));
-    } else { // type is 'icon'
-      setEditableAvatar(prev => ({ ...prev, color: newColor }));
-    }
-  };
-  
   const handleSelectShopAvatar = (avatarId: string) => {
-     setEditableAvatar({
-        type: 'icon',
-        value: avatarId,
-        color: editableAvatar.color,
-    });
+     setSelectedAvatarId(avatarId);
   };
 
   const handlePurchaseAvatar = async (avatar: typeof SHOP_AVATARS[0]) => {
@@ -439,12 +418,14 @@ function EditProfileDialog() {
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
     
-    let finalAvatarString = '';
-
-    if (editableAvatar.type === 'icon') {
-        finalAvatarString = `${editableAvatar.value}_${editableAvatar.color}`;
+    let finalAvatarString: string;
+    const isLetter = selectedAvatarId.startsWith('letter');
+    
+    if (isLetter) {
+        const letter = selectedAvatarId.split('_')[1];
+        finalAvatarString = `letter_${letter}${selectedColor}`;
     } else {
-        finalAvatarString = editableAvatar.value;
+        finalAvatarString = `${selectedAvatarId}_${selectedColor}`;
     }
 
     setIsLoading(true);
@@ -481,23 +462,23 @@ function EditProfileDialog() {
     }
   };
   
-  const isIconSelected = editableAvatar.type === 'icon';
-  const getInitialFromUrl = (url: string) => {
-    if (!url.startsWith('http')) return '';
-    return new URL(url).searchParams.get('text') || '';
-  };
-  
   const isSaveDisabled = useMemo(() => {
     if (isLoading) return true;
-    if (editableAvatar.type === 'icon') {
-        const shopItem = shopAvatarMap.get(editableAvatar.value);
-        if (!shopItem) return true; // Should not happen
 
-        const isOwned = user.ownedAvatars?.includes(editableAvatar.value);
+    const isIcon = !selectedAvatarId.startsWith('letter');
+    if (isIcon) {
+        const shopItem = shopAvatarMap.get(selectedAvatarId);
+        if (!shopItem) return true; // Should not happen
+        
+        const isOwned = user.ownedAvatars?.includes(selectedAvatarId);
         return shopItem.price > 0 && !isOwned;
     }
-    return false;
-  }, [editableAvatar, user.ownedAvatars, isLoading]);
+    return false; // Always allow saving for letter avatars
+  }, [selectedAvatarId, user.ownedAvatars, isLoading]);
+  
+  const isLetterSelectorDisabled = useMemo(() => {
+    return !selectedAvatarId.startsWith('letter');
+  }, [selectedAvatarId]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -514,32 +495,15 @@ function EditProfileDialog() {
         <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto px-1 pr-4">
             
             <div className="flex justify-center py-4">
-               <AvatarDisplayPreview avatar={editableAvatar} />
+               <AvatarDisplayPreview avatarId={selectedAvatarId} color={selectedColor} />
             </div>
 
             <div className="space-y-4 pt-4 border-t">
                 <Label>Avatar</Label>
-                <div className="space-y-2">
-                    <Label htmlFor="initial-select" className="text-xs text-muted-foreground">Elige una Letra</Label>
-                    <Select
-                        onValueChange={handleInitialSelect}
-                        value={isIconSelected ? '' : getInitialFromUrl(editableAvatar.value)}
-                        disabled={isIconSelected}
-                    >
-                        <SelectTrigger id="initial-select" className="w-48">
-                            <SelectValue placeholder="Selecciona una letra..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {ALPHABET.map(letter => (
-                                <SelectItem key={letter} value={letter}>{letter}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
                  <div className="grid grid-cols-3 gap-4">
                     {SHOP_AVATARS.map((avatar) => {
                         const isOwned = user.ownedAvatars?.includes(avatar.id);
-                        const isSelected = isIconSelected && editableAvatar.value === avatar.id;
+                        const isSelected = selectedAvatarId === avatar.id;
                         const Icon = avatar.icon;
                         const isFree = avatar.price === 0;
 
@@ -589,6 +553,24 @@ function EditProfileDialog() {
                             </div>
                         )
                     })}
+                     <div className="relative group flex flex-col items-center gap-2">
+                          <div className={cn("w-full aspect-square rounded-lg flex flex-col items-center justify-center bg-muted transition-all", !isLetterSelectorDisabled && "ring-4 ring-primary ring-offset-2")}>
+                                <CaseUpper className="h-10 w-10 text-muted-foreground mb-2" />
+                                <Select
+                                    onValueChange={handleLetterSelect}
+                                    value={selectedAvatarId.startsWith('letter') ? selectedAvatarId.split('_')[1] : ''}
+                                >
+                                    <SelectTrigger className="w-24 h-8 text-xs">
+                                        <SelectValue placeholder="Letra" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {ALPHABET.map(letter => (
+                                            <SelectItem key={letter} value={letter}>{letter}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                          </div>
+                     </div>
                 </div>
             </div>
 
@@ -599,10 +581,10 @@ function EditProfileDialog() {
                         <button
                             key={color.value}
                             type="button"
-                            onClick={() => handleColorChange(color.value)}
+                            onClick={() => setSelectedColor(color.value)}
                             className={cn(
                                 "h-8 w-8 rounded-full border-2 transition-transform hover:scale-110",
-                                editableAvatar.color === color.value ? 'border-ring' : 'border-transparent'
+                                selectedColor === color.value ? 'border-ring' : 'border-transparent'
                             )}
                             style={{ backgroundColor: `#${color.value}` }}
                             aria-label={`Seleccionar color ${color.name}`}
@@ -703,7 +685,5 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
       </Card>
     );
   }
-
-    
 
     
