@@ -244,12 +244,12 @@ const AVATAR_COLORS = [
 ];
 
 const SHOP_AVATARS = [
-    { id: 'paw', icon: PawPrint, price: 50, url: 'https://picsum.photos/seed/avatar1/100/100' },
-    { id: 'rocket', icon: Rocket, price: 75, url: 'https://picsum.photos/seed/avatar2/100/100' },
-    { id: 'pizza', icon: Pizza, price: 25, url: 'https://picsum.photos/seed/avatar3/100/100' },
-    { id: 'gamepad', icon: Gamepad2, price: 100, url: 'https://picsum.photos/seed/avatar4/100/100' },
-    { id: 'ghost', icon: Ghost, price: 150, url: 'https://picsum.photos/seed/avatar5/100/100' },
-    { id: 'palmtree', icon: Palmtree, price: 60, url: 'https://picsum.photos/seed/avatar6/100/100' },
+    { id: 'paw', icon: PawPrint, price: 5, url: 'https://picsum.photos/seed/avatar1/100/100' },
+    { id: 'rocket', icon: Rocket, price: 10, url: 'https://picsum.photos/seed/avatar2/100/100' },
+    { id: 'pizza', icon: Pizza, price: 3, url: 'https://picsum.photos/seed/avatar3/100/100' },
+    { id: 'gamepad', icon: Gamepad2, price: 12, url: 'https://picsum.photos/seed/avatar4/100/100' },
+    { id: 'ghost', icon: Ghost, price: 15, url: 'https://picsum.photos/seed/avatar5/100/100' },
+    { id: 'palmtree', icon: Palmtree, price: 8, url: 'https://picsum.photos/seed/avatar6/100/100' },
 ];
 
 function EditProfileDialog() {
@@ -264,23 +264,8 @@ function EditProfileDialog() {
   const firestore = useFirestore();
   const { toast } = useToast();
   
-  // Avatar state
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState(user?.avatar || "");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Avatar creator state
-  const [initial, setInitial] = useState(user?.name?.charAt(0).toUpperCase() || 'A');
-  const [bgColor, setBgColor] = useState(AVATAR_COLORS[0]);
   
-  const isSaveDisabled = useMemo(() => {
-    if (!user) return true;
-    const selectedShopAvatar = SHOP_AVATARS.find(a => a.url === selectedAvatarUrl);
-    if (selectedShopAvatar && !(user.ownedAvatars || []).includes(selectedShopAvatar.url)) {
-        return true; // Cannot save if selected avatar is from shop and not owned
-    }
-    return false;
-  }, [selectedAvatarUrl, user]);
-
   useEffect(() => {
     if (user && isOpen) {
       setName(user.name);
@@ -289,20 +274,35 @@ function EditProfileDialog() {
       setCourse(user.course);
       setClassName(user.className);
       setSelectedAvatarUrl(user.avatar);
-      setInitial(user.name?.charAt(0).toUpperCase() || 'A');
     }
   }, [user, isOpen]);
   
+  const extractUrlParams = (url: string) => {
+    try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname.includes('placehold.co')) {
+            const pathParts = urlObj.pathname.split('/');
+            const color = pathParts[2];
+            const textParam = urlObj.searchParams.get('text');
+            const initial = textParam ? textParam.charAt(0).toUpperCase() : 'A';
+            return { initial, color };
+        }
+    } catch (e) {
+        // Not a valid URL or not a placehold.co URL
+    }
+    return { initial: user?.name?.charAt(0).toUpperCase() || 'A', color: AVATAR_COLORS[4] };
+  };
+
   const handleInitialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newInitial = e.target.value.charAt(0).toUpperCase() || 'A';
-    setInitial(newInitial);
-    const newAvatarUrl = `https://placehold.co/100x100/${bgColor}/${'FFFFFF'}?text=${newInitial}`;
+    const { color } = extractUrlParams(selectedAvatarUrl);
+    const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${newInitial}`;
     setSelectedAvatarUrl(newAvatarUrl);
   };
 
   const handleColorChange = (color: string) => {
-    setBgColor(color);
-    const newAvatarUrl = `https://placehold.co/100x100/${color}/${'FFFFFF'}?text=${initial}`;
+    const { initial } = extractUrlParams(selectedAvatarUrl);
+    const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${initial}`;
     setSelectedAvatarUrl(newAvatarUrl);
   };
 
@@ -334,7 +334,8 @@ function EditProfileDialog() {
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
 
-    if (isSaveDisabled) {
+    const isShopAvatar = SHOP_AVATARS.some(a => a.url === selectedAvatarUrl);
+    if (isShopAvatar && !(user.ownedAvatars || []).includes(selectedAvatarUrl)) {
         toast({ title: "Avatar no adquirido", description: "Debes comprar este avatar antes de poder guardarlo.", variant: "destructive"});
         return;
     }
@@ -373,6 +374,8 @@ function EditProfileDialog() {
     }
   };
 
+  const { initial: currentInitial, color: currentBgColor } = extractUrlParams(selectedAvatarUrl);
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -389,7 +392,10 @@ function EditProfileDialog() {
             <div className="space-y-2">
                 <Label>Foto de Perfil</Label>
                 <div className="flex justify-center py-4">
-                    <img src={selectedAvatarUrl} alt="Avatar Preview" width={100} height={100} className="rounded-full aspect-square object-cover ring-4 ring-primary ring-offset-2" />
+                    <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
+                        <AvatarImage src={selectedAvatarUrl} alt="Avatar Preview" />
+                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
                 </div>
                  <Tabs defaultValue="create" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
@@ -401,7 +407,7 @@ function EditProfileDialog() {
                             <div className="grid grid-cols-3 gap-4 items-center">
                                <Label className="text-right">Inicial</Label>
                                 <Input 
-                                    value={initial}
+                                    value={currentInitial}
                                     onChange={handleInitialChange}
                                     maxLength={1}
                                     className="col-span-2"
@@ -411,7 +417,7 @@ function EditProfileDialog() {
                                 <Label className="text-right">Color</Label>
                                 <div className="col-span-2 grid grid-cols-6 gap-2">
                                     {AVATAR_COLORS.map(color => (
-                                        <button key={color} type="button" onClick={() => handleColorChange(color)} className={cn("w-8 h-8 rounded-full border", bgColor === color && "ring-2 ring-primary ring-offset-2")} style={{ backgroundColor: `#${color}` }} />
+                                        <button key={color} type="button" onClick={() => handleColorChange(color)} className={cn("w-8 h-8 rounded-full border", currentBgColor === color && "ring-2 ring-primary ring-offset-2")} style={{ backgroundColor: `#${color}` }} />
                                     ))}
                                 </div>
                             </div>
@@ -533,7 +539,7 @@ function EditProfileDialog() {
           <DialogClose asChild>
             <Button variant="outline" disabled={isLoading}>Cancelar</Button>
           </DialogClose>
-          <Button onClick={handleSaveChanges} disabled={isLoading || isSaveDisabled}>
+          <Button onClick={handleSaveChanges} disabled={isLoading}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Guardar Cambios
           </Button>
@@ -558,13 +564,5 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
     );
   }
 
-    
-
-    
-
-    
-
-
-    
 
     
