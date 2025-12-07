@@ -294,15 +294,15 @@ function EditProfileDialog() {
   }, [user, isOpen]);
   
   const handleInitialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newInitial = e.target.value.charAt(0).toUpperCase();
+    const newInitial = e.target.value.charAt(0).toUpperCase() || 'A';
     setInitial(newInitial);
-    const newAvatarUrl = `https://placehold.co/100x100/${bgColor}/${'FFFFFF'}?text=${newInitial || 'A'}`;
+    const newAvatarUrl = `https://placehold.co/100x100/${bgColor}/${'FFFFFF'}?text=${newInitial}`;
     setSelectedAvatarUrl(newAvatarUrl);
   };
 
   const handleColorChange = (color: string) => {
     setBgColor(color);
-    const newAvatarUrl = `https://placehold.co/100x100/${color}/${'FFFFFF'}?text=${initial || 'A'}`;
+    const newAvatarUrl = `https://placehold.co/100x100/${color}/${'FFFFFF'}?text=${initial}`;
     setSelectedAvatarUrl(newAvatarUrl);
   };
 
@@ -564,5 +564,7 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
 
     
 
+
+    
 
     
