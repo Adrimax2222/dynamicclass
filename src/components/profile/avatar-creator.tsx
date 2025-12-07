@@ -52,24 +52,24 @@ export function AvatarCreator({ currentAvatarUrl, onAvatarChange }: AvatarCreato
         setColor(newColor);
     }, [currentAvatarUrl]);
     
-    // Effect to build and emit the new URL whenever initial or color changes
-    useEffect(() => {
-        // Don't emit changes if the component is just initializing
-        const { initial: currentInitial, color: currentColor } = extractUrlParams(currentAvatarUrl);
-        if (initial === currentInitial && color === currentColor) {
-            return;
-        }
-
-        const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${initial}`;
+    const handleInitialSelect = (newInitial: string) => {
+        setInitial(newInitial);
+        const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${newInitial}`;
         onAvatarChange(newAvatarUrl);
-    }, [initial, color, onAvatarChange, currentAvatarUrl]);
+    }
+
+    const handleColorClick = (newColor: string) => {
+        setColor(newColor);
+        const newAvatarUrl = `https://placehold.co/100x100/${newColor}/FFFFFF?text=${initial}`;
+        onAvatarChange(newAvatarUrl);
+    }
 
     return (
         <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4 items-center">
                 <Label htmlFor="initial-select" className="text-right">Inicial</Label>
                 <div className="col-span-2">
-                    <Select onValueChange={setInitial} value={initial}>
+                    <Select onValueChange={handleInitialSelect} value={initial}>
                         <SelectTrigger id="initial-select">
                             <SelectValue placeholder="Selecciona una letra" />
                         </SelectTrigger>
@@ -88,7 +88,7 @@ export function AvatarCreator({ currentAvatarUrl, onAvatarChange }: AvatarCreato
                         <button 
                             key={c.value} 
                             type="button" 
-                            onClick={() => setColor(c.value)} 
+                            onClick={() => handleColorClick(c.value)} 
                             className={cn("w-8 h-8 rounded-full border", color === c.value && "ring-2 ring-primary ring-offset-2")} 
                             style={{ backgroundColor: `#${c.value}` }}
                             aria-label={`Select ${c.name} color`}
