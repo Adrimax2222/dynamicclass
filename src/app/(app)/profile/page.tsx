@@ -568,5 +568,3 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
   }
 
     
-
-    
