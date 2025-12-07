@@ -36,6 +36,7 @@ import { GradeCalculatorDialog } from "@/components/layout/grade-calculator-dial
 import { useFirestore } from "@/firebase";
 import { doc, updateDoc, increment } from "firebase/firestore";
 import { format as formatDate, subDays, isSameDay } from 'date-fns';
+import { WipDialog } from "@/components/layout/wip-dialog";
 
 
 type TimerMode = "pomodoro" | "long" | "deep";
@@ -363,22 +364,17 @@ export default function StudyPage() {
                           <Calculator className="absolute top-2 right-2 h-6 w-6 opacity-20" />
                       </div>
                    </GradeCalculatorDialog>
-                    <div
-                        className="relative p-4 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => {
-                          toast({
-                            title: "Función en desarrollo",
-                            description:
-                              "Esta es una función beta y estamos trabajando en ella.",
-                          });
-                        }}
-                      >
-                         <div className="relative z-10">
-                            <h3 className="font-bold">Escanear</h3>
-                            <p className="text-xs opacity-80">Digitaliza tus apuntes al instante.</p>
+                    <WipDialog>
+                        <div
+                            className="relative p-4 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform"
+                        >
+                            <div className="relative z-10">
+                                <h3 className="font-bold">Escanear</h3>
+                                <p className="text-xs opacity-80">Digitaliza tus apuntes al instante.</p>
+                            </div>
+                            <ScanLine className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
                         </div>
-                        <ScanLine className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
-                    </div>
+                    </WipDialog>
                 </CardContent>
             </Card>
 
@@ -387,3 +383,5 @@ export default function StudyPage() {
     </div>
   );
 }
+
+    
