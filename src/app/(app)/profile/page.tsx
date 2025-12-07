@@ -232,12 +232,12 @@ export default function ProfilePage() {
 }
 
 const AVATAR_COLORS = [
-  "F87171", // red
-  "FBBF24", // amber
-  "34D399", // emerald
-  "60A5FA", // blue
-  "A78BFA", // violet
-  "F472B6", // pink
+    "F87171", // red
+    "FBBF24", // amber
+    "34D399", // emerald
+    "60A5FA", // blue
+    "A78BFA", // violet
+    "F472B6", // pink
 ];
 
 const SHOP_AVATARS = [
@@ -258,37 +258,51 @@ function AvatarDisplay({ avatar, name }: { avatar: string, name: string }) {
 
     return (
         <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
-            {isUrl ? (
-                <AvatarImage src={avatar} alt={name} />
-            ) : Icon ? (
-                <div className="w-full h-full flex items-center justify-center bg-muted">
-                    <Icon className="h-12 w-12 text-muted-foreground" />
-                </div>
-            ) : (
-                <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
-            )}
+          {isUrl ? (
+              <AvatarImage src={avatar} alt={name} />
+          ) : Icon ? (
+              <div className="w-full h-full flex items-center justify-center bg-muted">
+                  <Icon className="h-12 w-12 text-muted-foreground" />
+              </div>
+          ) : (
+              <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
+          )}
         </Avatar>
     );
 }
 
 function AvatarDisplayPreview({ avatar }: { avatar: { type: 'url' | 'icon'; value: string } }) {
   const Icon = shopAvatarMap.get(avatar.value)?.icon;
-  const FallbackInitial = avatar.type === 'url' ? (new URL(avatar.value).searchParams.get('text') || 'A') : ' ';
+  const isUrl = avatar.type === 'url';
   
+  let fallbackInitial = 'A';
+  if (isUrl) {
+      try {
+          const url = new URL(avatar.value);
+          fallbackInitial = url.searchParams.get('text') || 'A';
+      } catch (e) {
+          // Could be an invalid URL during typing, handle gracefully
+      }
+  }
+
   return (
     <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
-      {avatar.type === 'url' ? (
-        <AvatarImage src={avatar.value} />
+      {isUrl ? (
+        <AvatarImage src={avatar.value} key={avatar.value} />
       ) : Icon ? (
         <div className="w-full h-full flex items-center justify-center bg-muted">
           <Icon className="h-12 w-12 text-muted-foreground" />
         </div>
       ) : null}
-      <AvatarFallback>{FallbackInitial}</AvatarFallback>
+      <AvatarFallback>{fallbackInitial}</AvatarFallback>
     </Avatar>
   );
 }
 
+type EditableAvatar = {
+  type: 'url' | 'icon';
+  value: string;
+};
 
 function EditProfileDialog() {
   const { user, updateUser } = useApp();
@@ -299,10 +313,11 @@ function EditProfileDialog() {
   const [ageRange, setAgeRange] = useState(user?.ageRange || "");
   const [course, setCourse] = useState(user?.course || "");
   const [className, setClassName] = useState(user?.className || "");
+  
+  const [editableAvatar, setEditableAvatar] = useState<EditableAvatar>({ type: 'url', value: '' });
+
   const firestore = useFirestore();
   const { toast } = useToast();
-  
-  const [avatarPreview, setAvatarPreview] = useState<{ type: 'url' | 'icon'; value: string; }>({ type: 'url', value: '' });
 
   useEffect(() => {
     if (user && isOpen) {
@@ -313,7 +328,7 @@ function EditProfileDialog() {
       setClassName(user.className);
       
       const isShopAvatar = shopAvatarMap.has(user.avatar);
-      setAvatarPreview({
+      setEditableAvatar({
           type: isShopAvatar ? 'icon' : 'url',
           value: user.avatar
       });
@@ -322,39 +337,33 @@ function EditProfileDialog() {
   
   const extractUrlParams = (url: string) => {
     try {
-        if (!url.startsWith('https://')) {
-            // It's a shop avatar ID or something else, provide a default
-            return { initial: 'A', color: AVATAR_COLORS[4] };
-        }
         const urlObj = new URL(url);
         if (urlObj.hostname.includes('placehold.co')) {
             const pathParts = urlObj.pathname.split('/');
-            const color = pathParts[2];
+            const color = pathParts[2] || AVATAR_COLORS[4];
             const textParam = urlObj.searchParams.get('text');
             const initial = textParam ? textParam.charAt(0).toUpperCase() : 'A';
             return { initial, color };
         }
     } catch (e) { }
-    // Default fallback
     return { initial: user?.name?.charAt(0).toUpperCase() || 'A', color: AVATAR_COLORS[4] };
   };
 
   const handleInitialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newInitial = e.target.value.trim().toUpperCase() || 'A';
-    // Get color safely from the current preview
-    const { color } = extractUrlParams(avatarPreview.type === 'url' ? avatarPreview.value : `https://placehold.co/100x100/${AVATAR_COLORS[4]}/FFFFFF?text=A`);
+    const { color } = extractUrlParams(editableAvatar.type === 'url' ? editableAvatar.value : `https://placehold.co/100x100/${AVATAR_COLORS[4]}/FFFFFF?text=A`);
     const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${newInitial}`;
-    setAvatarPreview({ type: 'url', value: newAvatarUrl });
+    setEditableAvatar({ type: 'url', value: newAvatarUrl });
   };
   
   const handleColorChange = (newColor: string) => {
-    const { initial } = extractUrlParams(avatarPreview.type === 'url' ? avatarPreview.value : `https://placehold.co/100x100/${AVATAR_COLORS[4]}/FFFFFF?text=${user?.name.charAt(0) || 'A'}`);
+    const { initial } = extractUrlParams(editableAvatar.type === 'url' ? editableAvatar.value : `https://placehold.co/100x100/${AVATAR_COLORS[4]}/FFFFFF?text=A`);
     const newAvatarUrl = `https://placehold.co/100x100/${newColor}/FFFFFF?text=${initial}`;
-    setAvatarPreview({ type: 'url', value: newAvatarUrl });
+    setEditableAvatar({ type: 'url', value: newAvatarUrl });
   };
 
   const handleSelectShopAvatar = (avatarId: string) => {
-    setAvatarPreview({ type: 'icon', value: avatarId });
+    setEditableAvatar({ type: 'icon', value: avatarId });
   }
 
   const handlePurchaseAvatar = async (avatar: typeof SHOP_AVATARS[0]) => {
@@ -372,7 +381,6 @@ function EditProfileDialog() {
             ownedAvatars: arrayUnion(avatar.id),
         });
 
-        // Optimistically update local user state
         const updatedLocalAvatars = [...(user.ownedAvatars || []), avatar.id];
         updateUser({ 
             trophies: user.trophies - avatar.price, 
@@ -393,7 +401,7 @@ function EditProfileDialog() {
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
 
-    if (avatarPreview.type === 'icon' && !(user.ownedAvatars || []).includes(avatarPreview.value)) {
+    if (editableAvatar.type === 'icon' && !(user.ownedAvatars || []).includes(editableAvatar.value)) {
         toast({ title: "Avatar no adquirido", description: "Debes comprar este avatar antes de poder guardarlo.", variant: "destructive"});
         return;
     }
@@ -403,11 +411,11 @@ function EditProfileDialog() {
     try {
         const updatedData: Partial<User> = {
             name,
-            center: center,
+            center,
             ageRange,
             course,
             className,
-            avatar: avatarPreview.value,
+            avatar: editableAvatar.value,
         };
 
         const userDocRef = doc(firestore, 'users', user.uid);
@@ -431,9 +439,9 @@ function EditProfileDialog() {
         setIsLoading(false);
     }
   };
-
-  const { initial: currentInitialFromUrl } = extractUrlParams(avatarPreview.type === 'url' ? avatarPreview.value : '');
-  const currentBgColor = extractUrlParams(avatarPreview.type === 'url' ? avatarPreview.value : '').color?.toUpperCase();
+  
+  const { initial: currentInitial } = extractUrlParams(editableAvatar.type === 'url' ? editableAvatar.value : '');
+  const { color: currentBgColor } = extractUrlParams(editableAvatar.type === 'url' ? editableAvatar.value : '');
 
 
   return (
@@ -452,7 +460,7 @@ function EditProfileDialog() {
             <div className="space-y-2">
                 <Label>Foto de Perfil</Label>
                 <div className="flex justify-center py-4">
-                   <AvatarDisplayPreview avatar={avatarPreview} />
+                   <AvatarDisplayPreview avatar={editableAvatar} />
                 </div>
                  <Tabs defaultValue="create" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
@@ -465,7 +473,7 @@ function EditProfileDialog() {
                                <Label htmlFor="initial-input" className="text-right">Inicial</Label>
                                 <Input 
                                     id="initial-input"
-                                    value={currentInitialFromUrl}
+                                    value={currentInitial}
                                     onChange={handleInitialChange}
                                     maxLength={1}
                                     className="col-span-2"
@@ -485,7 +493,7 @@ function EditProfileDialog() {
                         <div className="grid grid-cols-3 gap-4">
                             {SHOP_AVATARS.map((avatar) => {
                                 const isOwned = user.ownedAvatars?.includes(avatar.id);
-                                const isSelected = avatarPreview.type === 'icon' && avatarPreview.value === avatar.id;
+                                const isSelected = editableAvatar.type === 'icon' && editableAvatar.value === avatar.id;
                                 const Icon = avatar.icon;
                                 return (
                                     <div key={avatar.id} className="relative group flex flex-col items-center gap-2">
@@ -493,6 +501,7 @@ function EditProfileDialog() {
                                             type="button" 
                                             onClick={() => handleSelectShopAvatar(avatar.id)}
                                             className={cn("w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
+                                            disabled={!isOwned}
                                         >
                                            <Icon className="h-10 w-10 text-muted-foreground" />
                                         </button>
