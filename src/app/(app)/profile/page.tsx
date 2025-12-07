@@ -24,22 +24,21 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Camera, Trophy, NotebookText, FileCheck2, ListChecks, Medal, Star, Infinity, LineChart, Flame, BrainCircuit, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle } from "lucide-react";
+import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { doc, updateDoc, arrayUnion, increment } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
 import { GradeCalculatorDialog } from "@/components/layout/grade-calculator-dialog";
+import { AvatarCreator } from "@/components/profile/avatar-creator";
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
 
@@ -90,7 +89,6 @@ export default function ProfilePage() {
     { title: 'Exámenes Superados', value: user.exams, icon: FileCheck2, color: 'text-green-400' },
   ];
 
-  const isAdmin = ADMIN_EMAILS.includes(user.email);
   const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
   const streakCount = user.streak || 0;
   
@@ -135,7 +133,7 @@ export default function ProfilePage() {
       <Card className="mb-8 overflow-hidden shadow-lg">
         <div className="bg-muted/40 h-24" />
         <CardContent className="p-4 text-center -mt-16">
-          <AvatarDisplay avatar={user.avatar} name={user.name} />
+          <AvatarDisplay avatarUrl={user.avatar} name={user.name} />
           <h2 className="mt-4 text-2xl font-bold">{user.name}</h2>
           {user.role === 'admin' && (
             <Badge variant="destructive" className="mt-2">Admin</Badge>
@@ -231,15 +229,6 @@ export default function ProfilePage() {
   );
 }
 
-const AVATAR_COLORS = [
-    "F87171", // red
-    "FBBF24", // amber
-    "34D399", // emerald
-    "60A5FA", // blue
-    "A78BFA", // violet
-    "F472B6", // pink
-];
-
 const SHOP_AVATARS = [
     { id: 'paw', icon: PawPrint, price: 5 },
     { id: 'rocket', icon: Rocket, price: 10 },
@@ -251,15 +240,15 @@ const SHOP_AVATARS = [
 
 const shopAvatarMap = new Map(SHOP_AVATARS.map(item => [item.id, item]));
 
-function AvatarDisplay({ avatar, name }: { avatar: string, name: string }) {
-    const isUrl = avatar?.startsWith('https');
-    const shopItem = shopAvatarMap.get(avatar);
+function AvatarDisplay({ avatarUrl, name }: { avatarUrl: string, name: string }) {
+    const isUrl = avatarUrl?.startsWith('https');
+    const shopItem = shopAvatarMap.get(avatarUrl);
     const Icon = shopItem?.icon;
 
     return (
         <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
           {isUrl ? (
-              <AvatarImage src={avatar} alt={name} />
+              <AvatarImage src={avatarUrl} alt={name} />
           ) : Icon ? (
               <div className="w-full h-full flex items-center justify-center bg-muted">
                   <Icon className="h-12 w-12 text-muted-foreground" />
@@ -271,30 +260,20 @@ function AvatarDisplay({ avatar, name }: { avatar: string, name: string }) {
     );
 }
 
-function AvatarDisplayPreview({ avatar }: { avatar: { type: 'url' | 'icon'; value: string } }) {
+function AvatarDisplayPreview({ avatar }: { avatar: EditableAvatar }) {
   const Icon = shopAvatarMap.get(avatar.value)?.icon;
-  const isUrl = avatar.type === 'url';
-  
-  let fallbackInitial = 'A';
-  if (isUrl) {
-      try {
-          const url = new URL(avatar.value);
-          fallbackInitial = url.searchParams.get('text') || 'A';
-      } catch (e) {
-          // Could be an invalid URL during typing, handle gracefully
-      }
-  }
 
   return (
     <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
-      {isUrl ? (
+      {avatar.type === 'url' ? (
         <AvatarImage src={avatar.value} key={avatar.value} />
       ) : Icon ? (
         <div className="w-full h-full flex items-center justify-center bg-muted">
           <Icon className="h-12 w-12 text-muted-foreground" />
         </div>
-      ) : null}
-      <AvatarFallback>{fallbackInitial}</AvatarFallback>
+      ) : (
+        <AvatarFallback>A</AvatarFallback>
+      )}
     </Avatar>
   );
 }
@@ -335,33 +314,6 @@ function EditProfileDialog() {
     }
   }, [user, isOpen]);
   
-  const extractUrlParams = (url: string) => {
-    try {
-        const urlObj = new URL(url);
-        if (urlObj.hostname.includes('placehold.co')) {
-            const pathParts = urlObj.pathname.split('/');
-            const color = pathParts[2] || AVATAR_COLORS[4];
-            const textParam = urlObj.searchParams.get('text');
-            const initial = textParam ? textParam.charAt(0).toUpperCase() : 'A';
-            return { initial, color };
-        }
-    } catch (e) { }
-    return { initial: user?.name?.charAt(0).toUpperCase() || 'A', color: AVATAR_COLORS[4] };
-  };
-
-  const handleInitialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newInitial = e.target.value.trim().toUpperCase() || 'A';
-    const { color } = extractUrlParams(editableAvatar.type === 'url' ? editableAvatar.value : `https://placehold.co/100x100/${AVATAR_COLORS[4]}/FFFFFF?text=A`);
-    const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${newInitial}`;
-    setEditableAvatar({ type: 'url', value: newAvatarUrl });
-  };
-  
-  const handleColorChange = (newColor: string) => {
-    const { initial } = extractUrlParams(editableAvatar.type === 'url' ? editableAvatar.value : `https://placehold.co/100x100/${AVATAR_COLORS[4]}/FFFFFF?text=A`);
-    const newAvatarUrl = `https://placehold.co/100x100/${newColor}/FFFFFF?text=${initial}`;
-    setEditableAvatar({ type: 'url', value: newAvatarUrl });
-  };
-
   const handleSelectShopAvatar = (avatarId: string) => {
     setEditableAvatar({ type: 'icon', value: avatarId });
   }
@@ -439,10 +391,6 @@ function EditProfileDialog() {
         setIsLoading(false);
     }
   };
-  
-  const { initial: currentInitial } = extractUrlParams(editableAvatar.type === 'url' ? editableAvatar.value : '');
-  const { color: currentBgColor } = extractUrlParams(editableAvatar.type === 'url' ? editableAvatar.value : '');
-
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -468,26 +416,10 @@ function EditProfileDialog() {
                         <TabsTrigger value="shop">Tienda</TabsTrigger>
                     </TabsList>
                     <TabsContent value="create" className="pt-4">
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-3 gap-4 items-center">
-                               <Label htmlFor="initial-input" className="text-right">Inicial</Label>
-                                <Input 
-                                    id="initial-input"
-                                    value={currentInitial}
-                                    onChange={handleInitialChange}
-                                    maxLength={1}
-                                    className="col-span-2"
-                                />
-                            </div>
-                            <div className="grid grid-cols-3 gap-4 items-center">
-                                <Label className="text-right">Color</Label>
-                                <div className="col-span-2 grid grid-cols-6 gap-2">
-                                    {AVATAR_COLORS.map(color => (
-                                        <button key={color} type="button" onClick={() => handleColorChange(color)} className={cn("w-8 h-8 rounded-full border", currentBgColor === color && "ring-2 ring-primary ring-offset-2")} style={{ backgroundColor: `#${color}` }} />
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
+                        <AvatarCreator 
+                            currentAvatarUrl={editableAvatar.type === 'url' ? editableAvatar.value : ''}
+                            onAvatarChange={(newAvatarUrl) => setEditableAvatar({ type: 'url', value: newAvatarUrl })}
+                        />
                     </TabsContent>
                     <TabsContent value="shop" className="pt-4">
                         <div className="grid grid-cols-3 gap-4">
@@ -503,7 +435,9 @@ function EditProfileDialog() {
                                             className={cn("w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
                                             disabled={!isOwned}
                                         >
-                                           <Icon className="h-10 w-10 text-muted-foreground" />
+                                           <div className="w-full h-full flex items-center justify-center">
+                                                <Icon className="h-10 w-10 text-muted-foreground" />
+                                           </div>
                                         </button>
                                         <div className="text-center">
                                             {isOwned ? (
@@ -632,5 +566,7 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
       </Card>
     );
   }
+
+    
 
     
