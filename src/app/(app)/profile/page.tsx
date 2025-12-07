@@ -246,7 +246,7 @@ const AVATAR_COLORS = [
 const SHOP_AVATARS = [
     { id: 'paw', icon: PawPrint, price: 5, url: 'https://picsum.photos/seed/avatar1/100/100' },
     { id: 'rocket', icon: Rocket, price: 10, url: 'https://picsum.photos/seed/avatar2/100/100' },
-    { id: 'pizza', icon: Pizza, price: 3, url: 'https://picsum.photos/seed/avatar3/100/100' },
+    { id: 'pizza', icon: 3, price: 3, url: 'https://picsum.photos/seed/avatar3/100/100' },
     { id: 'gamepad', icon: Gamepad2, price: 12, url: 'https://picsum.photos/seed/avatar4/100/100' },
     { id: 'ghost', icon: Ghost, price: 15, url: 'https://picsum.photos/seed/avatar5/100/100' },
     { id: 'palmtree', icon: Palmtree, price: 8, url: 'https://picsum.photos/seed/avatar6/100/100' },
@@ -315,11 +315,20 @@ function EditProfileDialog() {
      setIsLoading(true);
      try {
         const userDocRef = doc(firestore, 'users', user.uid);
+        const newOwnedAvatars = arrayUnion(avatar.url);
+        
         await updateDoc(userDocRef, {
             trophies: increment(-avatar.price),
-            ownedAvatars: arrayUnion(avatar.url),
+            ownedAvatars: newOwnedAvatars,
         });
-        updateUser({ trophies: user.trophies - avatar.price, ownedAvatars: [...(user.ownedAvatars || []), avatar.url] });
+
+        // Optimistically update local user state
+        const updatedLocalAvatars = [...(user.ownedAvatars || []), avatar.url];
+        updateUser({ 
+            trophies: user.trophies - avatar.price, 
+            ownedAvatars: updatedLocalAvatars 
+        });
+
         toast({ title: "¡Compra realizada!", description: `Has adquirido el avatar ${avatar.id}.`});
      } catch (error) {
         console.error("Error purchasing avatar:", error);
@@ -374,7 +383,8 @@ function EditProfileDialog() {
     }
   };
 
-  const { initial: currentInitial, color: currentBgColor } = extractUrlParams(selectedAvatarUrl);
+  const { initial: currentInitial } = extractUrlParams(selectedAvatarUrl);
+  const currentBgColor = extractUrlParams(selectedAvatarUrl).color?.toUpperCase();
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -405,8 +415,9 @@ function EditProfileDialog() {
                     <TabsContent value="create" className="pt-4">
                         <div className="space-y-4">
                             <div className="grid grid-cols-3 gap-4 items-center">
-                               <Label className="text-right">Inicial</Label>
+                               <Label htmlFor="initial-input" className="text-right">Inicial</Label>
                                 <Input 
+                                    id="initial-input"
                                     value={currentInitial}
                                     onChange={handleInitialChange}
                                     maxLength={1}
@@ -564,5 +575,7 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
     );
   }
 
+
+    
 
     
