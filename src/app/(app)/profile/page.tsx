@@ -38,7 +38,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
 import { GradeCalculatorDialog } from "@/components/layout/grade-calculator-dialog";
-import { AvatarCreator } from "@/components/profile/avatar-creator";
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
 
@@ -235,7 +234,7 @@ const SHOP_AVATARS = [
     { id: 'pizza', icon: Pizza, price: 15 },
     { id: 'gamepad', icon: Gamepad2, price: 12 },
     { id: 'ghost', icon: Ghost, price: 8 },
-    { id: 'palmtree', icon: Palmtree, price: 3 },
+    { id: 'palmtree', icon: Palmtree, price: 0 },
 ];
 
 const shopAvatarMap = new Map(SHOP_AVATARS.map(item => [item.id, item]));
@@ -353,7 +352,7 @@ function EditProfileDialog() {
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
 
-    if (editableAvatar.type === 'icon' && !(user.ownedAvatars || []).includes(editableAvatar.value)) {
+    if (editableAvatar.type === 'icon' && !(user.ownedAvatars || []).includes(editableAvatar.value) && shopAvatarMap.get(editableAvatar.value)?.price !== 0) {
         toast({ title: "Avatar no adquirido", description: "Debes comprar este avatar antes de poder guardarlo.", variant: "destructive"});
         return;
     }
@@ -405,77 +404,71 @@ function EditProfileDialog() {
           <DialogTitle>Editar tu Perfil</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto px-1 pr-4">
+            {/* Avatar Section */}
             <div className="space-y-2">
                 <Label>Foto de Perfil</Label>
                 <div className="flex justify-center py-4">
                    <AvatarDisplayPreview avatar={editableAvatar} />
                 </div>
-                 <Tabs defaultValue="create" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="create">Editar</TabsTrigger>
-                        <TabsTrigger value="shop">Tienda</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="create" className="pt-4">
-                        <AvatarCreator 
-                            currentAvatarUrl={editableAvatar.type === 'url' ? editableAvatar.value : ''}
-                            onAvatarChange={(newAvatarUrl) => setEditableAvatar({ type: 'url', value: newAvatarUrl })}
-                        />
-                    </TabsContent>
-                    <TabsContent value="shop" className="pt-4">
-                        <div className="grid grid-cols-3 gap-4">
-                            {SHOP_AVATARS.map((avatar) => {
-                                const isOwned = user.ownedAvatars?.includes(avatar.id);
-                                const isSelected = editableAvatar.type === 'icon' && editableAvatar.value === avatar.id;
-                                const Icon = avatar.icon;
-                                return (
-                                    <div key={avatar.id} className="relative group flex flex-col items-center gap-2">
-                                        <button 
-                                            type="button" 
-                                            onClick={() => handleSelectShopAvatar(avatar.id)}
-                                            className={cn("w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
-                                            disabled={!isOwned}
-                                        >
-                                           <div className="w-full h-full flex items-center justify-center">
-                                                <Icon className="h-10 w-10 text-muted-foreground" />
-                                           </div>
-                                        </button>
-                                        <div className="text-center">
-                                            {isOwned ? (
-                                                <Badge variant="secondary" className="flex items-center gap-1">
-                                                    <CheckCircle className="h-3 w-3 text-green-500" />
-                                                    Adquirido
-                                                </Badge>
+                 <div className="grid grid-cols-3 gap-4">
+                    {SHOP_AVATARS.map((avatar) => {
+                        const isOwned = user.ownedAvatars?.includes(avatar.id);
+                        const isSelected = editableAvatar.type === 'icon' && editableAvatar.value === avatar.id;
+                        const Icon = avatar.icon;
+                        const isFree = avatar.price === 0;
+
+                        return (
+                            <div key={avatar.id} className="relative group flex flex-col items-center gap-2">
+                                <button 
+                                    type="button" 
+                                    onClick={() => handleSelectShopAvatar(avatar.id)}
+                                    className={cn("w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
+                                    disabled={!isOwned && !isFree}
+                                >
+                                   <div className="w-full h-full flex items-center justify-center">
+                                        <Icon className="h-10 w-10 text-muted-foreground" />
+                                   </div>
+                                </button>
+                                <div className="text-center">
+                                    {isOwned || isFree ? (
+                                        <Badge variant="secondary" className="flex items-center gap-1">
+                                            {isFree && !isOwned ? (
+                                                'Gratis'
                                             ) : (
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button size="sm" variant="outline" className="h-8 w-full" disabled={isLoading}>
-                                                            <Trophy className="h-4 w-4 mr-1 text-yellow-400" />
-                                                            {avatar.price}
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
-                                                            <AlertDialogDescriptionComponent>
-                                                                ¿Quieres comprar este avatar por {avatar.price} trofeos? Tus trofeos actuales son {user.trophies}.
-                                                            </AlertDialogDescriptionComponent>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handlePurchaseAvatar(avatar)}>Comprar</AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
+                                                <><CheckCircle className="h-3 w-3 text-green-500" /> Adquirido</>
                                             )}
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </TabsContent>
-                </Tabs>
+                                        </Badge>
+                                    ) : (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button size="sm" variant="outline" className="h-8 w-full" disabled={isLoading}>
+                                                    <Trophy className="h-4 w-4 mr-1 text-yellow-400" />
+                                                    {avatar.price}
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
+                                                    <AlertDialogDescriptionComponent>
+                                                        ¿Quieres comprar este avatar por {avatar.price} trofeos? Tus trofeos actuales son {user.trophies}.
+                                                    </AlertDialogDescriptionComponent>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handlePurchaseAvatar(avatar)}>Comprar</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    )}
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
             </div>
-            <div className="space-y-4">
+            
+            {/* Profile Fields Section */}
+            <div className="space-y-4 pt-6 border-t">
                 <div className="space-y-2">
                     <Label htmlFor="name">Nombre Completo</Label>
                     <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -567,4 +560,5 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
     );
   }
 
+    
     
