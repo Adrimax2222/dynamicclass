@@ -263,10 +263,10 @@ function AvatarDisplay({ user }: { user: User }) {
         );
     }
     
-    const [id, color] = avatarUrl.split('_');
+    const [id, id_extra, color] = avatarUrl.split('_');
     const Icon = shopAvatarMap.get(id)?.icon;
     const isLetter = id === 'letter';
-    const letter = isLetter ? avatarUrl.split('_')[1] : null;
+    const letter = isLetter ? id_extra : null;
 
     if (Icon || isLetter) {
         return (
@@ -546,26 +546,31 @@ function EditProfileDialog() {
                             </div>
                         )
                     })}
-                     <div className="relative group flex flex-col items-center gap-2">
-                          <div
-                            className={cn("w-full aspect-square rounded-lg flex flex-col items-center justify-center bg-muted transition-all", editableAvatar.id.startsWith('letter') && "ring-4 ring-primary ring-offset-2")}
-                           >
-                                <CaseUpper className="h-8 w-8 text-muted-foreground mb-2" />
-                                <Select
-                                    onValueChange={handleLetterSelect}
-                                    value={editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[1] : ''}
-                                    disabled={isLetterSelectorDisabled}
-                                >
-                                    <SelectTrigger className="w-20 h-8 text-xs">
-                                        <SelectValue placeholder="Letra" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {ALPHABET.map(letter => (
-                                            <SelectItem key={letter} value={letter}>{letter}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                          </div>
+                     <div className={cn("relative group flex flex-col items-center gap-2", editableAvatar.id.startsWith('letter') && "ring-4 ring-primary rounded-lg")}>
+                        <div
+                            className={cn("w-full aspect-square rounded-lg flex flex-col items-center justify-center bg-muted transition-all")}
+                        >
+                            <CaseUpper className="h-8 w-8 text-muted-foreground mb-2" />
+                            <Select
+                                onValueChange={handleLetterSelect}
+                                value={editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[1] : ''}
+                                onOpenChange={(isOpen) => {
+                                  if (isOpen) {
+                                    const currentLetter = editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[1] : 'A';
+                                    setEditableAvatar(prev => ({...prev, id: `letter_${currentLetter}`}))
+                                  }
+                                }}
+                            >
+                                <SelectTrigger className="w-20 h-8 text-xs">
+                                    <SelectValue placeholder="Letra" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {ALPHABET.map(letter => (
+                                        <SelectItem key={letter} value={letter}>{letter}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                      </div>
                 </div>
             </div>
@@ -681,6 +686,8 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
       </Card>
     );
   }
+
+    
 
     
 
