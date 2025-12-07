@@ -251,7 +251,6 @@ const AVATAR_COLORS = [
 function AvatarDisplay({ user }: { user: User }) {
     const { avatar: avatarUrl, name } = user;
     
-    // Check if it's an icon-based avatar (e.g., "pizza_F87171")
     const [iconId, colorHex] = avatarUrl.split('_');
     const shopItem = shopAvatarMap.get(iconId);
     const Icon = shopItem?.icon;
@@ -266,7 +265,6 @@ function AvatarDisplay({ user }: { user: User }) {
         );
     }
     
-    // Fallback to URL-based or default letter
     const isUrl = avatarUrl?.startsWith('https');
     return (
         <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
@@ -280,7 +278,6 @@ type EditableAvatar = {
   type: 'url' | 'icon';
   value: string; 
   color: string; 
-  initial: string;
 };
 
 function AvatarDisplayPreview({ avatar }: { avatar: EditableAvatar }) {
@@ -288,7 +285,7 @@ function AvatarDisplayPreview({ avatar }: { avatar: EditableAvatar }) {
     return (
       <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
         <AvatarImage src={avatar.value} key={avatar.value} />
-        <AvatarFallback>{avatar.initial.toUpperCase()}</AvatarFallback>
+        <AvatarFallback>{avatar.value.slice(-1)}</AvatarFallback>
       </Avatar>
     );
   }
@@ -324,7 +321,6 @@ function EditProfileDialog() {
     type: 'url',
     value: '',
     color: 'A78BFA',
-    initial: 'A',
   });
 
   const [name, setName] = useState(user?.name || "");
@@ -353,7 +349,6 @@ function EditProfileDialog() {
                 type: 'icon',
                 value: id,
                 color: color || '737373',
-                initial: '',
             });
         } else if (user.avatar.startsWith('https://')) {
             const urlParams = new URLSearchParams(user.avatar.split('?')[1]);
@@ -361,15 +356,13 @@ function EditProfileDialog() {
                 type: 'url',
                 value: user.avatar,
                 color: urlParams.get('bg') || 'A78BFA',
-                initial: urlParams.get('text') || user.name.charAt(0) || 'A',
             });
         } else {
-            // Fallback for old or corrupted data
+            const initial = user.name.charAt(0).toUpperCase() || 'A';
             setEditableAvatar({
                 type: 'url',
-                value: `https://placehold.co/100x100/A78BFA/FFFFFF?text=${user.name.charAt(0)}`,
+                value: `https://placehold.co/100x100/A78BFA/FFFFFF?text=${initial}`,
                 color: 'A78BFA',
-                initial: user.name.charAt(0) || 'A',
             });
         }
     }
@@ -379,7 +372,6 @@ function EditProfileDialog() {
     if (isOpen) {
         initializeState();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isOpen]);
   
   
@@ -390,14 +382,14 @@ function EditProfileDialog() {
             type: 'url',
             value: newUrl,
             color: editableAvatar.color,
-            initial: newInitial,
         });
     }
   };
 
   const handleColorChange = (newColor: string) => {
     if (editableAvatar.type === 'url') {
-      const newUrl = `https://placehold.co/100x100/${newColor}/FFFFFF?text=${editableAvatar.initial}`;
+      const currentInitial = new URL(editableAvatar.value).searchParams.get('text') || 'A';
+      const newUrl = `https://placehold.co/100x100/${newColor}/FFFFFF?text=${currentInitial}`;
       setEditableAvatar(prev => ({ ...prev, value: newUrl, color: newColor }));
     } else { // type is 'icon'
       setEditableAvatar(prev => ({ ...prev, color: newColor }));
@@ -409,7 +401,6 @@ function EditProfileDialog() {
         type: 'icon',
         value: avatarId,
         color: editableAvatar.color,
-        initial: '', // Clear initial when selecting an icon
     });
   };
 
@@ -451,13 +442,6 @@ function EditProfileDialog() {
     let finalAvatarString = '';
 
     if (editableAvatar.type === 'icon') {
-        const shopItem = shopAvatarMap.get(editableAvatar.value);
-        const isOwned = user.ownedAvatars?.includes(editableAvatar.value);
-        
-        if (shopItem && shopItem.price > 0 && !isOwned) {
-            toast({ title: "Avatar no adquirido", description: "Debes comprar este avatar antes de poder usarlo.", variant: "destructive"});
-            return;
-        }
         finalAvatarString = `${editableAvatar.value}_${editableAvatar.color}`;
     } else {
         finalAvatarString = editableAvatar.value;
@@ -498,6 +482,19 @@ function EditProfileDialog() {
   };
   
   const isIconSelected = editableAvatar.type === 'icon';
+  const getInitialFromUrl = (url: string) => new URL(url).searchParams.get('text') || '';
+  
+  const isSaveDisabled = useMemo(() => {
+    if (isLoading) return true;
+    if (editableAvatar.type === 'icon') {
+        const shopItem = shopAvatarMap.get(editableAvatar.value);
+        if (!shopItem) return true; // Should not happen
+
+        const isOwned = user.ownedAvatars?.includes(editableAvatar.value);
+        return shopItem.price > 0 && !isOwned;
+    }
+    return false;
+  }, [editableAvatar, user.ownedAvatars, isLoading]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -523,7 +520,7 @@ function EditProfileDialog() {
                     <Label htmlFor="initial-select" className="text-xs text-muted-foreground">Elige una Letra</Label>
                     <Select
                         onValueChange={handleInitialSelect}
-                        value={isIconSelected ? '' : editableAvatar.initial}
+                        value={isIconSelected ? '' : getInitialFromUrl(editableAvatar.value)}
                         disabled={isIconSelected}
                     >
                         <SelectTrigger id="initial-select" className="w-48">
@@ -679,7 +676,7 @@ function EditProfileDialog() {
           <DialogClose asChild>
             <Button variant="outline" disabled={isLoading}>Cancelar</Button>
           </DialogClose>
-          <Button onClick={handleSaveChanges} disabled={isLoading}>
+          <Button onClick={handleSaveChanges} disabled={isSaveDisabled}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Guardar Cambios
           </Button>
@@ -703,3 +700,5 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
       </Card>
     );
   }
+
+    
