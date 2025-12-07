@@ -243,10 +243,10 @@ const AVATAR_COLORS = [
 const SHOP_AVATARS = [
     { id: 'paw', icon: PawPrint, price: 5 },
     { id: 'rocket', icon: Rocket, price: 10 },
-    { id: 'pizza', icon: Pizza, price: 3 },
+    { id: 'pizza', icon: Pizza, price: 15 },
     { id: 'gamepad', icon: Gamepad2, price: 12 },
-    { id: 'ghost', icon: Ghost, price: 15 },
-    { id: 'palmtree', icon: Palmtree, price: 8 },
+    { id: 'ghost', icon: Ghost, price: 8 },
+    { id: 'palmtree', icon: Palmtree, price: 3 },
 ];
 
 const shopAvatarMap = new Map(SHOP_AVATARS.map(item => [item.id, item]));
@@ -271,22 +271,22 @@ function AvatarDisplay({ avatar, name }: { avatar: string, name: string }) {
     );
 }
 
-function AvatarDisplayPreview({ avatar, name }: { avatar: {type: 'url' | 'icon', value: string}, name: string }) {
-    const Icon = shopAvatarMap.get(avatar.value)?.icon;
-    
-    return (
-        <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
-            {avatar.type === 'url' ? (
-                <AvatarImage src={avatar.value} alt={name} />
-            ) : Icon ? (
-                <div className="w-full h-full flex items-center justify-center bg-muted">
-                    <Icon className="h-12 w-12 text-muted-foreground" />
-                </div>
-            ) : (
-                <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
-            )}
-        </Avatar>
-    );
+function AvatarDisplayPreview({ avatar }: { avatar: { type: 'url' | 'icon'; value: string } }) {
+  const Icon = shopAvatarMap.get(avatar.value)?.icon;
+  const FallbackInitial = avatar.type === 'url' ? (new URL(avatar.value).searchParams.get('text') || 'A') : ' ';
+  
+  return (
+    <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
+      {avatar.type === 'url' ? (
+        <AvatarImage src={avatar.value} />
+      ) : Icon ? (
+        <div className="w-full h-full flex items-center justify-center bg-muted">
+          <Icon className="h-12 w-12 text-muted-foreground" />
+        </div>
+      ) : null}
+      <AvatarFallback>{FallbackInitial}</AvatarFallback>
+    </Avatar>
+  );
 }
 
 
@@ -322,6 +322,10 @@ function EditProfileDialog() {
   
   const extractUrlParams = (url: string) => {
     try {
+        if (!url.startsWith('https://')) {
+            // It's a shop avatar ID or something else, provide a default
+            return { initial: 'A', color: AVATAR_COLORS[4] };
+        }
         const urlObj = new URL(url);
         if (urlObj.hostname.includes('placehold.co')) {
             const pathParts = urlObj.pathname.split('/');
@@ -331,18 +335,20 @@ function EditProfileDialog() {
             return { initial, color };
         }
     } catch (e) { }
+    // Default fallback
     return { initial: user?.name?.charAt(0).toUpperCase() || 'A', color: AVATAR_COLORS[4] };
   };
 
   const handleInitialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newInitial = e.target.value.trim().charAt(0).toUpperCase() || 'A';
+    const newInitial = e.target.value.trim().toUpperCase() || 'A';
+    // Get color safely from the current preview
     const { color } = extractUrlParams(avatarPreview.type === 'url' ? avatarPreview.value : `https://placehold.co/100x100/${AVATAR_COLORS[4]}/FFFFFF?text=A`);
     const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${newInitial}`;
     setAvatarPreview({ type: 'url', value: newAvatarUrl });
   };
-
+  
   const handleColorChange = (newColor: string) => {
-    const { initial } = extractUrlParams(avatarPreview.type === 'url' ? avatarPreview.value : `https://placehold.co/100x100/A78BFA/FFFFFF?text=${user?.name.charAt(0) || 'A'}`);
+    const { initial } = extractUrlParams(avatarPreview.type === 'url' ? avatarPreview.value : `https://placehold.co/100x100/${AVATAR_COLORS[4]}/FFFFFF?text=${user?.name.charAt(0) || 'A'}`);
     const newAvatarUrl = `https://placehold.co/100x100/${newColor}/FFFFFF?text=${initial}`;
     setAvatarPreview({ type: 'url', value: newAvatarUrl });
   };
@@ -446,7 +452,7 @@ function EditProfileDialog() {
             <div className="space-y-2">
                 <Label>Foto de Perfil</Label>
                 <div className="flex justify-center py-4">
-                   <AvatarDisplayPreview avatar={avatarPreview} name={name} />
+                   <AvatarDisplayPreview avatar={avatarPreview} />
                 </div>
                  <Tabs defaultValue="create" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
@@ -459,9 +465,9 @@ function EditProfileDialog() {
                                <Label htmlFor="initial-input" className="text-right">Inicial</Label>
                                 <Input 
                                     id="initial-input"
-                                    defaultValue={currentInitialFromUrl}
+                                    value={currentInitialFromUrl}
                                     onChange={handleInitialChange}
-                                    maxLength={2}
+                                    maxLength={1}
                                     className="col-span-2"
                                 />
                             </div>
