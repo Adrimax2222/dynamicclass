@@ -363,7 +363,16 @@ export default function StudyPage() {
                           <Calculator className="absolute top-2 right-2 h-6 w-6 opacity-20" />
                       </div>
                    </GradeCalculatorDialog>
-                    <div className="relative p-4 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform">
+                    <div
+                        className="relative p-4 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => {
+                          toast({
+                            title: "Función en desarrollo",
+                            description:
+                              "Esta es una función beta y estamos trabajando en ella.",
+                          });
+                        }}
+                      >
                          <div className="relative z-10">
                             <h3 className="font-bold">Escanear</h3>
                             <p className="text-xs opacity-80">Digitaliza tus apuntes al instante.</p>
@@ -378,4 +387,3 @@ export default function StudyPage() {
     </div>
   );
 }
-
