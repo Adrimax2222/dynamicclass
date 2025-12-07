@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,6 +27,7 @@ interface AvatarCreatorProps {
 const extractUrlParams = (url: string): { initial: string; color: string } => {
     try {
         if (!url || !url.includes('placehold.co')) {
+            // If it's not a placehold.co URL (e.g., it's an icon ID like 'pizza'), return defaults.
             return { initial: 'A', color: 'A78BFA' };
         }
         const urlObj = new URL(url);
@@ -42,15 +43,10 @@ const extractUrlParams = (url: string): { initial: string; color: string } => {
 };
 
 export function AvatarCreator({ currentAvatarUrl, onAvatarChange }: AvatarCreatorProps) {
-    const [initial, setInitial] = useState('A');
-    const [color, setColor] = useState('A78BFA');
-
-    // Effect to parse the incoming URL and set initial state
-    useEffect(() => {
-        const { initial: newInitial, color: newColor } = extractUrlParams(currentAvatarUrl);
-        setInitial(newInitial);
-        setColor(newColor);
-    }, [currentAvatarUrl]);
+    // Initialize state ONLY ONCE from the prop.
+    // This avoids the infinite loop.
+    const [initial, setInitial] = useState(() => extractUrlParams(currentAvatarUrl).initial);
+    const [color, setColor] = useState(() => extractUrlParams(currentAvatarUrl).color);
     
     const handleInitialSelect = (newInitial: string) => {
         setInitial(newInitial);
