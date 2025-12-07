@@ -231,9 +231,9 @@ const SHOP_AVATARS = [
     { id: 'paw', icon: PawPrint, price: 5 },
     { id: 'gamepad', icon: Gamepad2, price: 12 },
     { id: 'ghost', icon: Ghost, price: 8 },
+    { id: 'palmtree', icon: Palmtree, price: 0 },
     { id: 'rocket', icon: Rocket, price: 10 },
     { id: 'pizza', icon: Pizza, price: 15 },
-    { id: 'palmtree', icon: Palmtree, price: 0 },
     { id: 'cat', icon: Cat, price: 7 },
     { id: 'heart', icon: Heart, price: 9 },
 ];
@@ -264,17 +264,20 @@ function AvatarDisplay({ user }: { user: User }) {
     }
     
     const [id, color] = avatarUrl.split('_');
-    const Icon = id.startsWith('letter') ? CaseUpper : shopAvatarMap.get(id)?.icon;
-    const letter = id.startsWith('letter') ? id.split('_')[1] : null;
+    const Icon = shopAvatarMap.get(id)?.icon;
+    const isLetter = id === 'letter';
+    const letter = isLetter ? avatarUrl.split('_')[1] : null;
 
-    if (Icon) {
+    if (Icon || isLetter) {
         return (
             <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
                 <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: color ? `#${color}` : '#737373' }}>
-                    {letter ? (
+                    {isLetter && letter ? (
                         <span className="font-bold text-4xl text-white">{letter}</span>
-                    ) : (
+                    ) : Icon ? (
                         <Icon className="h-12 w-12 text-white" />
+                    ) : (
+                        <AvatarFallback>{name.substring(0, 2).toUpperCase()}</AvatarFallback>
                     )}
                 </div>
             </Avatar>
@@ -285,7 +288,7 @@ function AvatarDisplay({ user }: { user: User }) {
     return (
         <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
             <AvatarImage src={avatarUrl} alt={name} />
-            <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarFallback>{name.substring(0, 2).toUpperCase()}</AvatarFallback>
         </Avatar>
     );
 }
@@ -296,29 +299,24 @@ interface EditableAvatar {
 }
 
 function AvatarDisplayPreview({ avatar }: { avatar: EditableAvatar }) {
-    const Icon = avatar.id.startsWith('letter') ? CaseUpper : shopAvatarMap.get(avatar.id)?.icon;
-    const letter = avatar.id.startsWith('letter') ? avatar.id.split('_')[1] : null;
-
-    if (Icon) {
-        return (
-            <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
-                <div 
-                  className="w-full h-full flex items-center justify-center" 
-                  style={{ backgroundColor: `#${avatar.color}` }}
-                >
-                   {letter ? (
-                        <span className="font-bold text-4xl text-white">{letter}</span>
-                    ) : (
-                        <Icon className="h-12 w-12 text-white" />
-                    )}
-                </div>
-            </Avatar>
-        );
-    }
+    const isLetter = avatar.id.startsWith('letter');
+    const Icon = !isLetter ? shopAvatarMap.get(avatar.id)?.icon : null;
+    const letter = isLetter ? avatar.id.split('_')[1] : null;
 
     return (
         <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
-            <AvatarFallback>?</AvatarFallback>
+            <div 
+              className="w-full h-full flex items-center justify-center" 
+              style={{ backgroundColor: `#${avatar.color}` }}
+            >
+               {letter ? (
+                    <span className="font-bold text-4xl text-white">{letter}</span>
+                ) : Icon ? (
+                    <Icon className="h-12 w-12 text-white" />
+                ) : (
+                   <AvatarFallback>?</AvatarFallback>
+                )}
+            </div>
         </Avatar>
     );
 }
@@ -350,12 +348,12 @@ function EditProfileDialog() {
         setCourse(user.course);
         setClassName(user.className);
         
-        const [id, color] = user.avatar.split('_');
-        const isShopIcon = shopAvatarMap.has(id);
-        const isLetterIcon = id.startsWith('letter');
-
-        if (isShopIcon || isLetterIcon) {
-             setEditableAvatar({ id: id, color: color || '737373' });
+        const [id, id_extra, color] = user.avatar.split('_');
+        
+        if (id === 'letter') {
+             setEditableAvatar({ id: `letter_${id_extra}`, color: color || '737373' });
+        } else if (shopAvatarMap.has(id)) {
+             setEditableAvatar({ id: id, color: id_extra || '737373' });
         } else {
              // Fallback for old URL-based avatars
              const initial = user.name.charAt(0).toUpperCase() || 'A';
@@ -375,7 +373,7 @@ function EditProfileDialog() {
     setEditableAvatar(prev => ({ ...prev, id: `letter_${letter}` }));
   };
   
-  const handleColorSelect = (color: string) => {
+  const handleColorClick = (color: string) => {
     setEditableAvatar(prev => ({ ...prev, color: color }));
   };
 
@@ -457,18 +455,18 @@ function EditProfileDialog() {
   const isSaveDisabled = useMemo(() => {
     if (isLoading) return true;
     
-    // Check if the selected avatar is from the shop
-    const shopItem = shopAvatarMap.get(editableAvatar.id);
+    const selectedId = editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[0] : editableAvatar.id;
+    const shopItem = shopAvatarMap.get(selectedId);
+    
     if (shopItem) {
-        // If it's a shop item, check if it's owned or free
-        const isOwned = user.ownedAvatars?.includes(editableAvatar.id);
+        const isOwned = user.ownedAvatars?.includes(shopItem.id);
         const isFree = shopItem.price === 0;
-        // Disable save if the item has a price and is not owned
+        
         if (shopItem.price > 0 && !isOwned) {
             return true;
         }
     }
-    // Otherwise, it's a letter avatar or an owned/free shop avatar, so enable save
+
     return false;
   }, [editableAvatar.id, user.ownedAvatars, isLoading]);
   
@@ -551,7 +549,11 @@ function EditProfileDialog() {
                         )
                     })}
                      <div className="relative group flex flex-col items-center gap-2">
-                          <div className={cn("w-full aspect-square rounded-lg flex flex-col items-center justify-center bg-muted transition-all", isLetterSelectorDisabled ? "opacity-50" : "ring-4 ring-primary ring-offset-2")}>
+                          <button 
+                            type="button" 
+                            onClick={() => handleLetterSelect(editableAvatar.id.split('_')[1] || 'A')}
+                            className={cn("w-full aspect-square rounded-lg flex flex-col items-center justify-center bg-muted transition-all", editableAvatar.id.startsWith('letter') && "ring-4 ring-primary ring-offset-2")}
+                           >
                                 <CaseUpper className="h-8 w-8 text-muted-foreground mb-2" />
                                 <Select
                                     onValueChange={handleLetterSelect}
@@ -566,7 +568,7 @@ function EditProfileDialog() {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                          </div>
+                          </button>
                      </div>
                 </div>
             </div>
@@ -578,7 +580,7 @@ function EditProfileDialog() {
                         <button
                             key={color.value}
                             type="button"
-                            onClick={() => handleColorSelect(color.value)}
+                            onClick={() => handleColorClick(color.value)}
                             className={cn(
                                 "h-8 w-8 rounded-full border-2 transition-transform hover:scale-110",
                                 editableAvatar.color === color.value ? 'border-ring' : 'border-transparent'
@@ -682,5 +684,7 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
       </Card>
     );
   }
+
+    
 
     
