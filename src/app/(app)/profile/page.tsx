@@ -452,6 +452,10 @@ function EditProfileDialog() {
     }
   };
   
+  const isLetterSelectorDisabled = useMemo(() => {
+    return editableAvatar.id.startsWith('letter') ? false : true;
+  }, [editableAvatar.id]);
+  
   const isSaveDisabled = useMemo(() => {
     if (isLoading) return true;
     
@@ -460,7 +464,6 @@ function EditProfileDialog() {
     
     if (shopItem) {
         const isOwned = user.ownedAvatars?.includes(shopItem.id);
-        const isFree = shopItem.price === 0;
         
         if (shopItem.price > 0 && !isOwned) {
             return true;
@@ -469,11 +472,6 @@ function EditProfileDialog() {
 
     return false;
   }, [editableAvatar.id, user.ownedAvatars, isLoading]);
-  
-  const isLetterSelectorDisabled = useMemo(() => {
-    return !editableAvatar.id.startsWith('letter');
-  }, [editableAvatar.id]);
-
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -549,15 +547,14 @@ function EditProfileDialog() {
                         )
                     })}
                      <div className="relative group flex flex-col items-center gap-2">
-                          <button 
-                            type="button" 
-                            onClick={() => handleLetterSelect(editableAvatar.id.split('_')[1] || 'A')}
+                          <div
                             className={cn("w-full aspect-square rounded-lg flex flex-col items-center justify-center bg-muted transition-all", editableAvatar.id.startsWith('letter') && "ring-4 ring-primary ring-offset-2")}
                            >
                                 <CaseUpper className="h-8 w-8 text-muted-foreground mb-2" />
                                 <Select
                                     onValueChange={handleLetterSelect}
                                     value={editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[1] : ''}
+                                    disabled={isLetterSelectorDisabled}
                                 >
                                     <SelectTrigger className="w-20 h-8 text-xs">
                                         <SelectValue placeholder="Letra" />
@@ -568,7 +565,7 @@ function EditProfileDialog() {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                          </button>
+                          </div>
                      </div>
                 </div>
             </div>
@@ -684,6 +681,8 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
       </Card>
     );
   }
+
+    
 
     
 
