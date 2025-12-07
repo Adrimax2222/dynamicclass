@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper } from "lucide-react";
+import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -234,6 +234,8 @@ const SHOP_AVATARS = [
     { id: 'rocket', icon: Rocket, price: 10 },
     { id: 'pizza', icon: Pizza, price: 15 },
     { id: 'palmtree', icon: Palmtree, price: 0 },
+    { id: 'cat', icon: Cat, price: 7 },
+    { id: 'heart', icon: Heart, price: 9 },
 ];
 
 const shopAvatarMap = new Map(SHOP_AVATARS.map(item => [item.id, item]));
@@ -245,38 +247,41 @@ const AVATAR_COLORS = [
     { name: 'Azul', value: '60A5FA' },
     { name: 'Rosa', value: 'F472B6' },
     { name: 'Morado', value: 'A78BFA' },
+    { name: 'Amarillo', value: 'FBBF24' },
+    { name: 'Naranja', value: 'F97316' },
+    { name: 'Cian', value: '2DD4BF' },
 ];
 
 function AvatarDisplay({ user }: { user: User }) {
     const { avatar: avatarUrl, name } = user;
     
-    const [id, color] = avatarUrl.split('_');
-    const isLetter = id === 'letter';
-    const Icon = shopAvatarMap.get(id)?.icon;
-
-    if (isLetter) {
-      const letter = color ? color[0] : name[0];
-      const bgColor = color ? `#${color.substring(1)}` : '#737373';
-      return (
-          <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
-              <div className="w-full h-full flex items-center justify-center font-bold text-4xl text-white" style={{ backgroundColor: bgColor }}>
-                  {letter}
-              </div>
-          </Avatar>
-      );
+    if (!avatarUrl || typeof avatarUrl !== 'string') {
+        return (
+             <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
+                <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
+            </Avatar>
+        );
     }
+    
+    const [id, color] = avatarUrl.split('_');
+    const Icon = id.startsWith('letter') ? CaseUpper : shopAvatarMap.get(id)?.icon;
+    const letter = id.startsWith('letter') ? id.split('_')[1] : null;
 
     if (Icon) {
         return (
             <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
                 <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: color ? `#${color}` : '#737373' }}>
-                    <Icon className="h-12 w-12 text-white" />
+                    {letter ? (
+                        <span className="font-bold text-4xl text-white">{letter}</span>
+                    ) : (
+                        <Icon className="h-12 w-12 text-white" />
+                    )}
                 </div>
             </Avatar>
         );
     }
     
-    // Fallback for original URL-based avatars
+    // Fallback for original URL-based avatars from Google Sign In
     return (
         <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
             <AvatarImage src={avatarUrl} alt={name} />
@@ -285,32 +290,27 @@ function AvatarDisplay({ user }: { user: User }) {
     );
 }
 
-function AvatarDisplayPreview({ avatarId, color }: { avatarId: string; color: string }) {
-    const isLetter = avatarId.startsWith('letter');
-    const Icon = shopAvatarMap.get(avatarId)?.icon;
+interface EditableAvatar {
+    id: string;
+    color: string;
+}
 
-    if (isLetter) {
-        const letter = avatarId.split('_')[1] || 'A';
-        return (
-            <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
-                <div 
-                    className="w-full h-full flex items-center justify-center font-bold text-4xl text-white" 
-                    style={{ backgroundColor: `#${color}` }}
-                >
-                    {letter}
-                </div>
-            </Avatar>
-        );
-    }
+function AvatarDisplayPreview({ avatar }: { avatar: EditableAvatar }) {
+    const Icon = avatar.id.startsWith('letter') ? CaseUpper : shopAvatarMap.get(avatar.id)?.icon;
+    const letter = avatar.id.startsWith('letter') ? avatar.id.split('_')[1] : null;
 
     if (Icon) {
         return (
             <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
                 <div 
                   className="w-full h-full flex items-center justify-center" 
-                  style={{ backgroundColor: `#${color}` }}
+                  style={{ backgroundColor: `#${avatar.color}` }}
                 >
-                    <Icon className="h-12 w-12 text-white" />
+                   {letter ? (
+                        <span className="font-bold text-4xl text-white">{letter}</span>
+                    ) : (
+                        <Icon className="h-12 w-12 text-white" />
+                    )}
                 </div>
             </Avatar>
         );
@@ -329,9 +329,8 @@ function EditProfileDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const [selectedAvatarId, setSelectedAvatarId] = useState('');
-  const [selectedColor, setSelectedColor] = useState('A78BFA');
-
+  const [editableAvatar, setEditableAvatar] = useState<EditableAvatar>({ id: 'letter_A', color: 'A78BFA'});
+  
   const [name, setName] = useState(user?.name || "");
   const [center, setCenter] = useState(user?.center || "");
   const [ageRange, setAgeRange] = useState(user?.ageRange || "");
@@ -352,18 +351,15 @@ function EditProfileDialog() {
         setClassName(user.className);
         
         const [id, color] = user.avatar.split('_');
+        const isShopIcon = shopAvatarMap.has(id);
+        const isLetterIcon = id.startsWith('letter');
 
-        if (id === 'letter') {
-           setSelectedAvatarId(user.avatar);
-           setSelectedColor(color ? color.substring(1) : 'A78BFA');
-        } else if (shopAvatarMap.has(id)) {
-            setSelectedAvatarId(id);
-            setSelectedColor(color || '737373');
+        if (isShopIcon || isLetterIcon) {
+             setEditableAvatar({ id: id, color: color || '737373' });
         } else {
-            // Fallback for old URL avatars
-            const initial = user.name.charAt(0).toUpperCase() || 'A';
-            setSelectedAvatarId(`letter_${initial}`);
-            setSelectedColor('A78BFA');
+             // Fallback for old URL-based avatars
+             const initial = user.name.charAt(0).toUpperCase() || 'A';
+             setEditableAvatar({ id: `letter_${initial}`, color: 'A78BFA' });
         }
     }
   };
@@ -376,11 +372,15 @@ function EditProfileDialog() {
   }, [user, isOpen]);
   
   const handleLetterSelect = (letter: string) => {
-    setSelectedAvatarId(`letter_${letter}`);
+    setEditableAvatar(prev => ({ ...prev, id: `letter_${letter}` }));
+  };
+  
+  const handleColorSelect = (color: string) => {
+    setEditableAvatar(prev => ({ ...prev, color: color }));
   };
 
   const handleSelectShopAvatar = (avatarId: string) => {
-     setSelectedAvatarId(avatarId);
+     setEditableAvatar(prev => ({ ...prev, id: avatarId }));
   };
 
   const handlePurchaseAvatar = async (avatar: typeof SHOP_AVATARS[0]) => {
@@ -418,15 +418,7 @@ function EditProfileDialog() {
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
     
-    let finalAvatarString: string;
-    const isLetter = selectedAvatarId.startsWith('letter');
-    
-    if (isLetter) {
-        const letter = selectedAvatarId.split('_')[1];
-        finalAvatarString = `letter_${letter}${selectedColor}`;
-    } else {
-        finalAvatarString = `${selectedAvatarId}_${selectedColor}`;
-    }
+    const finalAvatarString = `${editableAvatar.id}_${editableAvatar.color}`;
 
     setIsLoading(true);
 
@@ -464,21 +456,26 @@ function EditProfileDialog() {
   
   const isSaveDisabled = useMemo(() => {
     if (isLoading) return true;
-
-    const isIcon = !selectedAvatarId.startsWith('letter');
-    if (isIcon) {
-        const shopItem = shopAvatarMap.get(selectedAvatarId);
-        if (!shopItem) return true; // Should not happen
-        
-        const isOwned = user.ownedAvatars?.includes(selectedAvatarId);
-        return shopItem.price > 0 && !isOwned;
+    
+    // Check if the selected avatar is from the shop
+    const shopItem = shopAvatarMap.get(editableAvatar.id);
+    if (shopItem) {
+        // If it's a shop item, check if it's owned or free
+        const isOwned = user.ownedAvatars?.includes(editableAvatar.id);
+        const isFree = shopItem.price === 0;
+        // Disable save if the item has a price and is not owned
+        if (shopItem.price > 0 && !isOwned) {
+            return true;
+        }
     }
-    return false; // Always allow saving for letter avatars
-  }, [selectedAvatarId, user.ownedAvatars, isLoading]);
+    // Otherwise, it's a letter avatar or an owned/free shop avatar, so enable save
+    return false;
+  }, [editableAvatar.id, user.ownedAvatars, isLoading]);
   
   const isLetterSelectorDisabled = useMemo(() => {
-    return !selectedAvatarId.startsWith('letter');
-  }, [selectedAvatarId]);
+    return !editableAvatar.id.startsWith('letter');
+  }, [editableAvatar.id]);
+
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -495,15 +492,15 @@ function EditProfileDialog() {
         <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto px-1 pr-4">
             
             <div className="flex justify-center py-4">
-               <AvatarDisplayPreview avatarId={selectedAvatarId} color={selectedColor} />
+               <AvatarDisplayPreview avatar={editableAvatar} />
             </div>
 
             <div className="space-y-4 pt-4 border-t">
                 <Label>Avatar</Label>
-                 <div className="grid grid-cols-3 gap-4">
+                 <div className="grid grid-cols-4 gap-4">
                     {SHOP_AVATARS.map((avatar) => {
                         const isOwned = user.ownedAvatars?.includes(avatar.id);
-                        const isSelected = selectedAvatarId === avatar.id;
+                        const isSelected = editableAvatar.id === avatar.id;
                         const Icon = avatar.icon;
                         const isFree = avatar.price === 0;
 
@@ -515,7 +512,7 @@ function EditProfileDialog() {
                                     className={cn("w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
                                 >
                                    <div className="w-full h-full flex items-center justify-center">
-                                        <Icon className="h-10 w-10 text-muted-foreground" />
+                                        <Icon className="h-8 w-8 text-muted-foreground" />
                                    </div>
                                 </button>
                                 <div className="text-center">
@@ -554,13 +551,13 @@ function EditProfileDialog() {
                         )
                     })}
                      <div className="relative group flex flex-col items-center gap-2">
-                          <div className={cn("w-full aspect-square rounded-lg flex flex-col items-center justify-center bg-muted transition-all", !isLetterSelectorDisabled && "ring-4 ring-primary ring-offset-2")}>
-                                <CaseUpper className="h-10 w-10 text-muted-foreground mb-2" />
+                          <div className={cn("w-full aspect-square rounded-lg flex flex-col items-center justify-center bg-muted transition-all", isLetterSelectorDisabled ? "opacity-50" : "ring-4 ring-primary ring-offset-2")}>
+                                <CaseUpper className="h-8 w-8 text-muted-foreground mb-2" />
                                 <Select
                                     onValueChange={handleLetterSelect}
-                                    value={selectedAvatarId.startsWith('letter') ? selectedAvatarId.split('_')[1] : ''}
+                                    value={editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[1] : ''}
                                 >
-                                    <SelectTrigger className="w-24 h-8 text-xs">
+                                    <SelectTrigger className="w-20 h-8 text-xs">
                                         <SelectValue placeholder="Letra" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -581,10 +578,10 @@ function EditProfileDialog() {
                         <button
                             key={color.value}
                             type="button"
-                            onClick={() => setSelectedColor(color.value)}
+                            onClick={() => handleColorSelect(color.value)}
                             className={cn(
                                 "h-8 w-8 rounded-full border-2 transition-transform hover:scale-110",
-                                selectedColor === color.value ? 'border-ring' : 'border-transparent'
+                                editableAvatar.color === color.value ? 'border-ring' : 'border-transparent'
                             )}
                             style={{ backgroundColor: `#${color.value}` }}
                             aria-label={`Seleccionar color ${color.name}`}
