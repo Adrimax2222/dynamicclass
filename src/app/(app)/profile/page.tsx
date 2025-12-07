@@ -132,7 +132,7 @@ export default function ProfilePage() {
       <Card className="mb-8 overflow-hidden shadow-lg">
         <div className="bg-muted/40 h-24" />
         <CardContent className="p-4 text-center -mt-16">
-          <AvatarDisplay avatarUrl={user.avatar} name={user.name} />
+          <AvatarDisplay user={user} />
           <h2 className="mt-4 text-2xl font-bold">{user.name}</h2>
           {user.role === 'admin' && (
             <Badge variant="destructive" className="mt-2">Admin</Badge>
@@ -239,63 +239,126 @@ const SHOP_AVATARS = [
 
 const shopAvatarMap = new Map(SHOP_AVATARS.map(item => [item.id, item]));
 
-function AvatarDisplay({ avatarUrl, name }: { avatarUrl: string, name: string }) {
+const AVATAR_COLORS = [
+    { name: 'Gris', value: '737373' },
+    { name: 'Rojo', value: 'F87171' },
+    { name: 'Verde', value: '34D399' },
+    { name: 'Azul', value: '60A5FA' },
+    { name: 'Rosa', value: 'F472B6' },
+    { name: 'Morado', value: 'A78BFA' },
+];
+
+function AvatarDisplay({ user }: { user: User }) {
+    const { avatar: avatarUrl, name } = user;
     const isUrl = avatarUrl?.startsWith('https');
-    const shopItem = shopAvatarMap.get(avatarUrl);
+    
+    // Check if it's an icon-based avatar (e.g., "pizza_F87171")
+    const [iconId, colorHex] = avatarUrl.split('_');
+    const shopItem = shopAvatarMap.get(iconId);
     const Icon = shopItem?.icon;
 
+    if (Icon) {
+        return (
+            <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
+                <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: colorHex ? `#${colorHex}` : '#737373' }}>
+                    <Icon className="h-12 w-12 text-white" />
+                </div>
+            </Avatar>
+        );
+    }
+    
+    // Fallback to URL-based or default letter
     return (
         <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
-          {isUrl ? (
-              <AvatarImage src={avatarUrl} alt={name} />
-          ) : Icon ? (
-              <div className="w-full h-full flex items-center justify-center bg-muted">
-                  <Icon className="h-12 w-12 text-muted-foreground" />
-              </div>
-          ) : (
-              <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
-          )}
+            <AvatarImage src={isUrl ? avatarUrl : undefined} alt={name} />
+            <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
     );
 }
 
-function AvatarDisplayPreview({ avatar }: { avatar: EditableAvatar }) {
-  const Icon = shopAvatarMap.get(avatar.value)?.icon;
 
+type EditableAvatar = {
+  type: 'url' | 'icon';
+  value: string; // URL for 'url', icon ID for 'icon'
+  color: string; // Hex color (without #)
+  initial: string;
+};
+
+function AvatarDisplayPreview({ avatar }: { avatar: EditableAvatar }) {
+  if (avatar.type === 'url') {
+    return (
+      <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
+        <AvatarImage src={avatar.value} key={avatar.value} />
+        <AvatarFallback>{avatar.initial.toUpperCase()}</AvatarFallback>
+      </Avatar>
+    );
+  }
+
+  const Icon = shopAvatarMap.get(avatar.value)?.icon;
+  if (Icon) {
+    return (
+      <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
+        <div 
+          className="w-full h-full flex items-center justify-center" 
+          style={{ backgroundColor: `#${avatar.color}` }}
+        >
+          <Icon className="h-12 w-12 text-white" />
+        </div>
+      </Avatar>
+    );
+  }
+  
+  // Fallback for an icon not found
   return (
     <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
-      {avatar.type === 'url' ? (
-        <AvatarImage src={avatar.value} key={avatar.value} />
-      ) : Icon ? (
-        <div className="w-full h-full flex items-center justify-center bg-muted">
-          <Icon className="h-12 w-12 text-muted-foreground" />
-        </div>
-      ) : (
-        <AvatarFallback>A</AvatarFallback>
-      )}
+      <AvatarFallback>?</AvatarFallback>
     </Avatar>
   );
 }
 
-type EditableAvatar = {
-  type: 'url' | 'icon';
-  value: string;
-};
 
 function EditProfileDialog() {
   const { user, updateUser } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  const [editableAvatar, setEditableAvatar] = useState<EditableAvatar>({
+    type: 'url',
+    value: '',
+    color: 'A78BFA',
+    initial: 'A',
+  });
+
   const [name, setName] = useState(user?.name || "");
   const [center, setCenter] = useState(user?.center || "");
   const [ageRange, setAgeRange] = useState(user?.ageRange || "");
   const [course, setCourse] = useState(user?.course || "");
   const [className, setClassName] = useState(user?.className || "");
   
-  const [editableAvatar, setEditableAvatar] = useState<EditableAvatar>({ type: 'url', value: '' });
-
   const firestore = useFirestore();
   const { toast } = useToast();
+
+  const extractAvatarInfo = (avatarString: string): Omit<EditableAvatar, 'value'> => {
+    if (avatarString.startsWith('https')) {
+        const urlParams = new URLSearchParams(avatarString.split('?')[1]);
+        return {
+            type: 'url',
+            initial: urlParams.get('text') || 'A',
+            color: urlParams.get('bg') || 'A78BFA',
+        };
+    }
+    const [iconId, colorHex] = avatarString.split('_');
+    if (shopAvatarMap.has(iconId)) {
+        return {
+            type: 'icon',
+            initial: '',
+            color: colorHex || '737373',
+        };
+    }
+    // Fallback for corrupted data or old format
+    return { type: 'url', initial: user?.name.charAt(0) || 'A', color: 'A78BFA' };
+  };
+
 
   useEffect(() => {
     if (user && isOpen) {
@@ -305,17 +368,48 @@ function EditProfileDialog() {
       setCourse(user.course);
       setClassName(user.className);
       
-      const isShopAvatar = shopAvatarMap.has(user.avatar);
+      const info = extractAvatarInfo(user.avatar);
       setEditableAvatar({
-          type: isShopAvatar ? 'icon' : 'url',
-          value: user.avatar
+          ...info,
+          value: user.avatar, // Store original value
       });
     }
   }, [user, isOpen]);
   
-  const handleSelectShopAvatar = (avatarId: string) => {
-    setEditableAvatar({ type: 'icon', value: avatarId });
+  
+  const handleInitialChange = (newInitial: string) => {
+    const initial = newInitial.charAt(0).toUpperCase();
+    const newUrl = `https://placehold.co/100x100/${editableAvatar.color}/FFFFFF?text=${initial}`;
+    setEditableAvatar({
+        type: 'url',
+        value: newUrl,
+        color: editableAvatar.color,
+        initial: initial,
+    });
   }
+
+  const handleColorChange = (newColor: string) => {
+    if (editableAvatar.type === 'url') {
+      const newUrl = `https://placehold.co/100x100/${newColor}/FFFFFF?text=${editableAvatar.initial}`;
+      setEditableAvatar(prev => ({ ...prev, value: newUrl, color: newColor }));
+    } else { // type is 'icon'
+      const iconId = editableAvatar.value.split('_')[0];
+      const newIconString = `${iconId}_${newColor}`;
+      setEditableAvatar(prev => ({ ...prev, value: newIconString, color: newColor }));
+    }
+  };
+  
+  const handleSelectShopAvatar = (avatarId: string) => {
+    // When selecting a shop avatar, default its color to gray
+    const newColor = '737373';
+    const newAvatarString = `${avatarId}_${newColor}`;
+     setEditableAvatar({
+        type: 'icon',
+        value: newAvatarString,
+        color: newColor,
+        initial: '',
+    });
+  };
 
   const handlePurchaseAvatar = async (avatar: typeof SHOP_AVATARS[0]) => {
      if (!firestore || !user || user.trophies < avatar.price) {
@@ -351,10 +445,17 @@ function EditProfileDialog() {
   
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
-
-    if (editableAvatar.type === 'icon' && !(user.ownedAvatars || []).includes(editableAvatar.value) && shopAvatarMap.get(editableAvatar.value)?.price !== 0) {
-        toast({ title: "Avatar no adquirido", description: "Debes comprar este avatar antes de poder guardarlo.", variant: "destructive"});
-        return;
+    
+    // For icon avatars, check ownership before saving
+    if (editableAvatar.type === 'icon') {
+        const iconId = editableAvatar.value.split('_')[0];
+        const shopItem = shopAvatarMap.get(iconId);
+        const isOwned = user.ownedAvatars?.includes(iconId);
+        
+        if (shopItem && shopItem.price > 0 && !isOwned) {
+            toast({ title: "Avatar no adquirido", description: "Debes comprar este avatar antes de poder usarlo.", variant: "destructive"});
+            return;
+        }
     }
 
     setIsLoading(true);
@@ -401,19 +502,34 @@ function EditProfileDialog() {
       </DialogTrigger>
       <DialogContent className="max-w-md w-[95vw]">
         <DialogHeader>
-          <DialogTitle>Editar tu Perfil</DialogTitle>
+          <DialogTitle>Editor</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto px-1 pr-4">
-            {/* Avatar Section */}
-            <div className="space-y-2">
-                <Label>Foto de Perfil</Label>
-                <div className="flex justify-center py-4">
-                   <AvatarDisplayPreview avatar={editableAvatar} />
+        <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto px-1 pr-4">
+            
+            {/* Avatar Preview */}
+            <div className="flex justify-center py-4">
+               <AvatarDisplayPreview avatar={editableAvatar} />
+            </div>
+
+            {/* Avatar Options */}
+            <div className="space-y-4 pt-4 border-t">
+                <Label>Avatar</Label>
+                 <div className="space-y-2">
+                    <Label htmlFor="initial-input" className="text-xs text-muted-foreground">Elige una Letra</Label>
+                    <Input
+                        id="initial-input"
+                        maxLength={1}
+                        placeholder="Escribe una letra..."
+                        defaultValue={editableAvatar.type === 'url' ? editableAvatar.initial : ''}
+                        onChange={(e) => handleInitialChange(e.target.value)}
+                        className="w-24 text-center"
+                    />
                 </div>
                  <div className="grid grid-cols-3 gap-4">
                     {SHOP_AVATARS.map((avatar) => {
                         const isOwned = user.ownedAvatars?.includes(avatar.id);
-                        const isSelected = editableAvatar.type === 'icon' && editableAvatar.value === avatar.id;
+                        const [selectedIconId] = editableAvatar.value.split('_');
+                        const isSelected = editableAvatar.type === 'icon' && selectedIconId === avatar.id;
                         const Icon = avatar.icon;
                         const isFree = avatar.price === 0;
 
@@ -466,9 +582,30 @@ function EditProfileDialog() {
                     })}
                 </div>
             </div>
+
+            {/* Color Palette */}
+            <div className="space-y-4 pt-4 border-t">
+                <Label>Color de Fondo</Label>
+                <div className="flex flex-wrap gap-3">
+                    {AVATAR_COLORS.map(color => (
+                        <button
+                            key={color.value}
+                            type="button"
+                            onClick={() => handleColorChange(color.value)}
+                            className={cn(
+                                "h-8 w-8 rounded-full border-2 transition-transform hover:scale-110",
+                                editableAvatar.color === color.value ? 'border-ring' : 'border-transparent'
+                            )}
+                            style={{ backgroundColor: `#${color.value}` }}
+                            aria-label={`Seleccionar color ${color.name}`}
+                        />
+                    ))}
+                </div>
+            </div>
             
             {/* Profile Fields Section */}
             <div className="space-y-4 pt-6 border-t">
+                 <Label>Editor de Perfil</Label>
                 <div className="space-y-2">
                     <Label htmlFor="name">Nombre Completo</Label>
                     <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -561,4 +698,6 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
   }
 
     
+    
+
     
