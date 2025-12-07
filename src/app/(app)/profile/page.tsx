@@ -482,7 +482,10 @@ function EditProfileDialog() {
   };
   
   const isIconSelected = editableAvatar.type === 'icon';
-  const getInitialFromUrl = (url: string) => new URL(url).searchParams.get('text') || '';
+  const getInitialFromUrl = (url: string) => {
+    if (!url.startsWith('http')) return '';
+    return new URL(url).searchParams.get('text') || '';
+  };
   
   const isSaveDisabled = useMemo(() => {
     if (isLoading) return true;
@@ -700,5 +703,7 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
       </Card>
     );
   }
+
+    
 
     
