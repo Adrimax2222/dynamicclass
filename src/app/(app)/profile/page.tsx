@@ -263,16 +263,24 @@ function AvatarDisplay({ user }: { user: User }) {
         );
     }
     
-    const [id, id_extra, color] = avatarUrl.split('_');
-    const Icon = shopAvatarMap.get(id)?.icon;
-    const isLetter = id === 'letter';
-    const letter = isLetter ? id_extra : null;
+    const parts = avatarUrl.split('_');
+    const id = parts[0];
+    let letter, color;
+    
+    if (id === 'letter') {
+        letter = parts[1];
+        color = parts[2];
+    } else {
+        color = parts[1];
+    }
 
-    if (Icon || isLetter) {
+    const Icon = shopAvatarMap.get(id)?.icon;
+
+    if (Icon || letter) {
         return (
             <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
                 <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: color ? `#${color}` : '#737373' }}>
-                    {isLetter && letter ? (
+                    {letter ? (
                         <span className="font-bold text-4xl text-white">{letter}</span>
                     ) : Icon ? (
                         <Icon className="h-12 w-12 text-white" />
@@ -416,7 +424,9 @@ function EditProfileDialog() {
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
     
-    const finalAvatarString = `${editableAvatar.id}_${editableAvatar.color}`;
+    const finalAvatarString = editableAvatar.id.startsWith('letter') 
+        ? `${editableAvatar.id}_${editableAvatar.color}`
+        : `${editableAvatar.id}_${editableAvatar.color}`;
 
     setIsLoading(true);
 
@@ -461,6 +471,11 @@ function EditProfileDialog() {
     
     const selectedId = editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[0] : editableAvatar.id;
     const shopItem = shopAvatarMap.get(selectedId);
+    
+    // This is for the special letter avatar
+    if (editableAvatar.id.startsWith('letter_')) {
+        return false;
+    }
     
     if (shopItem) {
         const isOwned = user.ownedAvatars?.includes(shopItem.id);
@@ -546,9 +561,12 @@ function EditProfileDialog() {
                             </div>
                         )
                     })}
-                     <div className={cn("relative group flex flex-col items-center gap-2", editableAvatar.id.startsWith('letter') && "ring-4 ring-primary rounded-lg")}>
+                     <div className="relative group flex flex-col items-center gap-2">
                         <div
-                            className={cn("w-full aspect-square rounded-lg flex flex-col items-center justify-center bg-muted transition-all")}
+                            className={cn(
+                                "w-full aspect-square rounded-lg flex flex-col items-center justify-center bg-muted transition-all",
+                                editableAvatar.id.startsWith('letter') && "ring-4 ring-primary ring-offset-2"
+                            )}
                         >
                             <CaseUpper className="h-8 w-8 text-muted-foreground mb-2" />
                             <Select
