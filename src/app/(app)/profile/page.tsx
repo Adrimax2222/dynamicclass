@@ -135,10 +135,7 @@ export default function ProfilePage() {
       <Card className="mb-8 overflow-hidden shadow-lg">
         <div className="bg-muted/40 h-24" />
         <CardContent className="p-4 text-center -mt-16">
-          <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
-            <AvatarImage src={user.avatar} alt={user.name} />
-            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-          </Avatar>
+          <AvatarDisplay avatar={user.avatar} name={user.name} />
           <h2 className="mt-4 text-2xl font-bold">{user.name}</h2>
           {user.role === 'admin' && (
             <Badge variant="destructive" className="mt-2">Admin</Badge>
@@ -244,13 +241,54 @@ const AVATAR_COLORS = [
 ];
 
 const SHOP_AVATARS = [
-    { id: 'paw', icon: PawPrint, price: 5, url: 'https://picsum.photos/seed/avatar1/100/100' },
-    { id: 'rocket', icon: Rocket, price: 10, url: 'https://picsum.photos/seed/avatar2/100/100' },
-    { id: 'pizza', icon: 3, price: 3, url: 'https://picsum.photos/seed/avatar3/100/100' },
-    { id: 'gamepad', icon: Gamepad2, price: 12, url: 'https://picsum.photos/seed/avatar4/100/100' },
-    { id: 'ghost', icon: Ghost, price: 15, url: 'https://picsum.photos/seed/avatar5/100/100' },
-    { id: 'palmtree', icon: Palmtree, price: 8, url: 'https://picsum.photos/seed/avatar6/100/100' },
+    { id: 'paw', icon: PawPrint, price: 5 },
+    { id: 'rocket', icon: Rocket, price: 10 },
+    { id: 'pizza', icon: Pizza, price: 3 },
+    { id: 'gamepad', icon: Gamepad2, price: 12 },
+    { id: 'ghost', icon: Ghost, price: 15 },
+    { id: 'palmtree', icon: Palmtree, price: 8 },
 ];
+
+const shopAvatarMap = new Map(SHOP_AVATARS.map(item => [item.id, item]));
+
+function AvatarDisplay({ avatar, name }: { avatar: string, name: string }) {
+    const isUrl = avatar?.startsWith('https');
+    const shopItem = shopAvatarMap.get(avatar);
+    const Icon = shopItem?.icon;
+
+    return (
+        <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
+            {isUrl ? (
+                <AvatarImage src={avatar} alt={name} />
+            ) : Icon ? (
+                <div className="w-full h-full flex items-center justify-center bg-muted">
+                    <Icon className="h-12 w-12 text-muted-foreground" />
+                </div>
+            ) : (
+                <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
+            )}
+        </Avatar>
+    );
+}
+
+function AvatarDisplayPreview({ avatar, name }: { avatar: {type: 'url' | 'icon', value: string}, name: string }) {
+    const Icon = shopAvatarMap.get(avatar.value)?.icon;
+    
+    return (
+        <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
+            {avatar.type === 'url' ? (
+                <AvatarImage src={avatar.value} alt={name} />
+            ) : Icon ? (
+                <div className="w-full h-full flex items-center justify-center bg-muted">
+                    <Icon className="h-12 w-12 text-muted-foreground" />
+                </div>
+            ) : (
+                <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
+            )}
+        </Avatar>
+    );
+}
+
 
 function EditProfileDialog() {
   const { user, updateUser } = useApp();
@@ -264,8 +302,8 @@ function EditProfileDialog() {
   const firestore = useFirestore();
   const { toast } = useToast();
   
-  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState(user?.avatar || "");
-  
+  const [avatarPreview, setAvatarPreview] = useState<{ type: 'url' | 'icon'; value: string; }>({ type: 'url', value: '' });
+
   useEffect(() => {
     if (user && isOpen) {
       setName(user.name);
@@ -273,7 +311,12 @@ function EditProfileDialog() {
       setAgeRange(user.ageRange);
       setCourse(user.course);
       setClassName(user.className);
-      setSelectedAvatarUrl(user.avatar);
+      
+      const isShopAvatar = shopAvatarMap.has(user.avatar);
+      setAvatarPreview({
+          type: isShopAvatar ? 'icon' : 'url',
+          value: user.avatar
+      });
     }
   }, [user, isOpen]);
   
@@ -287,24 +330,26 @@ function EditProfileDialog() {
             const initial = textParam ? textParam.charAt(0).toUpperCase() : 'A';
             return { initial, color };
         }
-    } catch (e) {
-        // Not a valid URL or not a placehold.co URL
-    }
+    } catch (e) { }
     return { initial: user?.name?.charAt(0).toUpperCase() || 'A', color: AVATAR_COLORS[4] };
   };
 
   const handleInitialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newInitial = e.target.value.charAt(0).toUpperCase() || 'A';
-    const { color } = extractUrlParams(selectedAvatarUrl);
+    const newInitial = e.target.value.trim().charAt(0).toUpperCase() || 'A';
+    const { color } = extractUrlParams(avatarPreview.type === 'url' ? avatarPreview.value : `https://placehold.co/100x100/${AVATAR_COLORS[4]}/FFFFFF?text=A`);
     const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${newInitial}`;
-    setSelectedAvatarUrl(newAvatarUrl);
+    setAvatarPreview({ type: 'url', value: newAvatarUrl });
   };
 
-  const handleColorChange = (color: string) => {
-    const { initial } = extractUrlParams(selectedAvatarUrl);
-    const newAvatarUrl = `https://placehold.co/100x100/${color}/FFFFFF?text=${initial}`;
-    setSelectedAvatarUrl(newAvatarUrl);
+  const handleColorChange = (newColor: string) => {
+    const { initial } = extractUrlParams(avatarPreview.type === 'url' ? avatarPreview.value : `https://placehold.co/100x100/A78BFA/FFFFFF?text=${user?.name.charAt(0) || 'A'}`);
+    const newAvatarUrl = `https://placehold.co/100x100/${newColor}/FFFFFF?text=${initial}`;
+    setAvatarPreview({ type: 'url', value: newAvatarUrl });
   };
+
+  const handleSelectShopAvatar = (avatarId: string) => {
+    setAvatarPreview({ type: 'icon', value: avatarId });
+  }
 
   const handlePurchaseAvatar = async (avatar: typeof SHOP_AVATARS[0]) => {
      if (!firestore || !user || user.trophies < avatar.price) {
@@ -315,21 +360,20 @@ function EditProfileDialog() {
      setIsLoading(true);
      try {
         const userDocRef = doc(firestore, 'users', user.uid);
-        const newOwnedAvatars = arrayUnion(avatar.url);
         
         await updateDoc(userDocRef, {
             trophies: increment(-avatar.price),
-            ownedAvatars: newOwnedAvatars,
+            ownedAvatars: arrayUnion(avatar.id),
         });
 
         // Optimistically update local user state
-        const updatedLocalAvatars = [...(user.ownedAvatars || []), avatar.url];
+        const updatedLocalAvatars = [...(user.ownedAvatars || []), avatar.id];
         updateUser({ 
             trophies: user.trophies - avatar.price, 
             ownedAvatars: updatedLocalAvatars 
         });
 
-        toast({ title: "¡Compra realizada!", description: `Has adquirido el avatar ${avatar.id}.`});
+        toast({ title: "¡Compra realizada!", description: `Has adquirido el avatar de ${avatar.id}.`});
      } catch (error) {
         console.error("Error purchasing avatar:", error);
         toast({ title: "Error", description: "No se pudo completar la compra.", variant: "destructive"});
@@ -343,8 +387,7 @@ function EditProfileDialog() {
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
 
-    const isShopAvatar = SHOP_AVATARS.some(a => a.url === selectedAvatarUrl);
-    if (isShopAvatar && !(user.ownedAvatars || []).includes(selectedAvatarUrl)) {
+    if (avatarPreview.type === 'icon' && !(user.ownedAvatars || []).includes(avatarPreview.value)) {
         toast({ title: "Avatar no adquirido", description: "Debes comprar este avatar antes de poder guardarlo.", variant: "destructive"});
         return;
     }
@@ -358,7 +401,7 @@ function EditProfileDialog() {
             ageRange,
             course,
             className,
-            avatar: selectedAvatarUrl,
+            avatar: avatarPreview.value,
         };
 
         const userDocRef = doc(firestore, 'users', user.uid);
@@ -383,8 +426,9 @@ function EditProfileDialog() {
     }
   };
 
-  const { initial: currentInitial } = extractUrlParams(selectedAvatarUrl);
-  const currentBgColor = extractUrlParams(selectedAvatarUrl).color?.toUpperCase();
+  const { initial: currentInitialFromUrl } = extractUrlParams(avatarPreview.type === 'url' ? avatarPreview.value : '');
+  const currentBgColor = extractUrlParams(avatarPreview.type === 'url' ? avatarPreview.value : '').color?.toUpperCase();
+
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -402,10 +446,7 @@ function EditProfileDialog() {
             <div className="space-y-2">
                 <Label>Foto de Perfil</Label>
                 <div className="flex justify-center py-4">
-                    <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
-                        <AvatarImage src={selectedAvatarUrl} alt="Avatar Preview" />
-                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
+                   <AvatarDisplayPreview avatar={avatarPreview} name={name} />
                 </div>
                  <Tabs defaultValue="create" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
@@ -418,9 +459,9 @@ function EditProfileDialog() {
                                <Label htmlFor="initial-input" className="text-right">Inicial</Label>
                                 <Input 
                                     id="initial-input"
-                                    value={currentInitial}
+                                    defaultValue={currentInitialFromUrl}
                                     onChange={handleInitialChange}
-                                    maxLength={1}
+                                    maxLength={2}
                                     className="col-span-2"
                                 />
                             </div>
@@ -432,84 +473,24 @@ function EditProfileDialog() {
                                     ))}
                                 </div>
                             </div>
-                            
-                            <div className="space-y-2 pt-4">
-                                <Label htmlFor="name">Nombre Completo</Label>
-                                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="center">Código de Centro Educativo</Label>
-                                <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} placeholder="123-456" />
-                                 <p className="text-xs text-muted-foreground">
-                                    Introduce el código proporcionado por tu centro para unirte a su grupo.
-                                </p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="ageRange">Rango de Edad</Label>
-                                <Select onValueChange={setAgeRange} value={ageRange}>
-                                    <SelectTrigger id="ageRange">
-                                        <SelectValue placeholder="Selecciona tu rango de edad" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="12-15">12-15 años</SelectItem>
-                                        <SelectItem value="16-18">16-18 años</SelectItem>
-                                        <SelectItem value="19-22">19-22 años</SelectItem>
-                                        <SelectItem value="23+">23+ años</SelectItem>
-                                        <SelectItem value="No especificado">No especificado</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="course">Curso</Label>
-                                    <Select onValueChange={setCourse} value={course}>
-                                        <SelectTrigger id="course"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="1eso">1º ESO</SelectItem>
-                                            <SelectItem value="2eso">2º ESO</SelectItem>
-                                            <SelectItem value="3eso">3º ESO</SelectItem>
-                                            <SelectItem value="4eso">4º ESO</SelectItem>
-                                            <SelectItem value="1bach">1º Bachillerato</SelectItem>
-                                            <SelectItem value="2bach">2º Bachillerato</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="className">Clase</Label>
-                                    <Select onValueChange={setClassName} value={className}>
-                                        <SelectTrigger id="className"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="A">A</SelectItem>
-                                            <SelectItem value="B">B</SelectItem>
-                                            <SelectItem value="C">C</SelectItem>
-                                            <SelectItem value="D">D</SelectItem>
-                                            <SelectItem value="E">E</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Correo Electrónico</Label>
-                                <Input id="email" value={user.email} disabled />
-                                <p className="text-xs text-muted-foreground">El correo electrónico no se puede cambiar.</p>
-                            </div>
                         </div>
                     </TabsContent>
                     <TabsContent value="shop" className="pt-4">
                         <div className="grid grid-cols-3 gap-4">
-                            {SHOP_AVATARS.map((avatar, index) => {
-                                const isOwned = user.ownedAvatars?.includes(avatar.url);
-                                const isSelected = selectedAvatarUrl === avatar.url;
+                            {SHOP_AVATARS.map((avatar) => {
+                                const isOwned = user.ownedAvatars?.includes(avatar.id);
+                                const isSelected = avatarPreview.type === 'icon' && avatarPreview.value === avatar.id;
+                                const Icon = avatar.icon;
                                 return (
-                                    <div key={avatar.id} className="relative group">
+                                    <div key={avatar.id} className="relative group flex flex-col items-center gap-2">
                                         <button 
                                             type="button" 
-                                            onClick={() => setSelectedAvatarUrl(avatar.url)}
-                                            className={cn("w-full aspect-square rounded-lg flex items-center justify-center transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
+                                            onClick={() => handleSelectShopAvatar(avatar.id)}
+                                            className={cn("w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
                                         >
-                                            <img src={avatar.url} alt={avatar.id} className="rounded-md object-cover w-full h-full" />
+                                           <Icon className="h-10 w-10 text-muted-foreground" />
                                         </button>
-                                        <div className="mt-2 text-center">
+                                        <div className="text-center">
                                             {isOwned ? (
                                                 <Badge variant="secondary" className="flex items-center gap-1">
                                                     <CheckCircle className="h-3 w-3 text-green-500" />
@@ -545,6 +526,68 @@ function EditProfileDialog() {
                     </TabsContent>
                 </Tabs>
             </div>
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="name">Nombre Completo</Label>
+                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="center">Código de Centro Educativo</Label>
+                    <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} placeholder="123-456" />
+                     <p className="text-xs text-muted-foreground">
+                        Introduce el código proporcionado por tu centro para unirte a su grupo.
+                    </p>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="ageRange">Rango de Edad</Label>
+                    <Select onValueChange={setAgeRange} value={ageRange}>
+                        <SelectTrigger id="ageRange">
+                            <SelectValue placeholder="Selecciona tu rango de edad" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="12-15">12-15 años</SelectItem>
+                            <SelectItem value="16-18">16-18 años</SelectItem>
+                            <SelectItem value="19-22">19-22 años</SelectItem>
+                            <SelectItem value="23+">23+ años</SelectItem>
+                            <SelectItem value="No especificado">No especificado</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="course">Curso</Label>
+                        <Select onValueChange={setCourse} value={course}>
+                            <SelectTrigger id="course"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="1eso">1º ESO</SelectItem>
+                                <SelectItem value="2eso">2º ESO</SelectItem>
+                                <SelectItem value="3eso">3º ESO</SelectItem>
+                                <SelectItem value="4eso">4º ESO</SelectItem>
+                                <SelectItem value="1bach">1º Bachillerato</SelectItem>
+                                <SelectItem value="2bach">2º Bachillerato</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="className">Clase</Label>
+                        <Select onValueChange={setClassName} value={className}>
+                            <SelectTrigger id="className"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="A">A</SelectItem>
+                                <SelectItem value="B">B</SelectItem>
+                                <SelectItem value="C">C</SelectItem>
+                                <SelectItem value="D">D</SelectItem>
+                                <SelectItem value="E">E</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="email">Correo Electrónico</Label>
+                    <Input id="email" value={user.email} disabled />
+                    <p className="text-xs text-muted-foreground">El correo electrónico no se puede cambiar.</p>
+                </div>
+            </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
@@ -574,8 +617,5 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
       </Card>
     );
   }
-
-
-    
 
     
