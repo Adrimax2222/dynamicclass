@@ -498,49 +498,87 @@ function PrivacyPolicyDialog() {
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="flex-1 overflow-y-auto">
-                    <div className="px-6 py-4 space-y-4 text-sm text-muted-foreground">
-                        <p>Bienvenido a Dynamic Class. Tu privacidad es de suma importancia para nosotros. Esta política describe cómo recopilamos, usamos y protegemos tu información personal.</p>
+                    <div className="px-6 py-4 space-y-6 text-sm text-muted-foreground">
+                        <section>
+                            <h3 className="font-bold text-foreground text-base mb-2">1. Quiénes Somos</h3>
+                            <p>Dynamic Class es una aplicación desarrollada por <span className="font-semibold text-foreground">Adrià Navarro</span> y <span className="font-semibold text-foreground">Luc Rota</span>, como parte de la iniciativa <span className="font-semibold text-foreground">Proyecto Adrimax</span>. Nuestro objetivo es proporcionar herramientas educativas innovadoras y seguras para estudiantes.</p>
+                        </section>
 
-                        <h3 className="font-bold text-foreground">1. Quiénes Somos</h3>
-                        <p>Dynamic Class es una aplicación desarrollada por <span className="font-semibold">Adrià Navarro</span> y <span className="font-semibold">Luc Rota</span>, como parte de la iniciativa <span className="font-semibold">Proyecto Adrimax</span>. Nuestro objetivo es proporcionar herramientas educativas innovadoras y seguras.</p>
+                        <section>
+                            <h3 className="font-bold text-foreground text-base mb-2">2. Información que Recopilamos</h3>
+                            <p>Para ofrecer una experiencia personalizada y funcional, recopilamos los siguientes datos, que se almacenan de forma segura en la base de datos de Firebase (Firestore):</p>
+                            <ul className="list-disc list-inside space-y-2 pl-4 mt-2">
+                                <li><strong>Información de Perfil:</strong> Nombre completo, correo electrónico, rango de edad, curso, clase y código de centro educativo.</li>
+                                <li><strong>Datos de Autenticación:</strong> Tu correo y una contraseña encriptada. Este proceso está gestionado por Firebase Authentication, un servicio de Google, por lo que nunca tenemos acceso a tu contraseña.</li>
+                                <li><strong>Contenido Generado por el Usuario (Privado):</strong>
+                                    <ul className="list-circle list-inside space-y-1 pl-6 mt-1">
+                                        <li><strong>Anotaciones personales:</strong> Se guardan en una sub-colección dentro de tu documento de usuario y solo tú puedes acceder a ellas.</li>
+                                        <li><strong>Historial de conversaciones con el chatbot:</strong> Se almacena de forma similar a las notas, de manera privada en tu cuenta.</li>
+                                        <li><strong>URL de Calendario Personal:</strong> Si decides sincronizar un calendario iCal, la URL se guarda localmente en tu dispositivo y no se sube a nuestros servidores.</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Contenido Generado por el Usuario (Público/Compartido):</strong>
+                                     <ul className="list-circle list-inside space-y-1 pl-6 mt-1">
+                                        <li><strong>Anuncios:</strong> Si eres administrador, los anuncios que creas son visibles para otros usuarios según el ámbito (general o de centro) que elijas.</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Datos de Progreso y Uso:</strong> Trofeos, tareas completadas, tiempo de estudio, rachas. Estos datos son visibles en rankings para fomentar una competición sana.</li>
+                            </ul>
+                        </section>
 
-                        <h3 className="font-bold text-foreground">2. Información que Recopilamos</h3>
-                        <p>Para ofrecer una experiencia personalizada y funcional, recopilamos los siguientes datos:</p>
-                        <ul className="list-disc list-inside space-y-1 pl-4">
-                            <li><strong>Información de Perfil:</strong> Nombre completo, correo electrónico, rango de edad, curso, clase y código de centro educativo.</li>
-                            <li><strong>Datos de Autenticación:</strong> Tu correo y una contraseña encriptada. El proceso está gestionado por Firebase Authentication, un servicio de Google.</li>
-                            <li><strong>Contenido Generado por el Usuario:</strong> Anotaciones personales, historial de conversaciones con el chatbot de IA y la URL de tu calendario iCal personal.</li>
-                            <li><strong>Datos de Uso:</strong> Información anónima sobre cómo interactúas con la aplicación para identificar errores y mejorar la experiencia.</li>
-                        </ul>
+                        <section>
+                            <h3 className="font-bold text-foreground text-base mb-2">3. Cómo Usamos tu Información</h3>
+                            <p>Utilizamos tus datos para:</p>
+                             <ul className="list-disc list-inside space-y-1 pl-4 mt-2">
+                                <li>Personalizar tu experiencia (ej. mostrar tu horario, filtrar anuncios del centro).</li>
+                                <li>Proporcionar las funcionalidades principales de la aplicación (anotaciones, calendario, IA).</li>
+                                <li>Gamificar la experiencia de aprendizaje a través de trofeos y rankings.</li>
+                                <li>Comunicarnos contigo sobre actualizaciones importantes o notificaciones push (si las activas).</li>
+                                <li>Mejorar la seguridad y la estabilidad de la aplicación.</li>
+                            </ul>
+                        </section>
+                        
+                        <section>
+                            <h3 className="font-bold text-foreground text-base mb-2">4. Seguridad de los Datos</h3>
+                            <p>La seguridad de tus datos es nuestra máxima prioridad. La aplicación está construida sobre la infraestructura de <span className="font-semibold text-foreground">Google Cloud</span> y <span className="font-semibold text-foreground">Firebase</span>, lo que garantiza:</p>
+                            <ul className="list-disc list-inside space-y-1 pl-4 mt-2">
+                                <li><strong>Encriptación:</strong> Toda la información, incluida tu contraseña, se almacena de forma encriptada en los servidores seguros de Google. Nosotros no tenemos acceso a tus contraseñas en texto plano.</li>
+                                <li><strong>Autenticación Segura:</strong> El inicio de sesión (correo/contraseña y Google Sign-In) y la verificación de correo están gestionados por Firebase Authentication, un sistema robusto y probado.</li>
+                                <li><strong>Reglas de Acceso (Security Rules):</strong> Implementamos estrictas reglas de seguridad en nuestra base de datos (Firestore) para asegurar que solo tú puedas acceder a tu información personal privada (notas, chats, etc.). Los demás usuarios no pueden, bajo ninguna circunstancia, acceder a estos datos.</li>
+                            </ul>
+                        </section>
+                        
+                        <section>
+                            <h3 className="font-bold text-foreground text-base mb-2">5. Uso de Modelos de Inteligencia Artificial</h3>
+                            <p>La funcionalidad de chatbot utiliza modelos de IA avanzados como <span className="font-semibold text-foreground">Gemini de Google</span>. Cuando interactúas con el chatbot:</p>
+                             <ul className="list-disc list-inside space-y-1 pl-4 mt-2">
+                                <li>Tus consultas (prompts) son procesadas por estos modelos para generar una respuesta.</li>
+                                <li>Tu historial de chat se guarda de forma privada en tu cuenta para tu conveniencia y está protegido por las mismas medidas de seguridad que el resto de tus datos personales.</li>
+                                <li><strong>No utilizamos tus conversaciones para re-entrenar modelos de IA</strong> sin tu consentimiento explícito.</li>
+                            </ul>
+                        </section>
 
-                        <h3 className="font-bold text-foreground">3. Cómo Usamos tu Información</h3>
-                        <ul className="list-disc list-inside space-y-1 pl-4">
-                            <li>Para personalizar tu experiencia, como mostrar el horario de tu clase.</li>
-                            <li>Para proporcionar las funcionalidades principales de la aplicación (anotaciones, calendario, IA).</li>
-                            <li>Para comunicarnos contigo acerca de actualizaciones importantes o notificaciones.</li>
-                            <li>Para mejorar la seguridad y la estabilidad de la aplicación.</li>
-                        </ul>
+                         <section>
+                            <h3 className="font-bold text-foreground text-base mb-2">6. Aviso sobre Datos del Profesorado</h3>
+                             <div className="space-y-2 border-l-4 border-yellow-400 pl-4 py-2 bg-yellow-500/5">
+                                 <p>Esta aplicación es un desarrollo independiente y <strong>no oficial</strong> del centro educativo.</p>
+                                 <p>Las abreviaturas de los nombres de los docentes que aparecen en el calendario se han incluido de forma temporal únicamente con fines de testeo. Antes de la publicación oficial, este sistema será modificado para garantizar el <strong>total anonimato</strong> y el cumplimiento del RGPD, usando identificadores genéricos.</p>
+                             </div>
+                        </section>
 
-                        <h3 className="font-bold text-foreground">4. Seguridad de los Datos</h3>
-                        <p>La seguridad de tus datos es nuestra máxima prioridad. La aplicación está construida sobre la infraestructura de <span className="font-semibold">Google Cloud</span> y <span className="font-semibold">Firebase</span>, lo que garantiza:</p>
-                        <ul className="list-disc list-inside space-y-1 pl-4">
-                            <li><strong>Encriptación:</strong> Toda la información, incluida tu contraseña, se almacena de forma encriptada en los servidores seguros de Google. Nosotros no tenemos acceso a tus contraseñas en texto plano.</li>
-                            <li><strong>Autenticación Segura:</strong> El inicio de sesión y la verificación de correo están gestionados por Firebase Authentication, un sistema robusto y probado.</li>
-                            <li><strong>Reglas de Acceso:</strong> Implementamos estrictas reglas de seguridad en nuestra base de datos (Firestore) para asegurar que solo tú puedas acceder a tu propia información personal.</li>
-                        </ul>
-
-                        <h3 className="font-bold text-foreground">5. Uso de Modelos de Inteligencia Artificial</h3>
-                        <p>La funcionalidad de chatbot utiliza modelos de IA avanzados como <span className="font-semibold">Gemini de Google</span>. Cuando interactúas con el chatbot, tus consultas son procesadas por estos modelos para generar una respuesta. No almacenamos permanentemente estas conversaciones con fines de entrenamiento de modelos sin tu consentimiento explícito. Tu historial de chat se guarda en tu cuenta personal para tu conveniencia y está protegido por las mismas medidas de seguridad.</p>
-
-                        <h3 className="font-bold text-foreground">6. Tus Derechos y Control</h3>
-                        <p>Tienes control total sobre tus datos:</p>
-                        <ul className="list-disc list-inside space-y-1 pl-4">
-                            <li><strong>Acceso y Modificación:</strong> Puedes ver y editar tu información de perfil en cualquier momento desde la sección "Perfil".</li>
-                            <li><strong>Eliminación:</strong> Puedes eliminar tus anotaciones, chats y, en última instancia, tu cuenta completa desde la sección "Ajustes". La eliminación de la cuenta es un proceso permanente e irreversible que borra todos tus datos de nuestros sistemas.</li>
-                        </ul>
-
-                        <h3 className="font-bold text-foreground">7. Contacto</h3>
-                        <p>Si tienes alguna pregunta sobre esta política de privacidad, no dudes en contactarnos a través del <span className="font-semibold">Formulario de Asistencia</span> disponible en la sección de Soporte.</p>
+                        <section>
+                             <h3 className="font-bold text-foreground text-base mb-2">7. Tus Derechos y Control</h3>
+                            <p>Tienes control total sobre tus datos:</p>
+                             <ul className="list-disc list-inside space-y-1 pl-4 mt-2">
+                                <li><strong>Acceso y Modificación:</strong> Puedes ver y editar tu información de perfil en cualquier momento desde la sección "Perfil".</li>
+                                <li><strong>Eliminación:</strong> Puedes eliminar tus anotaciones, chats y, en última instancia, tu cuenta completa desde "Ajustes". La eliminación de la cuenta es un proceso permanente e irreversible que borra todos tus datos de nuestros sistemas.</li>
+                            </ul>
+                        </section>
+                        
+                        <section>
+                            <h3 className="font-bold text-foreground text-base mb-2">8. Contacto</h3>
+                            <p>Si tienes alguna pregunta sobre esta política de privacidad, no dudes en contactarnos a través del <span className="font-semibold text-foreground">Formulario de Asistencia</span> disponible en la sección de Soporte.</p>
+                        </section>
                     </div>
                 </ScrollArea>
                 <DialogFooter className="p-6 pt-4 border-t">
@@ -552,7 +590,3 @@ function PrivacyPolicyDialog() {
         </Dialog>
     );
 }
-
-    
-
-    
