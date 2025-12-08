@@ -322,7 +322,7 @@ function ChangePasswordDialog() {
   const auth = useAuth();
 
   const form = useForm<PasswordChangeSchema>({
-    resolver: zodResolver(passwordChangeSchema),
+    resolver: zodResolver(passwordChange-schema),
     defaultValues: {
       currentPassword: "",
       newPassword: "",
@@ -506,23 +506,23 @@ function PrivacyPolicyDialog() {
 
                         <section>
                             <h3 className="font-bold text-foreground text-base mb-2">2. Información que Recopilamos</h3>
-                            <p>Para ofrecer una experiencia personalizada y funcional, recopilamos los siguientes datos, que se almacenan de forma segura en la base de datos de Firebase (Firestore):</p>
-                            <ul className="list-disc list-inside space-y-2 pl-4 mt-2">
+                            <p>Para ofrecer una experiencia personalizada y funcional, recopilamos los siguientes datos:</p>
+                            <ul className="list-disc list-inside space-y-3 pl-4 mt-2">
                                 <li><strong>Información de Perfil:</strong> Nombre completo, correo electrónico, rango de edad, curso, clase y código de centro educativo.</li>
                                 <li><strong>Datos de Autenticación:</strong> Tu correo y una contraseña encriptada. Este proceso está gestionado por Firebase Authentication, un servicio de Google, por lo que nunca tenemos acceso a tu contraseña.</li>
-                                <li><strong>Contenido Generado por el Usuario (Privado):</strong>
-                                    <ul className="list-circle list-inside space-y-1 pl-6 mt-1">
-                                        <li><strong>Anotaciones personales:</strong> Se guardan en una sub-colección dentro de tu documento de usuario y solo tú puedes acceder a ellas.</li>
-                                        <li><strong>Historial de conversaciones con el chatbot:</strong> Se almacena de forma similar a las notas, de manera privada en tu cuenta.</li>
-                                        <li><strong>URL de Calendario Personal:</strong> Si decides sincronizar un calendario iCal, la URL se guarda localmente en tu dispositivo y no se sube a nuestros servidores.</li>
+                                <li><strong>Contenido Generado por el Usuario:</strong>
+                                    <ul className="list-circle list-inside space-y-2 pl-6 mt-2">
+                                        <li><strong>Datos Privados:</strong> Las anotaciones personales y el historial de conversaciones con el chatbot se guardan en una sub-colección dentro de tu documento de usuario y solo tú puedes acceder a ellos.</li>
+                                        <li><strong>URL de Calendario Personal:</strong> Si decides sincronizar un calendario iCal, la URL se guarda **exclusivamente de forma local en tu dispositivo** (en `localStorage`). No se sube a nuestros servidores, garantizando que solo tú tienes acceso a ella.</li>
+                                        <li><strong>Datos Compartidos:</strong> Si eres administrador, los anuncios que creas son visibles para otros usuarios según el ámbito (general o de centro) que elijas.</li>
                                     </ul>
                                 </li>
-                                <li><strong>Contenido Generado por el Usuario (Público/Compartido):</strong>
-                                     <ul className="list-circle list-inside space-y-1 pl-6 mt-1">
-                                        <li><strong>Anuncios:</strong> Si eres administrador, los anuncios que creas son visibles para otros usuarios según el ámbito (general o de centro) que elijas.</li>
+                                <li><strong>Datos de Progreso y Uso (Gamificación):</strong>
+                                    <ul className="list-circle list-inside space-y-2 pl-6 mt-2">
+                                        <li>Recopilamos trofeos, tareas completadas, tiempo de estudio y rachas.</li>
+                                        <li>Para fomentar una competición sana, tu **nombre de perfil, avatar y total de trofeos** son visibles para otros usuarios de tu mismo centro educativo en las tablas de clasificación (rankings). El resto de tus datos de progreso no son públicos.</li>
                                     </ul>
                                 </li>
-                                <li><strong>Datos de Progreso y Uso:</strong> Trofeos, tareas completadas, tiempo de estudio, rachas. Estos datos son visibles en rankings para fomentar una competición sana.</li>
                             </ul>
                         </section>
 
@@ -542,9 +542,9 @@ function PrivacyPolicyDialog() {
                             <h3 className="font-bold text-foreground text-base mb-2">4. Seguridad de los Datos</h3>
                             <p>La seguridad de tus datos es nuestra máxima prioridad. La aplicación está construida sobre la infraestructura de <span className="font-semibold text-foreground">Google Cloud</span> y <span className="font-semibold text-foreground">Firebase</span>, lo que garantiza:</p>
                             <ul className="list-disc list-inside space-y-1 pl-4 mt-2">
-                                <li><strong>Encriptación:</strong> Toda la información, incluida tu contraseña, se almacena de forma encriptada en los servidores seguros de Google. Nosotros no tenemos acceso a tus contraseñas en texto plano.</li>
+                                <li><strong>Encriptación:</strong> Toda la información se almacena de forma encriptada en los servidores seguros de Google. Nosotros no tenemos acceso a tus contraseñas en texto plano.</li>
                                 <li><strong>Autenticación Segura:</strong> El inicio de sesión (correo/contraseña y Google Sign-In) y la verificación de correo están gestionados por Firebase Authentication, un sistema robusto y probado.</li>
-                                <li><strong>Reglas de Acceso (Security Rules):</strong> Implementamos estrictas reglas de seguridad en nuestra base de datos (Firestore) para asegurar que solo tú puedas acceder a tu información personal privada (notas, chats, etc.). Los demás usuarios no pueden, bajo ninguna circunstancia, acceder a estos datos.</li>
+                                <li><strong>Reglas de Acceso (Security Rules):</strong> Implementamos estrictas reglas de seguridad en nuestra base de datos (Firestore) para asegurar que solo tú puedas acceder y modificar tu información personal privada (notas, chats, perfil, etc.). Los demás usuarios no pueden, bajo ninguna circunstancia, acceder a estos datos.</li>
                             </ul>
                         </section>
                         
@@ -590,3 +590,5 @@ function PrivacyPolicyDialog() {
         </Dialog>
     );
 }
+
+    
