@@ -42,6 +42,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 
 export default function SettingsPage() {
@@ -92,7 +93,7 @@ export default function SettingsPage() {
           </h1>
           <div className="flex items-center gap-2">
             <Badge variant="outline">V3.0.22.6</Badge>
-            <Badge variant="secondary">Beta - Tester</Badge>
+            <Badge variant="outline" className="border-accent/50 bg-accent/10 text-accent">Beta - Tester</Badge>
           </div>
         </div>
       </header>
@@ -301,7 +302,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex justify-center gap-2 mb-2">
                 <Badge variant="outline">V3.0.22.6</Badge>
-                <Badge variant="secondary">Beta - Tester</Badge>
+                <Badge variant="outline" className="border-accent/50 bg-accent/10 text-accent">Beta - Tester</Badge>
             </div>
             <Link href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
             Impulsado por <span className="font-semibold">Proyecto Adrimax</span>
@@ -605,3 +606,6 @@ function PrivacyPolicyDialog() {
 
     
 
+
+
+    
