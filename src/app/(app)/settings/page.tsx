@@ -86,9 +86,15 @@ export default function SettingsPage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ChevronLeft />
         </Button>
-        <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-          Ajustes
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
+            Ajustes
+          </h1>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">V3.0.22.6</Badge>
+            <Badge variant="secondary">Beta - Tester</Badge>
+          </div>
+        </div>
       </header>
 
       <div className="space-y-8">
@@ -598,3 +604,4 @@ function PrivacyPolicyDialog() {
     
 
     
+
