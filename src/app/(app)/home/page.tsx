@@ -104,9 +104,13 @@ export default function HomePage() {
         return allAnnouncements.filter(ann => !readAnnouncementIds.includes(ann.id));
       }
 
+      // 1. Filter only for school calendar events
+      const schoolEvents = allEvents.filter(event => event.type === 'class');
+      
       const endOfNextWeek = endOfWeek(addWeeks(today, 1), { weekStartsOn: 1 });
 
-      const relevantEvents = allEvents.filter(event => 
+      // 2. Filter for relevant date range and not completed
+      const relevantEvents = schoolEvents.filter(event => 
         event.date >= today &&
         isWithinInterval(event.date, { start: today, end: endOfNextWeek }) &&
         !completedEventIds.includes(event.id)
@@ -761,3 +765,4 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
