@@ -293,6 +293,10 @@ export default function SettingsPage() {
                 <Logo className="h-8 w-8 text-primary" />
                 <p className="font-bold text-lg text-foreground">Dynamic Class</p>
             </div>
+            <div className="flex justify-center gap-2 mb-2">
+                <Badge variant="outline">V3.0.22.6</Badge>
+                <Badge variant="secondary">Beta - Tester</Badge>
+            </div>
             <Link href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
             Impulsado por <span className="font-semibold">Proyecto Adrimax</span>
             </Link>
