@@ -528,7 +528,3 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     </Dialog>
   )
 }
-
-    
-
-    

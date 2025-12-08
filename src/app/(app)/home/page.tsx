@@ -51,6 +51,7 @@ import { startOfWeek, endOfWeek, addWeeks, isWithinInterval, format, startOfToda
 import { es } from 'date-fns/locale';
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
+import { TeacherInfoDialog } from "@/components/layout/teacher-info-dialog";
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Anuncios";
 const SCHOOL_ICAL_URL = "https://calendar.google.com/calendar/ical/iestorredelpalau.cat_9vm0113gitbs90a9l7p4c3olh4%40group.calendar.google.com/public/basic.ics";
@@ -531,7 +532,10 @@ export default function HomePage() {
                                 {item.grade && <Badge variant="secondary">{item.grade}</Badge>}
                             </div>
                             <div className="text-sm text-muted-foreground space-y-1 mt-2">
-                                <p>{item.teacher}</p>
+                                <p className="flex items-center gap-1.5">
+                                    {item.teacher}
+                                    <TeacherInfoDialog />
+                                </p>
                                 <p>{item.time}</p>
                             </div>
                             <div className="flex items-center justify-between mt-2">
@@ -757,5 +761,3 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
-
-    

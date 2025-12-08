@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Schedule } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Building, Info, User, Sandwich } from "lucide-react";
+import { TeacherInfoDialog } from "./teacher-info-dialog";
 
 interface FullScheduleViewProps {
     scheduleData: Schedule;
@@ -92,7 +93,10 @@ export function FullScheduleView({ scheduleData, selectedClassId }: FullSchedule
                     <AccordionContent className="space-y-2 px-4">
                         <div className="flex items-center gap-2 text-sm">
                             <User className="h-4 w-4 text-muted-foreground" />
-                            <span>{entry.teacher}</span>
+                            <span className="flex items-center gap-1.5">
+                                {entry.teacher}
+                                <TeacherInfoDialog />
+                            </span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                             <Building className="h-4 w-4 text-muted-foreground" />
