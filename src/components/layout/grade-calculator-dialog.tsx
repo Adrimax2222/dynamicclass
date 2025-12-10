@@ -65,19 +65,21 @@ interface GradeCalculatorDialogProps {
 }
 
 export function GradeCalculatorDialog({ children, isScheduleAvailable, user, openTo = "calculator" }: GradeCalculatorDialogProps) {
+    const [isOpen, setIsOpen] = useState(false);
     const [allConfigs, setAllConfigs] = useState<AllSubjectConfigs>({});
     const [subjects, setSubjects] = useState<string[]>([]);
     const [activeSubject, setActiveSubject] = useState<string>('');
     const [newSubjectName, setNewSubjectName] = useState('');
 
-    
+    const storageKey = `gradeConfigs-${user.uid}`;
+
     // Load from localStorage on mount
     useEffect(() => {
+      if (!isOpen) return;
         try {
-            const savedConfigs = localStorage.getItem("gradeConfigs");
+            const savedConfigs = localStorage.getItem(storageKey);
             const parsedConfigs: AllSubjectConfigs = savedConfigs ? JSON.parse(savedConfigs) : {};
-            setAllConfigs(parsedConfigs);
-
+            
             let initialSubjects: string[];
             if (isScheduleAvailable) {
                 const scheduleSubjects = Object.values(fullSchedule).flat().map(c => c.subject);
@@ -91,29 +93,40 @@ export function GradeCalculatorDialog({ children, isScheduleAvailable, user, ope
             const allSubjects = [...new Set([...initialSubjects, ...savedSubjects])];
 
             setSubjects(allSubjects);
+
             if (allSubjects.length > 0) {
                 const firstSubject = allSubjects[0];
                 setActiveSubject(firstSubject);
-                if (!parsedConfigs[firstSubject]) {
-                     setAllConfigs(prev => ({...prev, [firstSubject]: { grades: [{ id: 1, title: "", grade: "", weight: "" }], desiredGrade: "5", result: null }}));
-                }
+                // Ensure a default config exists for all subjects if they are new
+                const updatedConfigs = {...parsedConfigs};
+                allSubjects.forEach(sub => {
+                    if (!updatedConfigs[sub]) {
+                        updatedConfigs[sub] = { grades: [{ id: Date.now(), title: "", grade: "", weight: "" }], desiredGrade: "5", result: null };
+                    }
+                });
+                 setAllConfigs(updatedConfigs);
+            } else {
+                 setAllConfigs({});
             }
 
         } catch (error) {
             console.error("Failed to load or parse grade configurations from localStorage", error);
+            setAllConfigs({});
+            setSubjects([]);
         }
-    }, [isScheduleAvailable]);
+    }, [isScheduleAvailable, isOpen, storageKey]);
 
     // Save to localStorage whenever configs change
     useEffect(() => {
+        if (!isOpen) return;
         try {
             if (Object.keys(allConfigs).length > 0) {
-              localStorage.setItem("gradeConfigs", JSON.stringify(allConfigs));
+              localStorage.setItem(storageKey, JSON.stringify(allConfigs));
             }
         } catch (error) {
             console.error("Failed to save grade configurations to localStorage", error);
         }
-    }, [allConfigs]);
+    }, [allConfigs, isOpen, storageKey]);
     
     const activeConfig = useMemo(() => {
         return allConfigs[activeSubject] || { grades: [{ id: 1, title: "", grade: "", weight: "" }], desiredGrade: "5", result: null };
@@ -284,7 +297,7 @@ export function GradeCalculatorDialog({ children, isScheduleAvailable, user, ope
     }
 
     return (
-        <Dialog>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col h-[90vh]">
                 <DialogHeader className="p-6 pb-0">
@@ -591,3 +604,6 @@ function ReportTab({ allConfigs, user }: { allConfigs: AllSubjectConfigs, user: 
         </div>
     );
 }
+
+
+    
