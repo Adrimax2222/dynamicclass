@@ -693,8 +693,9 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete, c
                                         </div>
                                         <AlertDialog>
                                           <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground/50 hover:text-green-500 hover:bg-green-500/10 transition-colors rounded-full">
-                                              <CheckCircle className="h-6 w-6" />
+                                             <Button variant="ghost" className="shrink-0 text-amber-500/80 hover:text-amber-500 hover:bg-amber-500/10 transition-colors rounded-full flex items-center gap-1.5 px-3 h-9">
+                                              <Trophy className="h-4 w-4" />
+                                              <span className="font-bold text-sm">+1</span>
                                             </Button>
                                           </AlertDialogTrigger>
                                           <AlertDialogContent>
