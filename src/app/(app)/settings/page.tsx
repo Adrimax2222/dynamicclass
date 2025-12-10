@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore } from "@/firebase";
@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/form";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { doc, increment, updateDoc } from "firebase/firestore";
 
 
 export default function SettingsPage() {
@@ -490,6 +491,43 @@ function ChangePasswordDialog() {
 }
 
 function PrivacyPolicyDialog() {
+    const { user, updateUser } = useApp();
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [isClaimed, setIsClaimed] = useState(false);
+
+    const EASTER_EGG_KEY = 'easter-egg-claimed';
+
+    useEffect(() => {
+        const claimed = localStorage.getItem(EASTER_EGG_KEY);
+        if (claimed === 'true') {
+            setIsClaimed(true);
+        }
+    }, []);
+
+    const handleEasterEggClick = async () => {
+        if (isClaimed || !user || !firestore) return;
+
+        try {
+            const userDocRef = doc(firestore, 'users', user.uid);
+            await updateDoc(userDocRef, {
+                trophies: increment(50)
+            });
+
+            updateUser({ trophies: (user.trophies || 0) + 50 });
+            localStorage.setItem(EASTER_EGG_KEY, 'true');
+            setIsClaimed(true);
+
+            toast({
+                title: "Secreto Encontrado ✨",
+                description: "¡Has ganado 50 trofeos por tu curiosidad!",
+            });
+
+        } catch (error) {
+            console.error("Easter egg error:", error);
+        }
+    };
+    
     return (
         <Dialog>
             <DialogTrigger asChild>
@@ -588,7 +626,17 @@ function PrivacyPolicyDialog() {
                         
                         <section>
                             <h3 className="font-bold text-foreground text-base mb-2">8. Contacto</h3>
-                            <p>Si tienes alguna pregunta sobre esta política de privacidad, no dudes en contactarnos a través del <span className="font-semibold text-foreground">Formulario de Asistencia</span> disponible en la sección de Soporte.</p>
+                            <p>Si tienes alguna pregunta sobre esta política de privacidad, no dudes en contactarnos a través del <span className="font-semibold text-foreground">Formulario de Asistencia</span> disponible en la sección de Soporte.
+                                {!isClaimed && (
+                                    <span
+                                        className="inline-block ml-1 opacity-20 hover:opacity-100 transition-opacity cursor-pointer"
+                                        onClick={handleEasterEggClick}
+                                        aria-label="Secreto"
+                                    >
+                                        <Cat className="h-3 w-3" />
+                                    </span>
+                                )}
+                            </p>
                         </section>
                     </div>
                 </ScrollArea>
@@ -601,11 +649,5 @@ function PrivacyPolicyDialog() {
         </Dialog>
     );
 }
-
-    
-
-    
-
-
 
     
