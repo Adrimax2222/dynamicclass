@@ -89,6 +89,18 @@
         "timestamp": { "type": "string", "format": "date-time" }
       },
       "required": ["role", "content", "timestamp"]
+    },
+    "CompletedItem": {
+      "title": "Completed Item",
+      "description": "Represents a task or exam that a user has completed.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "type": { "type": "string", "enum": ["task", "exam"] },
+        "completedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "type", "completedAt"]
     }
   },
   "auth": {
@@ -110,6 +122,10 @@
     "/users/{userId}/chats/{chatId}/messages/{messageId}": {
       "schema": { "$ref": "#/entities/ChatMessage" },
       "description": "Stores messages for a specific chat session."
+    },
+    "/users/{userId}/completedItems/{itemId}": {
+      "schema": { "$ref": "#/entities/CompletedItem" },
+      "description": "Stores a history of tasks and exams completed by the user."
     },
     "/announcements/{announcementId}": {
         "schema": { "$ref": "#/entities/Announcement" },

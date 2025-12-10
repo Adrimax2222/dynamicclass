@@ -42,7 +42,7 @@ import { Button } from "@/components/ui/button";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Logo } from "@/components/icons";
 import WelcomeModal from "@/components/layout/welcome-modal";
-import { doc, updateDoc, increment, collection, query, orderBy, getDocs } from "firebase/firestore";
+import { doc, updateDoc, increment, collection, query, orderBy, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { FullScheduleView } from "@/components/layout/full-schedule-view";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
@@ -146,30 +146,37 @@ export default function HomePage() {
     return getCategorizedEvents(category).length;
   }
   
-  const handleMarkAsComplete = (eventId: string) => {
+  const handleMarkAsComplete = async (eventId: string) => {
     if (!firestore || !user) return;
     
+    const event = allEvents.find(e => e.id === eventId);
+    if (!event) return;
+
     const newCompletedIds = [...completedEventIds, eventId];
     setCompletedEventIds(newCompletedIds);
     localStorage.setItem('completedEventIds', JSON.stringify(newCompletedIds));
     
     const userDocRef = doc(firestore, 'users', user.uid);
-    const event = allEvents.find(e => e.id === eventId);
-    if (event) {
-        const title = event.title.toLowerCase();
-        let fieldToIncrement: string;
-        if (keywords.exam.some(kw => title.includes(kw))) {
-             fieldToIncrement = 'exams';
-        } else {
-             fieldToIncrement = 'tasks';
-        }
+    const title = event.title.toLowerCase();
+    const isExam = keywords.exam.some(kw => title.includes(kw));
+    const itemType = isExam ? 'exam' : 'task';
+    const fieldToIncrement = isExam ? 'exams' : 'tasks';
+
+    // Save to history
+    const completedItemsRef = collection(firestore, `users/${user.uid}/completedItems`);
+    await addDoc(completedItemsRef, {
+        title: event.title,
+        type: itemType,
+        completedAt: serverTimestamp()
+    });
         
-        updateDoc(userDocRef, {
-            [fieldToIncrement]: increment(1),
-            trophies: increment(1),
-        }).catch(err => console.error("Error updating user stats:", err));
-    }
+    // Update user stats
+    await updateDoc(userDocRef, {
+        [fieldToIncrement]: increment(1),
+        trophies: increment(1),
+    }).catch(err => console.error("Error updating user stats:", err));
   };
+
 
   // Moved parser and fetch logic inside useEffect or as standalone functions within the component
     const parseIcal = (icalData: string): ParsedEvent[] => {
@@ -693,7 +700,7 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete, c
                                         </div>
                                         <AlertDialog>
                                           <AlertDialogTrigger asChild>
-                                             <Button variant="ghost" className="shrink-0 text-amber-500/80 hover:text-amber-500 hover:bg-amber-500/10 transition-colors rounded-full flex items-center gap-1.5 px-3 h-9">
+                                            <Button variant="ghost" className="shrink-0 text-amber-500/80 hover:text-amber-500 hover:bg-amber-500/10 transition-colors rounded-full flex items-center gap-1.5 px-3 h-9">
                                               <Trophy className="h-4 w-4" />
                                               <span className="font-bold text-sm">+1</span>
                                             </Button>
@@ -702,7 +709,7 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete, c
                                             <AlertDialogHeader>
                                               <AlertDialogTitle>¿Marcar como completado?</AlertDialogTitle>
                                               <AlertDialogDescription>
-                                                Esta acción eliminará el elemento de esta lista y sumará 1 trofeo a tu perfil.
+                                                Esta acción eliminará el elemento de esta lista y sumará 1 trofeo a tu perfil. También se guardará en tu historial.
                                               </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>

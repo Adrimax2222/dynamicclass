@@ -102,6 +102,12 @@ export type Announcement = {
   authorAvatar: string;
   createdAt: { seconds: number, nanoseconds: number };
   scope: AnnouncementScope;
-}
+};
 
+export type CompletedItem = {
+    id: string;
+    title: string;
+    type: 'task' | 'exam';
+    completedAt: Timestamp;
+};
     

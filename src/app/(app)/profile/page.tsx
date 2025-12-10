@@ -18,25 +18,31 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { SummaryCardData, User } from "@/lib/types";
+import type { SummaryCardData, User, CompletedItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart } from "lucide-react";
+import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useMemo } from "react";
-import { doc, updateDoc, arrayUnion, increment } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
+import { doc, updateDoc, arrayUnion, increment, collection, query, orderBy } from "firebase/firestore";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
 import { GradeCalculatorDialog } from "@/components/layout/grade-calculator-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
 
@@ -82,7 +88,7 @@ export default function ProfilePage() {
   
   const displayCenter = user.center === SCHOOL_VERIFICATION_CODE ? SCHOOL_NAME : user.center;
 
-  const achievements: Omit<SummaryCardData, 'isAnnouncement'>[] = [
+  const achievements = [
     { title: 'Tareas Completadas', value: user.tasks, icon: NotebookText, color: 'text-blue-400' },
     { title: 'Exámenes Superados', value: user.exams, icon: FileCheck2, color: 'text-green-400' },
   ];
@@ -219,7 +225,7 @@ export default function ProfilePage() {
             </Link>
 
             {achievements.map(card => (
-                <AchievementCard key={card.title} {...card} />
+              <HistoryDialog key={card.title} user={user} card={card} />
             ))}
         </div>
       </section>
@@ -705,10 +711,116 @@ function AchievementCard({ title, value, icon: Icon, color }: { title: string; v
     );
   }
 
-    
+function HistoryDialog({ user, card }: { user: User; card: Omit<SummaryCardData, 'isAnnouncement'>; }) {
+    const firestore = useFirestore();
+    const defaultTab = card.title.includes('Tareas') ? 'tasks' : 'exams';
 
-    
+    const completedItemsQuery = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return query(
+            collection(firestore, `users/${user.uid}/completedItems`),
+            orderBy('completedAt', 'desc')
+        );
+    }, [firestore, user]);
 
-    
+    const { data: completedItems = [], isLoading } = useCollection<CompletedItem>(completedItemsQuery);
 
+    const filteredItems = (type: 'task' | 'exam') => {
+        return completedItems.filter(item => item.type === type);
+    };
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <div className="cursor-pointer">
+                    <AchievementCard {...card} />
+                </div>
+            </DialogTrigger>
+            <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col h-[70vh]">
+                <DialogHeader className="p-6 pb-4">
+                    <DialogTitle className="flex items-center gap-2">
+                        <History className="h-5 w-5" />
+                        Historial de Logros
+                    </DialogTitle>
+                    <DialogDescription>
+                        Aquí tienes un registro de tus tareas y exámenes completados.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <Tabs defaultValue={defaultTab} className="w-full flex-1 flex flex-col min-h-0">
+                    <div className="px-6">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="tasks"><NotebookText className="h-4 w-4 mr-2" />Tareas</TabsTrigger>
+                            <TabsTrigger value="exams"><FileCheck2 className="h-4 w-4 mr-2" />Exámenes</TabsTrigger>
+                        </TabsList>
+                    </div>
+
+                    <ScrollArea className="flex-1 px-2 py-4">
+                        <TabsContent value="tasks" className="m-0 px-4">
+                            <HistoryList items={filteredItems('task')} isLoading={isLoading} type="task" />
+                        </TabsContent>
+                        <TabsContent value="exams" className="m-0 px-4">
+                            <HistoryList items={filteredItems('exam')} isLoading={isLoading} type="exam" />
+                        </TabsContent>
+                    </ScrollArea>
+                </Tabs>
+                
+                <DialogFooter className="p-4 border-t">
+                    <DialogClose asChild>
+                        <Button variant="outline">Cerrar</Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoading: boolean, type: 'task' | 'exam' }) {
+    if (isLoading) {
+        return (
+            <div className="space-y-3">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+            </div>
+        );
+    }
+
+    if (items.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg min-h-[200px]">
+                <Calendar className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p className="font-semibold">Sin historial</p>
+                <p className="text-sm text-muted-foreground">
+                    Aún no has completado ningún {type === 'task' ? 'tarea' : 'examen'}. ¡Sigue así!
+                </p>
+            </div>
+        );
+    }
     
+    const formatTimestamp = (timestamp: { seconds: number }) => {
+        if (!timestamp) return "";
+        return format(new Date(timestamp.seconds * 1000), "d 'de' MMMM, yyyy", { locale: es });
+    };
+
+    return (
+        <div className="space-y-3">
+            {items.map(item => (
+                <div key={item.id} className="flex items-center gap-4 rounded-lg border p-3 bg-muted/50">
+                    <div className={cn("p-2 rounded-full", type === 'task' ? 'bg-blue-100 dark:bg-blue-900/50' : 'bg-green-100 dark:bg-green-900/50')}>
+                       {type === 'task' ? 
+                         <NotebookText className="h-5 w-5 text-blue-500" /> : 
+                         <FileCheck2 className="h-5 w-5 text-green-500" />
+                       }
+                    </div>
+                    <div className="flex-1">
+                        <p className="font-semibold text-sm line-clamp-1">{item.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                            {formatTimestamp(item.completedAt)}
+                        </p>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}

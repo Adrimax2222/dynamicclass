@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -38,6 +39,12 @@ service cloud.firestore {
         match /messages/{messageId} {
           allow list, get, create, update, delete: if isOwner(userId);
         }
+      }
+
+      // Allow users to manage their own completed items history
+      match /completedItems/{itemId} {
+        allow list, get, create: if isOwner(userId);
+        // No update/delete to keep history immutable
       }
     }
     
