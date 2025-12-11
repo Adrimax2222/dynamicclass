@@ -501,52 +501,85 @@ export default function HomePage() {
 
 
       <div className="mb-10 grid grid-cols-2 gap-4">
-        {summaryCards.map((card) => 
-          card.isAnnouncement ? (
-            <div key={card.title} onClick={handleAnnouncementsClick} className="cursor-pointer">
-              <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg relative overflow-hidden">
-                  <Snowflake className="absolute -bottom-2 -right-2 h-12 w-12 text-red-500/10" />
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-                      <card.icon className={cn("h-5 w-5 text-muted-foreground", card.color)} />
-                  </CardHeader>
-                  <CardContent>
-                      {isLoadingVariables ? (
-                          <Loader2 className="h-6 w-6 animate-spin" />
-                      ) : (
-                          <div className="text-2xl font-bold">{card.value}</div>
-                      )}
-                  </CardContent>
-              </Card>
-            </div>
-          ) : (
-            <DetailsDialog 
-              key={card.title} 
-              title={card.title}
-              events={getCategorizedEvents(card.title as Category)}
-              isLoading={isLoadingVariables}
-              onMarkAsComplete={handleMarkAsComplete}
-              cardData={card}
-              user={user}
-              updateUser={updateUser}
-            >
-              <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer relative overflow-hidden">
-                  <Snowflake className="absolute -bottom-2 -right-2 h-12 w-12 text-red-500/10" />
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-                      <card.icon className={cn("h-5 w-5 text-muted-foreground", card.color)} />
-                  </CardHeader>
-                  <CardContent>
-                      {isLoadingVariables ? (
-                          <Loader2 className="h-6 w-6 animate-spin" />
-                      ) : (
-                          <div className="text-2xl font-bold">{card.value}</div>
-                      )}
-                  </CardContent>
-              </Card>
-            </DetailsDialog>
-          )
-        )}
+        <DetailsDialog 
+          title="Tareas" 
+          events={getCategorizedEvents("Tareas")}
+          isLoading={isLoadingVariables}
+          onMarkAsComplete={handleMarkAsComplete}
+          cardData={summaryCards[0]}
+          user={user}
+          updateUser={updateUser}
+        >
+          <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer relative overflow-hidden">
+              <Snowflake className="absolute -top-3 -left-3 h-12 w-12 text-red-500/10" />
+              <Snowflake className="absolute -bottom-4 -right-4 h-16 w-16 text-red-500/10" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Tareas</CardTitle>
+                  <NotebookText className="h-5 w-5 text-muted-foreground text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                  {isLoadingVariables ? <Loader2 className="h-6 w-6 animate-spin" /> : <div className="text-2xl font-bold">{getCategoryCount('Tareas')}</div>}
+              </CardContent>
+          </Card>
+        </DetailsDialog>
+
+        <DetailsDialog 
+          title="Exámenes" 
+          events={getCategorizedEvents("Exámenes")}
+          isLoading={isLoadingVariables}
+          onMarkAsComplete={handleMarkAsComplete}
+          cardData={summaryCards[1]}
+          user={user}
+          updateUser={updateUser}
+        >
+          <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer relative overflow-hidden">
+              <Snowflake className="absolute top-0 -right-2 h-12 w-12 text-red-500/10" />
+              <Snowflake className="absolute bottom-0 -left-2 h-8 w-8 text-red-500/10" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Exámenes</CardTitle>
+                  <FileCheck2 className="h-5 w-5 text-muted-foreground text-red-500" />
+              </CardHeader>
+              <CardContent>
+                  {isLoadingVariables ? <Loader2 className="h-6 w-6 animate-spin" /> : <div className="text-2xl font-bold">{getCategoryCount('Exámenes')}</div>}
+              </CardContent>
+          </Card>
+        </DetailsDialog>
+
+        <DetailsDialog 
+          title="Pendientes" 
+          events={getCategorizedEvents("Pendientes")}
+          isLoading={isLoadingVariables}
+          onMarkAsComplete={handleMarkAsComplete}
+          cardData={summaryCards[2]}
+          user={user}
+          updateUser={updateUser}
+        >
+          <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer relative overflow-hidden">
+              <Snowflake className="absolute -bottom-5 left-5 h-20 w-20 text-red-500/10" />
+              <Snowflake className="absolute -top-2 right-5 h-8 w-8 text-red-500/10" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
+                  <Clock className="h-5 w-5 text-muted-foreground text-yellow-500" />
+              </CardHeader>
+              <CardContent>
+                  {isLoadingVariables ? <Loader2 className="h-6 w-6 animate-spin" /> : <div className="text-2xl font-bold">{getCategoryCount('Pendientes')}</div>}
+              </CardContent>
+          </Card>
+        </DetailsDialog>
+
+        <div onClick={handleAnnouncementsClick} className="cursor-pointer">
+          <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg relative overflow-hidden">
+              <Snowflake className="absolute -top-4 -right-4 h-16 w-16 text-red-500/10" />
+              <Snowflake className="absolute bottom-1 left-1 h-6 w-6 text-red-500/10" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Anuncios</CardTitle>
+                  <MessageSquare className="h-5 w-5 text-muted-foreground text-green-500" />
+              </CardHeader>
+              <CardContent>
+                  {isLoadingVariables ? <Loader2 className="h-6 w-6 animate-spin" /> : <div className="text-2xl font-bold">{getCategoryCount('Anuncios')}</div>}
+              </CardContent>
+          </Card>
+        </div>
       </div>
       
       <section className="mb-10">
@@ -886,3 +919,6 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
     
 
 
+
+
+    
