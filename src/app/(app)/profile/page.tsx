@@ -344,7 +344,7 @@ function AvatarDisplayPreview({ avatar }: { avatar: EditableAvatar }) {
     const letter = isLetter ? avatar.id.split('_')[1] : null;
 
     return (
-        <div className="relative">
+        <div className="relative inline-block">
             <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
                 <div 
                   className="w-full h-full flex items-center justify-center" 

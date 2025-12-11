@@ -457,8 +457,7 @@ export default function HomePage() {
 
       <header className="mb-8 flex items-center justify-between">
         <div>
-            <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl flex items-center gap-2">
-                <TreePine className="h-6 w-6 text-green-600" />
+            <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
                 Dynamic Class
             </h1>
             <div className="flex items-center gap-2 mt-1">
@@ -548,7 +547,7 @@ export default function HomePage() {
         )}
       </div>
       
-       <section className="mb-10">
+      <section className="mb-10">
         <div className="relative rounded-lg p-6 bg-gradient-to-br from-red-500 to-orange-400 text-white overflow-hidden shadow-lg">
             <div className="absolute -right-4 -top-4">
                 <Snowflake className="h-20 w-20 text-white/10" />
