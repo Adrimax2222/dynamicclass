@@ -34,7 +34,7 @@ import {
 import { fullSchedule } from "@/lib/data";
 import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent, Announcement } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity, Flame, ShoppingCart } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity, Flame, ShoppingCart, TreePine, Gift, Snowflake } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
@@ -457,7 +457,8 @@ export default function HomePage() {
 
       <header className="mb-8 flex items-center justify-between">
         <div>
-            <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
+            <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl flex items-center gap-2">
+                <TreePine className="h-6 w-6 text-green-600" />
                 Dynamic Class
             </h1>
             <div className="flex items-center gap-2 mt-1">
@@ -546,6 +547,21 @@ export default function HomePage() {
           )
         )}
       </div>
+      
+       <section className="mb-10">
+        <div className="relative rounded-lg p-6 bg-gradient-to-br from-red-500 to-orange-400 text-white overflow-hidden shadow-lg">
+            <div className="absolute -right-4 -top-4">
+                <Snowflake className="h-20 w-20 text-white/10" />
+            </div>
+            <div className="absolute -left-6 bottom-0">
+                <Gift className="h-24 w-24 text-white/10" />
+            </div>
+            <div className="relative z-10 text-center">
+              <h3 className="text-2xl font-bold font-headline">¡Felices Fiestas!</h3>
+              <p className="opacity-80 text-sm mt-1">El equipo de Dynamic Class te desea lo mejor.</p>
+            </div>
+        </div>
+      </section>
 
        <section className="mb-10">
         <Link href="/study" className="block">
@@ -863,5 +879,7 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
+    
 
     

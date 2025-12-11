@@ -258,14 +258,34 @@ const AVATAR_COLORS = [
     { name: 'Cian', value: '2DD4BF' },
 ];
 
+function SantaHat() {
+    return (
+        <svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 100 100"
+            className="absolute -top-[38px] -right-[15px] w-[95px] h-[95px] transform -rotate-[15deg] z-10"
+            style={{ filter: 'drop-shadow(2px 2px 2px rgba(0,0,0,0.2))' }}
+        >
+            <path d="M40 25 C 42 15, 60 10, 75 20 C 85 25, 95 40, 90 50 C 85 60, 70 65, 55 60 L 50 75 L 40 70 Z" fill="#E53935"/>
+            <path d="M40 25 C 38 35, 45 45, 55 42 L 50 22 Z" fill="#F44336"/>
+            <rect x="38" y="62" width="55" height="15" fill="white" rx="7.5" />
+            <circle cx="34" cy="78" r="10" fill="white" />
+        </svg>
+    )
+}
+
 function AvatarDisplay({ user }: { user: User }) {
     const { avatar: avatarUrl, name } = user;
     
     if (!avatarUrl || typeof avatarUrl !== 'string') {
         return (
-             <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
-                <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
-            </Avatar>
+             <div className="relative inline-block">
+                <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
+                    <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <SantaHat />
+             </div>
         );
     }
     
@@ -284,26 +304,32 @@ function AvatarDisplay({ user }: { user: User }) {
 
     if (Icon || letter) {
         return (
-            <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
-                <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: color ? `#${color}` : '#737373' }}>
-                    {letter ? (
-                        <span className="font-bold text-4xl text-white">{letter}</span>
-                    ) : Icon ? (
-                        <Icon className="h-12 w-12 text-white" />
-                    ) : (
-                        <AvatarFallback>{name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                    )}
-                </div>
-            </Avatar>
+            <div className="relative inline-block">
+                <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
+                    <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: color ? `#${color}` : '#737373' }}>
+                        {letter ? (
+                            <span className="font-bold text-4xl text-white">{letter}</span>
+                        ) : Icon ? (
+                            <Icon className="h-12 w-12 text-white" />
+                        ) : (
+                            <AvatarFallback>{name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                        )}
+                    </div>
+                </Avatar>
+                <SantaHat />
+            </div>
         );
     }
     
     // Fallback for original URL-based avatars from Google Sign In
     return (
-        <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
-            <AvatarImage src={avatarUrl} alt={name} />
-            <AvatarFallback>{name.substring(0, 2).toUpperCase()}</AvatarFallback>
-        </Avatar>
+        <div className="relative inline-block">
+            <Avatar className="mx-auto h-24 w-24 ring-4 ring-background">
+                <AvatarImage src={avatarUrl} alt={name} />
+                <AvatarFallback>{name.substring(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <SantaHat />
+        </div>
     );
 }
 
@@ -318,20 +344,23 @@ function AvatarDisplayPreview({ avatar }: { avatar: EditableAvatar }) {
     const letter = isLetter ? avatar.id.split('_')[1] : null;
 
     return (
-        <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
-            <div 
-              className="w-full h-full flex items-center justify-center" 
-              style={{ backgroundColor: `#${avatar.color}` }}
-            >
-               {letter ? (
-                    <span className="font-bold text-4xl text-white">{letter}</span>
-                ) : Icon ? (
-                    <Icon className="h-12 w-12 text-white" />
-                ) : (
-                   <AvatarFallback>?</AvatarFallback>
-                )}
-            </div>
-        </Avatar>
+        <div className="relative">
+            <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
+                <div 
+                  className="w-full h-full flex items-center justify-center" 
+                  style={{ backgroundColor: `#${avatar.color}` }}
+                >
+                   {letter ? (
+                        <span className="font-bold text-4xl text-white">{letter}</span>
+                    ) : Icon ? (
+                        <Icon className="h-12 w-12 text-white" />
+                    ) : (
+                       <AvatarFallback>?</AvatarFallback>
+                    )}
+                </div>
+            </Avatar>
+            <SantaHat />
+        </div>
     );
 }
 
@@ -824,3 +853,5 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
+
+    
