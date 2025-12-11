@@ -504,7 +504,8 @@ export default function HomePage() {
         {summaryCards.map((card) => 
           card.isAnnouncement ? (
             <div key={card.title} onClick={handleAnnouncementsClick} className="cursor-pointer">
-              <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
+              <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg relative overflow-hidden">
+                  <Snowflake className="absolute -bottom-2 -right-2 h-12 w-12 text-red-500/10" />
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
                       <card.icon className={cn("h-5 w-5 text-muted-foreground", card.color)} />
@@ -529,7 +530,8 @@ export default function HomePage() {
               user={user}
               updateUser={updateUser}
             >
-              <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
+              <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer relative overflow-hidden">
+                  <Snowflake className="absolute -bottom-2 -right-2 h-12 w-12 text-red-500/10" />
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
                       <card.icon className={cn("h-5 w-5 text-muted-foreground", card.color)} />
@@ -882,4 +884,5 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
     
 
     
+
 
