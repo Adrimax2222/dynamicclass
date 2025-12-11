@@ -42,7 +42,7 @@ import { Button } from "@/components/ui/button";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Logo } from "@/components/icons";
 import WelcomeModal from "@/components/layout/welcome-modal";
-import { doc, updateDoc, increment, collection, query, orderBy, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { doc, updateDoc, increment, collection, query, orderBy, getDocs, addDoc, serverTimestamp, arrayRemove, arrayUnion } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { FullScheduleView } from "@/components/layout/full-schedule-view";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
@@ -52,6 +52,7 @@ import { es } from 'date-fns/locale';
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { TeacherInfoDialog } from "@/components/layout/teacher-info-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Anuncios";
 const SCHOOL_ICAL_URL = "https://calendar.google.com/calendar/ical/iestorredelpalau.cat_9vm0113gitbs90a9l7p4c3olh4%40group.calendar.google.com/public/basic.ics";
@@ -384,6 +385,25 @@ export default function HomePage() {
     router.push('/courses');
   };
 
+  const handleLikeAnnouncement = async (announcementId: string) => {
+    if (!firestore || !user) return;
+    const announcementRef = doc(firestore, "announcements", announcementId);
+    const announcement = allAnnouncements.find(ann => ann.id === announcementId);
+    if (!announcement) return;
+
+    const likedBy = announcement.likedBy || [];
+    const isLiked = likedBy.includes(user.uid);
+
+    try {
+        await updateDoc(announcementRef, {
+            likedBy: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid),
+            likes: increment(isLiked ? -1 : 1)
+        });
+    } catch (error) {
+        console.error("Error liking announcement:", error);
+    }
+  }
+
   
   if (!user) {
     return null; // Or a loading spinner
@@ -491,6 +511,8 @@ export default function HomePage() {
               isLoading={isLoadingVariables}
               onMarkAsComplete={handleMarkAsComplete}
               cardData={card}
+              user={user}
+              updateUser={updateUser}
             >
               <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -636,7 +658,52 @@ export default function HomePage() {
   );
 }
 
-function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete, cardData }: { title: string, children: React.ReactNode, events: (ParsedEvent | Announcement)[], isLoading: boolean, onMarkAsComplete: (eventId: string) => void, cardData: SummaryCardData }) {
+interface DetailsDialogProps {
+    title: string;
+    children: React.ReactNode;
+    events: (ParsedEvent | Announcement)[];
+    isLoading: boolean;
+    onMarkAsComplete: (eventId: string) => void;
+    cardData: SummaryCardData;
+    user: User;
+    updateUser: (data: Partial<User>) => void;
+}
+
+function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete, cardData, user, updateUser }: DetailsDialogProps) {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [isClockEasterEggClaimed, setIsClockEasterEggClaimed] = useState(false);
+    const CLOCK_EASTER_EGG_KEY = 'easter-egg-pendientes-claimed';
+
+    useEffect(() => {
+        const claimed = localStorage.getItem(CLOCK_EASTER_EGG_KEY);
+        if (claimed === 'true') {
+            setIsClockEasterEggClaimed(true);
+        }
+    }, []);
+
+    const handleClockIconClick = async () => {
+        if (isClockEasterEggClaimed || title !== 'Pendientes' || !user || !firestore) return;
+
+        try {
+            const userDocRef = doc(firestore, 'users', user.uid);
+            await updateDoc(userDocRef, {
+                trophies: increment(75)
+            });
+
+            updateUser({ trophies: (user.trophies || 0) + 75 });
+            localStorage.setItem(CLOCK_EASTER_EGG_KEY, 'true');
+            setIsClockEasterEggClaimed(true);
+
+            toast({
+                title: "Recompensa Secreta ✨",
+                description: "¡Has ganado 75 trofeos por tu atención al detalle!",
+            });
+
+        } catch (error) {
+            console.error("Clock easter egg error:", error);
+        }
+    };
     
     const groupedEvents = (events as ParsedEvent[]).reduce((acc, event) => {
         const dateStr = format(event.date, 'yyyy-MM-dd');
@@ -664,13 +731,21 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete, c
         "text-yellow-500": "bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300",
         "text-green-500": "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
     };
+    
+    const isPendientesDialog = title === 'Pendientes';
 
     return (
         <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="max-w-md w-[95vw] p-0">
                 <DialogHeader className={cn("p-6 text-left flex-row items-center gap-4", headerColorClasses[cardData.color as keyof typeof headerColorClasses])}>
-                    <div className="rounded-lg p-2 bg-background/50">
+                    <div 
+                        className={cn(
+                            "rounded-lg p-2 bg-background/50",
+                            isPendientesDialog && !isClockEasterEggClaimed && "cursor-pointer hover:scale-110 transition-transform"
+                        )}
+                        onClick={handleClockIconClick}
+                    >
                         <HeaderIcon className={cn("h-6 w-6", cardData.color)} />
                     </div>
                     <div>
@@ -700,7 +775,7 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete, c
                                         </div>
                                         <AlertDialog>
                                           <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" className="shrink-0 text-amber-500/80 hover:text-amber-500 hover:bg-amber-500/10 transition-colors rounded-full flex items-center gap-1.5 px-3 h-9">
+                                             <Button variant="ghost" className="shrink-0 text-amber-500/80 hover:text-amber-500 hover:bg-amber-500/10 transition-colors rounded-full flex items-center gap-1.5 px-3 h-9">
                                               <Trophy className="h-4 w-4" />
                                               <span className="font-bold text-sm">+1</span>
                                             </Button>
@@ -774,3 +849,4 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
     );
 }
 
+    
