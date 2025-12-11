@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit } from "lucide-react";
+import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit, Snowflake } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -218,9 +218,12 @@ export default function CalendarPage() {
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
       <header className="mb-8 flex flex-col items-start gap-4">
         <div>
-            <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-                Dynamic Calendar
-            </h1>
+            <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
+                    Dynamic Calendar
+                </h1>
+                <Snowflake className="h-6 w-6 text-primary" />
+            </div>
             <p className="text-muted-foreground">Gestiona tus eventos personales y de clase.</p>
         </div>
          <div className="w-full flex items-center gap-2">
@@ -378,4 +381,5 @@ export default function CalendarPage() {
   );
 }
 
+    
     

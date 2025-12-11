@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData, User, CompletedItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Snowflake } from "lucide-react";
+import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Snowflake, Gift } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -147,6 +147,21 @@ export default function ProfilePage() {
           <EditProfileDialog />
         </CardContent>
       </Card>
+      
+      <section className="mb-8">
+        <div className="relative rounded-lg p-6 bg-gradient-to-br from-red-500 to-rose-600 text-white overflow-hidden shadow-lg">
+            <div className="absolute -right-4 -top-4">
+                <Snowflake className="h-20 w-20 text-white/10" />
+            </div>
+            <div className="absolute -left-6 bottom-0">
+                <Gift className="h-24 w-24 text-white/10" />
+            </div>
+            <div className="relative z-10 text-center">
+              <h3 className="text-2xl font-bold font-headline">¡Felices Fiestas!</h3>
+              <p className="opacity-80 text-sm mt-1">El equipo de Dynamic Class te desea lo mejor.</p>
+            </div>
+        </div>
+      </section>
       
       <Card className="mb-8">
         <CardHeader>
@@ -851,6 +866,8 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
     
 
 
+
+    
 
     
 
