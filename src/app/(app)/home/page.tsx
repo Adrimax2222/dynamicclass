@@ -637,7 +637,9 @@ export default function HomePage() {
                             <div className="text-sm text-muted-foreground space-y-1 mt-2">
                                 <p className="flex items-center gap-1.5">
                                     {item.teacher}
-                                    <TeacherInfoDialog />
+                                    <span onClick={(e) => { e.stopPropagation(); }}>
+                                        <TeacherInfoDialog />
+                                    </span>
                                 </p>
                                 <p>{item.time}</p>
                             </div>
@@ -929,3 +931,4 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
     
 
     
+
