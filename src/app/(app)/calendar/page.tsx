@@ -365,13 +365,18 @@ export default function CalendarPage() {
         </div>
         <section className="mt-8">
           <Link href="/study" className="block">
-            <div className="relative rounded-lg p-6 bg-gradient-to-br from-primary to-accent text-primary-foreground cursor-pointer transition-transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
-                  <div className="absolute top-4 right-4 bg-white/20 text-white text-xs font-bold py-1 px-2 rounded-full">
-                    BETA
+            <div className="relative rounded-lg p-6 bg-gradient-to-br from-primary to-accent text-primary-foreground cursor-pointer transition-transform hover:scale-[1.02] shadow-lg hover:shadow-xl overflow-hidden">
+                  <Snowflake className="absolute -top-4 -left-2 h-16 w-16 text-white/20" />
+                  <Snowflake className="absolute -bottom-5 right-10 h-20 w-20 text-white/20" />
+                  <Snowflake className="absolute top-8 -right-3 h-12 w-12 text-white/20" />
+                <div className="relative z-10">
+                    <div className="absolute top-0 right-0 bg-white/20 text-white text-xs font-bold py-1 px-2 rounded-full">
+                        BETA
+                    </div>
+                    <BrainCircuit className="h-8 w-8 mb-3" />
+                    <h3 className="text-xl font-bold font-headline">Modo Estudio</h3>
+                    <p className="opacity-80 text-sm">Concéntrate, organiza y gana recompensas.</p>
                 </div>
-                <BrainCircuit className="h-8 w-8 mb-3" />
-                <h3 className="text-xl font-bold font-headline">Modo Estudio</h3>
-                <p className="opacity-80 text-sm">Concéntrate, organiza y gana recompensas.</p>
             </div>
           </Link>
         </section>
@@ -382,4 +387,6 @@ export default function CalendarPage() {
 }
 
     
+    
+
     
