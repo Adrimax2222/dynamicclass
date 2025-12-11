@@ -28,6 +28,9 @@ import {
   Calculator,
   ScanLine,
   Flame,
+  Music,
+  Rewind,
+  FastForward,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -345,6 +348,34 @@ export default function StudyPage() {
                     <Slider defaultValue={[33]} max={100} step={1} />
                 </CardContent>
             </Card>
+            
+            <WipDialog>
+                <Card className="w-full max-w-sm mx-auto shadow-lg cursor-pointer hover:border-primary/50 transition-colors">
+                    <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                            <Music className="h-5 w-5 text-primary"/>
+                            Control de Música
+                            <Badge variant="outline">Próximamente</Badge>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center gap-4">
+                            <div className="h-14 w-14 rounded-md bg-muted flex-shrink-0"></div>
+                            <div className="flex-1 space-y-1">
+                                <div className="h-4 w-3/4 rounded-md bg-muted"></div>
+                                <div className="h-3 w-1/2 rounded-md bg-muted/50"></div>
+                            </div>
+                        </div>
+                        <div className="flex justify-center items-center gap-6 text-muted-foreground">
+                            <Rewind className="h-6 w-6" />
+                            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-foreground">
+                                <Play className="h-6 w-6" />
+                            </div>
+                            <FastForward className="h-6 w-6" />
+                        </div>
+                    </CardContent>
+                </Card>
+            </WipDialog>
 
              <Card className="w-full max-w-sm mx-auto shadow-lg">
                 <CardHeader>
