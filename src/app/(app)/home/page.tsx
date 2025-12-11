@@ -53,6 +53,7 @@ import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { TeacherInfoDialog } from "@/components/layout/teacher-info-dialog";
 import { useToast } from "@/hooks/use-toast";
+import UpdateNotificationModal from "@/components/layout/update-notification-modal";
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Anuncios";
 const SCHOOL_ICAL_URL = "https://calendar.google.com/calendar/ical/iestorredelpalau.cat_9vm0113gitbs90a9l7p4c3olh4%40group.calendar.google.com/public/basic.ics";
@@ -68,6 +69,7 @@ const keywords = {
 };
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
+const UPDATE_V3_NOTIFICATION_KEY = 'update-notification-seen-v3';
 
 export default function HomePage() {
   const { user, updateUser } = useApp();
@@ -75,6 +77,7 @@ export default function HomePage() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showWelcomeAfterCompletion, setShowWelcomeAfterCompletion] = useState(false);
+  const [showUpdateNotification, setShowUpdateNotification] = useState(false);
   const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
   const [upcomingClassesDay, setUpcomingClassesDay] = useState<string>("Próximas Clases");
   
@@ -95,6 +98,11 @@ export default function HomePage() {
     const storedReadAnnouncementIds = localStorage.getItem('readAnnouncementIds');
     if (storedReadAnnouncementIds) {
       setReadAnnouncementIds(JSON.parse(storedReadAnnouncementIds));
+    }
+
+    const hasSeenUpdate = localStorage.getItem(UPDATE_V3_NOTIFICATION_KEY);
+    if (!hasSeenUpdate) {
+        setShowUpdateNotification(true);
     }
   }, []);
     
@@ -377,6 +385,11 @@ export default function HomePage() {
     setShowWelcomeAfterCompletion(false);
   }
 
+  const handleUpdateNotificationClose = () => {
+    setShowUpdateNotification(false);
+    localStorage.setItem(UPDATE_V3_NOTIFICATION_KEY, 'true');
+  };
+
   const handleAnnouncementsClick = () => {
     const announcementIds = getCategorizedEvents('Anuncios').map(ann => ann.id);
     const newReadIds = Array.from(new Set([...readAnnouncementIds, ...announcementIds]));
@@ -438,6 +451,8 @@ export default function HomePage() {
         <CompleteProfileModal user={user} onSave={handleProfileCompletionSave} />
       ) : showWelcomeAfterCompletion ? (
         <WelcomeModal onClose={handleWelcomeModalClose} />
+      ) : showUpdateNotification ? (
+        <UpdateNotificationModal onClose={handleUpdateNotificationClose} />
       ) : null}
 
       <header className="mb-8 flex items-center justify-between">
