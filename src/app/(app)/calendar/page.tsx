@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit, Snowflake, Video } from "lucide-react";
+import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit, Snowflake } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -281,7 +281,7 @@ export default function CalendarPage() {
                 
                 <Button asChild variant="outline" className="w-full">
                     <a href="https://docs.google.com/document/d/1__w6CP8D0o6kEJFXZ--eVhas1Acxq6cgIDrVv4FCXZE/edit?usp=sharing" target="_blank" rel="noopener noreferrer">
-                       <Video className="mr-2 h-4 w-4 text-primary" />
+                       <BrainCircuit className="mr-2 h-4 w-4 text-primary" />
                         Ver Tutorial
                     </a>
                 </Button>
@@ -392,3 +392,5 @@ export default function CalendarPage() {
     </div>
   );
 }
+
+    
