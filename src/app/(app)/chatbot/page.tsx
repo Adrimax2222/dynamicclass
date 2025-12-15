@@ -13,6 +13,14 @@ import {
   History,
   AlertTriangle,
   MessageCircle,
+  Grid,
+  BrainCircuit,
+  ClipboardList,
+  FileQuestion,
+  GraduationCap,
+  Presentation,
+  Music,
+  Video,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -61,10 +69,13 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetDescription,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { WipDialog } from "@/components/layout/wip-dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 
 export default function ChatbotPage() {
@@ -213,6 +224,7 @@ export default function ChatbotPage() {
                  </h1>
                 <Badge variant="outline">Beta</Badge>
             </div>
+            <AiModulesSheet />
         </header>
 
         <ScrollArea className="flex-1" ref={scrollAreaRef}>
@@ -400,6 +412,65 @@ function ChatHistorySheet({ chats, isChatsLoading, activeChatId, setActiveChatId
         </Sheet>
     );
 }
+
+const aiModules = [
+    { title: "Resumen de audio", description: "Crea resúmenes a partir de archivos de audio.", icon: Music },
+    { title: "Resumen de video", description: "Extrae lo más importante de un video.", icon: Video },
+    { title: "Mapa mental", description: "Organiza ideas en un esquema visual.", icon: BrainCircuit },
+    { title: "Informes", description: "Genera documentos detallados sobre un tema.", icon: ClipboardList },
+    { title: "Tarjetas didácticas", description: "Crea tarjetas de estudio para repasar.", icon: GraduationCap },
+    { title: "Cuestionario", description: "Genera preguntas para evaluar conocimientos.", icon: FileQuestion },
+    { title: "Infografía", description: "Transforma datos en una imagen atractiva.", icon: Presentation },
+    { title: "Presentación", description: "Crea diapositivas listas para exponer.", icon: Presentation },
+];
+
+function AiModulesSheet() {
+    return (
+        <Sheet>
+            <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <Grid className="h-5 w-5" />
+                </Button>
+            </SheetTrigger>
+            <SheetContent className="w-full max-w-sm flex flex-col p-0">
+                <SheetHeader className="p-4 border-b">
+                    <SheetTitle>Módulos de IA</SheetTitle>
+                    <SheetDescription>
+                        Genera contenido estructurado a partir de tu chat.
+                    </SheetDescription>
+                </SheetHeader>
+                <ScrollArea className="flex-1">
+                    <div className="p-4 grid grid-cols-2 gap-4">
+                        {aiModules.map((module) => {
+                            const Icon = module.icon;
+                            return (
+                                <WipDialog key={module.title}>
+                                    <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
+                                        <CardHeader>
+                                            <div className="bg-primary/10 text-primary p-2 rounded-lg w-fit mb-2">
+                                                <Icon className="h-6 w-6" />
+                                            </div>
+                                            <CardTitle className="text-base">{module.title}</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="text-xs text-muted-foreground">
+                                                {module.description}
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                </WipDialog>
+                            );
+                        })}
+                    </div>
+                </ScrollArea>
+                 <div className="p-4 border-t text-xs text-muted-foreground">
+                    <p>Inspirado en NotebookLM de Google Labs.</p>
+                </div>
+            </SheetContent>
+        </Sheet>
+    )
+}
+    
 
     
 
