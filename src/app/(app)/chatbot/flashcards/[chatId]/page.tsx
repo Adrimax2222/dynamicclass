@@ -3,20 +3,21 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { BrainCircuit, ChevronLeft, Loader2, RotateCcw, Check, X, ArrowLeft, ArrowRight } from 'lucide-react';
+import { BrainCircuit, ChevronLeft, Loader2, RotateCcw, Check, X, ArrowLeft, ArrowRight, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Mock data for UI development
 const mockFlashcards = [
-  { id: 1, question: '¿Cuál es la capital de Francia?', answer: 'París' },
-  { id: 2, question: '¿Qué es la fotosíntesis?', answer: 'El proceso mediante el cual las plantas convierten la luz solar en energía.' },
-  { id: 3, question: 'Define la segunda ley de Newton.', answer: 'Fuerza es igual a masa por aceleración (F=ma).' },
-  { id: 4, question: '¿En qué año llegó el hombre a la luna?', answer: '1969' },
-  { id: 5, question: '¿Quién escribió "Cien años de soledad"?', answer: 'Gabriel García Márquez' },
+  { id: 1, question: '¿Cuál es la capital de Francia?', answer: 'París', hint: 'Es famosa por la Torre Eiffel y el Museo del Louvre. A menudo se la llama la "Ciudad de la Luz".' },
+  { id: 2, question: '¿Qué es la fotosíntesis?', answer: 'El proceso mediante el cual las plantas convierten la luz solar en energía.', hint: 'Implica dióxido de carbono, agua y luz solar para producir glucosa (energía) y oxígeno.' },
+  { id: 3, question: 'Define la segunda ley de Newton.', answer: 'Fuerza es igual a masa por aceleración (F=ma).', hint: 'Esta ley explica cómo la velocidad de un objeto cambia cuando se le aplica una fuerza.' },
+  { id: 4, question: '¿En qué año llegó el hombre a la luna?', answer: '1969', hint: 'Fue durante la misión Apolo 11, con Neil Armstrong como el primer hombre en pisar la superficie lunar.' },
+  { id: 5, question: '¿Quién escribió "Cien años de soledad"?', answer: 'Gabriel García Márquez', hint: 'Es un famoso autor colombiano y una figura clave del realismo mágico.' },
 ];
 
 type FlashcardResult = 'correct' | 'incorrect';
@@ -32,6 +33,7 @@ export default function FlashcardsPage() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [results, setResults] = useState<Record<number, FlashcardResult>>({});
   const [showResults, setShowResults] = useState(false);
+  const [reviewMode, setReviewMode] = useState(false);
 
   useEffect(() => {
     // Simulate loading AI-generated content
@@ -44,20 +46,35 @@ export default function FlashcardsPage() {
 
   const handleFlip = () => setIsFlipped(!isFlipped);
 
-  const handleAnswer = (result: FlashcardResult) => {
-    setResults(prev => ({ ...prev, [flashcards[currentIndex].id]: result }));
+  const handleCorrect = () => {
+    setResults(prev => ({ ...prev, [flashcards[currentIndex].id]: 'correct' }));
+    goToNextCard();
+  };
+  
+  const handleIncorrect = () => {
+    setIsFlipped(true); // Make sure the answer is visible
+    setReviewMode(true);
+  }
+
+  const handleConfirmIncorrect = () => {
+    setResults(prev => ({ ...prev, [flashcards[currentIndex].id]: 'incorrect' }));
+    goToNextCard();
+  }
+
+  const goToNextCard = () => {
     if (currentIndex < flashcards.length - 1) {
       setIsFlipped(false);
+      setReviewMode(false);
       setCurrentIndex(currentIndex + 1);
     } else {
-      // Last card answered, show results
       setShowResults(true);
     }
-  };
+  }
 
   const handleNext = () => {
     if (currentIndex < flashcards.length - 1) {
         setIsFlipped(false);
+        setReviewMode(false);
         setCurrentIndex(currentIndex + 1);
     }
   }
@@ -65,6 +82,7 @@ export default function FlashcardsPage() {
   const handlePrev = () => {
       if (currentIndex > 0) {
           setIsFlipped(false);
+          setReviewMode(false);
           setCurrentIndex(currentIndex - 1);
       }
   }
@@ -74,6 +92,7 @@ export default function FlashcardsPage() {
     setIsFlipped(false);
     setResults({});
     setShowResults(false);
+    setReviewMode(false);
   };
   
   const correctAnswers = Object.values(results).filter(r => r === 'correct').length;
@@ -155,39 +174,67 @@ export default function FlashcardsPage() {
             </div>
             
             <div 
-                className="relative w-full h-80 rounded-xl shadow-lg cursor-pointer transition-transform duration-500"
+                className={cn(
+                    "relative w-full h-80 rounded-xl shadow-lg cursor-pointer transition-transform duration-500",
+                    reviewMode && "border-2 border-destructive"
+                )}
                 onClick={handleFlip}
                 style={{ transformStyle: 'preserve-3d', transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
             >
               {/* Front Side */}
-              <div className="absolute w-full h-full bg-card p-6 flex flex-col justify-center items-center text-center rounded-xl" style={{ backfaceVisibility: 'hidden' }}>
+              <div className={cn(
+                  "absolute w-full h-full bg-card p-6 flex flex-col justify-center items-center text-center rounded-xl",
+                  reviewMode && "bg-destructive/10"
+                )} 
+                style={{ backfaceVisibility: 'hidden' }}
+              >
                 <p className="text-xs text-muted-foreground mb-2">PREGUNTA</p>
                 <p className="text-xl font-semibold">{flashcards[currentIndex].question}</p>
               </div>
 
               {/* Back Side */}
-              <div className="absolute w-full h-full bg-primary text-primary-foreground p-6 flex flex-col justify-center items-center text-center rounded-xl" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
-                <p className="text-xs text-primary-foreground/70 mb-2">RESPUESTA</p>
+              <div className={cn(
+                  "absolute w-full h-full text-primary-foreground p-6 flex flex-col justify-center items-center text-center rounded-xl",
+                  reviewMode ? "bg-destructive" : "bg-primary"
+                )}
+                style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+              >
+                <p className={cn("text-xs mb-2", reviewMode ? "text-white/70" : "text-primary-foreground/70")}>RESPUESTA</p>
                 <p className="text-xl font-semibold">{flashcards[currentIndex].answer}</p>
               </div>
             </div>
 
-            <div className="w-full mt-6 flex justify-between items-center">
-                 <Button variant="outline" size="icon" onClick={handlePrev} disabled={currentIndex === 0}>
-                    <ArrowLeft className="h-5 w-5" />
-                 </Button>
-                 <div className="flex gap-4">
-                    <Button variant="destructive" size="lg" onClick={() => handleAnswer('incorrect')}>
-                        <X className="mr-2 h-5 w-5"/> Repasar
-                    </Button>
-                    <Button variant="default" size="lg" className="bg-green-500 hover:bg-green-600" onClick={() => handleAnswer('correct')}>
-                       <Check className="mr-2 h-5 w-5"/> Lo sabía
-                    </Button>
+            {reviewMode ? (
+                <div className="w-full mt-6 space-y-4">
+                    <Alert>
+                        <Lightbulb className="h-4 w-4" />
+                        <AlertTitle>Para Recordar</AlertTitle>
+                        <AlertDescription>
+                            {flashcards[currentIndex].hint || "No hay pistas para esta tarjeta."}
+                        </AlertDescription>
+                    </Alert>
+                     <Button onClick={handleConfirmIncorrect} className="w-full" size="lg">
+                        Siguiente
+                     </Button>
                 </div>
-                 <Button variant="outline" size="icon" onClick={handleNext} disabled={currentIndex === flashcards.length - 1}>
-                    <ArrowRight className="h-5 w-5" />
-                 </Button>
-            </div>
+            ) : (
+                <div className="w-full mt-6 flex justify-between items-center">
+                     <Button variant="outline" size="icon" onClick={handlePrev} disabled={currentIndex === 0}>
+                        <ArrowLeft className="h-5 w-5" />
+                     </Button>
+                     <div className="flex gap-4">
+                        <Button variant="destructive" size="lg" onClick={handleIncorrect}>
+                            <X className="mr-2 h-5 w-5"/> Repasar
+                        </Button>
+                        <Button variant="default" size="lg" className="bg-green-500 hover:bg-green-600" onClick={handleCorrect}>
+                           <Check className="mr-2 h-5 w-5"/> Lo sabía
+                        </Button>
+                    </div>
+                     <Button variant="outline" size="icon" onClick={handleNext} disabled={currentIndex === flashcards.length - 1}>
+                        <ArrowRight className="h-5 w-5" />
+                     </Button>
+                </div>
+            )}
           </div>
         )}
       </main>
