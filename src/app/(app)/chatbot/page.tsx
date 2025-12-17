@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from 'next/link';
 import {
   Loader2,
   Send,
@@ -70,6 +71,7 @@ import {
   SheetTitle,
   SheetTrigger,
   SheetDescription,
+  SheetClose,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -414,17 +416,19 @@ function ChatHistorySheet({ chats, isChatsLoading, activeChatId, setActiveChatId
 }
 
 const aiModules = [
-    { title: "Resumen de audio", description: "Crea resúmenes a partir de archivos de audio.", icon: Music },
-    { title: "Resumen de video", description: "Extrae lo más importante de un video.", icon: Video },
-    { title: "Mapa mental", description: "Organiza ideas en un esquema visual.", icon: BrainCircuit },
-    { title: "Informes", description: "Genera documentos detallados sobre un tema.", icon: ClipboardList },
-    { title: "Tarjetas didácticas", description: "Crea tarjetas de estudio para repasar.", icon: GraduationCap },
-    { title: "Cuestionario", description: "Genera preguntas para evaluar conocimientos.", icon: FileQuestion },
-    { title: "Infografía", description: "Transforma datos en una imagen atractiva.", icon: Presentation },
-    { title: "Presentación", description: "Crea diapositivas listas para exponer.", icon: Presentation },
+    { id: 'audio-summary', title: "Resumen de audio", description: "Crea resúmenes a partir de archivos de audio.", icon: Music, functional: false },
+    { id: 'video-summary', title: "Resumen de video", description: "Extrae lo más importante de un video.", icon: Video, functional: false },
+    { id: 'mind-map', title: "Mapa mental", description: "Organiza ideas en un esquema visual.", icon: BrainCircuit, functional: false },
+    { id: 'reports', title: "Informes", description: "Genera documentos detallados sobre un tema.", icon: ClipboardList, functional: false },
+    { id: 'flashcards', title: "Tarjetas didácticas", description: "Crea tarjetas de estudio para repasar.", icon: GraduationCap, functional: true },
+    { id: 'quiz', title: "Cuestionario", description: "Genera preguntas para evaluar conocimientos.", icon: FileQuestion, functional: true },
+    { id: 'infographic', title: "Infografía", description: "Transforma datos en una imagen atractiva.", icon: Presentation, functional: false },
+    { id: 'presentation', title: "Presentación", description: "Crea diapositivas listas para exponer.", icon: Presentation, functional: false },
 ];
 
 function AiModulesSheet() {
+    const { activeChatId } = useApp();
+
     return (
         <Sheet>
             <SheetTrigger asChild>
@@ -436,32 +440,65 @@ function AiModulesSheet() {
                 <SheetHeader className="p-4 border-b">
                     <SheetTitle>Módulos de IA</SheetTitle>
                     <SheetDescription>
-                        Genera contenido estructurado a partir de tu chat.
+                        Genera contenido estructurado a partir de tu chat activo.
                     </SheetDescription>
                 </SheetHeader>
                 <ScrollArea className="flex-1">
                     <div className="p-4 grid grid-cols-2 gap-4">
                         {aiModules.map((module) => {
                             const Icon = module.icon;
+                            const isClickable = module.functional && activeChatId;
+
+                            const cardContent = (
+                                <Card className={cn(
+                                    "hover:bg-muted/50 transition-colors h-full",
+                                    isClickable ? "cursor-pointer" : "cursor-not-allowed opacity-50",
+                                    module.functional && "border-primary/50 hover:border-primary"
+                                )}>
+                                    <CardHeader>
+                                        <div className={cn("p-2 rounded-lg w-fit mb-2", module.functional ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground")}>
+                                            <Icon className="h-6 w-6" />
+                                        </div>
+                                        <CardTitle className="text-base">{module.title}</CardTitle>
+                                    </CardHeader>
+                                </Card>
+                            );
+
+                            if (module.id === 'flashcards' && isClickable) {
+                                return (
+                                     <SheetClose asChild key={module.id}>
+                                        <Link href={`/chatbot/flashcards/${activeChatId}`}>
+                                            {cardContent}
+                                        </Link>
+                                    </SheetClose>
+                                );
+                            }
+                            
+                             if (module.id === 'quiz' && isClickable) {
+                                return (
+                                     <WipDialog key={module.id}>
+                                        {cardContent}
+                                     </WipDialog>
+                                );
+                            }
+
                             return (
-                                <WipDialog key={module.title}>
-                                    <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
-                                        <CardHeader>
-                                            <div className="bg-primary/10 text-primary p-2 rounded-lg w-fit mb-2">
-                                                <Icon className="h-6 w-6" />
-                                            </div>
-                                            <CardTitle className="text-base">{module.title}</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <p className="text-xs text-muted-foreground">
-                                                {module.description}
-                                            </p>
-                                        </CardContent>
-                                    </Card>
+                                <WipDialog key={module.id}>
+                                    {cardContent}
                                 </WipDialog>
                             );
                         })}
                     </div>
+                     {!activeChatId && (
+                        <div className="px-4">
+                            <Alert variant="destructive" className="text-xs">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertDescription>
+                                    Inicia o selecciona un chat para activar los módulos.
+                                </AlertDescription>
+                            </Alert>
+                        </div>
+                    )}
                 </ScrollArea>
                  <div className="p-4 border-t text-xs text-muted-foreground">
                     <p>Inspirado en NotebookLM de Google Labs.</p>
