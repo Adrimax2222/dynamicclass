@@ -29,7 +29,7 @@ export async function aiChatbotAssistance(input: AIChatbotAssistanceInput): Prom
 
 const prompt = ai.definePrompt({
   name: 'aiChatbotAssistancePrompt',
-  model: 'googleai/gemini-2.5-flash',
+  model: 'googleai/gemini-1.5-flash',
   input: {schema: AIChatbotAssistanceInputSchema},
   output: {schema: AIChatbotAssistanceOutputSchema},
   prompt: `Eres un asistente de chatbot de IA, competente en educación. Eres entusiasta por ayudar a los estudiantes a aprender.
