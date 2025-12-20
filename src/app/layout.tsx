@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { AppProvider } from '@/context/app-provider';
@@ -31,12 +32,8 @@ export default function RootLayout({
         />
       </head>
       <body className={cn('font-body antialiased')}>
-        <FirebaseClientProvider>
-            <AppProvider>
-            {children}
-            <Toaster />
-            </AppProvider>
-        </FirebaseClientProvider>
+        {children}
+        <Toaster />
       </body>
     </html>
   );
