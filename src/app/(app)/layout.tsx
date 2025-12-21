@@ -10,10 +10,8 @@ import { usePathname, useRouter } from "next/navigation";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { signOut } from "firebase/auth";
 import { useFcmToken } from '@/lib/hooks/use-fcm-token';
-import { FirebaseClientProvider } from "@/firebase/client-provider";
-import { AppProvider } from "@/context/app-provider";
 
-function AppLayoutContent({ children }: { children: React.ReactNode }) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, theme, firebaseUser, auth } = useApp();
   const router = useRouter();
   const pathname = usePathname();
@@ -65,14 +63,4 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       </div>
     </div>
   );
-}
-
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-    return (
-        <FirebaseClientProvider>
-            <AppProvider>
-                <AppLayoutContent>{children}</AppLayoutContent>
-            </AppProvider>
-        </FirebaseClientProvider>
-    );
 }
