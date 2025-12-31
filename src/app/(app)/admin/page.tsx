@@ -1,0 +1,246 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useApp } from "@/lib/hooks/use-app";
+import { useRouter } from "next/navigation";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, doc, getDocs, writeBatch, query, updateDoc, deleteDoc } from "firebase/firestore";
+import type { User } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Shield, Users, Group, Trophy, ChevronLeft, Search, UserX, Trash2, CheckCircle, Ban, Loader2, Wrench } from "lucide-react";
+import LoadingScreen from "@/components/layout/loading-screen";
+import { Input } from "@/components/ui/input";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
+
+export default function AdminPage() {
+    const { user } = useApp();
+    const router = useRouter();
+
+    // Secure this page to admins
+    useEffect(() => {
+        if (user && user.role !== 'admin') {
+            router.replace('/home');
+        }
+    }, [user, router]);
+
+    if (!user || user.role !== 'admin') {
+        return <LoadingScreen />;
+    }
+
+    return (
+        <div className="container mx-auto max-w-4xl p-4 sm:p-6">
+            <header className="mb-8 flex items-center gap-4">
+                <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                    <ChevronLeft />
+                </Button>
+                <div className="flex items-center gap-3">
+                    <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
+                        Panel de Administrador
+                    </h1>
+                </div>
+            </header>
+
+            <Tabs defaultValue="users" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="users"><Users className="h-4 w-4 mr-2" />Usuarios</TabsTrigger>
+                    <TabsTrigger value="groups" disabled><Group className="h-4 w-4 mr-2" />Grupos</TabsTrigger>
+                    <TabsTrigger value="trophies" disabled><Trophy className="h-4 w-4 mr-2" />Trofeos</TabsTrigger>
+                </TabsList>
+
+                <div className="py-6">
+                    <TabsContent value="users">
+                        <UsersTab />
+                    </TabsContent>
+                    <TabsContent value="groups">
+                        <WipPlaceholder />
+                    </TabsContent>
+                    <TabsContent value="trophies">
+                        <WipPlaceholder />
+                    </TabsContent>
+                </div>
+            </Tabs>
+        </div>
+    );
+}
+
+function UsersTab() {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [users, setUsers] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isProcessing, setIsProcessing] = useState<Record<string, boolean>>({});
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            if (!firestore) return;
+            setIsLoading(true);
+            try {
+                const usersQuery = query(collection(firestore, "users"));
+                const querySnapshot = await getDocs(usersQuery);
+                const usersList = querySnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
+                setUsers(usersList);
+            } catch (error) {
+                console.error("Error fetching users:", error);
+                toast({ title: "Error", description: "No se pudieron cargar los usuarios.", variant: "destructive" });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchUsers();
+    }, [firestore, toast]);
+
+    const handleToggleBan = async (targetUser: User) => {
+        if (!firestore) return;
+        setIsProcessing(prev => ({...prev, [targetUser.uid]: true}));
+        try {
+            const userDocRef = doc(firestore, 'users', targetUser.uid);
+            const newBanStatus = !targetUser.isBanned;
+            await updateDoc(userDocRef, { isBanned: newBanStatus });
+            setUsers(users.map(u => u.uid === targetUser.uid ? { ...u, isBanned: newBanStatus } : u));
+            toast({
+                title: `Usuario ${newBanStatus ? 'baneado' : 'desbaneado'}`,
+                description: `${targetUser.name} ha sido ${newBanStatus ? 'restringido' : 'reactivado'}.`,
+            });
+        } catch (error) {
+            console.error("Error toggling ban:", error);
+            toast({ title: "Error", description: "No se pudo actualizar el estado del usuario.", variant: "destructive" });
+        } finally {
+            setIsProcessing(prev => ({...prev, [targetUser.uid]: false}));
+        }
+    };
+    
+    // NOTE: This client-side deletion requires security rules to allow admins to delete other users.
+    // It does NOT delete the Firebase Auth user, which would require a server-side function.
+    // The user will not be able to log in, but their auth record remains.
+    const handleDeleteUser = async (targetUser: User) => {
+         if (!firestore) return;
+        setIsProcessing(prev => ({...prev, [targetUser.uid]: true}));
+        try {
+            const userDocRef = doc(firestore, 'users', targetUser.uid);
+            await deleteDoc(userDocRef);
+            // In a real scenario, you'd also want to delete all sub-collections.
+            // For now, we just delete the main doc.
+            setUsers(users.filter(u => u.uid !== targetUser.uid));
+            toast({
+                title: "Usuario Eliminado",
+                description: `El perfil de ${targetUser.name} ha sido eliminado de Firestore.`,
+                variant: "destructive"
+            });
+        } catch (error) {
+            console.error("Error deleting user:", error);
+            toast({ title: "Error", description: "No se pudo eliminar el usuario de Firestore.", variant: "destructive" });
+        } finally {
+            setIsProcessing(prev => ({...prev, [targetUser.uid]: false}));
+        }
+    };
+
+    const filteredUsers = users.filter(user =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Gestión de Usuarios</CardTitle>
+                <CardDescription>Modera, banea o elimina usuarios de la aplicación.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Buscar por nombre o email..."
+                        className="pl-10"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <Separator />
+                {isLoading ? (
+                    <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin"/></div>
+                ) : (
+                    <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+                        {filteredUsers.map(u => (
+                            <div key={u.uid} className="flex items-center gap-4 p-2 rounded-lg border">
+                                <Avatar>
+                                    <AvatarImage src={u.avatar} />
+                                    <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                    <p className="font-semibold">{u.name}</p>
+                                    <p className="text-xs text-muted-foreground">{u.email}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <Badge variant={u.role === 'admin' ? 'destructive' : 'secondary'}>{u.role}</Badge>
+                                        {u.isBanned && <Badge variant="destructive" className="bg-orange-500">Baneado</Badge>}
+                                    </div>
+                                </div>
+                                {u.role !== 'admin' && (
+                                    <div className="flex gap-1">
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="outline" size="icon" className="h-8 w-8" disabled={isProcessing[u.uid]}>
+                                                    {isProcessing[u.uid] ? <Loader2 className="h-4 w-4 animate-spin"/> : u.isBanned ? <CheckCircle className="h-4 w-4 text-green-500"/> : <Ban className="h-4 w-4 text-orange-500"/>}
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>¿Confirmar acción?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Vas a {u.isBanned ? 'desbanear' : 'banear'} a {u.name}. {u.isBanned ? 'Podrá volver a iniciar sesión.' : 'No podrá iniciar sesión hasta que se revierta esta acción.'}
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleToggleBan(u)}>{u.isBanned ? 'Desbanear' : 'Banear Usuario'}</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                 <Button variant="destructive" size="icon" className="h-8 w-8" disabled={isProcessing[u.uid]}>
+                                                    {isProcessing[u.uid] ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4"/>}
+                                                 </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                 <AlertDialogHeader>
+                                                    <AlertDialogTitle>¿Eliminar permanentemente?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Esta acción eliminará el perfil de {u.name} de la base de datos de Firestore, pero **no** eliminará su cuenta de autenticación de Firebase. Es irreversible.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteUser(u)} className="bg-destructive hover:bg-destructive/90">Sí, eliminar</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+function WipPlaceholder() {
+  return (
+    <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
+        <Wrench className="h-12 w-12 text-muted-foreground/50 mb-4" />
+        <p className="font-semibold">Función en Desarrollo</p>
+        <p className="text-sm text-muted-foreground">
+            Estamos trabajando en esta sección. ¡Vuelve pronto!
+        </p>
+    </div>
+  );
+}

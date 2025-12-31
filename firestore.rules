@@ -8,6 +8,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      // Production admins
       return request.auth != null && request.auth.token.email in [
         'anavarrod@iestorredelpalau.cat',
         'lrotav@iestorredelpalau.cat'
@@ -19,9 +20,10 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get, update: if isOwner(userId);
+      allow get, update: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
       allow create: if request.auth != null;
-      allow delete: if isOwner(userId); // Allow users to delete their own account data
+      allow delete: if isOwner(userId) || isAdmin(); // Allow users to delete their own account and admins to delete any
 
       // Allow users to manage their own notes collection
       match /notes/{noteId} {

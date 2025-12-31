@@ -23,6 +23,7 @@ export type User = {
   organizationId?: string; // e.g., 'ies-torre-del-palau'
   isNewUser?: boolean;
   ownedAvatars?: string[];
+  isBanned?: boolean;
 };
 
 export type SummaryCardData = {

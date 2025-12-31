@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore } from "@/firebase";
@@ -47,7 +46,7 @@ import { doc, increment, updateDoc } from "firebase/firestore";
 
 
 export default function SettingsPage() {
-  const { theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, toggleChatBubble } = useApp();
+  const { user, theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, toggleChatBubble } = useApp();
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
@@ -227,6 +226,23 @@ export default function SettingsPage() {
                 <PrivacyPolicyDialog />
             </CardContent>
         </Card>
+
+        {user?.role === 'admin' && (
+             <Card className="border-blue-500/50">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-blue-500"><ShieldCheck />Panel de Administrador</CardTitle>
+                     <CardDescription>Gestiona usuarios, grupos y otros aspectos de la aplicación.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button asChild className="w-full">
+                        <Link href="/admin">
+                            <Shield className="mr-2 h-4 w-4" />
+                            Acceder al Panel
+                        </Link>
+                    </Button>
+                </CardContent>
+            </Card>
+        )}
 
         <Card className="border-destructive/50">
             <CardHeader>
