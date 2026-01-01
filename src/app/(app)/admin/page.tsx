@@ -373,9 +373,8 @@ function GroupsTab() {
         return query(collection(firestore, "centers"), orderBy("createdAt", "desc"));
     }, [firestore]);
 
-    const { data: centers = [], isLoading, error } = useCollection<Center>(centersCollection);
+    const { data: centers = [], isLoading } = useCollection<Center>(centersCollection);
     
-    // This effect ensures the default center exists in the new collection system.
     useEffect(() => {
         if (isLoading || !firestore) return;
 
@@ -385,16 +384,21 @@ function GroupsTab() {
             const createDefaultCenter = async () => {
                 try {
                     console.log("Default center not found in collection, creating it...");
-                    await addDoc(collection(firestore, "centers"), {
-                        name: SCHOOL_NAME,
-                        code: SCHOOL_VERIFICATION_CODE,
-                        classes: ["4ESO-B"],
-                        createdAt: serverTimestamp(),
-                    });
-                    toast({ title: "Sistema actualizado", description: "El centro por defecto ha sido migrado al nuevo sistema." });
+                    const centersRef = collection(firestore, "centers");
+                    const q = query(centersRef, where("code", "==", SCHOOL_VERIFICATION_CODE));
+                    const snapshot = await getDocs(q);
+                    
+                    if (snapshot.empty) {
+                        await addDoc(collection(firestore, "centers"), {
+                            name: SCHOOL_NAME,
+                            code: SCHOOL_VERIFICATION_CODE,
+                            classes: ["4ESO-B"],
+                            createdAt: serverTimestamp(),
+                        });
+                        toast({ title: "Sistema actualizado", description: "El centro por defecto ha sido migrado al nuevo sistema." });
+                    }
                 } catch (e) {
-                     // This might fail if another client created it in the meantime, which is fine.
-                    console.error("Failed to create default center (might already exist):", e);
+                     console.error("Failed to create default center (might already exist):", e);
                 }
             };
             createDefaultCenter();

@@ -6,13 +6,13 @@ import { useParams, useRouter } from "next/navigation";
 import { useApp } from "@/lib/hooks/use-app";
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from "@/firebase";
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs } from "firebase/firestore";
-import type { Center, User as CenterUser, User } from "@/lib/types";
+import type { Center, User as CenterUser } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, Group, GraduationCap, Shield, PlusCircle, Trash2, Loader2, Copy, Check, Users, CheckCircle, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -250,121 +250,6 @@ function ClassesTab({ center }: { center: Center }) {
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                             <AlertDialogAction onClick={() => handleRemoveClass(className)}>Sí, eliminar</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
-}
-
-function CenterAdminsTab() {
-    const firestore = useFirestore();
-    const { toast } = useToast();
-    const [allUsers, setAllUsers] = useState<User[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isProcessing, setIsProcessing] = useState<Record<string, boolean>>({});
-    const [searchTerm, setSearchTerm] = useState("");
-
-    useEffect(() => {
-        if (!firestore) return;
-        const fetchUsers = async () => {
-            setIsLoading(true);
-            try {
-                const usersSnapshot = await getDocs(collection(firestore, "users"));
-                const usersList = usersSnapshot.docs.map(d => ({ ...d.data(), uid: d.id } as User));
-                setAllUsers(usersList);
-            } catch (error) {
-                toast({ title: "Error", description: "No se pudieron cargar los usuarios.", variant: "destructive" });
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchUsers();
-    }, [firestore, toast]);
-
-    const handleToggleAdmin = async (targetUser: User) => {
-        if (!firestore) return;
-        setIsProcessing(prev => ({ ...prev, [targetUser.uid]: true }));
-        try {
-            const userDocRef = doc(firestore, 'users', targetUser.uid);
-            const newRole = targetUser.role === 'admin' ? 'student' : 'admin';
-            await updateDoc(userDocRef, { role: newRole });
-            
-            setAllUsers(prevUsers => prevUsers.map(u => 
-                u.uid === targetUser.uid ? { ...u, role: newRole } : u
-            ));
-
-            toast({
-                title: `Rol Actualizado`,
-                description: `${targetUser.name} ahora es ${newRole === 'admin' ? 'administrador' : 'estudiante'}.`,
-            });
-        } catch (error) {
-            toast({ title: "Error", description: "No se pudo actualizar el rol del usuario.", variant: "destructive" });
-        } finally {
-            setIsProcessing(prev => ({ ...prev, [targetUser.uid]: false }));
-        }
-    };
-    
-    const filteredUsers = allUsers.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Administradores Globales</CardTitle>
-                <CardDescription>Gestiona qué usuarios tienen permisos de administrador en toda la aplicación.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Buscar por nombre o email..."
-                        className="pl-10"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <Separator />
-                {isLoading ? (
-                    <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin"/></div>
-                ) : (
-                    <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-                        {filteredUsers.map(u => (
-                            <div key={u.uid} className="flex items-center gap-4 p-2 rounded-lg border">
-                                <Avatar>
-                                    <AvatarImage src={u.avatar} />
-                                    <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                    <p className="font-semibold">{u.name}</p>
-                                    <p className="text-xs text-muted-foreground">{u.email}</p>
-                                </div>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="outline" className="w-32" disabled={isProcessing[u.uid]}>
-                                            {isProcessing[u.uid] ? <Loader2 className="h-4 w-4 animate-spin"/> : u.role === 'admin' ? 
-                                                <><ShieldCheck className="mr-2 h-4 w-4 text-green-500"/>Admin</> : 
-                                                <><Shield className="mr-2 h-4 w-4"/>Hacer Admin</>
-                                            }
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>¿Confirmar cambio de rol?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Vas a {u.role === 'admin' ? 'quitar los permisos de administrador a' : 'convertir en administrador a'} {u.name}.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleToggleAdmin(u)}>Confirmar</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
