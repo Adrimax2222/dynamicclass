@@ -142,8 +142,8 @@ function MembersTab({ centerCode }: { centerCode: string }) {
                     </div>
                 ) : (
                     <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-                        {filteredMembers.map(member => (
-                            <div key={member.uid} className="flex items-center gap-4 p-2 rounded-lg border">
+                        {filteredMembers.map((member, i) => (
+                            <div key={member.uid || i} className="flex items-center gap-4 p-2 rounded-lg border">
                                 <Avatar>
                                     <AvatarImage src={member.avatar} />
                                     <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
