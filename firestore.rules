@@ -62,5 +62,12 @@ service cloud.firestore {
       allow get: if request.auth != null && (resource.data.scope == 'general' || (resource.data.scope == 'center' && getUserCenter() == '246-369'));
       allow create, update, delete: if isAdmin();
     }
+
+    match /centers/{centerId} {
+        // Admins can do anything
+        allow read, write: if isAdmin();
+        // Authenticated users can read the list of centers
+        allow list, get: if request.auth != null;
+    }
   }
 }

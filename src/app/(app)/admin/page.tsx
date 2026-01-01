@@ -4,19 +4,21 @@ import { useState, useEffect } from "react";
 import { useApp } from "@/lib/hooks/use-app";
 import { useRouter } from "next/navigation";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, doc, getDocs, writeBatch, query, updateDoc, deleteDoc, increment } from "firebase/firestore";
-import type { User } from "@/lib/types";
+import { collection, doc, getDocs, writeBatch, query, updateDoc, deleteDoc, increment, addDoc, serverTimestamp } from "firebase/firestore";
+import type { User, Center } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Users, Group, Trophy, ChevronLeft, Search, UserX, Trash2, CheckCircle, Ban, Loader2, Wrench, PlusCircle, MinusCircle } from "lucide-react";
+import { Shield, Users, Group, Trophy, ChevronLeft, Search, UserX, Trash2, CheckCircle, Ban, Loader2, Wrench, PlusCircle, MinusCircle, Copy, Check } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
 
 export default function AdminPage() {
     const { user } = useApp();
@@ -50,7 +52,7 @@ export default function AdminPage() {
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="users"><Users className="h-4 w-4 mr-2" />Usuarios</TabsTrigger>
                     <TabsTrigger value="trophies"><Trophy className="h-4 w-4 mr-2" />Trofeos</TabsTrigger>
-                    <TabsTrigger value="groups" disabled><Group className="h-4 w-4 mr-2" />Grupos</TabsTrigger>
+                    <TabsTrigger value="groups"><Group className="h-4 w-4 mr-2" />Grupos</TabsTrigger>
                 </TabsList>
 
                 <div className="py-6">
@@ -61,7 +63,7 @@ export default function AdminPage() {
                         <TrophiesTab />
                     </TabsContent>
                     <TabsContent value="groups">
-                        <WipPlaceholder />
+                        <GroupsTab />
                     </TabsContent>
                 </div>
             </Tabs>
@@ -356,6 +358,133 @@ function TrophiesTab() {
     );
 }
 
+function GroupsTab() {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [centerName, setCenterName] = useState("");
+    const [isCreating, setIsCreating] = useState(false);
+    
+    const centersCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, "centers"), orderBy("createdAt", "desc"));
+    }, [firestore]);
+
+    const { data: centers = [], isLoading } = useCollection<Center>(centersCollection);
+
+    const generateCode = () => {
+        const part1 = Math.floor(100 + Math.random() * 900);
+        const part2 = Math.floor(100 + Math.random() * 900);
+        return `${part1}-${part2}`;
+    };
+
+    const handleAddCenter = async () => {
+        if (!firestore || !centerName.trim()) return;
+        setIsCreating(true);
+        try {
+            const newCenter = {
+                name: centerName.trim(),
+                code: generateCode(),
+                classes: [],
+                createdAt: serverTimestamp(),
+            };
+            await addDoc(collection(firestore, "centers"), newCenter);
+            toast({ title: "Centro Creado", description: `El centro "${newCenter.name}" se ha añadido con el código ${newCenter.code}.` });
+            setCenterName("");
+            setIsDialogOpen(false);
+        } catch (error) {
+            console.error("Error creating center:", error);
+            toast({ title: "Error", description: "No se pudo crear el centro.", variant: "destructive" });
+        } finally {
+            setIsCreating(false);
+        }
+    };
+    
+    const [copiedCode, setCopiedCode] = useState<string | null>(null);
+    const handleCopy = (code: string) => {
+        navigator.clipboard.writeText(code);
+        setCopiedCode(code);
+        setTimeout(() => setCopiedCode(null), 2000);
+    };
+
+
+    return (
+        <Card>
+            <CardHeader className="flex-row items-start justify-between">
+                <div>
+                    <CardTitle>Gestión de Grupos</CardTitle>
+                    <CardDescription>Añade y gestiona los centros educativos y sus clases.</CardDescription>
+                </div>
+                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button><PlusCircle className="mr-2 h-4 w-4"/>Añadir Centro</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Nuevo Centro Educativo</DialogTitle>
+                            <DialogDescription>
+                                Crea un nuevo centro y genera un código de acceso único para los usuarios.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-2">
+                            <Label htmlFor="center-name">Nombre del Centro</Label>
+                            <Input 
+                                id="center-name"
+                                placeholder="Ej: IES Torre del Palau"
+                                value={centerName}
+                                onChange={(e) => setCenterName(e.target.value)}
+                            />
+                        </div>
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button variant="outline" disabled={isCreating}>Cancelar</Button>
+                            </DialogClose>
+                            <Button onClick={handleAddCenter} disabled={isCreating || !centerName.trim()}>
+                                {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                Crear Centro
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <Separator />
+                {isLoading ? (
+                    <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin"/></div>
+                ) : centers.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
+                        <Group className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                        <p className="font-semibold">No hay centros educativos</p>
+                        <p className="text-sm text-muted-foreground">
+                            Crea el primer centro para empezar a organizar los grupos.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+                        {centers.map(center => (
+                            <div key={center.id} className="flex items-center gap-4 p-3 rounded-lg border">
+                                <div className="p-2 bg-muted rounded-md">
+                                    <Group className="h-6 w-6 text-muted-foreground" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold">{center.name}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <p className="text-xs text-muted-foreground">Código:</p>
+                                        <Badge variant="outline">{center.code}</Badge>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleCopy(center.code)}>
+                                            {copiedCode === center.code ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+                                        </Button>
+                                    </div>
+                                </div>
+                                <Button variant="secondary" size="sm">Gestionar</Button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
 
 function WipPlaceholder() {
   return (

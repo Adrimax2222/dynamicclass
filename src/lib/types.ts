@@ -26,6 +26,14 @@ export type User = {
   isBanned?: boolean;
 };
 
+export type Center = {
+    id: string;
+    name: string;
+    code: string;
+    classes: string[];
+    createdAt: Timestamp;
+};
+
 export type SummaryCardData = {
   title: string;
   value: number;

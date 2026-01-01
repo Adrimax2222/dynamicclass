@@ -101,6 +101,19 @@
         "completedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["title", "type", "completedAt"]
+    },
+    "Center": {
+      "title": "Center",
+      "description": "Represents an educational center or organization.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "classes": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "code", "createdAt"]
     }
   },
   "auth": {
@@ -134,6 +147,10 @@
     "/userTokens/{userId}": {
       "schema": { "$ref": "#/entities/UserToken" },
       "description": "Stores the FCM token for a specific user."
+    },
+    "/centers/{centerId}": {
+      "schema": { "$ref": "#/entities/Center" },
+      "description": "Stores information about educational centers."
     }
   }
 }
