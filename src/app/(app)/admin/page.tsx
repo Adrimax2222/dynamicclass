@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { useApp } from "@/lib/hooks/use-app";
 import { useRouter } from "next/navigation";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, doc, getDocs, writeBatch, query, orderBy, updateDoc, deleteDoc, increment, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, doc, getDocs, writeBatch, query, orderBy, updateDoc, deleteDoc, increment, addDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import type { User, Center } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 
 export default function AdminPage() {
     const { user } = useApp();
@@ -262,7 +264,7 @@ function TrophiesTab() {
             const userDocRef = doc(firestore, 'users', targetUser.uid);
             await updateDoc(userDocRef, { trophies: increment(amount) });
             
-            setAllUsers(prevUsers => prevUsers.map(u => u.uid === targetUser.uid ? { ...u, trophies: u.trophies + amount } : u));
+            setAllUsers(prevUsers => prevUsers.map(u => u.uid === targetUser.uid ? { ...u, trophies: (u.trophies || 0) + amount } : u));
             setTrophyAmounts(prev => ({...prev, [targetUser.uid]: 0})); // Reset input field
 
             toast({
@@ -315,7 +317,7 @@ function TrophiesTab() {
                                             <p className="font-semibold">{u.name}</p>
                                             <div className="flex items-center gap-1.5 text-sm">
                                                 <Trophy className="h-4 w-4 text-yellow-400" />
-                                                <span className="font-bold">{u.trophies}</span>
+                                                <span className="font-bold">{u.trophies || 0}</span>
                                             </div>
                                         </div>
                                          {u.role !== 'admin' && (
@@ -408,12 +410,6 @@ function GroupsTab() {
         setTimeout(() => setCopiedCode(null), 2000);
     };
 
-    const allCenters = [
-      { id: 'legacy-center', name: 'IES Torre del Palau', code: '246-369', legacy: true },
-      ...centers
-    ];
-
-
     return (
         <Card>
             <CardHeader className="flex-row items-start justify-between">
@@ -457,7 +453,7 @@ function GroupsTab() {
                 <Separator />
                 {isLoading ? (
                     <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin"/></div>
-                ) : allCenters.length === 0 ? (
+                ) : centers.length === 0 ? (
                     <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
                         <Group className="h-12 w-12 text-muted-foreground/50 mb-4" />
                         <p className="font-semibold">No hay centros educativos</p>
@@ -467,7 +463,7 @@ function GroupsTab() {
                     </div>
                 ) : (
                     <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-                        {allCenters.map(center => (
+                        {centers.map(center => (
                             <div key={center.id} className="flex items-center gap-4 p-3 rounded-lg border">
                                 <div className="p-2 bg-muted rounded-md">
                                     <Group className="h-6 w-6 text-muted-foreground" />
@@ -483,7 +479,7 @@ function GroupsTab() {
                                     </div>
                                 </div>
                                 <Button asChild variant="secondary" size="sm">
-                                    <Link href={`/admin/groups/${center.legacy ? center.code : center.id}`}>Gestionar</Link>
+                                    <Link href={`/admin/groups/${center.id}`}>Gestionar</Link>
                                 </Button>
                             </div>
                         ))}
@@ -505,7 +501,3 @@ function WipPlaceholder() {
     </div>
   );
 }
-
-    
-
-    

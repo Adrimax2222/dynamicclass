@@ -8,16 +8,24 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // Production admins
-      return request.auth != null && request.auth.token.email in [
+      // Production admins defined in rules
+      let hardcodedAdmins = request.auth != null && request.auth.token.email in [
         'anavarrod@iestorredelpalau.cat',
         'lrotav@iestorredelpalau.cat',
         'adrimax.dev@gmail.com'
       ];
+      // Role-based admin from firestore document
+      let roleBasedAdmin = request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      
+      return hardcodedAdmins || roleBasedAdmin;
     }
     
     function getUserCenter() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.center;
+    }
+    
+    function getCenterFromDoc(centerId) {
+      return get(/databases/$(database)/documents/centers/$(centerId)).data;
     }
 
     match /users/{userId} {
@@ -56,10 +64,9 @@ service cloud.firestore {
     }
 
     match /announcements/{announcementId} {
-      // Allow list for all authenticated users, client will filter.
       allow list: if request.auth != null;
       // Allow get only if the announcement is general or if the user belongs to the center.
-      allow get: if request.auth != null && (resource.data.scope == 'general' || (resource.data.scope == 'center' && getUserCenter() == '246-369'));
+      allow get: if request.auth != null && (resource.data.scope == 'general' || (resource.data.scope == 'center' && getUserCenter() == getCenterFromDoc(resource.data.centerId).code));
       allow create, update, delete: if isAdmin();
     }
 
@@ -68,10 +75,6 @@ service cloud.firestore {
         allow read, write: if isAdmin();
         // Authenticated users can read the list of centers
         allow list, get: if request.auth != null;
-        // Also allow access to the legacy center code
-        allow get: if centerId == '246-369' && request.auth != null;
     }
   }
 }
-
-    
