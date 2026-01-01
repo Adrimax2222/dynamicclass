@@ -125,4 +125,7 @@ export type CompletedItem = {
     completedAt: Timestamp;
 };
 
-    
+export type UserToken = {
+    token: string;
+    updatedAt: Timestamp;
+}

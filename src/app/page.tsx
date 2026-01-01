@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ArrowLeft, Eye, EyeOff, MailCheck } from "lucide-react";
+import { Loader2, ArrowLeft, Eye, EyeOff, MailCheck, User as UserIcon } from "lucide-react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -54,16 +54,26 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import type { User } from "@/lib/types";
 import LoadingScreen from "@/components/layout/loading-screen";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const registrationSchema = z.object({
   fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
   email: z.string().email({ message: "Por favor, introduce una dirección de correo electrónico válida." }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
-  center: z.string().min(1, { message: "El código de centro es obligatorio." }),
+  center: z.string(),
   ageRange: z.string().min(1, { message: "Por favor, selecciona un rango de edad." }),
-  course: z.string().min(1, { message: "Por favor, selecciona tu curso." }),
-  className: z.string().min(1, { message: "Por favor, selecciona tu clase." }),
+  course: z.string(),
+  className: z.string(),
   role: z.enum(["student", "teacher", "admin"], { required_error: "Debes seleccionar un rol." }),
+}).refine(data => {
+    if (data.center === 'personal') {
+        return data.course === 'personal' && data.className === 'personal';
+    }
+    return data.center.trim() !== '' && data.course.trim() !== '' && data.className.trim() !== '';
+}, {
+    message: "Rellena los detalles del centro o selecciona 'Uso Personal'.",
+    path: ["center"],
 });
 
 const loginSchema = z.object({
@@ -118,6 +128,7 @@ export default function AuthPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward'>('forward');
   const [showPassword, setShowPassword] = useState(false);
+  const [usePersonal, setUsePersonal] = useState(false);
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -136,13 +147,25 @@ export default function AuthPage() {
       fullName: "",
       email: "",
       password: "",
-      center: "123-456",
+      center: "",
       role: "student",
       ageRange: "",
       course: "",
       className: "",
     },
   });
+
+  useEffect(() => {
+    if (usePersonal) {
+        form.setValue('center', 'personal');
+        form.setValue('course', 'personal');
+        form.setValue('className', 'personal');
+    } else {
+        form.setValue('center', '');
+        form.setValue('course', '');
+        form.setValue('className', '');
+    }
+  }, [usePersonal, form]);
   
   const loginForm = useForm<LoginSchemaType>({
     resolver: zodResolver(loginSchema),
@@ -307,7 +330,6 @@ export default function AuthPage() {
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists()) {
-        // User is new, create a document for them with placeholder values
         const newUser: Omit<User, 'uid'> = {
             name: firebaseUser.displayName || 'Usuario',
             email: firebaseUser.email!,
@@ -322,7 +344,7 @@ export default function AuthPage() {
             exams: 0,
             pending: 0,
             activities: 0,
-            isNewUser: true, // This will trigger the profile completion modal
+            isNewUser: true,
             studyMinutes: 0,
             streak: 0,
             lastStudyDay: '',
@@ -460,11 +482,18 @@ export default function AuthPage() {
                           )}
                           {index === 1 && (
                             <div className="space-y-4">
-                                <FormField control={form.control} name="center" render={({ field }) => (<FormItem><FormLabel>Código de Centro Educativo</FormLabel><FormControl><Input placeholder="Ej: 123-456" {...field} /></FormControl><FormDescription>Introduce el código proporcionado por tu centro para unirte a su grupo.</FormDescription><FormMessage /></FormItem>)} />
+                                <div className="flex items-center space-x-2 rounded-lg border p-3">
+                                    <Switch id="personal-use-switch" checked={usePersonal} onCheckedChange={setUsePersonal} />
+                                    <Label htmlFor="personal-use-switch" className="flex flex-col gap-1">
+                                        <span className="font-semibold flex items-center gap-2"><UserIcon className="h-4 w-4" />Prefiero el uso personal</span>
+                                    </Label>
+                                </div>
+
+                                <FormField control={form.control} name="center" render={({ field }) => (<FormItem><FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Código de Centro Educativo</FormLabel><FormControl><Input placeholder="Ej: 123-456" {...field} disabled={usePersonal} /></FormControl><FormDescription>Introduce el código proporcionado por tu centro.</FormDescription><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="ageRange" render={({ field }) => (<FormItem><FormLabel>Rango de Edad</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger></FormControl><SelectContent><SelectItem value="12-15">12-15 años</SelectItem><SelectItem value="16-18">16-18 años</SelectItem><SelectItem value="19-22">19-22 años</SelectItem><SelectItem value="23+">23+ años</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                 <div className="grid grid-cols-2 gap-4">
-                                  <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel>Curso</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="1eso">1º ESO</SelectItem><SelectItem value="2eso">2º ESO</SelectItem><SelectItem value="3eso">3º ESO</SelectItem><SelectItem value="4eso">4º ESO</SelectItem><SelectItem value="1bach">1º Bachillerato</SelectItem><SelectItem value="2bach">2º Bachillerato</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                                  <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel>Clase</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="A">A</SelectItem><SelectItem value="B">B</SelectItem><SelectItem value="C">C</SelectItem><SelectItem value="D">D</SelectItem><SelectItem value="E">E</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                                  <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Curso</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={usePersonal}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="1eso">1º ESO</SelectItem><SelectItem value="2eso">2º ESO</SelectItem><SelectItem value="3eso">3º ESO</SelectItem><SelectItem value="4eso">4º ESO</SelectItem><SelectItem value="1bach">1º Bachillerato</SelectItem><SelectItem value="2bach">2º Bachillerato</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                                  <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Clase</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={usePersonal}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="A">A</SelectItem><SelectItem value="B">B</SelectItem><SelectItem value="C">C</SelectItem><SelectItem value="D">D</SelectItem><SelectItem value="E">E</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                 </div>
                                 <FormField control={form.control} name="role" render={({ field }) => (
                                     <FormItem className="space-y-3">
@@ -593,8 +622,3 @@ export default function AuthPage() {
     </main>
   );
 }
-
-    
-
-    
-

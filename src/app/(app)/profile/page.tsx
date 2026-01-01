@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData, User, CompletedItem, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Snowflake, Gift } from "lucide-react";
+import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Snowflake, Gift, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -43,6 +43,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { Switch } from "@/components/ui/switch";
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
 
@@ -97,10 +98,11 @@ export default function ProfilePage() {
     "4eso": "4º ESO",
     "1bach": "1º Bachillerato",
     "2bach": "2º Bachillerato",
+    "personal": "No especificado"
   }
   
   const userCenter = centers.find(c => c.code === user.center);
-  const displayCenter = userCenter ? userCenter.name : user.center;
+  const displayCenter = user.center === 'personal' ? 'Uso Personal' : (userCenter ? userCenter.name : 'Centro no encontrado');
 
   const achievements = [
     { title: 'Tareas Completadas', value: user.tasks, icon: NotebookText, color: 'text-blue-400' },
@@ -188,7 +190,7 @@ export default function ProfilePage() {
             </div>
             <div>
                 <p className="text-muted-foreground">Edad</p>
-                <p className="font-bold">{user.ageRange}</p>
+                <p className="font-bold">{user.ageRange === 'personal' ? 'No especificado' : user.ageRange}</p>
             </div>
             <div>
                 <p className="text-muted-foreground">Curso</p>
@@ -196,7 +198,7 @@ export default function ProfilePage() {
             </div>
             <div>
                 <p className="text-muted-foreground">Clase</p>
-                <p className="font-bold">{user.className}</p>
+                <p className="font-bold">{user.className === 'personal' ? 'N/A' : user.className}</p>
             </div>
             <div className="col-span-2">
                 <p className="text-muted-foreground">Correo Electrónico</p>
@@ -392,11 +394,12 @@ function EditProfileDialog() {
   const { user, updateUser } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [usePersonal, setUsePersonal] = useState(user?.center === 'personal');
   
   const [editableAvatar, setEditableAvatar] = useState<EditableAvatar>({ id: 'letter_A', color: 'A78BFA'});
   
   const [name, setName] = useState(user?.name || "");
-  const [center, setCenter] = useState(user?.center || "");
+  const [center, setCenter] = useState(user?.center === 'personal' ? '' : user?.center || "");
   const [ageRange, setAgeRange] = useState(user?.ageRange || "");
   const [course, setCourse] = useState(user?.course || "");
   const [className, setClassName] = useState(user?.className || "");
@@ -408,11 +411,13 @@ function EditProfileDialog() {
 
   const initializeState = () => {
     if (user) {
+        const isPersonal = user.center === 'personal';
+        setUsePersonal(isPersonal);
         setName(user.name);
-        setCenter(user.center);
-        setAgeRange(user.ageRange);
-        setCourse(user.course);
-        setClassName(user.className);
+        setCenter(isPersonal ? '' : user.center || "");
+        setAgeRange(isPersonal ? 'personal' : user.ageRange || '');
+        setCourse(isPersonal ? 'personal' : user.course || '');
+        setClassName(isPersonal ? 'personal' : user.className || '');
         
         const [id, id_extra, color] = user.avatar.split('_');
         
@@ -421,7 +426,6 @@ function EditProfileDialog() {
         } else if (shopAvatarMap.has(id)) {
              setEditableAvatar({ id: id, color: id_extra || '737373' });
         } else {
-             // Fallback for old URL-based avatars
              const initial = user.name.charAt(0).toUpperCase() || 'A';
              setEditableAvatar({ id: `letter_${initial}`, color: 'A78BFA' });
         }
@@ -434,6 +438,22 @@ function EditProfileDialog() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isOpen]);
+
+  useEffect(() => {
+    if (usePersonal) {
+        setCenter('');
+        setCourse('personal');
+        setClassName('personal');
+        // keep ageRange
+    } else {
+        // If switching back from personal, restore previous values or set to default
+        setCenter(user?.center !== 'personal' ? user?.center || '' : '');
+        setCourse(user?.course !== 'personal' ? user?.course || '' : '');
+        setClassName(user?.className !== 'personal' ? user?.className || '' : '');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usePersonal]);
+
   
   const handleLetterSelect = (letter: string) => {
     setEditableAvatar(prev => ({ ...prev, id: `letter_${letter}` }));
@@ -481,6 +501,11 @@ function EditProfileDialog() {
   
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
+
+    if (!usePersonal && !center.trim()) {
+        toast({ title: "Falta el código de centro", description: "Debes introducir un código de centro o seleccionar 'Uso Personal'.", variant: "destructive" });
+        return;
+    }
     
     const finalAvatarString = editableAvatar.id.startsWith('letter') 
         ? `${editableAvatar.id}_${editableAvatar.color}`
@@ -491,11 +516,11 @@ function EditProfileDialog() {
     try {
         const updatedData: Partial<User> = {
             name,
-            center,
-            ageRange,
-            course,
-            className,
             avatar: finalAvatarString,
+            ageRange,
+            center: usePersonal ? 'personal' : center,
+            course: usePersonal ? 'personal' : course,
+            className: usePersonal ? 'personal' : className,
         };
 
         const userDocRef = doc(firestore, 'users', user.uid);
@@ -530,17 +555,13 @@ function EditProfileDialog() {
     const selectedId = editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[0] : editableAvatar.id;
     const shopItem = shopAvatarMap.get(selectedId);
     
-    // This is for the special letter avatar
     if (editableAvatar.id.startsWith('letter_')) {
         return false;
     }
     
     if (shopItem) {
         const isOwned = user.ownedAvatars?.includes(shopItem.id);
-        
-        if (shopItem.price > 0 && !isOwned) {
-            return true;
-        }
+        if (shopItem.price > 0 && !isOwned) return true;
     }
 
     return false;
@@ -672,20 +693,28 @@ function EditProfileDialog() {
             
             <div className="space-y-4 pt-6 border-t">
                  <Label>Editor de Perfil</Label>
+                 <div className="flex items-center space-x-2 rounded-lg border p-3">
+                    <Switch id="personal-use-switch" checked={usePersonal} onCheckedChange={setUsePersonal} />
+                    <Label htmlFor="personal-use-switch" className="flex flex-col gap-1">
+                      <span className="font-semibold flex items-center gap-2"><UserIcon className="h-4 w-4" />Uso Personal</span>
+                      <span className="text-xs text-muted-foreground">Selecciona esta opción si no perteneces a ningún centro.</span>
+                    </Label>
+                </div>
+
                 <div className="space-y-2">
                     <Label htmlFor="name">Nombre Completo</Label>
                     <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="center">Código de Centro Educativo</Label>
-                    <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} placeholder="Ej: 123-456" />
+                    <Label htmlFor="center" className={cn(usePersonal && "text-muted-foreground/50")}>Código de Centro Educativo</Label>
+                    <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} placeholder="Ej: 123-456" disabled={usePersonal} />
                      <p className="text-xs text-muted-foreground">
                         Introduce el código proporcionado por tu centro para unirte a su grupo.
                     </p>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="ageRange">Rango de Edad</Label>
-                    <Select onValueChange={setAgeRange} value={ageRange}>
+                    <Select onValueChange={setAgeRange} value={ageRange === 'personal' ? '' : ageRange}>
                         <SelectTrigger id="ageRange">
                             <SelectValue placeholder="Selecciona tu rango de edad" />
                         </SelectTrigger>
@@ -700,8 +729,8 @@ function EditProfileDialog() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label htmlFor="course">Curso</Label>
-                        <Select onValueChange={setCourse} value={course}>
+                        <Label htmlFor="course" className={cn(usePersonal && "text-muted-foreground/50")}>Curso</Label>
+                        <Select onValueChange={setCourse} value={course} disabled={usePersonal}>
                             <SelectTrigger id="course"><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="1eso">1º ESO</SelectItem>
@@ -714,8 +743,8 @@ function EditProfileDialog() {
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="className">Clase</Label>
-                        <Select onValueChange={setClassName} value={className}>
+                        <Label htmlFor="className" className={cn(usePersonal && "text-muted-foreground/50")}>Clase</Label>
+                        <Select onValueChange={setClassName} value={className} disabled={usePersonal}>
                             <SelectTrigger id="className"><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="A">A</SelectItem>
@@ -876,5 +905,3 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
-
-    
