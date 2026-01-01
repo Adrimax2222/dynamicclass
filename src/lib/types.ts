@@ -26,6 +26,9 @@ export type User = {
   isBanned?: boolean;
 };
 
+// Simplified user type for center management
+export type CenterUser = Pick<User, 'uid' | 'name' | 'email' | 'avatar' | 'role'>;
+
 export type Center = {
     id: string;
     name: string;

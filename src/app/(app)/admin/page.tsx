@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
 
 export default function AdminPage() {
     const { user } = useApp();
@@ -481,7 +482,9 @@ function GroupsTab() {
                                         </Button>
                                     </div>
                                 </div>
-                                <Button variant="secondary" size="sm">Gestionar</Button>
+                                <Button asChild variant="secondary" size="sm">
+                                    <Link href={`/admin/groups/${center.legacy ? center.code : center.id}`}>Gestionar</Link>
+                                </Button>
                             </div>
                         ))}
                     </div>
