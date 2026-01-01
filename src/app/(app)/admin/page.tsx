@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
+import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 
 export default function AdminPage() {
     const { user } = useApp();
@@ -367,6 +367,29 @@ function GroupsTab() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [centerName, setCenterName] = useState("");
     const [isCreating, setIsCreating] = useState(false);
+
+    useEffect(() => {
+        const ensureLegacyCenterExists = async () => {
+            if (!firestore) return;
+            const centersRef = collection(firestore, "centers");
+            const q = query(centersRef, where("code", "==", SCHOOL_VERIFICATION_CODE));
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) {
+                console.log("Legacy center not found, creating it...");
+                try {
+                    await addDoc(centersRef, {
+                        name: SCHOOL_NAME,
+                        code: SCHOOL_VERIFICATION_CODE,
+                        classes: ["4ESO-B"],
+                        createdAt: serverTimestamp(),
+                    });
+                } catch (error) {
+                    console.error("Failed to create legacy center:", error);
+                }
+            }
+        };
+        ensureLegacyCenterExists();
+    }, [firestore]);
     
     const centersCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -501,3 +524,5 @@ function WipPlaceholder() {
     </div>
   );
 }
+
+    

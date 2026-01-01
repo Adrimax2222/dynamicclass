@@ -38,7 +38,7 @@ export default function ManageGroupPage() {
     useEffect(() => {
         if (!isLoading && !center) {
             toast({ title: "Error", description: "No se pudo encontrar el centro.", variant: "destructive" });
-            router.push('/admin/page');
+            router.push('/admin');
         }
     }, [isLoading, center, router, toast]);
     
@@ -65,10 +65,9 @@ export default function ManageGroupPage() {
             </header>
 
             <Tabs defaultValue="members" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="members"><Users className="mr-2 h-4 w-4"/>Miembros</TabsTrigger>
                     <TabsTrigger value="classes"><GraduationCap className="mr-2 h-4 w-4"/>Clases</TabsTrigger>
-                    <TabsTrigger value="admins"><Shield className="mr-2 h-4 w-4"/>Admins</TabsTrigger>
                 </TabsList>
 
                 <div className="py-6">
@@ -77,9 +76,6 @@ export default function ManageGroupPage() {
                     </TabsContent>
                     <TabsContent value="classes">
                         <ClassesTab center={center} />
-                    </TabsContent>
-                     <TabsContent value="admins">
-                        <CenterAdminsTab />
                     </TabsContent>
                 </div>
             </Tabs>
@@ -380,3 +376,5 @@ function CenterAdminsTab() {
         </Card>
     );
 }
+
+    
