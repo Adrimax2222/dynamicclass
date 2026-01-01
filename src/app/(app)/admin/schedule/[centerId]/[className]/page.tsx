@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, Loader2, Save } from "lucide-react";
@@ -33,15 +33,18 @@ export default function ManageSchedulePage() {
 
     const { data: center, isLoading: isCenterLoading } = useDoc<Center>(centerDocRef);
     
-    const classData = center?.classes.find(c => c.name === className);
-    const [icalUrl, setIcalUrl] = useState(classData?.icalUrl || "");
+    const [icalUrl, setIcalUrl] = useState("");
     const [isSaving, setIsSaving] = useState(false);
 
-    useState(() => {
+    const classData = useMemo(() => {
+        return center?.classes.find(c => c.name === className);
+    }, [center, className]);
+
+    useEffect(() => {
         if (classData) {
             setIcalUrl(classData.icalUrl || "");
         }
-    });
+    }, [classData]);
 
     const handleSave = async () => {
         if (!firestore || !center || !classData) return;
@@ -71,6 +74,22 @@ export default function ManageSchedulePage() {
 
     if (!user || user.role !== 'admin' || isCenterLoading) {
         return <LoadingScreen />;
+    }
+
+    if (!isCenterLoading && !classData) {
+         return (
+            <div className="container mx-auto max-w-4xl p-4 sm:p-6">
+                <header className="mb-8 flex items-center gap-4">
+                    <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                        <ChevronLeft />
+                    </Button>
+                    <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl text-destructive">
+                        Clase no encontrada
+                    </h1>
+                </header>
+                <p>No se pudo encontrar la clase "{className}" en el centro "{center?.name}".</p>
+            </div>
+        );
     }
 
     return (
