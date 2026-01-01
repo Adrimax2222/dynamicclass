@@ -237,7 +237,7 @@ function ClassesTab({ center }: { center: Center }) {
                                 <p className="font-semibold">{className}</p>
                                 <div className="flex items-center gap-2">
                                      <Button asChild variant="secondary" size="sm">
-                                        <Link href={`/admin/schedule/${center.id}/${className}`}>
+                                        <Link href={`/admin/schedule/${center.id}/${encodeURIComponent(className)}`}>
                                             <CalendarEdit className="h-4 w-4 mr-2" />
                                             Gestionar Horario
                                         </Link>
@@ -270,3 +270,5 @@ function ClassesTab({ center }: { center: Center }) {
         </Card>
     );
 }
+
+    
