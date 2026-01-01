@@ -375,34 +375,31 @@ function GroupsTab() {
 
     const { data: centers = [], isLoading } = useCollection<Center>(centersCollection);
     
+    // This effect ensures the default center exists. It's more robust now.
     useEffect(() => {
-        if (isLoading || !firestore) return;
+        const ensureDefaultCenterExists = async () => {
+            if (isLoading || !firestore) return;
 
-        const defaultCenterExists = centers.some(c => c.code === SCHOOL_VERIFICATION_CODE);
+            const defaultCenterExists = centers.some(c => c.code === SCHOOL_VERIFICATION_CODE);
 
-        if (!defaultCenterExists) {
-            const createDefaultCenter = async () => {
-                try {
+            if (!defaultCenterExists) {
+                 try {
                     console.log("Default center not found in collection, creating it...");
-                    const centersRef = collection(firestore, "centers");
-                    const q = query(centersRef, where("code", "==", SCHOOL_VERIFICATION_CODE));
-                    const snapshot = await getDocs(q);
-                    
-                    if (snapshot.empty) {
-                        await addDoc(collection(firestore, "centers"), {
-                            name: SCHOOL_NAME,
-                            code: SCHOOL_VERIFICATION_CODE,
-                            classes: ["4ESO-B"],
-                            createdAt: serverTimestamp(),
-                        });
-                        toast({ title: "Sistema actualizado", description: "El centro por defecto ha sido migrado al nuevo sistema." });
-                    }
+                    await addDoc(collection(firestore, "centers"), {
+                        name: SCHOOL_NAME,
+                        code: SCHOOL_VERIFICATION_CODE,
+                        classes: ["4ESO-B"],
+                        createdAt: serverTimestamp(),
+                    });
+                    toast({ title: "Sistema actualizado", description: "El centro por defecto ha sido migrado al nuevo sistema." });
                 } catch (e) {
                      console.error("Failed to create default center (might already exist):", e);
                 }
-            };
-            createDefaultCenter();
-        }
+            }
+        };
+        
+        ensureDefaultCenterExists();
+    // The dependency array is crucial. It re-runs only when loading is done or the centers list changes.
     }, [isLoading, centers, firestore, toast]);
 
 
