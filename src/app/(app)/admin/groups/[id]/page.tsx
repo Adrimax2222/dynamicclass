@@ -235,36 +235,39 @@ function ClassesTab({ center }: { center: Center }) {
                 ) : (
                     <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-2">
                         {center.classes.map((classObj, index) => (
-                            <div key={`${classObj.name}-${index}`} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
-                                <p className="font-semibold">{classObj.name}</p>
-                                <div className="flex items-center gap-2">
-                                     <Button asChild variant="secondary" size="sm">
-                                        <Link href={`/admin/schedule/${center.id}/${encodeURIComponent(classObj.name)}`}>
-                                            <CalendarCog className="h-4 w-4 mr-2" />
-                                            Gestionar Calendario
-                                        </Link>
-                                    </Button>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" disabled={isProcessing}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>¿Eliminar clase?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Vas a eliminar la clase "{classObj.name}". Esta acción no se puede deshacer.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleRemoveClass(classObj)}>Sí, eliminar</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
-                            </div>
+                           <div 
+                             key={`class-${index}-${classObj.name}`} 
+                             className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
+                           >
+                             <p className="font-semibold">{classObj.name || "Clase sin nombre"}</p>
+                             <div className="flex items-center gap-2">
+                               <Button asChild variant="secondary" size="sm">
+                                 <Link href={`/admin/schedule/${center.id}/${encodeURIComponent(classObj.name)}`}>
+                                   <CalendarCog className="h-4 w-4 mr-2" />
+                                   Gestionar Calendario
+                                 </Link>
+                               </Button>
+                               <AlertDialog>
+                                 <AlertDialogTrigger asChild>
+                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" disabled={isProcessing}>
+                                     <Trash2 className="h-4 w-4" />
+                                   </Button>
+                                 </AlertDialogTrigger>
+                                 <AlertDialogContent>
+                                   <AlertDialogHeader>
+                                     <AlertDialogTitle>¿Eliminar clase?</AlertDialogTitle>
+                                     <AlertDialogDescription>
+                                       Vas a eliminar la clase "{classObj.name}". Esta acción no se puede deshacer.
+                                     </AlertDialogDescription>
+                                   </AlertDialogHeader>
+                                   <AlertDialogFooter>
+                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                     <AlertDialogAction onClick={() => handleRemoveClass(classObj)}>Sí, eliminar</AlertDialogAction>
+                                   </AlertDialogFooter>
+                                 </AlertDialogContent>
+                               </AlertDialog>
+                             </div>
+                           </div>
                         ))}
                     </div>
                 )}
