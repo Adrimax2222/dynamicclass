@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarEdit } from "lucide-react";
+import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -238,7 +238,7 @@ function ClassesTab({ center }: { center: Center }) {
                                 <div className="flex items-center gap-2">
                                      <Button asChild variant="secondary" size="sm">
                                         <Link href={`/admin/schedule/${center.id}/${encodeURIComponent(className)}`}>
-                                            <CalendarEdit className="h-4 w-4 mr-2" />
+                                            <CalendarCog className="h-4 w-4 mr-2" />
                                             Gestionar Horario
                                         </Link>
                                     </Button>
@@ -270,7 +270,5 @@ function ClassesTab({ center }: { center: Center }) {
         </Card>
     );
 }
-
-    
 
     
