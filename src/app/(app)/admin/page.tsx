@@ -407,6 +407,11 @@ function GroupsTab() {
         setTimeout(() => setCopiedCode(null), 2000);
     };
 
+    const allCenters = [
+      { id: 'legacy-center', name: 'IES Torre del Palau', code: '246-369', legacy: true },
+      ...centers
+    ];
+
 
     return (
         <Card>
@@ -451,7 +456,7 @@ function GroupsTab() {
                 <Separator />
                 {isLoading ? (
                     <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin"/></div>
-                ) : centers.length === 0 ? (
+                ) : allCenters.length === 0 ? (
                     <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
                         <Group className="h-12 w-12 text-muted-foreground/50 mb-4" />
                         <p className="font-semibold">No hay centros educativos</p>
@@ -461,7 +466,7 @@ function GroupsTab() {
                     </div>
                 ) : (
                     <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-                        {centers.map(center => (
+                        {allCenters.map(center => (
                             <div key={center.id} className="flex items-center gap-4 p-3 rounded-lg border">
                                 <div className="p-2 bg-muted rounded-md">
                                     <Group className="h-6 w-6 text-muted-foreground" />
@@ -497,5 +502,7 @@ function WipPlaceholder() {
     </div>
   );
 }
+
+    
 
     

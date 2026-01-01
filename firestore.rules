@@ -68,6 +68,10 @@ service cloud.firestore {
         allow read, write: if isAdmin();
         // Authenticated users can read the list of centers
         allow list, get: if request.auth != null;
+        // Also allow access to the legacy center code
+        allow get: if centerId == '246-369' && request.auth != null;
     }
   }
 }
+
+    
