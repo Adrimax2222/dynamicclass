@@ -376,5 +376,3 @@ function CenterAdminsTab() {
         </Card>
     );
 }
-
-    

@@ -375,32 +375,31 @@ function GroupsTab() {
 
     const { data: centers = [], isLoading, error } = useCollection<Center>(centersCollection);
     
-    // This effect ensures the original center exists in the new collection system.
-    // It runs only once when the component mounts and the DB is ready.
+    // This effect ensures the default center exists in the new collection system.
     useEffect(() => {
-        const ensureDefaultCenterExists = async () => {
-            if (isLoading || !firestore || error) return; // Wait until loading is done and there are no errors
-            
-            const legacyCenterExists = centers.some(c => c.code === SCHOOL_VERIFICATION_CODE);
+        if (isLoading || !firestore) return;
 
-            if (!legacyCenterExists) {
-                console.log("Default center not found in collection, creating it...");
+        const defaultCenterExists = centers.some(c => c.code === SCHOOL_VERIFICATION_CODE);
+
+        if (!defaultCenterExists) {
+            const createDefaultCenter = async () => {
                 try {
+                    console.log("Default center not found in collection, creating it...");
                     await addDoc(collection(firestore, "centers"), {
                         name: SCHOOL_NAME,
                         code: SCHOOL_VERIFICATION_CODE,
                         classes: ["4ESO-B"],
                         createdAt: serverTimestamp(),
                     });
-                     toast({ title: "Sistema actualizado", description: "El centro por defecto ha sido migrado al nuevo sistema." });
+                    toast({ title: "Sistema actualizado", description: "El centro por defecto ha sido migrado al nuevo sistema." });
                 } catch (e) {
-                    console.error("Failed to create default center:", e);
+                     // This might fail if another client created it in the meantime, which is fine.
+                    console.error("Failed to create default center (might already exist):", e);
                 }
-            }
-        };
-        
-        ensureDefaultCenterExists();
-    }, [isLoading, centers, firestore, error, toast]);
+            };
+            createDefaultCenter();
+        }
+    }, [isLoading, centers, firestore, toast]);
 
 
     const generateCode = () => {
@@ -529,5 +528,3 @@ function WipPlaceholder() {
     </div>
   );
 }
-
-    
