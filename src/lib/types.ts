@@ -114,6 +114,8 @@ export type Announcement = {
   authorAvatar: string;
   createdAt: { seconds: number, nanoseconds: number };
   scope: AnnouncementScope;
+  likedBy?: string[];
+  likes?: number;
 };
 
 export type CompletedItem = {
@@ -122,4 +124,5 @@ export type CompletedItem = {
     type: 'task' | 'exam';
     completedAt: Timestamp;
 };
+
     

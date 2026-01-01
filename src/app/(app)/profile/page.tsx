@@ -23,14 +23,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { SummaryCardData, User, CompletedItem } from "@/lib/types";
+import type { SummaryCardData, User, CompletedItem, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Snowflake, Gift } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useMemo } from "react";
-import { doc, updateDoc, arrayUnion, increment, collection, query, orderBy } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, increment, collection, query, orderBy, getDocs } from "firebase/firestore";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +48,19 @@ const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau
 
 export default function ProfilePage() {
   const { user } = useApp();
+  const [centers, setCenters] = useState<Center[]>([]);
+  const firestore = useFirestore();
+
+  useEffect(() => {
+    if (!firestore) return;
+    const fetchCenters = async () => {
+        const centersCollection = collection(firestore, 'centers');
+        const centersSnapshot = await getDocs(centersCollection);
+        setCenters(centersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Center)));
+    };
+    fetchCenters();
+  }, [firestore]);
+
 
   if (!user) {
     return (
@@ -86,7 +99,8 @@ export default function ProfilePage() {
     "2bach": "2º Bachillerato",
   }
   
-  const displayCenter = user.center === SCHOOL_VERIFICATION_CODE ? SCHOOL_NAME : user.center;
+  const userCenter = centers.find(c => c.code === user.center);
+  const displayCenter = userCenter ? userCenter.name : user.center;
 
   const achievements = [
     { title: 'Tareas Completadas', value: user.tasks, icon: NotebookText, color: 'text-blue-400' },
@@ -664,7 +678,7 @@ function EditProfileDialog() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="center">Código de Centro Educativo</Label>
-                    <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} placeholder="123-456" />
+                    <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} placeholder="Ej: 123-456" />
                      <p className="text-xs text-muted-foreground">
                         Introduce el código proporcionado por tu centro para unirte a su grupo.
                     </p>
@@ -862,15 +876,5 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
-
-    
-
-
-
-    
-
-    
-
-    
 
     

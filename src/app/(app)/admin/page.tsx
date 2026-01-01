@@ -368,35 +368,40 @@ function GroupsTab() {
     const [centerName, setCenterName] = useState("");
     const [isCreating, setIsCreating] = useState(false);
 
-    useEffect(() => {
-        const ensureLegacyCenterExists = async () => {
-            if (!firestore) return;
-            const centersRef = collection(firestore, "centers");
-            const q = query(centersRef, where("code", "==", SCHOOL_VERIFICATION_CODE));
-            const snapshot = await getDocs(q);
-            if (snapshot.empty) {
-                console.log("Legacy center not found, creating it...");
-                try {
-                    await addDoc(centersRef, {
-                        name: SCHOOL_NAME,
-                        code: SCHOOL_VERIFICATION_CODE,
-                        classes: ["4ESO-B"],
-                        createdAt: serverTimestamp(),
-                    });
-                } catch (error) {
-                    console.error("Failed to create legacy center:", error);
-                }
-            }
-        };
-        ensureLegacyCenterExists();
-    }, [firestore]);
-    
     const centersCollection = useMemoFirebase(() => {
         if (!firestore) return null;
         return query(collection(firestore, "centers"), orderBy("createdAt", "desc"));
     }, [firestore]);
 
-    const { data: centers = [], isLoading } = useCollection<Center>(centersCollection);
+    const { data: centers = [], isLoading, error } = useCollection<Center>(centersCollection);
+    
+    // This effect ensures the original center exists in the new collection system.
+    // It runs only once when the component mounts and the DB is ready.
+    useEffect(() => {
+        const ensureDefaultCenterExists = async () => {
+            if (isLoading || !firestore || error) return; // Wait until loading is done and there are no errors
+            
+            const legacyCenterExists = centers.some(c => c.code === SCHOOL_VERIFICATION_CODE);
+
+            if (!legacyCenterExists) {
+                console.log("Default center not found in collection, creating it...");
+                try {
+                    await addDoc(collection(firestore, "centers"), {
+                        name: SCHOOL_NAME,
+                        code: SCHOOL_VERIFICATION_CODE,
+                        classes: ["4ESO-B"],
+                        createdAt: serverTimestamp(),
+                    });
+                     toast({ title: "Sistema actualizado", description: "El centro por defecto ha sido migrado al nuevo sistema." });
+                } catch (e) {
+                    console.error("Failed to create default center:", e);
+                }
+            }
+        };
+        
+        ensureDefaultCenterExists();
+    }, [isLoading, centers, firestore, error, toast]);
+
 
     const generateCode = () => {
         const part1 = Math.floor(100 + Math.random() * 900);
@@ -524,7 +529,5 @@ function WipPlaceholder() {
     </div>
   );
 }
-
-    
 
     

@@ -32,7 +32,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { fullSchedule } from "@/lib/data";
-import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent, Announcement } from "@/lib/types";
+import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent, Announcement, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity, Flame, ShoppingCart, TreePine, Gift, Snowflake } from "lucide-react";
 import Link from "next/link";
@@ -83,6 +83,7 @@ export default function HomePage() {
   
   const [allEvents, setAllEvents] = useState<ParsedEvent[]>([]);
   const [allAnnouncements, setAllAnnouncements] = useState<Announcement[]>([]);
+  const [allCenters, setAllCenters] = useState<Center[]>([]);
   const [isLoadingVariables, setIsLoadingVariables] = useState(true);
   const [completedEventIds, setCompletedEventIds] = useState<string[]>([]);
   const [readAnnouncementIds, setReadAnnouncementIds] = useState<string[]>([]);
@@ -247,10 +248,19 @@ export default function HomePage() {
         if (!firestore) return;
 
         setIsLoadingVariables(true);
+
+        const centersRef = collection(firestore, "centers");
+        const centersSnapshot = await getDocs(centersRef);
+        const centersList = centersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Center));
+        setAllCenters(centersList);
+
         // Fetch calendar events
-        if (user?.center === SCHOOL_VERIFICATION_CODE) {
+        const userCenter = centersList.find(c => c.code === user?.center);
+        if (userCenter) {
             try {
-                const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(SCHOOL_ICAL_URL)}`);
+                // This is a placeholder for where you might have different iCal URLs per center
+                const urlToFetch = SCHOOL_ICAL_URL;
+                const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(urlToFetch)}`);
                 if (!response.ok) {
                     throw new Error(`Failed to fetch calendar: ${response.status}`);
                 }
@@ -270,12 +280,12 @@ export default function HomePage() {
             const querySnapshot = await getDocs(q);
             const announcementsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Announcement));
             
-            const userIsInCenter = user?.center === SCHOOL_VERIFICATION_CODE;
             const filteredAnnouncements = announcementsList.filter(ann => {
-              if (!userIsInCenter) {
+              if (!userCenter) { // If user is not in any center
                 return ann.scope === 'general';
               }
-              return true;
+              // If user is in a center, show general announcements AND announcements for their center
+              return ann.scope === 'general' || (ann.scope === 'center' && userCenter.code === SCHOOL_VERIFICATION_CODE);
             });
             setAllAnnouncements(filteredAnnouncements);
         } catch (error) {
@@ -439,6 +449,8 @@ export default function HomePage() {
     { title: 'Pendientes', value: getCategoryCount('Pendientes'), icon: Clock, color: 'text-yellow-500', isAnnouncement: false },
     { title: 'Anuncios', value: getCategoryCount('Anuncios'), icon: MessageSquare, color: 'text-green-500', isAnnouncement: true },
   ];
+  
+  const userCenterName = allCenters.find(c => c.code === user.center)?.name || user.center;
 
   const isProfileIncomplete = user.isNewUser && (user.course === "default" || user.className === "default" || user.ageRange === "default");
   const isAdmin = ADMIN_EMAILS.includes(user.email);
@@ -462,8 +474,8 @@ export default function HomePage() {
             </h1>
             <div className="flex items-center gap-2 mt-1">
                 <Badge variant="outline">V3.0 - Beta</Badge>
-                {user.center === SCHOOL_VERIFICATION_CODE && (
-                    <Badge>{SCHOOL_NAME}</Badge>
+                {user.center && user.center !== 'default' && (
+                    <Badge>{userCenterName}</Badge>
                 )}
                 {user.role === 'admin' && (
                     <Badge variant="destructive">Admin</Badge>
@@ -922,13 +934,3 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
 }
 
     
-
-    
-
-
-
-
-    
-
-    
-
