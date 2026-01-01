@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -367,6 +368,7 @@ function GroupsTab() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [centerName, setCenterName] = useState("");
     const [isCreating, setIsCreating] = useState(false);
+    const [migrationDone, setMigrationDone] = useState(false);
 
     const centersCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -375,54 +377,72 @@ function GroupsTab() {
 
     const { data: centers = [], isLoading } = useCollection<Center>(centersCollection);
     
-    // This effect ensures the default center exists and migrates the schedule for 4ESO-B if needed.
     useEffect(() => {
         const setupDefaultCenter = async () => {
-            if (isLoading || !firestore) return;
-
+            if (isLoading || !firestore || migrationDone) return;
+    
             const defaultCenterQuery = query(collection(firestore, "centers"), where("code", "==", SCHOOL_VERIFICATION_CODE));
             const querySnapshot = await getDocs(defaultCenterQuery);
             
+            let centerDoc;
             if (querySnapshot.empty) {
                  try {
-                    console.log("Default center not found, creating it with schedule for 4ESO-B...");
                     const defaultCenterData = {
                         name: SCHOOL_NAME,
                         code: SCHOOL_VERIFICATION_CODE,
                         classes: [{
                             name: '4ESO-B',
                             icalUrl: '',
-                            schedule: fullSchedule, // Add the hardcoded schedule
+                            schedule: fullSchedule,
                         }],
                         createdAt: serverTimestamp(),
                     };
-                    await addDoc(collection(firestore, "centers"), defaultCenterData);
-                    toast({ title: "Sistema actualizado", description: "El centro por defecto ha sido creado con su horario." });
+                    const newDocRef = await addDoc(collection(firestore, "centers"), defaultCenterData);
+                    centerDoc = { ref: newDocRef, data: () => defaultCenterData };
+                    toast({ title: "Sistema actualizado", description: "El centro por defecto ha sido creado con el horario de 4º ESO B." });
                 } catch (e) {
                      console.error("Failed to create default center:", e);
+                     return;
                 }
             } else {
-                // Center exists, check if schedule migration is needed
-                const centerDoc = querySnapshot.docs[0];
-                const centerData = centerDoc.data() as Center;
-                const class4B = centerData.classes.find(c => c.name === '4ESO-B');
-                
-                if (class4B && (!class4B.schedule || Object.keys(class4B.schedule).length === 0)) {
-                    console.log("Migrating schedule for 4ESO-B...");
-                    const updatedClasses = centerData.classes.map(c => 
+                centerDoc = querySnapshot.docs[0];
+            }
+            
+            const centerData = centerDoc.data() as Center;
+            const class4B = centerData.classes.find(c => c.name === '4ESO-B');
+            
+            let needsUpdate = false;
+            let updatedClasses = [...centerData.classes];
+
+            if (class4B) {
+                if (!class4B.schedule || Object.keys(class4B.schedule).length === 0) {
+                    updatedClasses = updatedClasses.map(c => 
                         c.name === '4ESO-B' ? { ...c, schedule: fullSchedule } : c
                     );
-                    try {
-                        await updateDoc(centerDoc.ref, { classes: updatedClasses });
-                        toast({ title: "Migración de Horario", description: "El horario de 4º ESO B se ha movido al nuevo sistema." });
-                    } catch (e) {
-                        console.error("Failed to migrate schedule:", e);
-                    }
+                    needsUpdate = true;
+                }
+            } else {
+                 updatedClasses.push({
+                    name: '4ESO-B',
+                    icalUrl: '',
+                    schedule: fullSchedule,
+                });
+                needsUpdate = true;
+            }
+
+            if (needsUpdate) {
+                try {
+                    await updateDoc(centerDoc.ref, { classes: updatedClasses });
+                    toast({ title: "Migración de Horario", description: "El horario de 4º ESO B se ha movido al nuevo sistema." });
+                } catch (e) {
+                    console.error("Failed to migrate schedule:", e);
                 }
             }
+            setMigrationDone(true);
         };
         
         setupDefaultCenter();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isLoading, centers, firestore, toast]);
 
 
