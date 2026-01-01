@@ -59,7 +59,7 @@ const sounds = [
     { id: "noise", label: "Ruido Blanco", icon: Waves },
 ]
 
-const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
+const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
 
 export default function StudyPage() {
   const { user, updateUser } = useApp();

@@ -11,7 +11,8 @@ service cloud.firestore {
       // Production admins
       return request.auth != null && request.auth.token.email in [
         'anavarrod@iestorredelpalau.cat',
-        'lrotav@iestorredelpalau.cat'
+        'lrotav@iestorredelpalau.cat',
+        'adrimax.dev@gmail.com'
       ];
     }
     
