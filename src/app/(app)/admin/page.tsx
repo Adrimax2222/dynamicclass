@@ -376,7 +376,7 @@ function GroupsTab() {
 
     const { data: centers = [], isLoading } = useCollection<Center>(centersCollection);
     
-    // This effect ensures the default center exists and migrates the schedule if needed.
+    // This effect ensures the default center exists and migrates the schedule for 4ESO-B if needed.
     useEffect(() => {
         const setupDefaultCenter = async () => {
             if (isLoading || !firestore) return;
@@ -386,7 +386,7 @@ function GroupsTab() {
             
             if (querySnapshot.empty) {
                  try {
-                    console.log("Default center not found, creating it with schedule...");
+                    console.log("Default center not found, creating it with schedule for 4ESO-B...");
                     const defaultCenterData = {
                         name: SCHOOL_NAME,
                         code: SCHOOL_VERIFICATION_CODE,
@@ -553,3 +553,5 @@ function WipPlaceholder() {
     </div>
   );
 }
+
+    
