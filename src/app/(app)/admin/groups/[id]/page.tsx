@@ -267,25 +267,25 @@ function ClassesTab({ center }: { center: Center }) {
                         {center.classes.map((classObj, index) => (
                            <div 
                              key={`class-${index}-${classObj.name}`} 
-                             className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
+                             className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg border bg-muted/50"
                            >
-                             <p className="font-semibold">{classObj.name || "Clase sin nombre"}</p>
-                             <div className="flex items-center gap-2">
-                               <Button asChild variant="secondary" size="sm">
+                             <p className="font-semibold text-base whitespace-nowrap">{classObj.name || "Clase sin nombre"}</p>
+                             <div className="flex items-center gap-2 w-full sm:w-auto">
+                               <Button asChild variant="secondary" size="sm" className="flex-1 sm:flex-initial">
                                   <Link href={`/admin/schedule/editor/${center.id}/${encodeURIComponent(classObj.name)}`}>
                                    <BookOpen className="h-4 w-4 mr-2" />
-                                   Gestionar Horario
+                                   Horario
                                  </Link>
                                </Button>
-                               <Button asChild variant="secondary" size="sm">
+                               <Button asChild variant="secondary" size="sm" className="flex-1 sm:flex-initial">
                                  <Link href={`/admin/schedule/${center.id}/${encodeURIComponent(classObj.name)}`}>
                                    <CalendarCog className="h-4 w-4 mr-2" />
-                                   Gestionar Calendario
+                                   Calendario
                                  </Link>
                                </Button>
                                <AlertDialog>
                                  <AlertDialogTrigger asChild>
-                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" disabled={isProcessing}>
+                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0" disabled={isProcessing}>
                                      <Trash2 className="h-4 w-4" />
                                    </Button>
                                  </AlertDialogTrigger>
@@ -311,3 +311,5 @@ function ClassesTab({ center }: { center: Center }) {
         </Card>
     );
 }
+
+    
