@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -408,7 +407,7 @@ function GroupsTab() {
                 const centerData = centerDoc.data() as Center;
                 const class4B = centerData.classes.find(c => c.name === '4ESO-B');
                 
-                if (class4B && !class4B.schedule) {
+                if (class4B && (!class4B.schedule || Object.keys(class4B.schedule).length === 0)) {
                     console.log("Migrating schedule for 4ESO-B...");
                     const updatedClasses = centerData.classes.map(c => 
                         c.name === '4ESO-B' ? { ...c, schedule: fullSchedule } : c
@@ -553,5 +552,3 @@ function WipPlaceholder() {
     </div>
   );
 }
-
-    
