@@ -43,9 +43,10 @@ export default function CalendarPage() {
   const [error, setError] = useState<string | null>(null);
   const [date, setDate] = useState<Date | undefined>(new Date());
   
-  const userIsInCenter = user?.center === SCHOOL_VERIFICATION_CODE;
+  const userIsInCenter = user?.center && user.center !== 'personal';
+  const isScheduleHardcoded = user?.center === SCHOOL_VERIFICATION_CODE && user?.course === "4eso" && user?.className === "B";
   
-  const [calendarType, setCalendarType] = useState<CalendarType>(userIsInCenter ? "class" : "personal");
+  const [calendarType, setCalendarType] = useState<CalendarType>(isScheduleHardcoded ? "class" : "personal");
   const [isPersonalCalendarConnected, setIsPersonalCalendarConnected] = useState(false);
 
   // Load personal iCal URL from localStorage on mount
@@ -62,20 +63,18 @@ export default function CalendarPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch events when calendar type or user changes, but not for initial personal setup
+  // Fetch events when calendar type or user changes
   useEffect(() => {
-    if (calendarType === 'class') {
+    if (calendarType === 'class' && isScheduleHardcoded) {
       handleFetchEvents('class');
     } else if (calendarType === 'personal' && isPersonalCalendarConnected) {
-      // It's already connected, so fetch again if user switches back to it
       handleFetchEvents('personal', localStorage.getItem('icalUrl') || personalIcalUrl);
-    } else if (calendarType === 'personal' && !isPersonalCalendarConnected) {
-      // Switched to personal but not connected, clear events
+    } else {
       setProcessedEvents([]);
       setError(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [calendarType, user]);
+  }, [calendarType, user, isScheduleHardcoded, isPersonalCalendarConnected]);
 
 
   const parseIcal = (icalData: string, type: CalendarType): ParsedEvent[] => {
@@ -132,8 +131,8 @@ export default function CalendarPage() {
       if (type === 'personal') {
           urlToFetch = urlOverride || personalIcalUrl;
       } else if (type === 'class') {
-          if (!userIsInCenter) {
-              setError("No tienes permiso para ver el calendario del instituto.");
+          if (!isScheduleHardcoded) {
+              setError("No hay un calendario predefinido para tu clase.");
               setProcessedEvents([]);
               return;
           }
@@ -149,9 +148,6 @@ export default function CalendarPage() {
       setIsLoading(true);
       setError(null);
       
-      // Don't clear previous events immediately, gives a better UX on switching
-      // setProcessedEvents([]);
-
       try {
           const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(urlToFetch)}`);
           if (!response.ok) {
@@ -186,7 +182,6 @@ export default function CalendarPage() {
   };
 
   const handlePersonalCalendarConnect = () => {
-    // This is just a wrapper for handleFetchEvents for the button
     handleFetchEvents('personal');
   }
 
@@ -194,19 +189,13 @@ export default function CalendarPage() {
     localStorage.removeItem('icalUrl');
     setIsPersonalCalendarConnected(false);
     setPersonalIcalUrl("");
-    // If the current view is 'personal', we need to switch away from it
     if (calendarType === 'personal') {
-      if (userIsInCenter) {
+      setProcessedEvents([]);
+      setError(null);
+      // If the user could see the class calendar, switch to it
+      if (isScheduleHardcoded) {
         setCalendarType('class');
-      } else {
-        // No other calendar to switch to, just clear personal view
-        setProcessedEvents([]);
-        setError(null);
       }
-    } else {
-        // We were on 'class' view, just remove personal calendar data
-        const currentEvents = processedEvents.filter(e => e.type !== 'personal');
-        setProcessedEvents(currentEvents);
     }
   };
 
@@ -233,7 +222,7 @@ export default function CalendarPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="personal">Calendario Personal</SelectItem>
-              <SelectItem value="class" disabled={!userIsInCenter}>
+              <SelectItem value="class" disabled={!isScheduleHardcoded}>
                 Calendario del Instituto
               </SelectItem>
             </SelectContent>
@@ -244,9 +233,9 @@ export default function CalendarPage() {
               </Button>
           )}
         </div>
-        {!userIsInCenter && calendarType === 'class' && (
+        {userIsInCenter && !isScheduleHardcoded && calendarType === 'class' && (
             <p className="text-xs text-muted-foreground -mt-2">
-              Únete al grupo de tu centro para ver su calendario.
+              Actualmente no hay un calendario predefinido para tu clase.
             </p>
         )}
       </header>
@@ -392,5 +381,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-
-    

@@ -12,12 +12,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users } from "lucide-react";
+import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarEdit } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import Link from "next/link";
 
 export default function ManageGroupPage() {
     const { user } = useApp();
@@ -206,7 +207,7 @@ function ClassesTab({ center }: { center: Center }) {
         <Card>
             <CardHeader>
                 <CardTitle>Clases del Centro</CardTitle>
-                <CardDescription>Gestiona las clases disponibles en este centro.</CardDescription>
+                <CardDescription>Gestiona las clases y sus horarios predefinidos.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="flex gap-2">
@@ -234,25 +235,33 @@ function ClassesTab({ center }: { center: Center }) {
                         {center.classes.map(className => (
                             <div key={className} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
                                 <p className="font-semibold">{className}</p>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={isProcessing}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>¿Eliminar clase?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Vas a eliminar la clase "{className}". Esta acción no se puede deshacer.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleRemoveClass(className)}>Sí, eliminar</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                                <div className="flex items-center gap-2">
+                                     <Button asChild variant="secondary" size="sm">
+                                        <Link href={`/admin/schedule/${center.id}/${className}`}>
+                                            <CalendarEdit className="h-4 w-4 mr-2" />
+                                            Gestionar Horario
+                                        </Link>
+                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" disabled={isProcessing}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>¿Eliminar clase?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Vas a eliminar la clase "{className}". Esta acción no se puede deshacer.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleRemoveClass(className)}>Sí, eliminar</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -261,5 +270,3 @@ function ClassesTab({ center }: { center: Center }) {
         </Card>
     );
 }
-
-    
