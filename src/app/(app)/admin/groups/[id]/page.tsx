@@ -234,8 +234,8 @@ function ClassesTab({ center }: { center: Center }) {
                     </div>
                 ) : (
                     <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-2">
-                        {center.classes.map(classObj => (
-                            <div key={classObj.name} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
+                        {center.classes.map((classObj, index) => (
+                            <div key={`${classObj.name}-${index}`} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
                                 <p className="font-semibold">{classObj.name}</p>
                                 <div className="flex items-center gap-2">
                                      <Button asChild variant="secondary" size="sm">
