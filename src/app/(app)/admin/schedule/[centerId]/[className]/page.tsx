@@ -1,21 +1,21 @@
 
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
-import { FullScheduleView } from "@/components/layout/full-schedule-view";
-import { fullSchedule } from "@/lib/data";
+import { ChevronLeft, Loader2, Save } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookX } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useApp } from "@/lib/hooks/use-app";
 import LoadingScreen from "@/components/layout/loading-screen";
-import { SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
-import { useEffect, useState } from "react";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import type { Center } from "@/lib/types";
-
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 export default function ManageSchedulePage() {
     const { user } = useApp();
@@ -24,6 +24,7 @@ export default function ManageSchedulePage() {
     const centerId = params.centerId as string;
     const className = decodeURIComponent(params.className as string);
     const firestore = useFirestore();
+    const { toast } = useToast();
 
     const centerDocRef = useMemoFirebase(() => {
         if (!firestore || !centerId) return null;
@@ -32,8 +33,41 @@ export default function ManageSchedulePage() {
 
     const { data: center, isLoading: isCenterLoading } = useDoc<Center>(centerDocRef);
     
-    // For now, the only available schedule is hardcoded for a specific class
-    const isScheduleHardcoded = center?.code === SCHOOL_VERIFICATION_CODE && className === '4ESO-B';
+    const classData = center?.classes.find(c => c.name === className);
+    const [icalUrl, setIcalUrl] = useState(classData?.icalUrl || "");
+    const [isSaving, setIsSaving] = useState(false);
+
+    useState(() => {
+        if (classData) {
+            setIcalUrl(classData.icalUrl || "");
+        }
+    });
+
+    const handleSave = async () => {
+        if (!firestore || !center || !classData) return;
+        setIsSaving(true);
+        
+        const updatedClasses = center.classes.map(c => 
+            c.name === className ? { ...c, icalUrl: icalUrl.trim() } : c
+        );
+
+        try {
+            await updateDoc(centerDocRef, { classes: updatedClasses });
+            toast({
+                title: "Calendario actualizado",
+                description: `Se ha guardado la URL del calendario para la clase ${className}.`,
+            });
+        } catch (error) {
+            console.error("Error updating iCal URL:", error);
+            toast({
+                title: "Error",
+                description: "No se pudo guardar la URL del calendario.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     if (!user || user.role !== 'admin' || isCenterLoading) {
         return <LoadingScreen />;
@@ -47,7 +81,7 @@ export default function ManageSchedulePage() {
                 </Button>
                 <div>
                     <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-                        Gestionar Horario
+                        Gestionar Calendario
                     </h1>
                     <p className="text-muted-foreground">{center?.name} - {className}</p>
                 </div>
@@ -55,30 +89,36 @@ export default function ManageSchedulePage() {
             
             <Card>
                 <CardHeader>
-                    <CardTitle>Horario de la Clase</CardTitle>
+                    <CardTitle>Calendario iCal de la Clase</CardTitle>
                     <CardDescription>
-                       {isScheduleHardcoded 
-                        ? "Este es el horario predefinido para esta clase. Próximamente podrás editarlo desde aquí."
-                        : "Esta clase aún no tiene un horario predefinido. La funcionalidad para crearlo estará disponible pronto."
-                       }
+                       Pega la URL pública del calendario iCal para esta clase. Los eventos se sincronizarán automáticamente para los estudiantes.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="p-0 sm:p-2">
-                    {isScheduleHardcoded ? (
-                        <FullScheduleView scheduleData={fullSchedule} />
-                    ) : (
-                        <div className="flex flex-col items-center justify-center text-center p-8 sm:p-12">
-                            <BookX className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                            <p className="font-semibold text-lg">Horario no disponible</p>
-                            <p className="text-muted-foreground max-w-sm">
-                                Aún no se ha definido un horario para esta clase.
-                            </p>
-                        </div>
-                    )}
+                <CardContent className="space-y-6">
+                     <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>¿Cómo obtener la URL de iCal?</AlertTitle>
+                        <AlertDescription className="text-xs space-y-1">
+                           <p>1. En Google Calendar, ve a <strong>Configuración</strong> del calendario que quieres compartir.</p>
+                           <p>2. Asegúrate de que en <strong>Permisos de acceso</strong> esté marcada la opción <strong>"Poner a disposición del público"</strong>.</p>
+                           <p>3. En <strong>Integrar el calendario</strong>, copia la <strong>"Dirección URL pública en formato iCal"</strong>.</p>
+                        </AlertDescription>
+                    </Alert>
+                    <div className="space-y-2">
+                        <Label htmlFor="ical-url">URL del Calendario iCal</Label>
+                        <Input 
+                            id="ical-url"
+                            placeholder="https://calendar.google.com/calendar/ical/..."
+                            value={icalUrl}
+                            onChange={(e) => setIcalUrl(e.target.value)}
+                        />
+                    </div>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Guardar Cambios
+                    </Button>
                 </CardContent>
             </Card>
         </div>
     );
 }
-
-    

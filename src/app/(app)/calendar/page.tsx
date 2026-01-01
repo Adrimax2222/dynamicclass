@@ -16,15 +16,16 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import type { CalendarEvent as AppCalendarEvent } from "@/lib/types";
+import type { CalendarEvent as AppCalendarEvent, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useApp } from "@/lib/hooks/use-app";
-import { SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 type CalendarType = "personal" | "class";
 
@@ -33,10 +34,9 @@ interface ParsedEvent extends AppCalendarEvent {
     date: Date;
 }
 
-const SCHOOL_ICAL_URL = "https://calendar.google.com/calendar/ical/iestorredelpalau.cat_9vm0113gitbs90a9l7p4c3olh4%40group.calendar.google.com/public/basic.ics";
-
 export default function CalendarPage() {
   const { user } = useApp();
+  const firestore = useFirestore();
   const [personalIcalUrl, setPersonalIcalUrl] = useState("");
   const [processedEvents, setProcessedEvents] = useState<ParsedEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -44,10 +44,62 @@ export default function CalendarPage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   
   const userIsInCenter = user?.center && user.center !== 'personal';
-  const isScheduleHardcoded = user?.center === SCHOOL_VERIFICATION_CODE && user?.course === "4eso" && user?.className === "B";
   
-  const [calendarType, setCalendarType] = useState<CalendarType>(isScheduleHardcoded ? "class" : "personal");
+  // Logic to get the class iCal URL
+  const [classIcalUrl, setClassIcalUrl] = useState<string | null>(null);
+  const [isClassIcalLoading, setIsClassIcalLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchClassIcal = async () => {
+      if (!firestore || !user || !userIsInCenter) {
+        setIsClassIcalLoading(false);
+        return;
+      }
+      try {
+        setIsClassIcalLoading(true);
+        // We assume the center code is the document ID for simplicity here.
+        // In a real app, you might need a query to find the center by its code.
+        const centersQuery = query(collection(firestore, 'centers'), where('code', '==', user.center));
+        const centerSnapshot = await getDocs(centersQuery);
+
+        if (!centerSnapshot.empty) {
+            const centerDoc = centerSnapshot.docs[0];
+            const centerData = centerDoc.data() as Center;
+            const userClass = centerData.classes.find(c => c.name === `${user.course.replace('eso','ESO')}-${user.className}`);
+            if (userClass && userClass.icalUrl) {
+                setClassIcalUrl(userClass.icalUrl);
+            } else {
+                setClassIcalUrl(null);
+            }
+        } else {
+             setClassIcalUrl(null);
+        }
+      } catch (e) {
+        console.error("Error fetching class iCal URL:", e);
+        setClassIcalUrl(null);
+      } finally {
+        setIsClassIcalLoading(false);
+      }
+    };
+    fetchClassIcal();
+  }, [firestore, user, userIsInCenter]);
+
+  const isClassCalendarAvailable = !!classIcalUrl;
+  
+  const [calendarType, setCalendarType] = useState<CalendarType>("personal");
   const [isPersonalCalendarConnected, setIsPersonalCalendarConnected] = useState(false);
+
+  // Set default calendar type once we know if the class calendar is available
+  useEffect(() => {
+    if (!isClassIcalLoading) {
+      if (isClassCalendarAvailable) {
+        setCalendarType('class');
+      } else {
+        setCalendarType('personal');
+      }
+    }
+  }, [isClassIcalLoading, isClassCalendarAvailable]);
+
 
   // Load personal iCal URL from localStorage on mount
   useEffect(() => {
@@ -65,7 +117,9 @@ export default function CalendarPage() {
 
   // Fetch events when calendar type or user changes
   useEffect(() => {
-    if (calendarType === 'class' && isScheduleHardcoded) {
+    if (isClassIcalLoading) return;
+
+    if (calendarType === 'class' && isClassCalendarAvailable) {
       handleFetchEvents('class');
     } else if (calendarType === 'personal' && isPersonalCalendarConnected) {
       handleFetchEvents('personal', localStorage.getItem('icalUrl') || personalIcalUrl);
@@ -74,7 +128,7 @@ export default function CalendarPage() {
       setError(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [calendarType, user, isScheduleHardcoded, isPersonalCalendarConnected]);
+  }, [calendarType, user, isClassCalendarAvailable, isPersonalCalendarConnected, isClassIcalLoading]);
 
 
   const parseIcal = (icalData: string, type: CalendarType): ParsedEvent[] => {
@@ -131,12 +185,12 @@ export default function CalendarPage() {
       if (type === 'personal') {
           urlToFetch = urlOverride || personalIcalUrl;
       } else if (type === 'class') {
-          if (!isScheduleHardcoded) {
+          if (!isClassCalendarAvailable) {
               setError("No hay un calendario predefinido para tu clase.");
               setProcessedEvents([]);
               return;
           }
-          urlToFetch = SCHOOL_ICAL_URL;
+          urlToFetch = classIcalUrl;
       }
       
       if (!urlToFetch) {
@@ -193,7 +247,7 @@ export default function CalendarPage() {
       setProcessedEvents([]);
       setError(null);
       // If the user could see the class calendar, switch to it
-      if (isScheduleHardcoded) {
+      if (isClassCalendarAvailable) {
         setCalendarType('class');
       }
     }
@@ -222,7 +276,7 @@ export default function CalendarPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="personal">Calendario Personal</SelectItem>
-              <SelectItem value="class" disabled={!isScheduleHardcoded}>
+              <SelectItem value="class" disabled={!isClassCalendarAvailable}>
                 Calendario del Instituto
               </SelectItem>
             </SelectContent>
@@ -233,14 +287,14 @@ export default function CalendarPage() {
               </Button>
           )}
         </div>
-        {userIsInCenter && !isScheduleHardcoded && calendarType === 'class' && (
+        {userIsInCenter && !isClassCalendarAvailable && calendarType === 'class' && (
             <p className="text-xs text-muted-foreground -mt-2">
-              Actualmente no hay un calendario predefinido para tu clase.
+              Actualmente no hay un calendario predefinido para tu clase. Pide a un administrador que lo configure.
             </p>
         )}
       </header>
       
-      {isLoading ? (
+      {isLoading || isClassIcalLoading ? (
         <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg h-64">
           <Loader2 className="h-12 w-12 text-primary animate-spin" />
           <p className="mt-4 font-semibold">Cargando eventos...</p>

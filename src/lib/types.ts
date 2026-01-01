@@ -29,11 +29,16 @@ export type User = {
 // Simplified user type for center management
 export type CenterUser = Pick<User, 'uid' | 'name' | 'email' | 'avatar' | 'role'>;
 
+export type ClassDefinition = {
+  name: string;
+  icalUrl?: string;
+}
+
 export type Center = {
     id: string;
     name: string;
     code: string;
-    classes: string[];
+    classes: ClassDefinition[];
     createdAt: Timestamp;
 };
 

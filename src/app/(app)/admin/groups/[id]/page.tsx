@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useApp } from "@/lib/hooks/use-app";
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from "@/firebase";
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs } from "firebase/firestore";
-import type { Center, User as CenterUser } from "@/lib/types";
+import type { Center, User as CenterUser, ClassDefinition } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -174,9 +174,11 @@ function ClassesTab({ center }: { center: Center }) {
 
         setIsProcessing(true);
         const centerDocRef = doc(firestore, 'centers', center.id);
+        const newClass: ClassDefinition = { name: newClassName.trim(), icalUrl: '' };
+
         try {
             await updateDoc(centerDocRef, {
-                classes: arrayUnion(newClassName.trim())
+                classes: arrayUnion(newClass)
             });
             setNewClassName("");
             toast({ title: "Clase añadida", description: `La clase "${newClassName.trim()}" ha sido añadida.` });
@@ -187,15 +189,15 @@ function ClassesTab({ center }: { center: Center }) {
         }
     };
 
-    const handleRemoveClass = async (className: string) => {
+    const handleRemoveClass = async (classObj: ClassDefinition) => {
         if (!firestore || !center.id) return;
         setIsProcessing(true);
         const centerDocRef = doc(firestore, 'centers', center.id);
         try {
             await updateDoc(centerDocRef, {
-                classes: arrayRemove(className)
+                classes: arrayRemove(classObj)
             });
-            toast({ title: "Clase eliminada", description: `La clase "${className}" ha sido eliminada.` });
+            toast({ title: "Clase eliminada", description: `La clase "${classObj.name}" ha sido eliminada.` });
         } catch (error) {
             toast({ title: "Error", description: "No se pudo eliminar la clase.", variant: "destructive" });
         } finally {
@@ -207,7 +209,7 @@ function ClassesTab({ center }: { center: Center }) {
         <Card>
             <CardHeader>
                 <CardTitle>Clases del Centro</CardTitle>
-                <CardDescription>Gestiona las clases y sus horarios predefinidos.</CardDescription>
+                <CardDescription>Gestiona las clases y sus calendarios predefinidos.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="flex gap-2">
@@ -232,14 +234,14 @@ function ClassesTab({ center }: { center: Center }) {
                     </div>
                 ) : (
                     <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-2">
-                        {center.classes.map(className => (
-                            <div key={className} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
-                                <p className="font-semibold">{className}</p>
+                        {center.classes.map(classObj => (
+                            <div key={classObj.name} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
+                                <p className="font-semibold">{classObj.name}</p>
                                 <div className="flex items-center gap-2">
                                      <Button asChild variant="secondary" size="sm">
-                                        <Link href={`/admin/schedule/${center.id}/${encodeURIComponent(className)}`}>
+                                        <Link href={`/admin/schedule/${center.id}/${encodeURIComponent(classObj.name)}`}>
                                             <CalendarCog className="h-4 w-4 mr-2" />
-                                            Gestionar Horario
+                                            Gestionar Calendario
                                         </Link>
                                     </Button>
                                     <AlertDialog>
@@ -252,12 +254,12 @@ function ClassesTab({ center }: { center: Center }) {
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>¿Eliminar clase?</AlertDialogTitle>
                                                 <AlertDialogDescription>
-                                                    Vas a eliminar la clase "{className}". Esta acción no se puede deshacer.
+                                                    Vas a eliminar la clase "{classObj.name}". Esta acción no se puede deshacer.
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleRemoveClass(className)}>Sí, eliminar</AlertDialogAction>
+                                                <AlertDialogAction onClick={() => handleRemoveClass(classObj)}>Sí, eliminar</AlertDialogAction>
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
@@ -270,5 +272,3 @@ function ClassesTab({ center }: { center: Center }) {
         </Card>
     );
 }
-
-    
