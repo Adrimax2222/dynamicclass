@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -160,7 +161,7 @@ export default function ProfilePage() {
             <Badge variant="destructive" className="mt-2">Admin</Badge>
           )}
           <p className="text-muted-foreground mt-2">{displayCenter}</p>
-          <EditProfileDialog />
+          <EditProfileDialog allCenters={centers} />
         </CardContent>
       </Card>
       
@@ -389,8 +390,18 @@ function AvatarDisplayPreview({ avatar }: { avatar: EditableAvatar }) {
     );
 }
 
+const courseOptions = [
+    { value: '1eso', label: '1º ESO' },
+    { value: '2eso', label: '2º ESO' },
+    { value: '3eso', label: '3º ESO' },
+    { value: '4eso', label: '4º ESO' },
+    { value: '1bach', label: '1º Bachillerato' },
+    { value: '2bach', label: '2º Bachillerato' },
+];
 
-function EditProfileDialog() {
+const classOptions = ['A', 'B', 'C', 'D', 'E'];
+
+function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
   const { user, updateUser } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -441,19 +452,41 @@ function EditProfileDialog() {
 
   useEffect(() => {
     if (usePersonal) {
-        setCenter('');
+        setCenter('personal');
         setCourse('personal');
         setClassName('personal');
-        // keep ageRange
     } else {
-        // If switching back from personal, restore previous values or set to default
-        setCenter(user?.center !== 'personal' ? user?.center || '' : '');
-        setCourse(user?.course !== 'personal' ? user?.course || '' : '');
-        setClassName(user?.className !== 'personal' ? user?.className || '' : '');
+        setCenter(user?.center === 'personal' ? '' : user?.center || '');
+        setCourse(user?.course === 'personal' ? '' : user?.course || '');
+        setClassName(user?.className === 'personal' ? '' : user?.className || '');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usePersonal]);
 
+  const availableClasses = useMemo(() => {
+    const selectedCenter = allCenters.find(c => c.code === center);
+    if (!selectedCenter || !selectedCenter.classes) return { courses: [], classNames: [] };
+
+    const courses = new Set<string>();
+    const classNames = new Set<string>();
+
+    selectedCenter.classes.forEach(c => {
+        const [course, className] = c.name.split('-');
+        if (course) {
+            const courseValue = course.toLowerCase().replace('º', '');
+            courses.add(courseValue);
+        }
+        if (className) {
+            classNames.add(className);
+        }
+    });
+
+    return {
+        courses: Array.from(courses),
+        classNames: Array.from(classNames)
+    };
+  }, [center, allCenters]);
+  
   
   const handleLetterSelect = (letter: string) => {
     setEditableAvatar(prev => ({ ...prev, id: `letter_${letter}` }));
@@ -730,28 +763,27 @@ function EditProfileDialog() {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="course" className={cn(usePersonal && "text-muted-foreground/50")}>Curso</Label>
-                        <Select onValueChange={setCourse} value={course} disabled={usePersonal}>
-                            <SelectTrigger id="course"><SelectValue /></SelectTrigger>
+                        <Select onValueChange={setCourse} value={course} disabled={usePersonal || availableClasses.courses.length === 0}>
+                            <SelectTrigger id="course"><SelectValue placeholder="Curso..." /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="1eso">1º ESO</SelectItem>
-                                <SelectItem value="2eso">2º ESO</SelectItem>
-                                <SelectItem value="3eso">3º ESO</SelectItem>
-                                <SelectItem value="4eso">4º ESO</SelectItem>
-                                <SelectItem value="1bach">1º Bachillerato</SelectItem>
-                                <SelectItem value="2bach">2º Bachillerato</SelectItem>
+                                {courseOptions.map(option => (
+                                    <SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="className" className={cn(usePersonal && "text-muted-foreground/50")}>Clase</Label>
-                        <Select onValueChange={setClassName} value={className} disabled={usePersonal}>
-                            <SelectTrigger id="className"><SelectValue /></SelectTrigger>
+                        <Select onValueChange={setClassName} value={className} disabled={usePersonal || availableClasses.classNames.length === 0}>
+                            <SelectTrigger id="className"><SelectValue placeholder="Clase..." /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="A">A</SelectItem>
-                                <SelectItem value="B">B</SelectItem>
-                                <SelectItem value="C">C</SelectItem>
-                                <SelectItem value="D">D</SelectItem>
-                                <SelectItem value="E">E</SelectItem>
+                                {classOptions.map(option => (
+                                    <SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>
+                                        {option}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
