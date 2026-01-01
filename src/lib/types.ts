@@ -32,6 +32,7 @@ export type CenterUser = Pick<User, 'uid' | 'name' | 'email' | 'avatar' | 'role'
 export type ClassDefinition = {
   name: string;
   icalUrl?: string;
+  schedule?: Schedule;
 }
 
 export type Center = {

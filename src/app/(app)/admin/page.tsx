@@ -22,6 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
+import { fullSchedule } from "@/lib/data";
 
 export default function AdminPage() {
     const { user } = useApp();
@@ -375,31 +376,54 @@ function GroupsTab() {
 
     const { data: centers = [], isLoading } = useCollection<Center>(centersCollection);
     
-    // This effect ensures the default center exists. It's more robust now.
+    // This effect ensures the default center exists and migrates the schedule if needed.
     useEffect(() => {
-        const ensureDefaultCenterExists = async () => {
+        const setupDefaultCenter = async () => {
             if (isLoading || !firestore) return;
 
-            const defaultCenterExists = centers.some(c => c.code === SCHOOL_VERIFICATION_CODE);
-
-            if (!defaultCenterExists) {
+            const defaultCenterQuery = query(collection(firestore, "centers"), where("code", "==", SCHOOL_VERIFICATION_CODE));
+            const querySnapshot = await getDocs(defaultCenterQuery);
+            
+            if (querySnapshot.empty) {
                  try {
-                    console.log("Default center not found in collection, creating it...");
-                    await addDoc(collection(firestore, "centers"), {
+                    console.log("Default center not found, creating it with schedule...");
+                    const defaultCenterData = {
                         name: SCHOOL_NAME,
                         code: SCHOOL_VERIFICATION_CODE,
-                        classes: ["4ESO-B"],
+                        classes: [{
+                            name: '4ESO-B',
+                            icalUrl: '',
+                            schedule: fullSchedule, // Add the hardcoded schedule
+                        }],
                         createdAt: serverTimestamp(),
-                    });
-                    toast({ title: "Sistema actualizado", description: "El centro por defecto ha sido migrado al nuevo sistema." });
+                    };
+                    await addDoc(collection(firestore, "centers"), defaultCenterData);
+                    toast({ title: "Sistema actualizado", description: "El centro por defecto ha sido creado con su horario." });
                 } catch (e) {
-                     console.error("Failed to create default center (might already exist):", e);
+                     console.error("Failed to create default center:", e);
+                }
+            } else {
+                // Center exists, check if schedule migration is needed
+                const centerDoc = querySnapshot.docs[0];
+                const centerData = centerDoc.data() as Center;
+                const class4B = centerData.classes.find(c => c.name === '4ESO-B');
+                
+                if (class4B && !class4B.schedule) {
+                    console.log("Migrating schedule for 4ESO-B...");
+                    const updatedClasses = centerData.classes.map(c => 
+                        c.name === '4ESO-B' ? { ...c, schedule: fullSchedule } : c
+                    );
+                    try {
+                        await updateDoc(centerDoc.ref, { classes: updatedClasses });
+                        toast({ title: "Migración de Horario", description: "El horario de 4º ESO B se ha movido al nuevo sistema." });
+                    } catch (e) {
+                        console.error("Failed to migrate schedule:", e);
+                    }
                 }
             }
         };
         
-        ensureDefaultCenterExists();
-    // The dependency array is crucial. It re-runs only when loading is done or the centers list changes.
+        setupDefaultCenter();
     }, [isLoading, centers, firestore, toast]);
 
 

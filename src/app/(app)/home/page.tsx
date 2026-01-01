@@ -31,7 +31,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { fullSchedule } from "@/lib/data";
 import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent, Announcement, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity, Flame, ShoppingCart, TreePine, Gift, Snowflake } from "lucide-react";
@@ -80,6 +79,7 @@ export default function HomePage() {
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
   const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
   const [upcomingClassesDay, setUpcomingClassesDay] = useState<string>("Próximas Clases");
+  const [userSchedule, setUserSchedule] = useState<Schedule | null>(null);
   
   const [allEvents, setAllEvents] = useState<ParsedEvent[]>([]);
   const [allAnnouncements, setAllAnnouncements] = useState<Announcement[]>([]);
@@ -88,7 +88,6 @@ export default function HomePage() {
   const [completedEventIds, setCompletedEventIds] = useState<string[]>([]);
   const [readAnnouncementIds, setReadAnnouncementIds] = useState<string[]>([]);
 
-  const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
 
   useEffect(() => {
     // On mount, load completed IDs from localStorage
@@ -245,7 +244,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const fetchAndCalculateVars = async () => {
-        if (!firestore) return;
+        if (!firestore || !user) return;
 
         setIsLoadingVariables(true);
 
@@ -254,16 +253,28 @@ export default function HomePage() {
         const centersList = centersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Center));
         setAllCenters(centersList);
 
-        // Fetch calendar events
-        const userCenter = centersList.find(c => c.code === user?.center);
+        const userCenter = centersList.find(c => c.code === user.center);
+        const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
+        
+        let icalUrlToFetch: string | null = null;
         if (userCenter) {
+            const userClassDef = userCenter.classes.find(c => c.name === userClassName);
+            if (userClassDef?.icalUrl) {
+                icalUrlToFetch = userClassDef.icalUrl;
+            }
+            if (userClassDef?.schedule) {
+                setUserSchedule(userClassDef.schedule);
+            } else {
+                setUserSchedule(null);
+            }
+        } else {
+             setUserSchedule(null);
+        }
+
+        if (icalUrlToFetch) {
             try {
-                // This is a placeholder for where you might have different iCal URLs per center
-                const urlToFetch = SCHOOL_ICAL_URL;
-                const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(urlToFetch)}`);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch calendar: ${response.status}`);
-                }
+                const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(icalUrlToFetch)}`);
+                if (!response.ok) throw new Error(`Failed to fetch calendar: ${response.status}`);
                 const icalData = await response.text();
                 const parsedEvents = parseIcal(icalData);
                 setAllEvents(parsedEvents);
@@ -271,6 +282,8 @@ export default function HomePage() {
                 console.error("Error fetching or processing calendar for variables:", error);
                 setAllEvents([]);
             }
+        } else {
+            setAllEvents([]);
         }
 
         // Fetch announcements
@@ -285,7 +298,7 @@ export default function HomePage() {
                 return ann.scope === 'general';
               }
               // If user is in a center, show general announcements AND announcements for their center
-              return ann.scope === 'general' || (ann.scope === 'center' && userCenter.code === SCHOOL_VERIFICATION_CODE);
+              return ann.scope === 'general' || (userCenter && ann.scope === 'center' && userCenter.code === SCHOOL_VERIFICATION_CODE);
             });
             setAllAnnouncements(filteredAnnouncements);
         } catch (error) {
@@ -297,12 +310,14 @@ export default function HomePage() {
     };
     
     fetchAndCalculateVars();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, firestore]);
 
 
   useEffect(() => {
-    if (!isScheduleAvailable) return;
+    if (!userSchedule) {
+      setUpcomingClasses([]);
+      return;
+    };
 
     const getUpcomingClasses = (): { classes: UpcomingClass[], dayTitle: string } => {
         const now = new Date();
@@ -312,7 +327,6 @@ export default function HomePage() {
         const currentTime = hour * 60 + minute;
 
         const weekDays = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-        const scheduleDays = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
         let targetDayIndex: number;
         let showRemainingToday = false;
@@ -336,7 +350,7 @@ export default function HomePage() {
         }
         
         const targetDayName = weekDays[targetDayIndex] as keyof Schedule;
-        let classesForDay: ScheduleEntry[] = fullSchedule[targetDayName] || [];
+        let classesForDay: ScheduleEntry[] = userSchedule[targetDayName] || [];
 
         if (showRemainingToday) {
             classesForDay = classesForDay.filter(c => {
@@ -351,7 +365,7 @@ export default function HomePage() {
         if (classesForDay.length === 0 && dayOfWeek >= 1 && dayOfWeek < 5) {
              const nextDayName = weekDays[dayOfWeek + 1] as keyof Schedule;
              return {
-                 classes: (fullSchedule[nextDayName] || []).slice(0, 3),
+                 classes: (userSchedule[nextDayName] || []).slice(0, 3),
                  dayTitle: `Clases del ${nextDayName}`
              };
         }
@@ -360,7 +374,7 @@ export default function HomePage() {
         if (classesForDay.length === 0 && (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0)) {
             const nextDayName = weekDays[1] as keyof Schedule; // Monday
             return {
-                classes: (fullSchedule[nextDayName] || []).slice(0, 3),
+                classes: (userSchedule[nextDayName] || []).slice(0, 3),
                 dayTitle: `Clases del ${nextDayName}`
             };
         }
@@ -371,7 +385,7 @@ export default function HomePage() {
     const { classes, dayTitle } = getUpcomingClasses();
     setUpcomingClasses(classes);
     setUpcomingClassesDay(dayTitle);
-  }, [isScheduleAvailable]);
+  }, [userSchedule]);
 
   const handleProfileCompletionSave = async (updatedData?: Partial<User>) => {
     if (user && firestore) {
@@ -455,6 +469,7 @@ export default function HomePage() {
   const isProfileIncomplete = user.isNewUser && (user.course === "default" || user.className === "default" || user.ageRange === "default");
   const isAdmin = ADMIN_EMAILS.includes(user.email);
   const streakCount = user.streak || 0;
+  const isScheduleAvailable = !!userSchedule;
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
@@ -635,7 +650,7 @@ export default function HomePage() {
               upcomingClasses.map((item) => (
                 <ScheduleDialog 
                     key={item.id} 
-                    scheduleData={fullSchedule} 
+                    scheduleData={userSchedule} 
                     selectedClassId={item.id}
                     userCourse={user.course}
                     userClassName={user.className}
@@ -684,7 +699,7 @@ export default function HomePage() {
                   <BookX className="h-12 w-12 text-muted-foreground/50 mb-4" />
                   <p className="font-semibold">Horario no disponible</p>
                   <p className="text-sm text-muted-foreground">
-                      Actualmente, el horario solo está disponible para el grupo 4ºB.
+                      Actualmente, el horario solo está disponible para tu grupo si un administrador lo ha configurado.
                   </p>
                 </CardContent>
             </Card>
@@ -898,7 +913,11 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete, c
     )
 }
 
-function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, userClassName }: { children: React.ReactNode, scheduleData: Schedule, selectedClassId?: string, userCourse: string, userClassName: string }) {
+function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, userClassName }: { children: React.ReactNode, scheduleData: Schedule | null, selectedClassId?: string, userCourse: string, userClassName: string }) {
+    
+    if (!scheduleData) {
+        return <>{children}</>;
+    }
     
     const courseMap: Record<string, string> = {
         "1eso": "1º ESO",

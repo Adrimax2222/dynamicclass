@@ -116,7 +116,17 @@
             "type": "object",
             "properties": {
               "name": { "type": "string" },
-              "icalUrl": { "type": "string", "format": "uri" }
+              "icalUrl": { "type": "string", "format": "uri" },
+              "schedule": {
+                "type": "object",
+                "properties": {
+                  "Lunes": { "$ref": "#/entities/ScheduleDay" },
+                  "Martes": { "$ref": "#/entities/ScheduleDay" },
+                  "Miércoles": { "$ref": "#/entities/ScheduleDay" },
+                  "Jueves": { "$ref": "#/entities/ScheduleDay" },
+                  "Viernes": { "$ref": "#/entities/ScheduleDay" }
+                }
+              }
             },
             "required": ["name"]
           }
@@ -124,6 +134,23 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "code", "createdAt"]
+    },
+    "ScheduleDay": {
+      "title": "Schedule Day",
+      "description": "Represents the schedule for a single day of the week.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "subject": { "type": "string" },
+          "time": { "type": "string" },
+          "teacher": { "type": "string" },
+          "room": { "type": "string" },
+          "details": { "type": "string" }
+        },
+        "required": ["id", "subject", "time", "teacher", "room"]
+      }
     }
   },
   "auth": {

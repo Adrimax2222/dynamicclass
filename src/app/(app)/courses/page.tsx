@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Notebook,
   Building,
@@ -49,9 +49,11 @@ import {
   doc,
   serverTimestamp,
   orderBy,
-  query
+  query,
+  where,
+  getDocs
 } from "firebase/firestore";
-import type { Note, Announcement, AnnouncementScope } from "@/lib/types";
+import type { Note, Announcement, AnnouncementScope, Schedule, Center } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -68,7 +70,6 @@ import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Logo } from "@/components/icons";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
-import { fullSchedule } from "@/lib/data";
 import { FullScheduleView } from "@/components/layout/full-schedule-view";
 
 export default function InfoPage() {
@@ -347,8 +348,41 @@ function AnnouncementItem({ announcement, isAuthor, onUpdate, onDelete }: { anno
 
 function MyClassesTab() {
   const { user } = useApp();
+  const firestore = useFirestore();
+  const [schedule, setSchedule] = useState<Schedule | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (!user) {
+  useEffect(() => {
+    const fetchSchedule = async () => {
+      if (!firestore || !user || !user.center || user.center === 'personal') {
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+
+      const centersQuery = query(collection(firestore, 'centers'), where('code', '==', user.center));
+      const centerSnapshot = await getDocs(centersQuery);
+
+      if (!centerSnapshot.empty) {
+        const centerDoc = centerSnapshot.docs[0];
+        const centerData = centerDoc.data() as Center;
+        const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
+        const userClassDef = centerData.classes.find(c => c.name === userClassName);
+        if (userClassDef?.schedule) {
+          setSchedule(userClassDef.schedule);
+        } else {
+          setSchedule(null);
+        }
+      } else {
+        setSchedule(null);
+      }
+      setIsLoading(false);
+    };
+
+    fetchSchedule();
+  }, [firestore, user]);
+
+  if (!user || isLoading) {
     return (
       <Card>
         <CardHeader>
@@ -362,7 +396,7 @@ function MyClassesTab() {
     );
   }
 
-  const isScheduleAvailable = user.course === "4eso" && user.className === "B";
+  const isScheduleAvailable = !!schedule;
 
   const courseMap: Record<string, string> = {
     "1eso": "1º ESO",
@@ -389,14 +423,14 @@ function MyClassesTab() {
         </div>
       </CardHeader>
       <CardContent className="p-0 sm:p-2">
-        {isScheduleAvailable ? (
-          <FullScheduleView scheduleData={fullSchedule} />
+        {isScheduleAvailable && schedule ? (
+          <FullScheduleView scheduleData={schedule} />
         ) : (
           <div className="flex flex-col items-center justify-center text-center p-8 sm:p-12">
             <BookX className="h-16 w-16 text-muted-foreground/50 mb-4" />
             <p className="font-semibold text-lg">Horario no disponible</p>
             <p className="text-muted-foreground max-w-sm">
-                Actualmente, solo el grupo 4ºB tiene un horario de clases digitalizado. Si perteneces a otro grupo, esta función no está activada para ti.
+                Actualmente no hay un horario definido para tu clase. Pide a un administrador de tu centro que lo configure.
             </p>
           </div>
         )}

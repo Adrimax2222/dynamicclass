@@ -10,7 +10,7 @@ import { Building, Info, User, Sandwich } from "lucide-react";
 import { TeacherInfoDialog } from "./teacher-info-dialog";
 
 interface FullScheduleViewProps {
-    scheduleData: Schedule;
+    scheduleData: Schedule | null;
     selectedClassId?: string;
 }
 
@@ -28,6 +28,7 @@ export function FullScheduleView({ scheduleData, selectedClassId }: FullSchedule
     
     // Find which day the selected class is on to set the default tab
     const findDefaultTab = () => {
+        if (!scheduleData) return Object.keys(dayAbbreviations)[0];
         if (selectedClassId) {
             for (const day in scheduleData) {
                 // Capitalize day to match keys in scheduleData
@@ -43,8 +44,6 @@ export function FullScheduleView({ scheduleData, selectedClassId }: FullSchedule
         return validDays.includes(capitalizedToday) ? capitalizedToday : validDays[0];
     }
     
-    const defaultTab = findDefaultTab();
-
     const dayAbbreviations: Record<string, string> = {
         Lunes: 'Lun',
         Martes: 'Mar',
@@ -52,6 +51,8 @@ export function FullScheduleView({ scheduleData, selectedClassId }: FullSchedule
         Jueves: 'Jue',
         Viernes: 'Vie',
     }
+
+    const defaultTab = findDefaultTab();
 
     useEffect(() => {
         setIsMounted(true);
@@ -72,7 +73,7 @@ export function FullScheduleView({ scheduleData, selectedClassId }: FullSchedule
         }
     }, [isMounted, selectedClassId]);
 
-    if (!isMounted) {
+    if (!isMounted || !scheduleData) {
         return null;
     }
 
@@ -118,7 +119,7 @@ export function FullScheduleView({ scheduleData, selectedClassId }: FullSchedule
         <Tabs defaultValue={defaultTab} className="w-full flex-1 flex flex-col min-h-0">
             <div className="px-6">
                 <TabsList className="grid w-full grid-cols-5 h-auto">
-                    {Object.keys(scheduleData).map(day => (
+                    {Object.keys(dayAbbreviations).map(day => (
                         <TabsTrigger key={day} value={day} className="py-2 text-xs sm:text-sm">{dayAbbreviations[day] || day}</TabsTrigger>
                     ))}
                 </TabsList>
@@ -128,9 +129,9 @@ export function FullScheduleView({ scheduleData, selectedClassId }: FullSchedule
                     {Object.entries(scheduleData).map(([day, entries]) => (
                         <TabsContent key={day} value={day} className="mt-0">
                             <Accordion type="single" collapsible defaultValue={selectedClassId ? `item-${selectedClassId}` : undefined}>
-                                {entries.slice(0, 3).map(renderScheduleEntry)}
+                                {(entries || []).slice(0, 3).map(renderScheduleEntry)}
                                 <PatioSeparator />
-                                {entries.slice(3).map(renderScheduleEntry)}
+                                {(entries || []).slice(3).map(renderScheduleEntry)}
                             </Accordion>
                         </TabsContent>
                     ))}
