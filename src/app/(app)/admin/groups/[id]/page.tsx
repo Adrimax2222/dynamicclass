@@ -19,6 +19,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Link from "next/link";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 export default function ManageGroupPage() {
     const { user } = useApp();
@@ -164,24 +166,28 @@ function MembersTab({ centerCode }: { centerCode: string }) {
 }
 
 function ClassesTab({ center }: { center: Center }) {
+    const [newCourse, setNewCourse] = useState("");
     const [newClassName, setNewClassName] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
     const firestore = useFirestore();
     const { toast } = useToast();
 
     const handleAddClass = async () => {
-        if (!firestore || !center.id || !newClassName.trim()) return;
+        if (!firestore || !center.id || !newCourse || !newClassName) return;
+
+        const combinedClassName = `${newCourse.replace('eso','ESO')}-${newClassName}`;
 
         setIsProcessing(true);
         const centerDocRef = doc(firestore, 'centers', center.id);
-        const newClass: ClassDefinition = { name: newClassName.trim(), icalUrl: '' };
+        const newClass: ClassDefinition = { name: combinedClassName, icalUrl: '' };
 
         try {
             await updateDoc(centerDocRef, {
                 classes: arrayUnion(newClass)
             });
+            setNewCourse("");
             setNewClassName("");
-            toast({ title: "Clase añadida", description: `La clase "${newClassName.trim()}" ha sido añadida.` });
+            toast({ title: "Clase añadida", description: `La clase "${combinedClassName}" ha sido añadida.` });
         } catch (error) {
             toast({ title: "Error", description: "No se pudo añadir la clase.", variant: "destructive" });
         } finally {
@@ -212,16 +218,40 @@ function ClassesTab({ center }: { center: Center }) {
                 <CardDescription>Gestiona las clases y sus calendarios predefinidos.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                    <Input
-                        placeholder="Nombre de la nueva clase (Ej: 4ESO-A)"
-                        value={newClassName}
-                        onChange={(e) => setNewClassName(e.target.value)}
-                        disabled={isProcessing}
-                    />
-                    <Button onClick={handleAddClass} disabled={isProcessing || !newClassName.trim()}>
-                        {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
-                    </Button>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                        <Label htmlFor="course-select">Curso</Label>
+                        <Select onValueChange={setNewCourse} value={newCourse} disabled={isProcessing}>
+                            <SelectTrigger id="course-select"><SelectValue placeholder="Curso..."/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="1eso">1º ESO</SelectItem>
+                                <SelectItem value="2eso">2º ESO</SelectItem>
+                                <SelectItem value="3eso">3º ESO</SelectItem>
+                                <SelectItem value="4eso">4º ESO</SelectItem>
+                                <SelectItem value="1bach">1º Bach.</SelectItem>
+                                <SelectItem value="2bach">2º Bach.</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-1">
+                        <Label htmlFor="class-name-select">Clase</Label>
+                        <Select onValueChange={setNewClassName} value={newClassName} disabled={isProcessing}>
+                            <SelectTrigger id="class-name-select"><SelectValue placeholder="Clase..."/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="A">A</SelectItem>
+                                <SelectItem value="B">B</SelectItem>
+                                <SelectItem value="C">C</SelectItem>
+                                <SelectItem value="D">D</SelectItem>
+                                <SelectItem value="E">E</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex items-end">
+                        <Button onClick={handleAddClass} disabled={isProcessing || !newCourse || !newClassName} className="w-full">
+                            {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                            Añadir Clase
+                        </Button>
+                    </div>
                 </div>
                 <Separator />
                 {(center.classes || []).length === 0 ? (

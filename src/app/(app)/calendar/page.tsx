@@ -25,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 type CalendarType = "personal" | "class";
 
@@ -57,15 +57,17 @@ export default function CalendarPage() {
       }
       try {
         setIsClassIcalLoading(true);
-        // We assume the center code is the document ID for simplicity here.
-        // In a real app, you might need a query to find the center by its code.
         const centersQuery = query(collection(firestore, 'centers'), where('code', '==', user.center));
         const centerSnapshot = await getDocs(centersQuery);
 
         if (!centerSnapshot.empty) {
             const centerDoc = centerSnapshot.docs[0];
             const centerData = centerDoc.data() as Center;
-            const userClass = centerData.classes.find(c => c.name === `${user.course.replace('eso','ESO')}-${user.className}`);
+            
+            // Standardize the class name format to match what the admin creates
+            const userClassNameStandard = `${user.course.replace('eso','ESO')}-${user.className}`;
+            
+            const userClass = centerData.classes.find(c => c.name === userClassNameStandard);
             if (userClass && userClass.icalUrl) {
                 setClassIcalUrl(userClass.icalUrl);
             } else {
@@ -276,7 +278,7 @@ export default function CalendarPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="personal">Calendario Personal</SelectItem>
-              <SelectItem value="class" disabled={!isClassCalendarAvailable}>
+              <SelectItem value="class" disabled={!userIsInCenter}>
                 Calendario del Instituto
               </SelectItem>
             </SelectContent>
