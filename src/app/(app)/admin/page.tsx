@@ -4,14 +4,14 @@ import { useState, useEffect } from "react";
 import { useApp } from "@/lib/hooks/use-app";
 import { useRouter } from "next/navigation";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, doc, getDocs, writeBatch, query, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, getDocs, writeBatch, query, updateDoc, deleteDoc, increment } from "firebase/firestore";
 import type { User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Users, Group, Trophy, ChevronLeft, Search, UserX, Trash2, CheckCircle, Ban, Loader2, Wrench } from "lucide-react";
+import { Shield, Users, Group, Trophy, ChevronLeft, Search, UserX, Trash2, CheckCircle, Ban, Loader2, Wrench, PlusCircle, MinusCircle } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -49,18 +49,18 @@ export default function AdminPage() {
             <Tabs defaultValue="users" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="users"><Users className="h-4 w-4 mr-2" />Usuarios</TabsTrigger>
+                    <TabsTrigger value="trophies"><Trophy className="h-4 w-4 mr-2" />Trofeos</TabsTrigger>
                     <TabsTrigger value="groups" disabled><Group className="h-4 w-4 mr-2" />Grupos</TabsTrigger>
-                    <TabsTrigger value="trophies" disabled><Trophy className="h-4 w-4 mr-2" />Trofeos</TabsTrigger>
                 </TabsList>
 
                 <div className="py-6">
                     <TabsContent value="users">
                         <UsersTab />
                     </TabsContent>
-                    <TabsContent value="groups">
-                        <WipPlaceholder />
-                    </TabsContent>
                     <TabsContent value="trophies">
+                        <TrophiesTab />
+                    </TabsContent>
+                    <TabsContent value="groups">
                         <WipPlaceholder />
                     </TabsContent>
                 </div>
@@ -69,13 +69,12 @@ export default function AdminPage() {
     );
 }
 
-function UsersTab() {
+function UsersList({ children, onUsersLoaded }: { children: (users: User[], isLoading: boolean, searchTerm: string, handleSearch: (term: string) => void) => React.ReactNode, onUsersLoaded?: (users: User[]) => void }) {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
-    const [isProcessing, setIsProcessing] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -86,6 +85,7 @@ function UsersTab() {
                 const querySnapshot = await getDocs(usersQuery);
                 const usersList = querySnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
                 setUsers(usersList);
+                if (onUsersLoaded) onUsersLoaded(usersList);
             } catch (error) {
                 console.error("Error fetching users:", error);
                 toast({ title: "Error", description: "No se pudieron cargar los usuarios.", variant: "destructive" });
@@ -94,7 +94,22 @@ function UsersTab() {
             }
         };
         fetchUsers();
-    }, [firestore, toast]);
+    }, [firestore, toast, onUsersLoaded]);
+
+    const filteredUsers = users.filter(user =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return children(filteredUsers, isLoading, searchTerm, setSearchTerm);
+}
+
+
+function UsersTab() {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [allUsers, setAllUsers] = useState<User[]>([]);
+    const [isProcessing, setIsProcessing] = useState<Record<string, boolean>>({});
 
     const handleToggleBan = async (targetUser: User) => {
         if (!firestore) return;
@@ -103,7 +118,9 @@ function UsersTab() {
             const userDocRef = doc(firestore, 'users', targetUser.uid);
             const newBanStatus = !targetUser.isBanned;
             await updateDoc(userDocRef, { isBanned: newBanStatus });
-            setUsers(users.map(u => u.uid === targetUser.uid ? { ...u, isBanned: newBanStatus } : u));
+            
+            setAllUsers(prevUsers => prevUsers.map(u => u.uid === targetUser.uid ? { ...u, isBanned: newBanStatus } : u));
+
             toast({
                 title: `Usuario ${newBanStatus ? 'baneado' : 'desbaneado'}`,
                 description: `${targetUser.name} ha sido ${newBanStatus ? 'restringido' : 'reactivado'}.`,
@@ -116,18 +133,13 @@ function UsersTab() {
         }
     };
     
-    // NOTE: This client-side deletion requires security rules to allow admins to delete other users.
-    // It does NOT delete the Firebase Auth user, which would require a server-side function.
-    // The user will not be able to log in, but their auth record remains.
     const handleDeleteUser = async (targetUser: User) => {
          if (!firestore) return;
         setIsProcessing(prev => ({...prev, [targetUser.uid]: true}));
         try {
             const userDocRef = doc(firestore, 'users', targetUser.uid);
             await deleteDoc(userDocRef);
-            // In a real scenario, you'd also want to delete all sub-collections.
-            // For now, we just delete the main doc.
-            setUsers(users.filter(u => u.uid !== targetUser.uid));
+            setAllUsers(prevUsers => prevUsers.filter(u => u.uid !== targetUser.uid));
             toast({
                 title: "Usuario Eliminado",
                 description: `El perfil de ${targetUser.name} ha sido eliminado de Firestore.`,
@@ -141,97 +153,209 @@ function UsersTab() {
         }
     };
 
-    const filteredUsers = users.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Gestión de Usuarios</CardTitle>
-                <CardDescription>Modera, banea o elimina usuarios de la aplicación.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Buscar por nombre o email..."
-                        className="pl-10"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <Separator />
-                {isLoading ? (
-                    <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin"/></div>
-                ) : (
-                    <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-                        {filteredUsers.map(u => (
-                            <div key={u.uid} className="flex items-center gap-4 p-2 rounded-lg border">
-                                <Avatar>
-                                    <AvatarImage src={u.avatar} />
-                                    <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                    <p className="font-semibold">{u.name}</p>
-                                    <p className="text-xs text-muted-foreground">{u.email}</p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <Badge variant={u.role === 'admin' ? 'destructive' : 'secondary'}>{u.role}</Badge>
-                                        {u.isBanned && <Badge variant="destructive" className="bg-orange-500">Baneado</Badge>}
-                                    </div>
-                                </div>
-                                {u.role !== 'admin' && (
-                                    <div className="flex gap-1">
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="outline" size="icon" className="h-8 w-8" disabled={isProcessing[u.uid]}>
-                                                    {isProcessing[u.uid] ? <Loader2 className="h-4 w-4 animate-spin"/> : u.isBanned ? <CheckCircle className="h-4 w-4 text-green-500"/> : <Ban className="h-4 w-4 text-orange-500"/>}
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>¿Confirmar acción?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        Vas a {u.isBanned ? 'desbanear' : 'banear'} a {u.name}. {u.isBanned ? 'Podrá volver a iniciar sesión.' : 'No podrá iniciar sesión hasta que se revierta esta acción.'}
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleToggleBan(u)}>{u.isBanned ? 'Desbanear' : 'Banear Usuario'}</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
+        <UsersList onUsersLoaded={setAllUsers}>
+            {(users, isLoading, searchTerm, handleSearch) => (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Gestión de Usuarios</CardTitle>
+                        <CardDescription>Modera, banea o elimina usuarios de la aplicación.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Buscar por nombre o email..."
+                                className="pl-10"
+                                value={searchTerm}
+                                onChange={(e) => handleSearch(e.target.value)}
+                            />
+                        </div>
+                        <Separator />
+                        {isLoading ? (
+                            <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin"/></div>
+                        ) : (
+                            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+                                {users.map(u => (
+                                    <div key={u.uid} className="flex items-center gap-4 p-2 rounded-lg border">
+                                        <Avatar>
+                                            <AvatarImage src={u.avatar} />
+                                            <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1">
+                                            <p className="font-semibold">{u.name}</p>
+                                            <p className="text-xs text-muted-foreground">{u.email}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <Badge variant={u.role === 'admin' ? 'destructive' : 'secondary'}>{u.role}</Badge>
+                                                {u.isBanned && <Badge variant="destructive" className="bg-orange-500">Baneado</Badge>}
+                                            </div>
+                                        </div>
+                                        {u.role !== 'admin' && (
+                                            <div className="flex gap-1">
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="outline" size="icon" className="h-8 w-8" disabled={isProcessing[u.uid]}>
+                                                            {isProcessing[u.uid] ? <Loader2 className="h-4 w-4 animate-spin"/> : u.isBanned ? <CheckCircle className="h-4 w-4 text-green-500"/> : <Ban className="h-4 w-4 text-orange-500"/>}
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>¿Confirmar acción?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Vas a {u.isBanned ? 'desbanear' : 'banear'} a {u.name}. {u.isBanned ? 'Podrá volver a iniciar sesión.' : 'No podrá iniciar sesión hasta que se revierta esta acción.'}
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleToggleBan(u)}>{u.isBanned ? 'Desbanear' : 'Banear Usuario'}</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
 
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                 <Button variant="destructive" size="icon" className="h-8 w-8" disabled={isProcessing[u.uid]}>
-                                                    {isProcessing[u.uid] ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4"/>}
-                                                 </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                 <AlertDialogHeader>
-                                                    <AlertDialogTitle>¿Eliminar permanentemente?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        Esta acción eliminará el perfil de {u.name} de la base de datos de Firestore, pero **no** eliminará su cuenta de autenticación de Firebase. Es irreversible.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteUser(u)} className="bg-destructive hover:bg-destructive/90">Sí, eliminar</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="destructive" size="icon" className="h-8 w-8" disabled={isProcessing[u.uid]}>
+                                                            {isProcessing[u.uid] ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4"/>}
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>¿Eliminar permanentemente?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Esta acción eliminará el perfil de {u.name} de la base de datos de Firestore, pero **no** eliminará su cuenta de autenticación de Firebase. Es irreversible.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteUser(u)} className="bg-destructive hover:bg-destructive/90">Sí, eliminar</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
+                                ))}
                             </div>
-                        ))}
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
+        </UsersList>
     );
 }
+
+function TrophiesTab() {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [allUsers, setAllUsers] = useState<User[]>([]);
+    const [trophyAmounts, setTrophyAmounts] = useState<Record<string, number>>({});
+    const [isProcessing, setIsProcessing] = useState<Record<string, boolean>>({});
+
+    const handleUpdateTrophies = async (targetUser: User, amount: number) => {
+        if (!firestore || amount === 0) return;
+        setIsProcessing(prev => ({...prev, [targetUser.uid]: true}));
+        
+        try {
+            const userDocRef = doc(firestore, 'users', targetUser.uid);
+            await updateDoc(userDocRef, { trophies: increment(amount) });
+            
+            setAllUsers(prevUsers => prevUsers.map(u => u.uid === targetUser.uid ? { ...u, trophies: u.trophies + amount } : u));
+            setTrophyAmounts(prev => ({...prev, [targetUser.uid]: 0})); // Reset input field
+
+            toast({
+                title: "Trofeos Actualizados",
+                description: `Se han ${amount > 0 ? 'añadido' : 'quitado'} ${Math.abs(amount)} trofeos a ${targetUser.name}.`,
+            });
+        } catch (error) {
+            console.error("Error updating trophies:", error);
+            toast({ title: "Error", description: "No se pudieron actualizar los trofeos.", variant: "destructive" });
+        } finally {
+            setIsProcessing(prev => ({...prev, [targetUser.uid]: false}));
+        }
+    };
+
+    const handleAmountChange = (uid: string, value: string) => {
+        const amount = parseInt(value, 10);
+        setTrophyAmounts(prev => ({ ...prev, [uid]: isNaN(amount) ? 0 : amount }));
+    };
+
+    return (
+        <UsersList onUsersLoaded={setAllUsers}>
+            {(users, isLoading, searchTerm, handleSearch) => (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Gestión de Trofeos</CardTitle>
+                        <CardDescription>Añade o quita trofeos a los usuarios manualmente.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Buscar por nombre o email..."
+                                className="pl-10"
+                                value={searchTerm}
+                                onChange={(e) => handleSearch(e.target.value)}
+                            />
+                        </div>
+                        <Separator />
+                         {isLoading ? (
+                            <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin"/></div>
+                        ) : (
+                            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+                                {users.map(u => (
+                                     <div key={u.uid} className="flex items-center gap-4 p-2 rounded-lg border">
+                                        <Avatar>
+                                            <AvatarImage src={u.avatar} />
+                                            <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1">
+                                            <p className="font-semibold">{u.name}</p>
+                                            <div className="flex items-center gap-1.5 text-sm">
+                                                <Trophy className="h-4 w-4 text-yellow-400" />
+                                                <span className="font-bold">{u.trophies}</span>
+                                            </div>
+                                        </div>
+                                         {u.role !== 'admin' && (
+                                            <div className="flex gap-2 items-center">
+                                                <Input 
+                                                    type="number" 
+                                                    className="w-20 h-8" 
+                                                    placeholder="Cant."
+                                                    value={trophyAmounts[u.uid] || ""}
+                                                    onChange={(e) => handleAmountChange(u.uid, e.target.value)}
+                                                    disabled={isProcessing[u.uid]}
+                                                />
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="icon" 
+                                                    className="h-8 w-8" 
+                                                    onClick={() => handleUpdateTrophies(u, -(trophyAmounts[u.uid] || 0))}
+                                                    disabled={isProcessing[u.uid] || !trophyAmounts[u.uid] || trophyAmounts[u.uid] <= 0}
+                                                >
+                                                    <MinusCircle className="h-4 w-4 text-red-500"/>
+                                                </Button>
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="icon" 
+                                                    className="h-8 w-8"
+                                                    onClick={() => handleUpdateTrophies(u, trophyAmounts[u.uid] || 0)}
+                                                    disabled={isProcessing[u.uid] || !trophyAmounts[u.uid] || trophyAmounts[u.uid] <= 0}
+                                                >
+                                                    <PlusCircle className="h-4 w-4 text-green-500"/>
+                                                </Button>
+                                            </div>
+                                         )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
+        </UsersList>
+    );
+}
+
 
 function WipPlaceholder() {
   return (
