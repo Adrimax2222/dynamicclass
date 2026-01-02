@@ -52,6 +52,7 @@ import {
   X,
   Check,
   Loader2,
+  Palette
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -660,6 +661,7 @@ interface Page {
     processedSrc: string;
     rotation: number;
     crop: CropData | null;
+    isColor: boolean;
 }
 
 function ScannerDialog({ children }: { children: React.ReactNode }) {
@@ -755,9 +757,10 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 processedSrc: '',
                 rotation: 0,
                 crop: null,
+                isColor: false,
             };
             
-            const processedSrc = processImage(img, newPage.rotation, null);
+            const processedSrc = processImage(img, newPage.rotation, null, newPage.isColor);
             
             setPages(prev => [...prev, { ...newPage, processedSrc }]);
             setActivePageId(newPage.id);
@@ -767,7 +770,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         img.src = src;
     };
     
-    const processImage = (img: HTMLImageElement, angleDegrees: number, crop: CropData | null): string => {
+    const processImage = (img: HTMLImageElement, angleDegrees: number, crop: CropData | null, isColor: boolean): string => {
         const canvas = canvasRef.current;
         if (!canvas) return '';
         const context = canvas.getContext('2d');
@@ -795,7 +798,10 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         context.translate(newWidth / 2, newHeight / 2);
         context.rotate(angle);
 
-        context.filter = 'grayscale(100%) contrast(1.7)';
+        if (!isColor) {
+            context.filter = 'grayscale(100%) contrast(1.7)';
+        }
+        
         context.drawImage(
             img, 
             sourceX, sourceY, sourceWidth, sourceHeight,
@@ -817,9 +823,20 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         const newRotation = (activePage.rotation + 90) % 360;
         const img = new Image();
         img.onload = () => {
-            const processedSrc = processImage(img, newRotation, null);
+            const processedSrc = processImage(img, newRotation, null, activePage.isColor);
             updatePage(activePage.id, { rotation: newRotation, processedSrc, crop: null });
         }
+        img.src = activePage.originalSrc;
+    };
+
+    const handleToggleColor = () => {
+        if (!activePage) return;
+        const newIsColor = !activePage.isColor;
+        const img = new Image();
+        img.onload = () => {
+            const processedSrc = processImage(img, activePage.rotation, activePage.crop, newIsColor);
+            updatePage(activePage.id, { processedSrc, isColor: newIsColor });
+        };
         img.src = activePage.originalSrc;
     };
     
@@ -886,7 +903,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 height: activePage.crop!.height * scaleY,
             };
             
-            const processedSrc = processImage(img, activePage.rotation, actualCropData);
+            const processedSrc = processImage(img, activePage.rotation, actualCropData, activePage.isColor);
             updatePage(activePage.id, { processedSrc, crop: null });
         };
         img.src = activePage.originalSrc;
@@ -897,8 +914,8 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         if (!activePage) return;
         const img = new Image();
         img.onload = () => {
-            const processedSrc = processImage(img, 0, null);
-            updatePage(activePage.id, { processedSrc, rotation: 0, crop: null });
+            const processedSrc = processImage(img, 0, null, false);
+            updatePage(activePage.id, { processedSrc, rotation: 0, crop: null, isColor: false });
         }
         img.src = activePage.originalSrc;
     };
@@ -1102,6 +1119,9 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                         <Button onClick={handleRotate} variant="outline" size="icon" disabled={!activePage}><RotateCw className="h-4 w-4" /></Button>
                         <Button onClick={() => setIsCropping(!isCropping)} variant={isCropping ? "default" : "outline"} size="icon" disabled={!activePage} className={cn(isCropping && "ring-2 ring-primary ring-offset-2")}>
                           <Crop className="h-4 w-4" />
+                        </Button>
+                        <Button onClick={handleToggleColor} variant={activePage?.isColor ? "default" : "outline"} size="icon" disabled={!activePage} className={cn(activePage?.isColor && "ring-2 ring-primary ring-offset-2")}>
+                            <Palette className="h-4 w-4" />
                         </Button>
                         <Button onClick={resetEdits} variant="outline" size="icon" aria-label="Restablecer edición" disabled={!activePage}><RotateCcw className="h-4 w-4 text-red-500" /></Button>
                         {isCropping && (
@@ -1620,4 +1640,3 @@ function UnitConverter() {
         </Tabs>
     );
 }
-
