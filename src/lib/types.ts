@@ -1,4 +1,5 @@
 
+
 import type { LucideIcon } from "lucide-react";
 import type { Timestamp } from "firebase/firestore";
 
@@ -134,4 +135,12 @@ export type CompletedItem = {
 export type UserToken = {
     token: string;
     updatedAt: Timestamp;
+}
+
+export type ScannedDocument = {
+  id: number;
+  name: string;
+  timestamp: string;
+  thumbnail: string;
+  pages: string[];
 }

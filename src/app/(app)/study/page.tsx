@@ -68,6 +68,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import jsPDF from 'jspdf';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Link from 'next/link';
 
 
 type TimerMode = "pomodoro" | "long" | "deep" | "custom";
@@ -627,15 +628,15 @@ export default function StudyPage() {
                         </Dialog>
                    </div>
                    <div className="flex">
-                        <WipDialog>
-                            <div className="relative p-4 rounded-lg bg-gradient-to-br from-purple-400 to-violet-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform flex-1">
+                        <Link href="/scanner" className="flex-1">
+                            <div className="relative p-4 rounded-lg bg-gradient-to-br from-purple-400 to-violet-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform flex-1 h-full">
                                 <div className="relative z-10">
                                     <h3 className="font-bold">Documentos</h3>
                                     <p className="text-xs opacity-80">Historial de tus apuntes escaneados.</p>
                                 </div>
                                 <FileCheck2 className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
                             </div>
-                        </WipDialog>
+                        </Link>
                    </div>
                 </CardContent>
             </Card>
@@ -931,7 +932,21 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             }
             
             pdf.save(fileName);
-            toast({ title: 'PDF Descargado', description: `Se ha guardado como ${fileName}.` });
+            
+            // Save to localStorage
+            const savedDocsString = localStorage.getItem('scannedDocuments');
+            const savedDocs = savedDocsString ? JSON.parse(savedDocsString) : [];
+            const newDoc = {
+                id: Date.now(),
+                name: fileName,
+                timestamp: new Date().toISOString(),
+                thumbnail: pages[0].processedSrc,
+                pages: pages.map(p => p.processedSrc)
+            };
+            savedDocs.push(newDoc);
+            localStorage.setItem('scannedDocuments', JSON.stringify(savedDocs));
+
+            toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${fileName}" en tu historial.` });
         } catch (error) {
             console.error("Error creating PDF", error);
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo generar el PDF.' });
@@ -991,28 +1006,31 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                         Captura, edita y agrupa imágenes para crear un único PDF.
                     </DialogDescription>
                 </DialogHeader>
-
-                 <div className="flex-grow flex flex-col min-h-0 space-y-4">
+                <div className="relative flex-grow flex flex-col min-h-0 space-y-4">
                     <div className="flex-grow min-h-0 relative border rounded-lg bg-muted/30 flex items-center justify-center">
-                        {mode === 'capture' ? (
-                            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4">
-                                <div className="bg-background p-8 rounded-lg shadow-2xl border">
-                                    {isCameraActive ? (
-                                        <>
-                                            <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                                            <div className="flex items-center gap-4 mt-4">
-                                                <Button onClick={stopCamera} variant="outline">
-                                                    Cancelar
-                                                </Button>
-                                                <Button onClick={takePicture} className="h-16 w-16 rounded-full">
-                                                    <Camera className="h-8 w-8" />
-                                                </Button>
-                                            </div>
-                                        </>
-                                    ) : renderCaptureUI()}
+                        <div className="absolute inset-0 z-20" style={{ pointerEvents: mode === 'capture' ? 'auto' : 'none', opacity: mode === 'capture' ? 1 : 0 }}>
+                            {isCameraActive ? (
+                                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 bg-background">
+                                    <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                                    <div className="flex items-center gap-4 mt-4">
+                                        <Button onClick={stopCamera} variant="outline">
+                                            Cancelar
+                                        </Button>
+                                        <Button onClick={takePicture} className="h-16 w-16 rounded-full">
+                                            <Camera className="h-8 w-8" />
+                                        </Button>
+                                    </div>
                                 </div>
-                            </div>
-                        ) : null}
+                            ) : (
+                                mode === 'capture' && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="bg-background p-8 rounded-lg shadow-2xl border">
+                                            {renderCaptureUI()}
+                                        </div>
+                                    </div>
+                                )
+                            )}
+                        </div>
                         
                         {pages.length > 0 && activePage ? (
                              <div 
@@ -1602,3 +1620,4 @@ function UnitConverter() {
         </Tabs>
     );
 }
+
