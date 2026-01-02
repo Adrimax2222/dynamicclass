@@ -715,7 +715,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 crop: null,
             };
             
-            const processedSrc = processImage(img, newPage.rotation, newPage.crop);
+            const processedSrc = processImage(img, newPage.rotation, null);
             
             setPages(prev => [...prev, { ...newPage, processedSrc }]);
             setActivePageId(newPage.id);
@@ -774,7 +774,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         if (!activePage) return;
         const img = new Image();
         img.onload = () => {
-            const processedSrc = processImage(img, activePage.rotation, activePage.crop);
+            const processedSrc = processImage(img, activePage.rotation, null);
             updatePage(activePage.id, { processedSrc });
         }
         img.src = activePage.originalSrc;
@@ -820,35 +820,68 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
     };
 
     const handleApplyCrop = () => {
-        if (!activePage || !activePage.crop) return;
-        
+        if (!activePage || !activePage.crop || !previewContainerRef.current) return;
+
+        const previewImg = previewContainerRef.current.querySelector('img');
+        if (!previewImg) return;
+
         const img = new Image();
         img.onload = () => {
-             const previewImg = previewContainerRef.current?.querySelector('img');
-             if (!previewImg) return;
+            // Calculate the scale of the displayed image relative to the container
+            const containerWidth = previewContainerRef.current!.clientWidth;
+            const containerHeight = previewContainerRef.current!.clientHeight;
 
-             const scaleX = img.naturalWidth / previewImg.width;
-             const scaleY = img.naturalHeight / previewImg.height;
+            const imageAspectRatio = img.naturalWidth / img.naturalHeight;
+            const containerAspectRatio = containerWidth / containerHeight;
 
-             const actualCropData = {
-                x: activePage.crop!.x * scaleX,
-                y: activePage.crop!.y * scaleY,
+            let renderedWidth, renderedHeight, offsetX = 0, offsetY = 0;
+
+            if (imageAspectRatio > containerAspectRatio) {
+                // Image is wider than container, constrained by width
+                renderedWidth = containerWidth;
+                renderedHeight = containerWidth / imageAspectRatio;
+                offsetY = (containerHeight - renderedHeight) / 2;
+            } else {
+                // Image is taller than container, constrained by height
+                renderedHeight = containerHeight;
+                renderedWidth = containerHeight * imageAspectRatio;
+                offsetX = (containerWidth - renderedWidth) / 2;
+            }
+
+            const scaleX = img.naturalWidth / renderedWidth;
+            const scaleY = img.naturalHeight / renderedHeight;
+            
+            const actualCropData: CropData = {
+                x: (activePage.crop!.x - offsetX) * scaleX,
+                y: (activePage.crop!.y - offsetY) * scaleY,
                 width: activePage.crop!.width * scaleX,
                 height: activePage.crop!.height * scaleY,
             };
+            
+            // Ensure crop values are within bounds
+            actualCropData.x = Math.max(0, actualCropData.x);
+            actualCropData.y = Math.max(0, actualCropData.y);
+            actualCropData.width = Math.min(img.naturalWidth - actualCropData.x, actualCropData.width);
+            actualCropData.height = Math.min(img.naturalHeight - actualCropData.y, actualCropData.height);
 
             const processedSrc = processImage(img, activePage.rotation, actualCropData);
-            updatePage(activePage.id, { processedSrc, crop: null }); // Reset crop box but keep data in image
-        }
+            updatePage(activePage.id, { processedSrc, crop: null });
+        };
         img.src = activePage.originalSrc;
         setIsCropping(false);
-    }
+    };
+
 
     const resetEdits = () => {
         if (!activePage) return;
-        updatePage(activePage.id, { rotation: 0, crop: null });
-        reProcessActivePage();
+        const img = new Image();
+        img.onload = () => {
+            const processedSrc = processImage(img, 0, null);
+            updatePage(activePage.id, { processedSrc, rotation: 0, crop: null });
+        }
+        img.src = activePage.originalSrc;
     };
+
 
     const downloadAsPDF = async () => {
         if (pages.length === 0) return;
@@ -908,7 +941,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         stopCamera();
     };
 
-    const showCaptureUI = mode === 'capture' || pages.length === 0;
+    const showCaptureUI = mode === 'capture';
 
     return (
         <Dialog onOpenChange={(open) => !open && resetScanner()}>
@@ -921,7 +954,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                     </DialogDescription>
                 </DialogHeader>
                 
-                {showCaptureUI && (
+                {showCaptureUI && pages.length === 0 ? (
                      <div className="flex-grow flex flex-col items-center justify-center space-y-4 py-4">
                         <Button onClick={getCameraPermission} className="w-full max-w-xs">
                             <Camera className="mr-2 h-4 w-4" /> Usar Cámara
@@ -937,22 +970,24 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 </AlertDescription>
                             </Alert>
                         )}
-                        {mode === 'capture' && hasCameraPermission && (
-                            <div className="w-full max-w-xs space-y-2">
-                                <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                                <Button onClick={takePicture} className="w-full">
-                                    <Camera className="mr-2 h-4 w-4" /> Tomar Foto
-                                </Button>
-                            </div>
-                        )}
                     </div>
-                )}
-                
-                {!showCaptureUI && (
-                    <div className="flex-grow flex flex-col min-h-0 space-y-4">
+                ): showCaptureUI ? (
+                    <div className="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center p-4">
+                        <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                        <div className="flex items-center gap-4 mt-4">
+                             <Button onClick={() => setMode('preview')} variant="outline">
+                                Cancelar
+                            </Button>
+                            <Button onClick={takePicture} className="h-16 w-16 rounded-full">
+                                <Camera className="h-8 w-8" />
+                            </Button>
+                        </div>
+                    </div>
+                ) : (
+                    <ScrollArea className="flex-grow flex flex-col min-h-0 space-y-4">
                          <div 
                             className="flex-grow min-h-0 relative border rounded-lg bg-muted/30"
-                            onDragStart={(e) => e.preventDefault()}
+                             onDragStart={(e) => e.preventDefault()}
                          >
                             {activePage ? (
                                 <div 
@@ -1005,7 +1040,10 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                         </div>
                                     ))}
                                      <button
-                                        onClick={() => setMode('capture')}
+                                        onClick={() => {
+                                            setMode('capture');
+                                            getCameraPermission();
+                                        }}
                                         className="h-20 w-20 flex flex-col items-center justify-center rounded-md border-2 border-dashed bg-muted/50 hover:bg-muted hover:border-primary transition-colors shrink-0"
                                       >
                                         <PlusCircle className="h-6 w-6 text-muted-foreground" />
@@ -1034,13 +1072,13 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     Limpiar Todo
                                 </Button>
-                                <Button onClick={downloadAsPDF} disabled={isSaving}>
+                                <Button onClick={downloadAsPDF} disabled={isSaving || pages.length === 0}>
                                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Download className="mr-2 h-4 w-4" />}
                                     Descargar PDF
                                 </Button>
                             </div>
                         </div>
-                    </div>
+                    </ScrollArea>
                 )}
                  <canvas ref={canvasRef} className="hidden" />
             </DialogContent>
@@ -1537,3 +1575,6 @@ function UnitConverter() {
         </Tabs>
     );
 }
+
+
+    
