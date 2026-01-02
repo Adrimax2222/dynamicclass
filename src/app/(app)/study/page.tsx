@@ -176,11 +176,11 @@ export default function StudyPage() {
     if (!audio) return;
     
     if (selectedSound && isActive) {
-        if(audio.paused) {
-            if (audio.src !== selectedSound.url) {
-                audio.src = selectedSound.url;
-            }
-            audio.play().catch(error => console.log("User interaction needed to play audio."));
+        if (audio.src !== selectedSound.url) {
+            audio.src = selectedSound.url;
+        }
+        if (audio.paused) {
+          audio.play().catch(error => console.log("User interaction needed to play audio."));
         }
     } else {
       audio.pause();
@@ -741,6 +741,8 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
         </Dialog>
     )
 }
+
+    
 
     
 
