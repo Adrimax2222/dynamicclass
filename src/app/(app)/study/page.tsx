@@ -61,15 +61,15 @@ const modes = {
 };
 
 const sounds = [
-    { id: "rain", label: "Lluvia", icon: CloudRain, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.appspot.com/o/relaxing-rain-419012.mp3?alt=media&token=aa591a3a-8eed-42d0-9347-f8e0da836dcf" },
-    { id: "cafe", label: "Cafetería", icon: Coffee, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.appspot.com/o/casual-cafe-restaurant-noise-73945.mp3?alt=media&token=bc050ad2-746b-410d-8fdb-4c89c620f10c" },
-    { id: "forest", label: "Bosque", icon: Trees, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.appspot.com/o/ambiente-de-bosque-arvi-ambix-17159.mp3?alt=media&token=3311c173-b307-4fbb-97ff-8450fbc3cdc8" },
-    { id: "noise", label: "Ruido Blanco", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.appspot.com/o/white-noise-358382.mp3?alt=media&token=e4fae111-a420-45f0-a75a-9a3e09d8a357" },
-    { id: "library", label: "Biblioteca", icon: BookOpen, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.appspot.com/o/biblioteca.mp3?alt=media&token=b60acf9f-d0c9-40f5-9cf4-0e63af7d9385" },
-    { id: "nature", label: "Pájaros", icon: Leaf, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.appspot.com/o/birds-frogs-nature-8257.mp3?alt=media&token=462a8b0e-ffd7-46a0-917f-5510f4085649" },
-    { id: "city", label: "Ciudad", icon: Building2, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.appspot.com/o/city-ambience-121693.mp3?alt=media&token=00c7c7fa-cba2-4a8a-b091-6d07e56262c0" },
-    { id: "sea", label: "Mar", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.appspot.com/o/mar-agitado-272999.mp3?alt=media&token=d7322a3a-6397-42eb-9039-b569be846fc7" },
-]
+    { id: "rain", label: "Lluvia", icon: CloudRain, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.firebasestorage.app/o/relaxing-rain-419012.mp3?alt=media&token=3311c173-b307-4fbb-97ff-8450fbc3cdc8" },
+    { id: "cafe", label: "Cafetería", icon: Coffee, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.firebasestorage.app/o/casual-cafe-restaurant-noise-73945.mp3?alt=media&token=3311c173-b307-4fbb-97ff-8450fbc3cdc8" },
+    { id: "forest", label: "Bosque", icon: Trees, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.firebasestorage.app/o/ambiente-de-bosque-arvi-ambix-17159.mp3?alt=media&token=3311c173-b307-4fbb-97ff-8450fbc3cdc8" },
+    { id: "noise", label: "Ruido Blanco", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.firebasestorage.app/o/white-noise-358382.mp3?alt=media&token=3311c173-b307-4fbb-97ff-8450fbc3cdc8" },
+    { id: "library", label: "Biblioteca", icon: BookOpen, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.firebasestorage.app/o/biblioteca.mp3?alt=media&token=3311c173-b307-4fbb-97ff-8450fbc3cdc8" },
+    { id: "nature", label: "Pájaros", icon: Leaf, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.firebasestorage.app/o/birds-frogs-nature-8257.mp3?alt=media&token=3311c173-b307-4fbb-97ff-8450fbc3cdc8" },
+    { id: "city", label: "Ciudad", icon: Building2, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.firebasestorage.app/o/city-ambience-121693.mp3?alt=media&token=3311c173-b307-4fbb-97ff-8450fbc3cdc8" },
+    { id: "sea", label: "Mar", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-78409885-13b35.firebasestorage.app/o/mar-agitado-272999.mp3?alt=media&token=3311c173-b307-4fbb-97ff-8450fbc3cdc8" },
+];
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
 
@@ -88,7 +88,7 @@ export default function StudyPage() {
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Ref to track if a minute has been logged
-  const lastLoggedMinuteRef = useRef<number | null>(null);
+  const lastLoggedMinuteRef = useRef<number | null>;
   
   // Ref to track if streak has been updated today
   const streakUpdatedTodayRef = useRef<boolean>(false);
@@ -122,7 +122,7 @@ export default function StudyPage() {
     } else {
       audio.pause();
     }
-  }, [selectedSound, volume]);
+  }, [selectedSound]);
 
   // Handle streak logic
   const handleStreak = useCallback(async () => {
@@ -242,6 +242,9 @@ export default function StudyPage() {
   const handleVolumeChange = (value: number[]) => {
     const newVolume = value[0];
     setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume / 100;
+    }
   };
 
   const handleSoundSelect = (sound: Sound) => {
@@ -365,6 +368,7 @@ export default function StudyPage() {
                 <CardContent>
                     <div className="grid grid-cols-4 gap-2 mb-4">
                         {sounds.map(sound => {
+                            if (!sound) return null;
                             const SoundIcon = sound.icon;
                             return (
                                 <button 
