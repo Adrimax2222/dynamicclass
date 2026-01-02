@@ -31,8 +31,9 @@ export function RankingDialog({ children, user, openTo = "ranking" }: { children
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col h-[80vh]">
-                 <Tabs defaultValue={openTo} className="w-full h-full flex flex-col">
+            <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col h-[80vh] bg-card/90 backdrop-blur-xl">
+                <div className="absolute inset-0 bg-repeat bg-center opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Cpath d=\'M27.5 55.5C27.5 53.0147 25.4853 51 23 51C20.5147 51 18.5 53.0147 18.5 55.5V70.5C18.5 72.9853 20.5147 75 23 75C25.4853 75 27.5 72.9853 27.5 70.5V55.5ZM72.5 55.5C72.5 53.0147 70.4853 51 68 51C65.5147 51 63.5 53.0147 63.5 55.5V70.5C63.5 72.9853 65.5147 75 68 75C70.4853 75 72.5 72.9853 72.5 70.5V55.5ZM45.5 25C56.8284 25 66 34.1716 66 45.5C66 56.8284 56.8284 66 45.5 66C34.1716 66 25 56.8284 25 45.5C25 34.1716 34.1716 25 45.5 25ZM45.5 30C54.0604 30 61 36.9396 61 45.5C61 54.0604 54.0604 61 45.5 61C36.9396 61 30 54.0604 30 45.5C30 36.9396 36.9396 30 45.5 30Z\' fill=\'%23a0aec0\'/%3E%3C/svg%3E")' }}></div>
+                 <Tabs defaultValue={openTo} className="w-full h-full flex flex-col z-10">
                     <DialogHeader className="p-6 pb-0 flex-shrink-0">
                         <div className="flex items-center gap-3">
                             <DialogTitle className="flex items-center gap-2">
@@ -265,9 +266,9 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
 
 function PodiumPlace({ user, place }: { user?: User; place: 1 | 2 | 3 }) {
     const placeStyles = {
-        1: { icon: Gem, color: "text-amber-400", size: "h-16 w-16", podiumHeight: "h-28", podiumColor: "bg-amber-400/80" },
-        2: { icon: Medal, color: "text-slate-400", size: "h-14 w-14", podiumHeight: "h-20", podiumColor: "bg-slate-400/80" },
-        3: { icon: Medal, color: "text-orange-600", size: "h-14 w-14", podiumHeight: "h-16", podiumColor: "bg-orange-600/70" },
+        1: { icon: Gem, color: "text-amber-400", size: "h-16 w-16", podiumHeight: "h-32", podiumColor: "bg-amber-400/80 shadow-[0_0_15px_rgba(251,191,36,0.6)]" },
+        2: { icon: Medal, color: "text-slate-400", size: "h-14 w-14", podiumHeight: "h-24", podiumColor: "bg-slate-400/80 shadow-[0_0_15px_rgba(148,163,184,0.5)]" },
+        3: { icon: Medal, color: "text-orange-600", size: "h-14 w-14", podiumHeight: "h-20", podiumColor: "bg-orange-600/70 shadow-[0_0_15px_rgba(234,88,12,0.5)]" },
     };
     
     if (!user) return <div className={cn("flex flex-col items-center justify-end w-full", placeStyles[place].podiumHeight)} />;
@@ -278,7 +279,7 @@ function PodiumPlace({ user, place }: { user?: User; place: 1 | 2 | 3 }) {
     return (
         <div className="flex flex-col items-center justify-end h-full w-full">
              <div className="relative">
-                <Avatar className={cn(style.size, "ring-4 ring-offset-2 ring-offset-background", `ring-amber-400/50`)}>
+                <Avatar className={cn(style.size, "ring-4 ring-offset-2 ring-offset-background dark:ring-offset-slate-900", `ring-amber-400/50`)}>
                     <AvatarImage src={user.avatar} />
                     <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                 </Avatar>
@@ -303,7 +304,17 @@ function PodiumPlace({ user, place }: { user?: User; place: 1 | 2 | 3 }) {
 function RankingItem({ user, rank, isCurrentUser }: { user: User; rank: number; isCurrentUser: boolean }) {
     return (
         <div className={cn("flex items-center gap-4 rounded-lg p-2 transition-colors", isCurrentUser ? "bg-primary/10 border-2 border-primary/50" : "bg-muted/50 border")}>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted font-bold text-sm text-muted-foreground">{rank}</div>
+            <div 
+                className="flex items-center justify-center font-bold text-xs text-amber-900/70 dark:text-amber-200/70"
+                style={{
+                    width: '32px',
+                    height: '32px',
+                    clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+                    backgroundColor: 'hsl(var(--muted))'
+                }}
+            >
+                {rank}
+            </div>
             <Avatar className="h-10 w-10">
                 <AvatarImage src={user.avatar} />
                 <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
