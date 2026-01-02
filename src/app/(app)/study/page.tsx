@@ -95,7 +95,7 @@ const defaultPlaylists: Playlist[] = [
 
 const sounds: Sound[] = [
     { id: "rain", label: "Lluvia", icon: CloudRain, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/relaxing-rain-419012.mp3?alt=media&token=aa591a3a-8eed-42d0-9347-f8e0da836dcf" },
-    { id: "cafe", label: "Cafetería", icon: Coffee, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/casual-cafe-restaurant-noise-73945.mp3?alt=media&token=bc050ad2-746b-410d-8fdb-4c89c620f10c" },
+    { id: "cafe", label: "Cafetería", icon: Coffee, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/casual-cafe-restaurant-noise-73945.mp3?alt=media&token=bc050ad2-746b-410d-8fdb-c89c620f10c" },
     { id: "forest", label: "Bosque", icon: Trees, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/ambiente-de-bosque-arvi-ambix-17159.mp3?alt=media&token=3311c173-b307-4fbb-97ff-8450fbc3cdc8" },
     { id: "sea", label: "Mar", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/mar-agitado-272999.mp3?alt=media&token=d7322a3a-6397-42eb-9039-b569be846fc7" },
     { id: "noise", label: "Ruido Blanco", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/white-noise-358382.mp3?alt=media&token=e4fae111-a420-45f0-a75a-9a3e09d8a357" },
@@ -889,20 +889,20 @@ function ScienceCalculatorDialog() {
 
                 <div className="grid grid-cols-5 gap-2">
                     {/* Scientific Functions */}
-                    <Button onClick={() => handleOperator('^')} variant="outline" className="h-12 bg-accent/10 text-accent">xʸ</Button>
-                    <Button onClick={() => handleOperator('√(')} variant="outline" className="h-12 bg-accent/10 text-accent">√</Button>
-                    <Button onClick={() => handleOperator('sin(')} variant="outline" className="h-12 bg-accent/10 text-accent">sin</Button>
-                    <Button onClick={() => handleOperator('cos(')} variant="outline" className="h-12 bg-accent/10 text-accent">cos</Button>
-                    <Button onClick={() => handleOperator('tan(')} variant="outline" className="h-12 bg-accent/10 text-accent">tan</Button>
-                    <Button onClick={() => handleOperator('(')} variant="outline" className="h-12 bg-accent/10 text-accent">(</Button>
-                    <Button onClick={() => handleOperator(')')} variant="outline" className="h-12 bg-accent/10 text-accent">)</Button>
-                    <Button onClick={() => handleConstant('π', Math.PI)} variant="outline" className="h-12 bg-accent/10 text-accent">π</Button>
-                    <Button onClick={() => handleConstant('e', Math.E)} variant="outline" className="h-12 bg-accent/10 text-accent">e</Button>
-                    <Button onClick={() => handleOperator('log(')} variant="outline" className="h-12 bg-accent/10 text-accent">log</Button>
-                    <Button onClick={() => handleOperator('ln(')} variant="outline" className="h-12 bg-accent/10 text-accent">ln</Button>
-                    <Button onClick={() => handleConstant('G', 9.8)} variant="outline" className="h-12 bg-accent/10 text-accent">G</Button>
-                    <Button onClick={() => handleConstant('c', 299792458)} variant="outline" className="h-12 bg-accent/10 text-accent">c</Button>
-                    <Button onClick={() => handleConstant('h', 6.62607015e-34)} variant="outline" className="h-12 bg-accent/10 text-accent">h</Button>
+                    <Button onClick={() => handleOperator('^')} variant="outline" className="h-12 bg-accent/10 text-accent font-semibold">xʸ</Button>
+                    <Button onClick={() => handleOperator('√(')} variant="outline" className="h-12 bg-accent/10 text-accent font-semibold">√</Button>
+                    <Button onClick={() => handleOperator('sin(')} variant="outline" className="h-12 bg-accent/10 text-accent font-semibold">sin</Button>
+                    <Button onClick={() => handleOperator('cos(')} variant="outline" className="h-12 bg-accent/10 text-accent font-semibold">cos</Button>
+                    <Button onClick={() => handleOperator('tan(')} variant="outline" className="h-12 bg-accent/10 text-accent font-semibold">tan</Button>
+                    <Button onClick={() => handleOperator('(')} variant="outline" className="h-12 bg-accent/10 text-accent font-semibold">(</Button>
+                    <Button onClick={() => handleOperator(')')} variant="outline" className="h-12 bg-accent/10 text-accent font-semibold">)</Button>
+                    <Button onClick={() => handleConstant('π', Math.PI)} variant="outline" className="h-12 bg-accent/10 text-accent font-semibold">π</Button>
+                    <Button onClick={() => handleConstant('e', Math.E)} variant="outline" className="h-12 bg-accent/10 text-accent font-semibold">e</Button>
+                    <Button onClick={() => handleOperator('log(')} variant="outline" className="h-12 bg-accent/10 text-accent font-semibold">log</Button>
+                    <Button onClick={() => handleOperator('ln(')} variant="outline" className="h-12 bg-accent/10 text-accent font-semibold">ln</Button>
+                    <Button onClick={() => handleConstant('G', 9.8)} variant="outline" className="h-12 bg-accent/10 text-accent font-semibold">G</Button>
+                    <Button onClick={() => handleConstant('c', 299792458)} variant="outline" className="h-12 bg-accent/10 text-accent font-semibold">c</Button>
+                    <Button onClick={() => handleConstant('h', 6.62607015e-34)} variant="outline" className="h-12 bg-accent/10 text-accent font-semibold">h</Button>
                     <UnitConverterDialog>
                       <Button variant="outline" className="h-12 bg-accent/10 text-accent"><Scale className="h-5 w-5"/></Button>
                     </UnitConverterDialog>
@@ -1088,6 +1088,3 @@ function UnitConverter() {
         </Tabs>
     );
 }
-
-    
-```
