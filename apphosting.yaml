@@ -5,3 +5,8 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+
+build:
+  # This tells App Hosting to install dependencies with --legacy-peer-deps
+  # to resolve dependency conflicts with React 19.
+  install: npm install --legacy-peer-deps
