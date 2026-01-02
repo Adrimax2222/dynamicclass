@@ -17,7 +17,6 @@ import {
   Pause,
   RotateCcw,
   SkipForward,
-  Infinity,
   Headphones,
   Trees,
   Coffee,
@@ -32,8 +31,6 @@ import {
   ScanLine,
   Flame,
   Music,
-  Rewind,
-  FastForward,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -43,6 +40,7 @@ import { useFirestore } from "@/firebase";
 import { doc, updateDoc, increment } from "firebase/firestore";
 import { format as formatDate, subDays, isSameDay } from 'date-fns';
 import { WipDialog } from "@/components/layout/wip-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 type TimerMode = "pomodoro" | "long" | "deep";
@@ -77,6 +75,12 @@ const playlists = [
     { id: "jazz", name: "Jazz", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DXbITWG1ZJKYt?utm_source=generator" },
     { id: "vgm", name: "Videojuegos", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DXdfOcg1fm0VG?utm_source=generator" },
     { id: "focus", name: "Focus", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DWZeKCadgRdKQ?utm_source=generator" },
+    { id: "phonk", name: "Phonk", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DWWY64wDtewQt?utm_source=generator" },
+    { id: "indiefolk", name: "Indie Folk", url: "https://open.spotify.com/embed/playlist/2MsGtroclirkNnI6snEoxk?utm_source=generator" },
+    { id: "chilltracks", name: "Chill Tracks", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DX6VdMW310YC7?utm_source=generator" },
+    { id: "chillout", name: "Chill Out", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DX32oVqaQE8BM?utm_source=generator" },
+    { id: "piano", name: "Peaceful Piano", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DX4sWSpwq3LiO?utm_source=generator" },
+    { id: "coffeejazz", name: "Coffee Table Jazz", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DWVqfgj8NZEp1?utm_source=generator" },
 ];
 
 
@@ -127,9 +131,7 @@ export default function StudyPage() {
         audio.src = selectedSound.url;
       }
       if (audio.paused) {
-        audio.play().catch(error => {
-          console.log("Esperando interacción del usuario...");
-        });
+        audio.play().catch(error => console.log("Esperando interacción del usuario..."));
       }
     } else {
       audio.pause();
@@ -233,6 +235,10 @@ export default function StudyPage() {
   const handleToggle = () => {
     if (!isActive) {
         lastLoggedMinuteRef.current = Math.floor((modes[mode].focus * 60 - timeLeft) / 60);
+    }
+    const audio = audioRef.current;
+    if (audio && selectedSound && audio.paused) {
+      audio.play().catch(error => console.log("Esperando interacción del usuario..."));
     }
     setIsActive(!isActive);
   }
@@ -429,19 +435,19 @@ export default function StudyPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                        {playlists.map(playlist => (
-                            <Button 
-                                key={playlist.id} 
-                                variant={activePlaylist.id === playlist.id ? "default" : "secondary"}
-                                size="sm"
-                                className="text-xs h-7 rounded-full"
-                                onClick={() => handlePlaylistChange(playlist.id)}
-                            >
-                                {playlist.name}
-                            </Button>
-                        ))}
-                    </div>
+                    <Select onValueChange={handlePlaylistChange} defaultValue={activePlaylist.id}>
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecciona un género..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {playlists.map(playlist => (
+                                <SelectItem key={playlist.id} value={playlist.id}>
+                                    {playlist.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
                     <div className="aspect-video w-full">
                         <iframe 
                             style={{borderRadius: "12px"}}
@@ -449,7 +455,6 @@ export default function StudyPage() {
                             width="100%" 
                             height="100%" 
                             frameBorder="0" 
-                            allowFullScreen
                             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
                             loading="lazy"
                         ></iframe>
