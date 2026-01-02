@@ -616,39 +616,53 @@ interface CropData {
     height: number;
 }
 
+interface Page {
+    id: number;
+    originalSrc: string;
+    processedSrc: string;
+    rotation: number;
+    crop: CropData | null;
+}
+
 function ScannerDialog({ children }: { children: React.ReactNode }) {
-    const [imageSrc, setImageSrc] = useState<string | null>(null);
-    const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(null);
+    const [pages, setPages] = useState<Page[]>([]);
+    const [activePageId, setActivePageId] = useState<number | null>(null);
+    const [mode, setMode] = useState<'capture' | 'preview'>('capture');
+    
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
     const [fileName, setFileName] = useState('apuntes-escaneados.pdf');
     const [isSaving, setIsSaving] = useState(false);
+    
+    const [isCropping, setIsCropping] = useState(false);
+    const [startCropPoint, setStartCropPoint] = useState<{ x: number; y: number } | null>(null);
+    
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const { toast } = useToast();
-    
-    // Editing states
-    const [rotation, setRotation] = useState(0);
-    const [isCropping, setIsCropping] = useState(false);
-    const [cropData, setCropData] = useState<CropData | null>(null);
-    const [startCropPoint, setStartCropPoint] = useState<{ x: number; y: number } | null>(null);
     const previewContainerRef = useRef<HTMLDivElement>(null);
-    const previewImageRef = useRef<HTMLImageElement>(null);
+    const { toast } = useToast();
 
+    const activePage = useMemo(() => pages.find(p => p.id === activePageId), [pages, activePageId]);
 
     useEffect(() => {
         return () => { // Cleanup on unmount
-            if (videoRef.current && videoRef.current.srcObject) {
-                const stream = videoRef.current.srcObject as MediaStream;
-                stream.getTracks().forEach(track => track.stop());
-            }
+            stopCamera();
         };
     }, []);
+
+    const stopCamera = () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+    };
 
     const getCameraPermission = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             setHasCameraPermission(true);
+            setMode('capture');
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
             }
@@ -669,12 +683,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const result = e.target?.result as string;
-                const img = new Image();
-                img.onload = () => {
-                    setOriginalImage(img);
-                    processImage(img, 0, null);
-                };
-                img.src = result;
+                processNewImage(result);
             };
             reader.readAsDataURL(file);
         }
@@ -690,26 +699,37 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             if (context) {
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const dataUrl = canvas.toDataURL('image/png');
-                
-                const img = new Image();
-                img.onload = () => {
-                    setOriginalImage(img);
-                    processImage(img, 0, null);
-                };
-                img.src = dataUrl;
-
-                // Stop camera after taking picture
-                const stream = video.srcObject as MediaStream;
-                stream.getTracks().forEach(track => track.stop());
+                processNewImage(dataUrl);
             }
         }
     };
     
-    const processImage = (img: HTMLImageElement, angleDegrees: number, crop: CropData | null) => {
+    const processNewImage = (src: string) => {
+        const img = new Image();
+        img.onload = () => {
+            const newPage: Page = {
+                id: Date.now(),
+                originalSrc: src,
+                processedSrc: '',
+                rotation: 0,
+                crop: null,
+            };
+            
+            const processedSrc = processImage(img, newPage.rotation, newPage.crop);
+            
+            setPages(prev => [...prev, { ...newPage, processedSrc }]);
+            setActivePageId(newPage.id);
+            setMode('preview');
+            stopCamera();
+        };
+        img.src = src;
+    };
+    
+    const processImage = (img: HTMLImageElement, angleDegrees: number, crop: CropData | null): string => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        if (!canvas) return '';
         const context = canvas.getContext('2d');
-        if (!context) return;
+        if (!context) return '';
         
         const angle = angleDegrees * Math.PI / 180;
         const sin = Math.sin(angle);
@@ -740,37 +760,38 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             -sourceWidth/2, -sourceHeight/2, sourceWidth, sourceHeight
         );
         
-        context.filter = 'none'; // Reset filter
-        context.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+        context.filter = 'none';
+        context.setTransform(1, 0, 0, 1, 0, 0);
 
-        setImageSrc(canvas.toDataURL('image/jpeg'));
+        return canvas.toDataURL('image/jpeg');
     };
+    
+    const updatePage = (id: number, updates: Partial<Page>) => {
+        setPages(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    }
+    
+    const reProcessActivePage = () => {
+        if (!activePage) return;
+        const img = new Image();
+        img.onload = () => {
+            const processedSrc = processImage(img, activePage.rotation, activePage.crop);
+            updatePage(activePage.id, { processedSrc });
+        }
+        img.src = activePage.originalSrc;
+    }
 
     const handleRotate = () => {
-        if (!originalImage) return;
-        const newRotation = (rotation + 90) % 360;
-        setRotation(newRotation);
-        processImage(originalImage, newRotation, null);
-        setCropData(null);
-    };
-
-    const handleApplyCrop = () => {
-        if (!originalImage || !cropData || !previewImageRef.current) return;
-
-        const displayedImg = previewImageRef.current;
-        const scaleX = originalImage.naturalWidth / displayedImg.width;
-        const scaleY = originalImage.naturalHeight / displayedImg.height;
-
-        const actualCropData = {
-            x: cropData.x * scaleX,
-            y: cropData.y * scaleY,
-            width: cropData.width * scaleX,
-            height: cropData.height * scaleY,
-        };
+        if (!activePage) return;
+        const newRotation = (activePage.rotation + 90) % 360;
+        updatePage(activePage.id, { rotation: newRotation, crop: null });
         
-        processImage(originalImage, rotation, actualCropData);
-        setIsCropping(false);
-    }
+        const img = new Image();
+        img.onload = () => {
+            const processedSrc = processImage(img, newRotation, null);
+            updatePage(activePage.id, { processedSrc });
+        }
+        img.src = activePage.originalSrc;
+    };
     
     const handleCropMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!isCropping || !previewContainerRef.current) return;
@@ -778,7 +799,6 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         setStartCropPoint({ x, y });
-        setCropData({ x, y, width: 0, height: 0 });
     };
 
     const handleCropMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -787,30 +807,77 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         const currentX = e.clientX - rect.left;
         const currentY = e.clientY - rect.top;
 
-        const newCropData = {
+        updatePage(activePageId!, { crop: {
             x: Math.min(startCropPoint.x, currentX),
             y: Math.min(startCropPoint.y, currentY),
             width: Math.abs(currentX - startCropPoint.x),
             height: Math.abs(currentY - startCropPoint.y),
-        };
-        setCropData(newCropData);
+        }});
     };
     
     const handleCropMouseUp = () => {
         setStartCropPoint(null);
     };
 
-    const downloadAsPDF = () => {
-        if (!imageSrc || !canvasRef.current) return;
+    const handleApplyCrop = () => {
+        if (!activePage || !activePage.crop) return;
+        
+        const img = new Image();
+        img.onload = () => {
+             const previewImg = previewContainerRef.current?.querySelector('img');
+             if (!previewImg) return;
+
+             const scaleX = img.naturalWidth / previewImg.width;
+             const scaleY = img.naturalHeight / previewImg.height;
+
+             const actualCropData = {
+                x: activePage.crop!.x * scaleX,
+                y: activePage.crop!.y * scaleY,
+                width: activePage.crop!.width * scaleX,
+                height: activePage.crop!.height * scaleY,
+            };
+
+            const processedSrc = processImage(img, activePage.rotation, actualCropData);
+            updatePage(activePage.id, { processedSrc, crop: null }); // Reset crop box but keep data in image
+        }
+        img.src = activePage.originalSrc;
+        setIsCropping(false);
+    }
+
+    const resetEdits = () => {
+        if (!activePage) return;
+        updatePage(activePage.id, { rotation: 0, crop: null });
+        reProcessActivePage();
+    };
+
+    const downloadAsPDF = async () => {
+        if (pages.length === 0) return;
         setIsSaving(true);
+        
         try {
-            const canvas = canvasRef.current;
-            const pdf = new jsPDF({
-                orientation: canvas.width > canvas.height ? 'l' : 'p',
-                unit: 'px',
-                format: [canvas.width, canvas.height]
-            });
-            pdf.addImage(imageSrc, 'JPEG', 0, 0, canvas.width, canvas.height);
+            const pdf = new jsPDF();
+            
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                if (i > 0) {
+                    pdf.addPage();
+                }
+
+                const img = new Image();
+                img.src = page.processedSrc;
+                await new Promise(resolve => { img.onload = resolve; });
+
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const ratio = Math.min(pdfWidth / img.width, pdfHeight / img.height);
+                const imgWidth = img.width * ratio;
+                const imgHeight = img.height * ratio;
+                const x = (pdfWidth - imgWidth) / 2;
+                const y = (pdfHeight - imgHeight) / 2;
+
+                pdf.addImage(img, 'JPEG', x, y, imgWidth, imgHeight);
+            }
+            
             pdf.save(fileName);
             toast({ title: 'PDF Descargado', description: `Se ha guardado como ${fileName}.` });
         } catch (error) {
@@ -820,78 +887,134 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             setIsSaving(false);
         }
     };
-
-    const resetScanner = (fullReset = true) => {
-        if (fullReset) {
-            setOriginalImage(null);
-            setImageSrc(null);
-            setHasCameraPermission(null);
-        }
-        setRotation(0);
-        setIsCropping(false);
-        setCropData(null);
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-            videoRef.current.srcObject = null;
-        }
-    };
     
-    const resetEdits = () => {
-        if (originalImage) {
-            setRotation(0);
-            setIsCropping(false);
-            setCropData(null);
-            processImage(originalImage, 0, null);
+    const deletePage = (id: number) => {
+        const newPages = pages.filter(p => p.id !== id);
+        setPages(newPages);
+        if (activePageId === id) {
+            setActivePageId(newPages.length > 0 ? newPages[0].id : null);
         }
-    };
+        if (newPages.length === 0) {
+            setMode('capture');
+        }
+    }
 
+    const resetScanner = () => {
+        setPages([]);
+        setActivePageId(null);
+        setMode('capture');
+        setHasCameraPermission(null);
+        setIsCropping(false);
+        stopCamera();
+    };
 
     return (
         <Dialog onOpenChange={(open) => !open && resetScanner()}>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="max-w-lg w-[95vw] flex flex-col h-[90vh]">
+            <DialogContent className="max-w-xl w-[95vw] flex flex-col h-[90vh]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2"><ScanLine className="h-5 w-5"/> Escáner de Apuntes</DialogTitle>
                     <DialogDescription>
-                        Captura o sube una imagen, edítala y guárdala como un PDF limpio.
+                        Captura, edita y agrupa imágenes para crear un único PDF.
                     </DialogDescription>
                 </DialogHeader>
                 
-                {imageSrc ? (
-                    <div className="flex-grow flex flex-col min-h-0">
-                         <div className="flex-grow min-h-0 relative mb-4">
-                            <ScrollArea className="w-full h-full border rounded-lg bg-muted/30">
-                               <div 
+                {pages.length === 0 ? (
+                     <div className="flex-grow flex flex-col items-center justify-center space-y-4 py-4">
+                        <Button onClick={getCameraPermission} className="w-full max-w-xs">
+                            <Camera className="mr-2 h-4 w-4" /> Usar Cámara
+                        </Button>
+                        <Button onClick={() => fileInputRef.current?.click()} className="w-full max-w-xs">
+                            <Upload className="mr-2 h-4 w-4" /> Subir Archivo
+                        </Button>
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden"/>
+                         {hasCameraPermission === false && (
+                            <Alert variant="destructive" className="max-w-xs">
+                                <AlertDescription>
+                                    El acceso a la cámara fue denegado.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        {mode === 'capture' && hasCameraPermission && (
+                            <div className="w-full max-w-xs space-y-2">
+                                <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                                <Button onClick={takePicture} className="w-full">
+                                    <Camera className="mr-2 h-4 w-4" /> Tomar Foto
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="flex-grow flex flex-col min-h-0 space-y-4">
+                         <div 
+                            className="flex-grow min-h-0 relative border rounded-lg bg-muted/30"
+                            onDragStart={(e) => e.preventDefault()}
+                         >
+                            {activePage ? (
+                                <div 
                                     ref={previewContainerRef}
-                                    className="relative w-full h-full flex items-center justify-center"
+                                    className="w-full h-full flex items-center justify-center p-2"
                                     onMouseDown={handleCropMouseDown}
                                     onMouseMove={handleCropMouseMove}
                                     onMouseUp={handleCropMouseUp}
                                     onMouseLeave={handleCropMouseUp}
-                                    onDragStart={(e) => e.preventDefault()}
                                 >
-                                    <img ref={previewImageRef} src={imageSrc} alt="Processed document" className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
-                                    {isCropping && cropData && cropData.width > 0 && cropData.height > 0 && (
+                                    <img src={activePage.processedSrc} alt={`Page ${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
+                                    {isCropping && activePage.crop && (
                                         <div
                                             className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
                                             style={{
-                                                left: cropData.x,
-                                                top: cropData.y,
-                                                width: cropData.width,
-                                                height: cropData.height,
+                                                left: activePage.crop.x,
+                                                top: activePage.crop.y,
+                                                width: activePage.crop.width,
+                                                height: activePage.crop.height,
                                             }}
                                         />
                                     )}
                                 </div>
-                            </ScrollArea>
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-muted-foreground">Selecciona una página para editar.</div>
+                            )}
                         </div>
 
                          <div className="flex-shrink-0 space-y-4 pt-2">
+                            <ScrollArea className="w-full whitespace-nowrap">
+                                <div className="flex items-center gap-2 p-2">
+                                    {pages.map((p, index) => (
+                                        <div key={p.id} className="relative group shrink-0" onClick={() => setActivePageId(p.id)}>
+                                             <img 
+                                                src={p.processedSrc} 
+                                                alt={`Thumbnail ${index + 1}`}
+                                                className={cn(
+                                                    "h-20 w-20 object-cover rounded-md border-2 cursor-pointer transition-all",
+                                                    activePageId === p.id ? "border-primary shadow-lg scale-105" : "border-transparent hover:border-primary/50"
+                                                )}
+                                             />
+                                             <Button 
+                                                variant="destructive" size="icon"
+                                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={(e) => { e.stopPropagation(); deletePage(p.id); }}
+                                             >
+                                                <X className="h-4 w-4" />
+                                             </Button>
+                                             <div className="absolute bottom-1 left-1 bg-background/70 text-xs font-bold px-1.5 py-0.5 rounded-full">{index + 1}</div>
+                                        </div>
+                                    ))}
+                                     <button
+                                        onClick={() => setMode('capture')}
+                                        className="h-20 w-20 flex flex-col items-center justify-center rounded-md border-2 border-dashed bg-muted/50 hover:bg-muted hover:border-primary transition-colors shrink-0"
+                                      >
+                                        <PlusCircle className="h-6 w-6 text-muted-foreground" />
+                                        <span className="text-xs mt-1 text-muted-foreground">Añadir</span>
+                                      </button>
+                                </div>
+                                <div className="h-1" />
+                            </ScrollArea>
+                            
                              <div className="flex items-center gap-2">
-                                <Button onClick={handleRotate} variant="outline" size="icon"><RotateCw className="h-4 w-4" /></Button>
-                                <Button onClick={() => setIsCropping(!isCropping)} variant={isCropping ? "default" : "outline"} size="icon"><Crop className="h-4 w-4" /></Button>
-                                <Button onClick={resetEdits} variant="outline" size="icon" aria-label="Restablecer edición"><RotateCcw className="h-4 w-4 text-destructive" /></Button>
+                                <Button onClick={handleRotate} variant="outline" size="icon" disabled={!activePage}><RotateCw className="h-4 w-4" /></Button>
+                                <Button onClick={() => setIsCropping(!isCropping)} variant={isCropping ? "default" : "outline"} size="icon" disabled={!activePage}><Crop className="h-4 w-4" /></Button>
+                                <Button onClick={resetEdits} variant="outline" size="icon" aria-label="Restablecer edición" disabled={!activePage}><RotateCcw className="h-4 w-4 text-destructive" /></Button>
                                 {isCropping && (
                                     <Button onClick={handleApplyCrop} variant="secondary" className="flex-1">
                                         <Check className="mr-2 h-4 w-4" /> Aplicar Recorte
@@ -903,8 +1026,9 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 <Input id="pdf-filename" value={fileName} onChange={e => setFileName(e.target.value)} />
                              </div>
                             <div className="grid grid-cols-2 gap-2">
-                                <Button onClick={() => resetScanner(true)} variant="outline">
-                                    Escanear Otro
+                                <Button onClick={resetScanner} variant="outline">
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Limpiar Todo
                                 </Button>
                                 <Button onClick={downloadAsPDF} disabled={isSaving}>
                                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Download className="mr-2 h-4 w-4" />}
@@ -912,33 +1036,6 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 </Button>
                             </div>
                         </div>
-                    </div>
-                ) : hasCameraPermission === true ? (
-                    <div className="space-y-4">
-                        <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                        <Button onClick={takePicture} className="w-full">
-                            <Camera className="mr-2 h-4 w-4" /> Tomar Foto
-                        </Button>
-                         <Button onClick={() => resetScanner(true)} variant="outline" className="w-full">
-                            Volver
-                        </Button>
-                    </div>
-                ) : (
-                     <div className="space-y-4 py-4">
-                        <Button onClick={getCameraPermission} className="w-full">
-                            <Camera className="mr-2 h-4 w-4" /> Usar Cámara
-                        </Button>
-                        <Button onClick={() => fileInputRef.current?.click()} className="w-full">
-                            <Upload className="mr-2 h-4 w-4" /> Subir Archivo
-                        </Button>
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden"/>
-                         {hasCameraPermission === false && (
-                            <Alert variant="destructive">
-                                <AlertDescription>
-                                    El acceso a la cámara fue denegado. Por favor, habilítalo en la configuración de tu navegador.
-                                </AlertDescription>
-                            </Alert>
-                        )}
                     </div>
                 )}
                  <canvas ref={canvasRef} className="hidden" />
