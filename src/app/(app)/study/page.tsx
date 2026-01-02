@@ -38,6 +38,7 @@ import {
   Plus,
   Settings2,
   Target,
+  Sigma,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -72,7 +73,6 @@ interface CustomMode {
   focus: number;
   break: number;
 }
-
 
 const defaultPlaylists: Playlist[] = [
     { id: "lofi", name: "Lofi", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DZ06evO0FDzS8?utm_source=generator" },
@@ -388,7 +388,7 @@ export default function StudyPage() {
                         {Object.keys(modes).map((key) => {
                             const modeData = modes[key as TimerMode];
                             const Icon = modeData.icon;
-                             const isCustom = key === 'custom';
+                            const isCustom = key === 'custom';
 
                             const content = (
                                 <button
@@ -437,7 +437,7 @@ export default function StudyPage() {
                                     <Calculator className="h-6 w-6" />
                                 </Button>
                             </DialogTrigger>
-                            <SimpleCalculatorDialog />
+                            <ScienceCalculatorDialog />
                         </Dialog>
                         <Button variant="ghost" size="icon" onClick={handleReset} className="h-14 w-14 rounded-full bg-muted/50">
                             <RotateCcw className="h-6 w-6" />
@@ -543,6 +543,7 @@ export default function StudyPage() {
                     <div className="aspect-video w-full">
                         <iframe 
                             key={activePlaylist.id}
+                            title={activePlaylist.name}
                             style={{borderRadius: "12px"}}
                             src={activePlaylist.url}
                             width="100%" 
@@ -756,157 +757,142 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
     )
 }
 
-function SimpleCalculatorDialog() {
-    const [displayValue, setDisplayValue] = useState("0");
-    const [operator, setOperator] = useState<string | null>(null);
-    const [firstOperand, setFirstOperand] = useState<number | null>(null);
-    const [waitingForSecondOperand, setWaitingForSecondOperand] = useState(false);
-    const [memory, setMemory] = useState<number | null>(null);
+function ScienceCalculatorDialog() {
+    const [expression, setExpression] = useState<string>("");
+    const [display, setDisplay] = useState<string>("0");
+    const [isRad, setIsRad] = useState(true);
 
-    const handleDigitClick = (digit: string) => {
-        if (waitingForSecondOperand) {
-            setDisplayValue(digit);
-            setWaitingForSecondOperand(false);
+    const handleInput = (char: string) => {
+        if (display === "Error") {
+            setDisplay("0");
+            setExpression("");
+        }
+        
+        if (display === "0" && "123456789".includes(char)) {
+            setDisplay(char);
+            setExpression(prev => prev + char);
         } else {
-            setDisplayValue(displayValue === "0" ? digit : displayValue + digit);
-        }
-    };
-
-    const handleDecimalClick = () => {
-        if (!displayValue.includes(".")) {
-            setDisplayValue(displayValue + ".");
-        }
-    };
-
-    const handleOperatorClick = (nextOperator: string) => {
-        const inputValue = parseFloat(displayValue);
-
-        if (operator && !waitingForSecondOperand) {
-            const result = calculate(firstOperand!, inputValue, operator);
-            setDisplayValue(String(result));
-            setFirstOperand(result);
-        } else {
-            setFirstOperand(inputValue);
-        }
-
-        setWaitingForSecondOperand(true);
-        setOperator(nextOperator);
-    };
-
-    const calculate = (first: number, second: number, op: string): number => {
-        switch (op) {
-            case "+": return first + second;
-            case "-": return first - second;
-            case "*": return first * second;
-            case "/": return first / second;
-            default: return second;
+            setDisplay(prev => prev + char);
+            setExpression(prev => prev + char);
         }
     };
     
-    const handleEqualsClick = () => {
-        const inputValue = parseFloat(displayValue);
-        if (operator && firstOperand !== null) {
-            const result = calculate(firstOperand, inputValue, operator);
-            setDisplayValue(String(result));
-            setFirstOperand(result);
-            setOperator(null);
-            setWaitingForSecondOperand(false);
+    const handleOperator = (op: string) => {
+        setExpression(prev => prev + op);
+        setDisplay("0");
+    };
+
+    const handleFunction = (func: string) => {
+        setExpression(prev => `${func}(${prev})`);
+    };
+
+    const calculateResult = () => {
+        try {
+            let evalExpr = expression
+                .replace(/√/g, 'Math.sqrt')
+                .replace(/∛/g, 'cbrt')
+                .replace(/π/g, 'Math.PI')
+                .replace(/e/g, 'Math.E')
+                .replace(/sin/g, 'Math.sin')
+                .replace(/cos/g, 'Math.cos')
+                .replace(/tan/g, 'Math.tan')
+                .replace(/ln/g, 'Math.log')
+                .replace(/log/g, 'Math.log10')
+                .replace(/\^/g, '**');
+
+            const degToRad = (deg: number) => deg * (Math.PI / 180);
+            
+            // Custom cbrt function for Math object
+            (Math as any).cbrt = (x: number) => Math.cbrt(x);
+
+            if (!isRad) {
+                evalExpr = evalExpr.replace(/(Math.sin|Math.cos|Math.tan)\(([^)]+)\)/g, (match, func, angle) => {
+                    return `${func}(${degToRad(eval(angle))})`;
+                });
+            }
+
+            const result = new Function('return ' + evalExpr)();
+            if (typeof result !== 'number' || isNaN(result)) {
+                throw new Error("Invalid calculation");
+            }
+            
+            setDisplay(String(result));
+            setExpression(String(result));
+        } catch (e) {
+            setDisplay("Error");
+            setExpression("");
         }
     };
 
-    const handleClear = () => {
-        setDisplayValue("0");
-        setOperator(null);
-        setFirstOperand(null);
-        setWaitingForSecondOperand(false);
+    const clear = () => {
+        setExpression("");
+        setDisplay("0");
     };
+    
+    const backspace = () => {
+        setExpression(prev => prev.slice(0, -1));
+        setDisplay(prev => prev.slice(0, -1) || "0");
+    };
+    
+    const renderButton = (label: string, onClick: () => void, className = "", span = "col-span-1") => (
+        <Button key={label} onClick={onClick} variant="outline" className={cn("h-12 text-lg font-semibold", span, className)}>
+            {label}
+        </Button>
+    );
 
-    const handlePlusMinus = () => {
-        setDisplayValue(String(parseFloat(displayValue) * -1));
-    };
-
-    const handlePercent = () => {
-        setDisplayValue(String(parseFloat(displayValue) / 100));
-    };
-
-    const handleMemoryClear = () => setMemory(null);
-    const handleMemoryRecall = () => {
-        if (memory !== null) setDisplayValue(String(memory));
-    };
-    const handleMemoryAdd = () => {
-        const currentVal = parseFloat(displayValue);
-        setMemory((memory || 0) + currentVal);
-    };
-    const handleMemorySubtract = () => {
-        const currentVal = parseFloat(displayValue);
-        setMemory((memory || 0) - currentVal);
-    };
-
-    const buttons = [
-        ['C', '±', '%', '/'],
-        ['7', '8', '9', '*'],
-        ['4', '5', '6', '-'],
-        ['1', '2', '3', '+'],
-        ['0', '.', '=']
+    const sciFunctions = [
+        { label: "sin", func: () => handleOperator('sin(') }, { label: "cos", func: () => handleOperator('cos(') }, { label: "tan", func: () => handleOperator('tan(') },
+        { label: "x²", func: () => handleOperator('^2') }, { label: "x³", func: () => handleOperator('^3') }, { label: "xʸ", func: () => handleOperator('^') },
+        { label: "√", func: () => handleOperator('√(') }, { label: "∛", func: () => handleOperator('∛(') }, { label: "ln", func: () => handleOperator('ln(') },
+        { label: "log", func: () => handleOperator('log(') }, { label: "π", func: () => handleInput('π') }, { label: "e", func: () => handleInput('e') }
     ];
-    
-    const memoryButtons = ['MC', 'MR', 'M+', 'M-'];
-
-    const getButtonAction = (btn: string) => {
-        if (!isNaN(parseInt(btn))) return () => handleDigitClick(btn);
-        switch (btn) {
-            case '.': return handleDecimalClick;
-            case '+':
-            case '-':
-            case '*':
-            case '/': return () => handleOperatorClick(btn);
-            case '=': return handleEqualsClick;
-            case 'C': return handleClear;
-            case '±': return handlePlusMinus;
-            case '%': return handlePercent;
-            case 'MC': return handleMemoryClear;
-            case 'MR': return handleMemoryRecall;
-            case 'M+': return handleMemoryAdd;
-            case 'M-': return handleMemorySubtract;
-            default: return () => {};
-        }
-    }
-    
-    const getButtonClass = (btn: string) => {
-        if (['/', '*', '-', '+', '='].includes(btn)) return "bg-primary/90 hover:bg-primary text-primary-foreground";
-        if (['C', '±', '%'].includes(btn)) return "bg-muted hover:bg-muted/80";
-        return "bg-background hover:bg-muted";
-    }
 
     return (
-        <DialogContent className="max-w-xs w-full">
+        <DialogContent className="max-w-md w-full">
             <DialogHeader>
-                <DialogTitle className="flex items-center gap-2"><Calculator className="h-5 w-5"/> Calculadora</DialogTitle>
+                <DialogTitle className="flex items-center gap-2"><Sigma className="h-5 w-5"/> Calculadora Científica</DialogTitle>
             </DialogHeader>
-            <div className="p-4 bg-muted rounded-lg text-right">
-                <div className="text-4xl font-mono break-all">{displayValue}</div>
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-                {memoryButtons.map(btn => (
-                    <Button key={btn} onClick={getButtonAction(btn)} variant="outline" className="text-xs">{btn}</Button>
-                ))}
-            </div>
-             <div className="grid grid-cols-4 gap-2">
-                {buttons.flat().map((btn) => (
-                    <Button 
-                        key={btn} 
-                        onClick={getButtonAction(btn)} 
-                        className={cn("h-14 text-xl", getButtonClass(btn), btn === '0' && 'col-span-2')}
-                    >
-                        {btn}
-                    </Button>
-                ))}
+            <div className="space-y-2">
+                <div className="p-4 bg-muted rounded-lg text-right break-all">
+                    <div className="text-xs text-muted-foreground h-5">{expression || " "}</div>
+                    <div className="text-4xl font-mono text-foreground">{display}</div>
+                </div>
+
+                <div className="grid grid-cols-5 gap-2">
+                    <div className="grid grid-cols-2 gap-2 col-span-2">
+                        {sciFunctions.map(f => (
+                           <Button key={f.label} onClick={f.func} variant="outline" className="h-10 text-sm font-semibold bg-muted/50">{f.label}</Button> 
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 col-span-3">
+                         <Button onClick={() => handleInput('(')} variant="outline" className="h-10 bg-muted/50 text-lg">(</Button>
+                         <Button onClick={() => handleInput(')')} variant="outline" className="h-10 bg-muted/50 text-lg">)</Button>
+                         <Button onClick={() => setIsRad(!isRad)} variant="outline" className="h-10 text-xs bg-muted/50">{isRad ? "Rad" : "Deg"}</Button>
+                         <Button onClick={clear} variant="destructive" className="h-10 text-lg col-span-2">C</Button>
+                         <Button onClick={backspace} variant="destructive" className="h-10">⌫</Button>
+
+                         {["7","8","9"].map(n => <Button key={n} onClick={() => handleInput(n)} variant="outline" className="h-10 text-lg">{n}</Button>)}
+                         {["4","5","6"].map(n => <Button key={n} onClick={() => handleInput(n)} variant="outline" className="h-10 text-lg">{n}</Button>)}
+                         {["1","2","3"].map(n => <Button key={n} onClick={() => handleInput(n)} variant="outline" className="h-10 text-lg">{n}</Button>)}
+                         <Button onClick={() => handleInput('0')} variant="outline" className="h-10 text-lg">0</Button>
+                         <Button onClick={() => handleInput('.')} variant="outline" className="h-10 text-lg">.</Button>
+                         <Button onClick={() => handleOperator('%')} variant="outline" className="h-10 text-lg bg-muted/50">%</Button>
+
+                         <Button onClick={() => handleOperator('/')} variant="outline" className="h-10 text-lg bg-primary/20">÷</Button>
+                         <Button onClick={() => handleOperator('*')} variant="outline" className="h-10 text-lg bg-primary/20">×</Button>
+                         <Button onClick={() => handleOperator('-')} variant="outline" className="h-10 text-lg bg-primary/20">−</Button>
+                         <Button onClick={() => handleOperator('+')} variant="outline" className="h-10 text-lg bg-primary/20">+</Button>
+                         <Button onClick={calculateResult} className="h-20 text-xl col-span-2 row-span-2">=</Button>
+                    </div>
+                </div>
             </div>
         </DialogContent>
     );
 }
-    
 
     
 
     
+
+    
+
