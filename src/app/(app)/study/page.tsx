@@ -33,6 +33,9 @@ import {
   Music,
   PlusCircle,
   Trash2,
+  Timer,
+  Brain,
+  Plus,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -48,7 +51,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 
-type TimerMode = "pomodoro" | "long" | "deep";
+type TimerMode = "pomodoro" | "long" | "deep" | "custom";
 type Phase = "focus" | "break";
 type Sound = {
     id: string;
@@ -63,22 +66,11 @@ interface Playlist {
     url: string;
 }
 
-const modes = {
-  pomodoro: { focus: 25, break: 5, label: "Pomodoro (25/5)" },
-  long: { focus: 50, break: 10, label: "Bloque Largo (50/10)" },
-  deep: { focus: 90, break: 20, label: "Deep Work (90/20)" },
-};
+interface CustomMode {
+  focus: number;
+  break: number;
+}
 
-const sounds: Sound[] = [
-    { id: "rain", label: "Lluvia", icon: CloudRain, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/relaxing-rain-419012.mp3?alt=media&token=aa591a3a-8eed-42d0-9347-f8e0da836dcf" },
-    { id: "cafe", label: "Cafetería", icon: Coffee, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/casual-cafe-restaurant-noise-73945.mp3?alt=media&token=bc050ad2-746b-410d-8fdb-4c89c620f10c" },
-    { id: "forest", label: "Bosque", icon: Trees, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/ambiente-de-bosque-arvi-ambix-17159.mp3?alt=media&token=3311c173-b307-4fbb-97ff-8450fbc3cdc8" },
-    { id: "sea", label: "Mar", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/mar-agitado-272999.mp3?alt=media&token=d7322a3a-6397-42eb-9039-b569be846fc7" },
-    { id: "noise", label: "Ruido Blanco", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/white-noise-358382.mp3?alt=media&token=e4fae111-a420-45f0-a75a-9a3e09d8a357" },
-    { id: "nature", label: "Pájaros", icon: Leaf, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/birds-frogs-nature-8257.mp3?alt=media&token=462a8b0e-ffd7-46a0-917f-5510f4085649" },
-    { id: "city", label: "Ciudad", icon: Building2, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/city-ambience-121693.mp3?alt=media&token=00c7c7fa-cba2-4a8a-b091-6d07e56262c0" },
-    { id: "library", label: "Biblioteca", icon: BookOpen, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/biblioteca.mp3?alt=media&token=b60acf9f-d0c9-40f5-9cf4-0e63af7d9385" },
-];
 
 const defaultPlaylists: Playlist[] = [
     { id: "lofi", name: "Lofi", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DZ06evO0FDzS8?utm_source=generator" },
@@ -92,6 +84,17 @@ const defaultPlaylists: Playlist[] = [
     { id: "chillout", name: "Chill Out", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DX32oVqaQE8BM?utm_source=generator" },
     { id: "piano", name: "Peaceful Piano", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DX4sWSpwq3LiO?utm_source=generator" },
     { id: "coffeejazz", name: "Coffee Table Jazz", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DWVqfgj8NZEp1?utm_source=generator" },
+];
+
+const sounds: Sound[] = [
+    { id: "rain", label: "Lluvia", icon: CloudRain, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/relaxing-rain-419012.mp3?alt=media&token=aa591a3a-8eed-42d0-9347-f8e0da836dcf" },
+    { id: "cafe", label: "Cafetería", icon: Coffee, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/casual-cafe-restaurant-noise-73945.mp3?alt=media&token=bc050ad2-746b-410d-8fdb-4c89c620f10c" },
+    { id: "forest", label: "Bosque", icon: Trees, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/ambiente-de-bosque-arvi-ambix-17159.mp3?alt=media&token=3311c173-b307-4fbb-97ff-8450fbc3cdc8" },
+    { id: "sea", label: "Mar", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/mar-agitado-272999.mp3?alt=media&token=d7322a3a-6397-42eb-9039-b569be846fc7" },
+    { id: "noise", label: "Ruido Blanco", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/white-noise-358382.mp3?alt=media&token=e4fae111-a420-45f0-a75a-9a3e09d8a357" },
+    { id: "nature", label: "Pájaros", icon: Leaf, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/birds-frogs-nature-8257.mp3?alt=media&token=462a8b0e-ffd7-46a0-917f-5510f4085649" },
+    { id: "city", label: "Ciudad", icon: Building2, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/city-ambience-121693.mp3?alt=media&token=00c7c7fa-cba2-4a8a-b091-6d07e56262c0" },
+    { id: "library", label: "Biblioteca", icon: BookOpen, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/biblioteca.mp3?alt=media&token=b60acf9f-d0c9-40f5-9cf4-0e63af7d9385" },
 ];
 
 
@@ -117,23 +120,30 @@ export default function StudyPage() {
   const lastLoggedMinuteRef = useRef<number | null>();
   const streakUpdatedTodayRef = useRef<boolean>(false);
   
+  const [customMode, setCustomMode] = useState<CustomMode>({ focus: 45, break: 15 });
+
+  const modes = {
+    pomodoro: { focus: 25, break: 5, label: "Pomodoro", icon: Timer, colors: "from-blue-400 to-blue-500" },
+    long: { focus: 50, break: 10, label: "Bloque Largo", icon: Brain, colors: "from-purple-400 to-purple-500" },
+    deep: { focus: 90, break: 20, label: "Deep Work", icon: Brain, colors: "from-indigo-400 to-indigo-500" },
+    custom: { focus: customMode.focus, break: customMode.break, label: "Personalizado", icon: Plus, colors: "from-green-400 to-green-500" }
+  };
+  
   useEffect(() => {
     setIsMounted(true);
-  }, []);
-
-  // Load user playlists from localStorage
-  useEffect(() => {
-    if (isMounted) {
-      try {
-          const savedPlaylists = localStorage.getItem('userPlaylists');
-          if (savedPlaylists) {
-              setUserPlaylists(JSON.parse(savedPlaylists));
-          }
-      } catch (e) {
-          console.error("Failed to parse user playlists from localStorage", e);
-      }
+    try {
+        const savedPlaylists = localStorage.getItem('userPlaylists');
+        if (savedPlaylists) {
+            setUserPlaylists(JSON.parse(savedPlaylists));
+        }
+        const savedCustomMode = localStorage.getItem('customStudyMode');
+        if (savedCustomMode) {
+            setCustomMode(JSON.parse(savedCustomMode));
+        }
+    } catch (e) {
+        console.error("Failed to parse data from localStorage", e);
     }
-  }, [isMounted]);
+  }, []);
 
   // Save user playlists to localStorage
   useEffect(() => {
@@ -142,9 +152,17 @@ export default function StudyPage() {
     }
   }, [userPlaylists, isMounted]);
 
+  // Save custom mode to localStorage
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem('customStudyMode', JSON.stringify(customMode));
+    }
+  }, [customMode, isMounted]);
+
+
   const getInitialTime = useCallback(() => {
     return modes[mode][phase] * 60;
-  }, [mode, phase]);
+  }, [mode, phase, modes]);
 
   const [timeLeft, setTimeLeft] = useState(getInitialTime);
   
@@ -158,17 +176,17 @@ export default function StudyPage() {
     const audio = audioRef.current;
     if (!audio) return;
     
-    if (selectedSound) {
+    if (selectedSound && isActive) {
       if (audio.src !== selectedSound.url) {
         audio.src = selectedSound.url;
       }
       if (audio.paused) {
-        audio.play().catch(error => console.log("Esperando interacción del usuario..."));
+        audio.play().catch(error => console.log("User interaction needed to play audio."));
       }
     } else {
       audio.pause();
     }
-  }, [selectedSound]);
+  }, [selectedSound, isActive]);
 
   const handleStreak = useCallback(async () => {
     if (!firestore || !user || streakUpdatedTodayRef.current) return;
@@ -227,7 +245,7 @@ export default function StudyPage() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, timeLeft, mode, phase, toast]);
+  }, [isActive, timeLeft, mode, phase, toast, modes]);
 
   useEffect(() => {
     if (!firestore || !user || !isActive || phase !== 'focus') return;
@@ -236,7 +254,8 @@ export default function StudyPage() {
         handleStreak();
     }
 
-    const currentMinute = Math.floor((modes[mode].focus * 60 - timeLeft) / 60);
+    const totalDuration = modes[mode].focus * 60;
+    const currentMinute = Math.floor((totalDuration - timeLeft) / 60);
 
     if (currentMinute > 0 && currentMinute !== lastLoggedMinuteRef.current) {
         lastLoggedMinuteRef.current = currentMinute;
@@ -251,7 +270,7 @@ export default function StudyPage() {
         });
     }
 
-  }, [timeLeft, isActive, phase, firestore, user, mode, updateUser, handleStreak]);
+  }, [timeLeft, isActive, phase, firestore, user, mode, updateUser, handleStreak, modes]);
 
 
   const handleModeChange = (newMode: TimerMode) => {
@@ -261,26 +280,16 @@ export default function StudyPage() {
   };
 
   const handleToggle = () => {
-    const audio = audioRef.current;
     if (!isActive) {
-        // If we are starting
-        lastLoggedMinuteRef.current = Math.floor((modes[mode].focus * 60 - timeLeft) / 60);
-        if (audio && selectedSound && audio.paused) {
-            audio.play().catch(error => console.log("Error playing sound on start:", error));
-        }
-    } else {
-         // If we are pausing
-        if (audio) {
-            audio.pause();
-        }
+      lastLoggedMinuteRef.current = Math.floor((modes[mode].focus * 60 - timeLeft) / 60);
     }
     setIsActive(!isActive);
-}
+  };
 
   const handleReset = () => {
     setIsActive(false);
     setPhase("focus");
-    setTimeLeft(modes[mode].focus * 60);
+    setTimeLeft(getInitialTime());
     lastLoggedMinuteRef.current = null;
   };
 
@@ -300,21 +309,11 @@ export default function StudyPage() {
   };
 
   const handleSoundSelect = (sound: Sound) => {
-      const audio = audioRef.current;
-      if (!audio) return;
-
-      if (selectedSound?.id === sound?.id) {
-          setSelectedSound(null);
-          audio.pause();
-      } else {
-          setSelectedSound(sound);
-          if (sound) {
-            audio.src = sound.url;
-            if (audio.paused) {
-                audio.play().catch(error => console.log("Esperando interacción del usuario..."));
-            }
-          }
-      }
+    if (selectedSound?.id === sound?.id) {
+        setSelectedSound(null);
+    } else {
+        setSelectedSound(sound);
+    }
   }
 
   const handlePlaylistChange = (playlistUrl: string) => {
@@ -340,8 +339,9 @@ export default function StudyPage() {
 
   const progress = useMemo(() => {
     const totalDuration = modes[mode][phase] * 60;
+    if (totalDuration === 0) return 0;
     return (1 - timeLeft / totalDuration) * 100;
-  }, [timeLeft, mode, phase]);
+  }, [timeLeft, mode, phase, modes]);
   
   if (!user) return null;
 
@@ -349,7 +349,7 @@ export default function StudyPage() {
   const streakCount = user.streak || 0;
 
   const phaseColors = phase === 'focus' 
-    ? "from-primary to-accent" 
+    ? modes[mode].colors
     : "from-green-400 to-emerald-500";
   
   const phaseProgressColor = phase === 'focus' ? "bg-primary" : "bg-green-500";
@@ -384,20 +384,28 @@ export default function StudyPage() {
         <main className="p-4 space-y-6">
             <Card className="w-full max-w-sm mx-auto shadow-xl overflow-hidden">
                 <CardContent className="p-4">
-                    <div className="flex justify-center mb-4">
-                        <div className="bg-muted p-1 rounded-full flex gap-1">
-                            {Object.keys(modes).map((key) => (
-                            <Button
-                                key={key}
-                                variant={mode === key ? "default" : "ghost"}
-                                size="sm"
-                                className="rounded-full px-2 h-8 text-xs"
-                                onClick={() => handleModeChange(key as TimerMode)}
-                            >
-                                {modes[key as TimerMode].label}
-                            </Button>
-                            ))}
-                        </div>
+                    <div className="flex justify-center items-center gap-2 mb-4">
+                        {Object.keys(modes).map((key) => {
+                            if (key === 'custom' && !customMode) return null;
+                            const modeData = modes[key as TimerMode];
+                            const Icon = modeData.icon;
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => handleModeChange(key as TimerMode)}
+                                    className={cn(
+                                        "flex-1 flex flex-col items-center justify-center gap-1 p-2 rounded-lg border-2 transition-all duration-300",
+                                        mode === key
+                                            ? `border-transparent bg-gradient-to-br text-white shadow-lg ${modeData.colors}`
+                                            : "border-dashed bg-muted/50 hover:bg-muted"
+                                    )}
+                                >
+                                    <Icon className="h-5 w-5" />
+                                    <span className="text-xs font-semibold">{modeData.label}</span>
+                                </button>
+                            );
+                        })}
+                         <CustomTimerDialog customMode={customMode} setCustomMode={setCustomMode} />
                     </div>
                     
                     <div className="relative flex items-center justify-center my-6">
@@ -561,6 +569,71 @@ export default function StudyPage() {
       </ScrollArea>
     </div>
   );
+}
+
+function CustomTimerDialog({ customMode, setCustomMode }: { customMode: CustomMode, setCustomMode: (mode: CustomMode) => void }) {
+    const [focus, setFocus] = useState(customMode.focus.toString());
+    const [rest, setRest] = useState(customMode.break.toString());
+    const [isOpen, setIsOpen] = useState(false);
+
+    const handleSave = () => {
+        const focusNum = parseInt(focus, 10);
+        const restNum = parseInt(rest, 10);
+
+        if (!isNaN(focusNum) && !isNaN(restNum) && focusNum > 0 && restNum > 0) {
+            setCustomMode({ focus: focusNum, break: restNum });
+            setIsOpen(false);
+        }
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <button
+                    className="flex-1 flex flex-col items-center justify-center gap-1 p-2 rounded-lg border-2 border-dashed bg-muted/50 hover:bg-muted transition-colors duration-300"
+                >
+                    <Plus className="h-5 w-5" />
+                    <span className="text-xs font-semibold">Personalizar</span>
+                </button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Temporizador Personalizado</DialogTitle>
+                    <DialogDescription>
+                        Define tus propios tiempos de estudio y descanso.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="focus-time">Minutos de Enfoque</Label>
+                        <Input 
+                            id="focus-time" 
+                            type="number" 
+                            value={focus} 
+                            onChange={(e) => setFocus(e.target.value)} 
+                            placeholder="Ej: 45"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="break-time">Minutos de Descanso</Label>
+                        <Input 
+                            id="break-time" 
+                            type="number" 
+                            value={rest}
+                            onChange={(e) => setRest(e.target.value)}
+                            placeholder="Ej: 15"
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline">Cancelar</Button>
+                    </DialogClose>
+                    <Button onClick={handleSave}>Guardar</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlaylists: Playlist[], setUserPlaylists: React.Dispatch<React.SetStateAction<Playlist[]>>}) {
