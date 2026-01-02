@@ -31,6 +31,8 @@ import {
   ScanLine,
   Flame,
   Music,
+  PlusCircle,
+  Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -40,7 +42,10 @@ import { useFirestore } from "@/firebase";
 import { doc, updateDoc, increment } from "firebase/firestore";
 import { format as formatDate, subDays, isSameDay } from 'date-fns';
 import { WipDialog } from "@/components/layout/wip-dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 
 type TimerMode = "pomodoro" | "long" | "deep";
@@ -51,6 +56,12 @@ type Sound = {
     icon: React.ElementType;
     url: string;
 } | null;
+
+interface Playlist {
+    id: string;
+    name: string;
+    url: string;
+}
 
 const modes = {
   pomodoro: { focus: 25, break: 5, label: "Pomodoro (25/5)" },
@@ -69,7 +80,7 @@ const sounds: Sound[] = [
     { id: "library", label: "Biblioteca", icon: BookOpen, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/biblioteca.mp3?alt=media&token=b60acf9f-d0c9-40f5-9cf4-0e63af7d9385" },
 ];
 
-const playlists = [
+const defaultPlaylists: Playlist[] = [
     { id: "lofi", name: "Lofi", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DZ06evO0FDzS8?utm_source=generator" },
     { id: "hits", name: "Exitos España", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DXaxEKcoCdWHD?utm_source=generator" },
     { id: "jazz", name: "Jazz", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DXbITWG1ZJKYt?utm_source=generator" },
@@ -97,16 +108,30 @@ export default function StudyPage() {
   const [isActive, setIsActive] = useState(false);
   const [selectedSound, setSelectedSound] = useState<Sound>(null);
   const [volume, setVolume] = useState(100);
-  const [activePlaylist, setActivePlaylist] = useState(playlists[0]);
-
+  
+  const [userPlaylists, setUserPlaylists] = useState<Playlist[]>([]);
+  const [activePlaylist, setActivePlaylist] = useState<Playlist>(defaultPlaylists[0]);
 
   const audioRef = useRef<HTMLAudioElement>(null);
-
-  // Ref to track if a minute has been logged
   const lastLoggedMinuteRef = useRef<number | null>();
-  
-  // Ref to track if streak has been updated today
   const streakUpdatedTodayRef = useRef<boolean>(false);
+
+  // Load user playlists from localStorage
+  useEffect(() => {
+    try {
+        const savedPlaylists = localStorage.getItem('userPlaylists');
+        if (savedPlaylists) {
+            setUserPlaylists(JSON.parse(savedPlaylists));
+        }
+    } catch (e) {
+        console.error("Failed to parse user playlists from localStorage", e);
+    }
+  }, []);
+
+  // Save user playlists to localStorage
+  useEffect(() => {
+    localStorage.setItem('userPlaylists', JSON.stringify(userPlaylists));
+  }, [userPlaylists]);
 
   const getInitialTime = useCallback(() => {
     return modes[mode][phase] * 60;
@@ -114,14 +139,12 @@ export default function StudyPage() {
 
   const [timeLeft, setTimeLeft] = useState(getInitialTime);
   
-  // Update time left when mode or phase changes
   useEffect(() => {
     if (!isActive) {
       setTimeLeft(getInitialTime());
     }
   }, [mode, phase, getInitialTime, isActive]);
 
-  // Audio playback effect
    useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -138,7 +161,6 @@ export default function StudyPage() {
     }
   }, [selectedSound]);
 
-  // Handle streak logic
   const handleStreak = useCallback(async () => {
     if (!firestore || !user || streakUpdatedTodayRef.current) return;
     
@@ -168,7 +190,6 @@ export default function StudyPage() {
         });
         updateUser({ streak: newStreak, lastStudyDay: todayStr });
         streakUpdatedTodayRef.current = true;
-        console.log("Streak updated:", newStreak);
     } catch (err) {
         console.error("Failed to update streak:", err);
     }
@@ -199,7 +220,6 @@ export default function StudyPage() {
     };
   }, [isActive, timeLeft, mode, phase, toast]);
 
-  // Effect to log study minutes and handle streak
   useEffect(() => {
     if (!firestore || !user || !isActive || phase !== 'focus') return;
 
@@ -216,7 +236,6 @@ export default function StudyPage() {
         updateDoc(userDocRef, {
             studyMinutes: increment(1)
         }).then(() => {
-            console.log('Study minute logged');
             updateUser({ studyMinutes: (user.studyMinutes || 0) + 1 });
         }).catch(err => {
             console.error("Failed to log study minute:", err);
@@ -237,8 +256,10 @@ export default function StudyPage() {
         lastLoggedMinuteRef.current = Math.floor((modes[mode].focus * 60 - timeLeft) / 60);
     }
     const audio = audioRef.current;
-    if (audio && selectedSound && audio.paused) {
-      audio.play().catch(error => console.log("Esperando interacción del usuario..."));
+    if (audio && selectedSound) {
+        if (audio.paused) {
+            audio.play().catch(error => console.log("Esperando interacción del usuario..."));
+        }
     }
     setIsActive(!isActive);
   }
@@ -267,14 +288,15 @@ export default function StudyPage() {
 
   const handleSoundSelect = (sound: Sound) => {
       if (selectedSound?.id === sound?.id) {
-          setSelectedSound(null); // Deselect if clicked again
+          setSelectedSound(null);
       } else {
           setSelectedSound(sound);
       }
   }
 
-  const handlePlaylistChange = (playlistId: string) => {
-      const newPlaylist = playlists.find(p => p.id === playlistId);
+  const handlePlaylistChange = (playlistUrl: string) => {
+      const allPlaylists = [...defaultPlaylists, ...userPlaylists];
+      const newPlaylist = allPlaylists.find(p => p.url === playlistUrl);
       if (newPlaylist) {
           setActivePlaylist(newPlaylist);
       }
@@ -300,7 +322,6 @@ export default function StudyPage() {
   
   if (!user) return null;
 
-  const isAdmin = ADMIN_EMAILS.includes(user.email);
   const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
   const streakCount = user.streak || 0;
 
@@ -435,21 +456,40 @@ export default function StudyPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <Select onValueChange={handlePlaylistChange} defaultValue={activePlaylist.id}>
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Selecciona un género..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {playlists.map(playlist => (
-                                <SelectItem key={playlist.id} value={playlist.id}>
-                                    {playlist.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-
+                     <div className="flex items-center gap-2">
+                        <Select onValueChange={handlePlaylistChange} value={activePlaylist.url}>
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecciona un género..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectLabel>Playlists Sugeridas</SelectLabel>
+                                    {defaultPlaylists.map(playlist => (
+                                        <SelectItem key={playlist.id} value={playlist.url}>
+                                            {playlist.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                                {userPlaylists.length > 0 && (
+                                    <SelectGroup>
+                                        <SelectLabel>Mis Playlists</SelectLabel>
+                                        {userPlaylists.map(playlist => (
+                                            <SelectItem key={playlist.id} value={playlist.url}>
+                                                {playlist.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                )}
+                            </SelectContent>
+                        </Select>
+                        <PlaylistManagerDialog 
+                            userPlaylists={userPlaylists} 
+                            setUserPlaylists={setUserPlaylists}
+                        />
+                    </div>
                     <div className="aspect-video w-full">
                         <iframe 
+                            key={activePlaylist.id}
                             style={{borderRadius: "12px"}}
                             src={activePlaylist.url}
                             width="100%" 
@@ -499,3 +539,101 @@ export default function StudyPage() {
     </div>
   );
 }
+
+function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlaylists: Playlist[], setUserPlaylists: React.Dispatch<React.SetStateAction<Playlist[]>>}) {
+    const { toast } = useToast();
+    const [newPlaylistName, setNewPlaylistName] = useState("");
+    const [newPlaylistUrl, setNewPlaylistUrl] = useState("");
+
+    const extractPlaylistId = (url: string): string | null => {
+        const regex = /playlist\/([a-zA-Z0-9]+)/;
+        const match = url.match(regex);
+        return match ? match[1] : null;
+    }
+
+    const handleAddPlaylist = () => {
+        if (!newPlaylistName.trim() || !newPlaylistUrl.trim()) {
+            toast({ title: "Error", description: "El nombre y la URL no pueden estar vacíos.", variant: "destructive"});
+            return;
+        }
+
+        const playlistId = extractPlaylistId(newPlaylistUrl);
+        if (!playlistId) {
+            toast({ title: "URL no válida", description: "Asegúrate de que la URL es una URL de playlist de Spotify válida.", variant: "destructive"});
+            return;
+        }
+
+        const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator`;
+        
+        const newPlaylist: Playlist = {
+            id: `user-${Date.now()}`,
+            name: newPlaylistName,
+            url: embedUrl,
+        };
+
+        setUserPlaylists(prev => [...prev, newPlaylist]);
+        setNewPlaylistName("");
+        setNewPlaylistUrl("");
+        toast({ title: "¡Playlist añadida!", description: `"${newPlaylist.name}" se ha guardado.`});
+    };
+    
+    const handleDeletePlaylist = (id: string) => {
+        setUserPlaylists(prev => prev.filter(p => p.id !== id));
+        toast({ title: "Playlist eliminada", variant: "destructive"});
+    }
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="icon" aria-label="Gestionar playlists">
+                    <PlusCircle className="h-4 w-4" />
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Gestionar Mis Playlists</DialogTitle>
+                    <DialogDescription>Añade o elimina tus playlists personalizadas de Spotify.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="playlist-name">Nombre de la Playlist</Label>
+                        <Input id="playlist-name" value={newPlaylistName} onChange={(e) => setNewPlaylistName(e.target.value)} placeholder="Ej: Mi Playlist de Estudio"/>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="playlist-url">URL de la Playlist de Spotify</Label>
+                        <Input id="playlist-url" value={newPlaylistUrl} onChange={(e) => setNewPlaylistUrl(e.target.value)} placeholder="https://open.spotify.com/playlist/..."/>
+                    </div>
+                     <Button onClick={handleAddPlaylist} className="w-full">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Añadir Playlist
+                     </Button>
+                </div>
+                
+                 {userPlaylists.length > 0 && (
+                    <div className="space-y-2 pt-4 border-t">
+                        <h4 className="font-semibold text-sm">Mis Playlists Guardadas</h4>
+                        <ScrollArea className="h-40">
+                             <div className="space-y-2 pr-4">
+                                {userPlaylists.map(playlist => (
+                                    <div key={playlist.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                                        <p className="text-sm font-medium truncate">{playlist.name}</p>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDeletePlaylist(playlist.id)}>
+                                            <Trash2 className="h-4 w-4"/>
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    </div>
+                )}
+                
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline">Cerrar</Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+    
