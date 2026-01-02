@@ -111,27 +111,36 @@ export default function StudyPage() {
   
   const [userPlaylists, setUserPlaylists] = useState<Playlist[]>([]);
   const [activePlaylist, setActivePlaylist] = useState<Playlist>(defaultPlaylists[0]);
+  const [isMounted, setIsMounted] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const lastLoggedMinuteRef = useRef<number | null>();
   const streakUpdatedTodayRef = useRef<boolean>(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Load user playlists from localStorage
   useEffect(() => {
-    try {
-        const savedPlaylists = localStorage.getItem('userPlaylists');
-        if (savedPlaylists) {
-            setUserPlaylists(JSON.parse(savedPlaylists));
-        }
-    } catch (e) {
-        console.error("Failed to parse user playlists from localStorage", e);
+    if (isMounted) {
+      try {
+          const savedPlaylists = localStorage.getItem('userPlaylists');
+          if (savedPlaylists) {
+              setUserPlaylists(JSON.parse(savedPlaylists));
+          }
+      } catch (e) {
+          console.error("Failed to parse user playlists from localStorage", e);
+      }
     }
-  }, []);
+  }, [isMounted]);
 
   // Save user playlists to localStorage
   useEffect(() => {
-    localStorage.setItem('userPlaylists', JSON.stringify(userPlaylists));
-  }, [userPlaylists]);
+    if (isMounted) {
+      localStorage.setItem('userPlaylists', JSON.stringify(userPlaylists));
+    }
+  }, [userPlaylists, isMounted]);
 
   const getInitialTime = useCallback(() => {
     return modes[mode][phase] * 60;
@@ -253,16 +262,16 @@ export default function StudyPage() {
 
   const handleToggle = () => {
     const audio = audioRef.current;
-    if (isActive) {
-        // If we are pausing
-        if (audio) {
-            audio.pause();
-        }
-    } else {
+    if (!isActive) {
         // If we are starting
         lastLoggedMinuteRef.current = Math.floor((modes[mode].focus * 60 - timeLeft) / 60);
         if (audio && selectedSound && audio.paused) {
             audio.play().catch(error => console.log("Error playing sound on start:", error));
+        }
+    } else {
+         // If we are pausing
+        if (audio) {
+            audio.pause();
         }
     }
     setIsActive(!isActive);
@@ -301,8 +310,8 @@ export default function StudyPage() {
           setSelectedSound(sound);
           if (sound) {
             audio.src = sound.url;
-            if (isActive) { // Only play if timer is active
-                audio.play().catch(error => console.log("Error playing new sound:", error));
+            if (audio.paused) {
+                audio.play().catch(error => console.log("Esperando interacción del usuario..."));
             }
           }
       }
@@ -649,3 +658,5 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
         </Dialog>
     )
 }
+
+    
