@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,12 +12,11 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFirestore } from "@/firebase";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import type { User } from "@/lib/types";
-import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart } from "lucide-react";
+import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart, Users, GraduationCap, Snowflake, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -32,9 +31,9 @@ export function RankingDialog({ children, user, openTo = "ranking" }: { children
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="max-w-md w-[95vw] p-0">
-                 <Tabs defaultValue={openTo} className="w-full">
-                    <DialogHeader className="p-6 pb-0">
+            <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col h-[80vh]">
+                 <Tabs defaultValue={openTo} className="w-full h-full flex flex-col">
+                    <DialogHeader className="p-6 pb-0 flex-shrink-0">
                         <div className="flex items-center gap-3">
                             <DialogTitle className="flex items-center gap-2">
                                 <Trophy className="text-yellow-400" />
@@ -51,11 +50,11 @@ export function RankingDialog({ children, user, openTo = "ranking" }: { children
                         </TabsList>
                     </DialogHeader>
                    
-                    <div className="max-h-[60vh] overflow-y-auto">
-                        <TabsContent value="ranking">
-                            <RankingTab user={user} />
+                    <div className="flex-1 overflow-y-auto min-h-0">
+                        <TabsContent value="ranking" className="mt-0">
+                            <RankingTab user={user} isOpen={isOpen} />
                         </TabsContent>
-                        <TabsContent value="shop">
+                        <TabsContent value="shop" className="mt-0">
                            <ShopTab user={user} />
                         </TabsContent>
                     </div>
@@ -65,43 +64,102 @@ export function RankingDialog({ children, user, openTo = "ranking" }: { children
     );
 }
 
-function RankingTab({ user }: { user: User }) {
+type RankingScope = "class" | "center";
+
+function RankingTab({ user, isOpen }: { user: User; isOpen: boolean }) {
     const firestore = useFirestore();
     const [ranking, setRanking] = useState<User[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [scope, setScope] = useState<RankingScope>("class");
 
-    const isInSchoolGroup = user.center === SCHOOL_VERIFICATION_CODE;
-
-    const fetchRanking = async () => {
-        setError("Para mantener la equidad en el lanzamiento oficial, el ranking de trofeos está desactivado durante la fase beta. ¡No te preocupes! Los trofeos que consigas se guardarán y todos los beta testers recibiréis una bonificación especial como agradecimiento por vuestra ayuda.");
-        return;
-    };
+    const isPersonalUser = user.center === 'personal';
 
     useEffect(() => {
+        if (!isOpen || !firestore || isPersonalUser) {
+            if (isPersonalUser) setIsLoading(false);
+            return;
+        }
+
+        const fetchRanking = async () => {
+            setIsLoading(true);
+            
+            let usersQuery;
+            if (scope === 'class') {
+                usersQuery = query(
+                    collection(firestore, "users"),
+                    where("center", "==", user.center),
+                    where("course", "==", user.course),
+                    where("className", "==", user.className),
+                    orderBy("trophies", "desc"),
+                    limit(50)
+                );
+            } else { // scope === 'center'
+                usersQuery = query(
+                    collection(firestore, "users"),
+                    where("center", "==", user.center),
+                    orderBy("trophies", "desc"),
+                    limit(50)
+                );
+            }
+
+            try {
+                const querySnapshot = await getDocs(usersQuery);
+                const usersList = querySnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
+                setRanking(usersList);
+            } catch (error) {
+                console.error("Error fetching ranking:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
         fetchRanking();
-    }, []);
+    }, [firestore, user, scope, isOpen, isPersonalUser]);
+    
+    if (isPersonalUser) {
+         return (
+            <div className="p-6">
+                <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg bg-muted/30">
+                    <ShieldAlert className="h-12 w-12 text-muted-foreground/70 mb-4" />
+                    <p className="font-semibold">Función no disponible</p>
+                    <p className="text-sm text-muted-foreground">El ranking es una función exclusiva para usuarios que pertenecen a un centro educativo.</p>
+                </div>
+            </div>
+        );
+    }
 
     const top3 = ranking.slice(0, 3);
     const rest = ranking.slice(3);
+    const userRank = ranking.findIndex(u => u.uid === user.uid) + 1;
 
     return (
-        <div className="p-6 pt-2">
-            {isLoading && (
+        <div className="p-6 pt-4 space-y-6">
+            <Select onValueChange={(value: RankingScope) => setScope(value)} value={scope}>
+                <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Ver ranking de..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="class">
+                        <div className="flex items-center gap-2">
+                           <GraduationCap className="h-4 w-4" /> Mi Clase
+                        </div>
+                    </SelectItem>
+                     <SelectItem value="center">
+                        <div className="flex items-center gap-2">
+                           <Users className="h-4 w-4" /> Mi Centro
+                        </div>
+                    </SelectItem>
+                </SelectContent>
+            </Select>
+
+            {isLoading ? (
                 <div className="space-y-4">
-                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-12 w-full" />
                     <Skeleton className="h-12 w-full" />
                     <Skeleton className="h-12 w-full" />
                 </div>
-            )}
-            {error && (
-                <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg my-4 bg-yellow-500/5 border-yellow-500/30">
-                    <ShieldAlert className="h-12 w-12 text-yellow-500 mb-4" />
-                    <p className="font-semibold text-yellow-600 dark:text-yellow-400">Función Desactivada (Beta)</p>
-                    <p className="text-sm text-muted-foreground">{error}</p>
-                </div>
-            )}
-            {!isLoading && !error && (
+            ) : ranking.length > 0 ? (
                 <div>
                     <div className="grid grid-cols-3 gap-2 text-center mb-8 items-end">
                         <PodiumPlace user={top3[1]} place={2} />
@@ -113,25 +171,28 @@ function RankingTab({ user }: { user: User }) {
                             <RankingItem key={rankedUser.uid} user={rankedUser} rank={index + 4} isCurrentUser={rankedUser.uid === user.uid} />
                         ))}
                     </div>
-                    {ranking.length === 0 && (
-                        <p className="text-muted-foreground text-center p-8">Nadie tiene trofeos todavía. ¡Sé el primero!</p>
+                     {userRank > 0 && (
+                        <Card className="mt-6 p-3 flex items-center justify-between bg-primary/10 border-primary/50">
+                            <p className="text-sm font-bold text-primary">Tu posición</p>
+                            <div className="flex items-center gap-2">
+                               <div className="font-bold text-lg">#{userRank}</div>
+                                <div className="flex items-center gap-1 font-bold">
+                                    <Trophy className="h-4 w-4 text-yellow-500" />
+                                    <span>{user.trophies}</span>
+                                </div>
+                            </div>
+                        </Card>
                     )}
+                </div>
+            ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                    <p className="font-semibold">Aún no hay ranking</p>
+                    <p className="text-sm">Nadie en este grupo tiene trofeos todavía. ¡Sé el primero!</p>
                 </div>
             )}
         </div>
     );
 }
-
-const shopItems = [
-    { id: 'amazon', name: 'Amazon', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg', values: [5, 10] },
-    { id: 'game', name: 'GAME', imageUrl: 'https://www.cclasrosas.es/wp-content/uploads/2017/12/logo-game.jpg', values: [5, 10] },
-    { id: 'shein', name: 'Shein', imageUrl: 'https://e01-elmundo.uecdn.es/assets/multimedia/imagenes/2023/11/28/17011685734882.png', values: [5, 10, 15] },
-    { id: 'druni', name: 'Druni', imageUrl: 'https://sevilla.secompraonline.com/wp-content/uploads/sites/5/2023/06/354068035_638603531636870_8081465420058888362_n.png', values: [5, 10, 15] },
-    { id: 'inditex', name: 'Inditex', imageUrl: 'https://www.inditex.com/itxcomweb/api/media/bfc0fb15-b15c-47bf-b467-8ec4aea4169f/inditex.png?t=1657543184830', values: [5, 10, 15, 20, 25] },
-    { id: 'abacus', name: 'Abacus', imageUrl: 'https://www.baricentro.es/wp-content/uploads/sites/8//Abacus-logo.png', values: [5, 10, 15, 20] },
-    { id: 'bureau-vallee', name: 'Bureau Vallée', imageUrl: 'https://www.uvimark.com/wp-content/uploads/2024/10/Logo-bureau-vallee-2021.png', values: [5, 10, 15, 20] },
-    { id: 'cinesa', name: 'Cinesa', imageUrl: 'https://www.cclasrosas.es/wp-content/uploads/2017/12/logo-cinesa.jpg', values: [5, 10, 15, 20] },
-];
 
 function ShopTab({ user }: { user: User }) {
     const TROPHIES_PER_EURO = 100;
@@ -139,13 +200,13 @@ function ShopTab({ user }: { user: User }) {
 
     return (
          <div className="p-6 pt-2 space-y-6">
-            <div className="text-center sticky top-0 bg-background/80 backdrop-blur-sm py-4 z-10">
+            <Card className="text-center sticky top-0 bg-background/95 backdrop-blur-sm py-4 z-10 shadow-sm">
                  <p className="text-sm text-muted-foreground">Tus trofeos</p>
                  <div className="flex items-center justify-center gap-2">
                      <Trophy className="h-6 w-6 text-yellow-400"/>
                      <p className="text-2xl font-bold">{isAdmin ? '∞' : user.trophies}</p>
                  </div>
-            </div>
+            </Card>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                  {shopItems.map(item => (
                     <ShopItemCard 
@@ -203,9 +264,8 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
 
 
 function PodiumPlace({ user, place }: { user?: User; place: 1 | 2 | 3 }) {
-    if (!user) return <div />;
+    if (!user) return <div className={cn(place === 1 ? "h-40" : place === 2 ? "h-32" : "h-28")} />;
 
-    const isAdmin = ADMIN_EMAILS.includes(user.email);
     const placeStyles = {
         1: { icon: Gem, color: "text-amber-400", size: "h-32 w-32", text: "text-4xl", shadow: "shadow-amber-400/50" },
         2: { icon: Medal, color: "text-slate-400", size: "h-24 w-24", text: "text-3xl", shadow: "shadow-slate-400/50" },
@@ -218,12 +278,12 @@ function PodiumPlace({ user, place }: { user?: User; place: 1 | 2 | 3 }) {
     return (
         <div className={cn("flex flex-col items-center gap-1", place === 1 ? "-mt-4" : "")}>
             <div className="relative">
-                <Avatar className={cn(style.size, "ring-4 ring-offset-2 ring-offset-background", `ring-${style.color.replace('text-','').replace('-400','')}`)}>
+                <Avatar className={cn(style.size, "ring-4 ring-offset-2 ring-offset-background", `ring-amber-400/50`)}>
                     <AvatarImage src={user.avatar} />
                     <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div className={cn("absolute -bottom-3 -right-2 rounded-full bg-background p-1 shadow-lg", style.shadow)}>
-                     <Icon className={cn("h-6 w-6", style.color)} />
+                <div className={cn("absolute -bottom-3 right-0 rounded-full bg-background/80 p-1.5 shadow-lg", style.shadow)}>
+                     <Icon className={cn("h-7 w-7", style.color)} />
                 </div>
             </div>
             <p className="font-bold text-sm truncate w-full">{user.name.split(' ')[0]}</p>
@@ -237,11 +297,9 @@ function PodiumPlace({ user, place }: { user?: User; place: 1 | 2 | 3 }) {
     );
 }
 
-
 function RankingItem({ user, rank, isCurrentUser }: { user: User; rank: number; isCurrentUser: boolean }) {
-    const isAdmin = ADMIN_EMAILS.includes(user.email);
     return (
-        <div className={cn("flex items-center gap-4 rounded-lg p-3", isCurrentUser ? "bg-primary/10 border border-primary/50" : "bg-muted/50")}>
+        <div className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors", isCurrentUser ? "bg-primary/10 border-2 border-primary/50" : "bg-muted/50 border")}>
             <div className="text-lg font-bold text-muted-foreground w-6 text-center">{rank}</div>
             <Avatar className="h-10 w-10">
                 <AvatarImage src={user.avatar} />
@@ -257,3 +315,14 @@ function RankingItem({ user, rank, isCurrentUser }: { user: User; rank: number; 
         </div>
     );
 }
+
+const shopItems = [
+    { id: 'amazon', name: 'Amazon', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg', values: [5, 10] },
+    { id: 'game', name: 'GAME', imageUrl: 'https://www.cclasrosas.es/wp-content/uploads/2017/12/logo-game.jpg', values: [5, 10] },
+    { id: 'shein', name: 'Shein', imageUrl: 'https://e01-elmundo.uecdn.es/assets/multimedia/imagenes/2023/11/28/17011685734882.png', values: [5, 10, 15] },
+    { id: 'druni', name: 'Druni', imageUrl: 'https://sevilla.secompraonline.com/wp-content/uploads/sites/5/2023/06/354068035_638603531636870_8081465420058888362_n.png', values: [5, 10, 15] },
+    { id: 'inditex', name: 'Inditex', imageUrl: 'https://www.inditex.com/itxcomweb/api/media/bfc0fb15-b15c-47bf-b467-8ec4aea4169f/inditex.png?t=1657543184830', values: [5, 10, 15, 20, 25] },
+    { id: 'abacus', name: 'Abacus', imageUrl: 'https://www.baricentro.es/wp-content/uploads/sites/8//Abacus-logo.png', values: [5, 10, 15, 20] },
+    { id: 'bureau-vallee', name: 'Bureau Vallée', imageUrl: 'https://www.uvimark.com/wp-content/uploads/2024/10/Logo-bureau-vallee-2021.png', values: [5, 10, 15, 20] },
+    { id: 'cinesa', name: 'Cinesa', imageUrl: 'https://www.cclasrosas.es/wp-content/uploads/2017/12/logo-cinesa.jpg', values: [5, 10, 15, 20] },
+];
