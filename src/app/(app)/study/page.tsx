@@ -908,6 +908,8 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         stopCamera();
     };
 
+    const showCaptureUI = mode === 'capture' || pages.length === 0;
+
     return (
         <Dialog onOpenChange={(open) => !open && resetScanner()}>
             <DialogTrigger asChild>{children}</DialogTrigger>
@@ -919,7 +921,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                     </DialogDescription>
                 </DialogHeader>
                 
-                {pages.length === 0 ? (
+                {showCaptureUI && (
                      <div className="flex-grow flex flex-col items-center justify-center space-y-4 py-4">
                         <Button onClick={getCameraPermission} className="w-full max-w-xs">
                             <Camera className="mr-2 h-4 w-4" /> Usar Cámara
@@ -928,7 +930,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                             <Upload className="mr-2 h-4 w-4" /> Subir Archivo
                         </Button>
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden"/>
-                         {hasCameraPermission === false && (
+                         {hasCameraPermission === false && !videoRef.current?.srcObject && (
                             <Alert variant="destructive" className="max-w-xs">
                                 <AlertDescription>
                                     El acceso a la cámara fue denegado.
@@ -944,7 +946,9 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                             </div>
                         )}
                     </div>
-                ) : (
+                )}
+                
+                {!showCaptureUI && (
                     <div className="flex-grow flex flex-col min-h-0 space-y-4">
                          <div 
                             className="flex-grow min-h-0 relative border rounded-lg bg-muted/30"
