@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, FileText, Download, Eye, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { ScannedDocument } from '@/lib/types';
 import {
@@ -111,12 +111,12 @@ function ScannerHistoryClient() {
     }
 
     return (
-        <div className="columns-2 md:columns-3 gap-4 space-y-4">
+        <div className="columns-1 sm:columns-2 gap-4 space-y-4">
             {documents.map(doc => (
                 <div key={doc.id} className="break-inside-avoid">
                     <Card className="overflow-hidden group relative transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
                         <img src={doc.thumbnail} alt={doc.name} className="w-full h-auto object-cover" />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
                             <div className="text-right">
                                <AlertDialog>
                                     <AlertDialogTrigger asChild>
@@ -179,7 +179,7 @@ function ScannerHistoryClient() {
                                 </div>
                             </div>
                         </div>
-                        <Badge variant="secondary" className="absolute top-2 left-2 opacity-80 group-hover:opacity-0 transition-opacity">
+                        <Badge variant="secondary" className="absolute top-2 left-2">
                             {format(new Date(doc.timestamp), "d MMM yyyy", { locale: es })}
                         </Badge>
                     </Card>
@@ -205,10 +205,24 @@ export default function ScannerHistoryPage() {
                   </h1>
                 </div>
             </header>
+            
+            <Card className="mb-8 bg-muted/30 border-dashed">
+                <CardHeader className="flex flex-row items-center gap-4">
+                     <div className="p-3 bg-primary/10 rounded-lg">
+                        <FileText className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <h2 className="font-semibold">Tu Biblioteca Digital</h2>
+                        <CardDescription>
+                            Aquí encontrarás todos los documentos que has creado con el escáner.
+                        </CardDescription>
+                    </div>
+                </CardHeader>
+            </Card>
+
             <main>
                 <ScannerHistoryClient />
             </main>
         </div>
     );
 }
-
