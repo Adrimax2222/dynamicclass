@@ -630,6 +630,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
     const [mode, setMode] = useState<'capture' | 'preview'>('capture');
     
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+    const [isCameraActive, setIsCameraActive] = useState(false);
     const [fileName, setFileName] = useState('apuntes-escaneados.pdf');
     const [isSaving, setIsSaving] = useState(false);
     
@@ -644,31 +645,34 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
 
     const activePage = useMemo(() => pages.find(p => p.id === activePageId), [pages, activePageId]);
 
-    const stopCamera = () => {
+    const stopCamera = useCallback(() => {
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
             stream.getTracks().forEach(track => track.stop());
             videoRef.current.srcObject = null;
         }
-    };
+        setIsCameraActive(false);
+    }, []);
+
 
     useEffect(() => {
         return () => { // Cleanup on unmount
             stopCamera();
         };
-    }, []);
+    }, [stopCamera]);
 
     const getCameraPermission = async () => {
-        if (hasCameraPermission && videoRef.current?.srcObject) return;
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             setHasCameraPermission(true);
+            setIsCameraActive(true);
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
             }
         } catch (error) {
             console.error('Error accessing camera:', error);
             setHasCameraPermission(false);
+            setIsCameraActive(false);
             toast({
                 variant: 'destructive',
                 title: 'Acceso a la Cámara Denegado',
@@ -816,19 +820,17 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             const renderedImgElement = previewContainer.querySelector('img');
             if (!renderedImgElement) return;
 
-            // Calculate the scale of the displayed image relative to its natural dimensions
-            const scaleX = renderedImgElement.width / img.naturalWidth;
-            const scaleY = renderedImgElement.height / img.naturalHeight;
+            const scaleX = renderedImgElement.naturalWidth / renderedImgElement.width;
+            const scaleY = renderedImgElement.naturalHeight / renderedImgElement.height;
             
-            // Calculate the offset of the image within its container (for object-contain)
-            const offsetX = (previewContainer.clientWidth - renderedImgElement.width) / 2;
-            const offsetY = (previewContainer.clientHeight - renderedImgElement.height) / 2;
+            const offsetX = (renderedImgElement.offsetWidth - previewContainer.clientWidth) / 2;
+            const offsetY = (renderedImgElement.offsetHeight - previewContainer.clientHeight) / 2;
 
             const actualCropData: CropData = {
-                x: (activePage.crop!.x - offsetX) / scaleX,
-                y: (activePage.crop!.y - offsetY) / scaleY,
-                width: activePage.crop!.width / scaleX,
-                height: activePage.crop!.height / scaleY,
+                x: (activePage.crop!.x + offsetX) * scaleX,
+                y: (activePage.crop!.y + offsetY) * scaleY,
+                width: activePage.crop!.width * scaleX,
+                height: activePage.crop!.height * scaleY,
             };
 
             const processedSrc = processImage(img, activePage.rotation, actualCropData);
@@ -907,41 +909,21 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
     };
     
     const renderCaptureUI = () => {
-        const showCameraView = hasCameraPermission && videoRef.current?.srcObject;
         return (
-            <div className="fixed inset-0 bg-background/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
-                {showCameraView ? (
-                    <div className="w-full flex flex-col items-center justify-center">
-                        <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                        <div className="flex items-center gap-4 mt-4">
-                            <Button onClick={() => setMode('preview')} variant="outline">
-                                Cancelar
-                            </Button>
-                            <Button onClick={takePicture} className="h-16 w-16 rounded-full">
-                                <Camera className="h-8 w-8" />
-                            </Button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="flex-grow flex flex-col items-center justify-center space-y-4 py-4 w-full max-w-xs">
-                        <Button onClick={getCameraPermission} className="w-full">
-                            <Camera className="mr-2 h-4 w-4" /> Usar Cámara
-                        </Button>
-                        <Button onClick={() => fileInputRef.current?.click()} className="w-full">
-                            <Upload className="mr-2 h-4 w-4" /> Subir Archivo
-                        </Button>
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden"/>
-                         {hasCameraPermission === false && (
-                            <Alert variant="destructive">
-                                <AlertDescription>
-                                    El acceso a la cámara fue denegado.
-                                </AlertDescription>
-                            </Alert>
-                        )}
-                        {pages.length > 0 && (
-                            <Button onClick={() => setMode('preview')} variant="secondary" className="w-full">Volver a la Edición</Button>
-                        )}
-                    </div>
+            <div className="flex-grow flex flex-col items-center justify-center space-y-4 py-4 w-full">
+                <Button onClick={getCameraPermission} className="w-full max-w-xs">
+                    <Camera className="mr-2 h-4 w-4" /> Usar Cámara
+                </Button>
+                <Button onClick={() => fileInputRef.current?.click()} className="w-full max-w-xs">
+                    <Upload className="mr-2 h-4 w-4" /> Subir Archivo
+                </Button>
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden"/>
+                 {hasCameraPermission === false && (
+                    <Alert variant="destructive" className="max-w-xs">
+                        <AlertDescription>
+                            El acceso a la cámara fue denegado.
+                        </AlertDescription>
+                    </Alert>
                 )}
             </div>
         );
@@ -951,20 +933,32 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         <Dialog onOpenChange={(open) => !open && resetScanner()}>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="max-w-xl w-[95vw] flex flex-col h-[90vh]">
-                <DialogHeader>
+                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2"><ScanLine className="h-5 w-5"/> Escáner de Apuntes</DialogTitle>
                     <DialogDescription>
                         Captura, edita y agrupa imágenes para crear un único PDF.
                     </DialogDescription>
                 </DialogHeader>
-                
-                {mode === 'capture' ? renderCaptureUI() : (
+
+                {isCameraActive ? (
+                     <div className="fixed inset-0 bg-background/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
+                        <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                        <div className="flex items-center gap-4 mt-4">
+                            <Button onClick={stopCamera} variant="outline">
+                                Cancelar
+                            </Button>
+                            <Button onClick={takePicture} className="h-16 w-16 rounded-full">
+                                <Camera className="h-8 w-8" />
+                            </Button>
+                        </div>
+                    </div>
+                ) : (
                     <div className="flex-grow flex flex-col min-h-0 space-y-4">
                          <div 
-                            className="flex-grow min-h-0 relative border rounded-lg bg-muted/30"
+                            className="flex-grow min-h-0 relative border rounded-lg bg-muted/30 flex items-center justify-center"
                             onDragStart={(e) => e.preventDefault()}
                          >
-                            {activePage ? (
+                            {mode === 'capture' ? renderCaptureUI() : activePage ? (
                                 <div 
                                     ref={previewContainerRef}
                                     className="w-full h-full flex items-center justify-center p-2"
@@ -1026,11 +1020,11 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                             </ScrollArea>
                             
                              <div className="flex items-center gap-2">
-                                <Button onClick={handleRotate} variant="outline" size="icon" disabled={!activePage}><RotateCw className="h-4 w-4" /></Button>
-                                <Button onClick={() => setIsCropping(!isCropping)} variant={isCropping ? "default" : "outline"} size="icon" disabled={!activePage} className={cn(isCropping && "ring-2 ring-primary ring-offset-2")}>
+                                <Button onClick={handleRotate} variant="outline" size="icon" disabled={!activePage || mode === 'capture'}><RotateCw className="h-4 w-4" /></Button>
+                                <Button onClick={() => setIsCropping(!isCropping)} variant={isCropping ? "default" : "outline"} size="icon" disabled={!activePage || mode === 'capture'} className={cn(isCropping && "ring-2 ring-primary ring-offset-2")}>
                                   <Crop className="h-4 w-4" />
                                 </Button>
-                                <Button onClick={resetEdits} variant="outline" size="icon" aria-label="Restablecer edición" disabled={!activePage}><RotateCcw className="h-4 w-4 text-red-500" /></Button>
+                                <Button onClick={resetEdits} variant="outline" size="icon" aria-label="Restablecer edición" disabled={!activePage || mode === 'capture'}><RotateCcw className="h-4 w-4 text-red-500" /></Button>
                                 {isCropping && (
                                     <Button onClick={handleApplyCrop} variant="secondary" className="flex-1">
                                         <Check className="mr-2 h-4 w-4" /> Aplicar Recorte
