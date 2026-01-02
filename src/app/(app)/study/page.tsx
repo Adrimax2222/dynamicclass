@@ -37,6 +37,7 @@ import {
   Brain,
   Plus,
   Settings2,
+  Target,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -429,7 +430,15 @@ export default function StudyPage() {
 
                     <Progress value={progress} className={cn("h-2 [&>div]:transition-all [&>div]:duration-500", phaseProgressColor)} />
 
-                    <div className="flex justify-center items-center gap-6 mt-6">
+                    <div className="flex justify-between items-center gap-2 mt-6">
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-14 w-14 rounded-full bg-muted/50">
+                                    <Calculator className="h-6 w-6" />
+                                </Button>
+                            </DialogTrigger>
+                            <SimpleCalculatorDialog />
+                        </Dialog>
                         <Button variant="ghost" size="icon" onClick={handleReset} className="h-14 w-14 rounded-full bg-muted/50">
                             <RotateCcw className="h-6 w-6" />
                         </Button>
@@ -439,6 +448,11 @@ export default function StudyPage() {
                         <Button variant="ghost" size="icon" onClick={handleSkip} className="h-14 w-14 rounded-full bg-muted/50">
                             <SkipForward className="h-6 w-6" />
                         </Button>
+                        <GradeCalculatorDialog isScheduleAvailable={isScheduleAvailable} user={user}>
+                             <Button variant="ghost" size="icon" className="h-14 w-14 rounded-full bg-muted/50">
+                                <Target className="h-6 w-6" />
+                            </Button>
+                        </GradeCalculatorDialog>
                     </div>
                 </CardContent>
             </Card>
@@ -742,6 +756,155 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
     )
 }
 
+function SimpleCalculatorDialog() {
+    const [displayValue, setDisplayValue] = useState("0");
+    const [operator, setOperator] = useState<string | null>(null);
+    const [firstOperand, setFirstOperand] = useState<number | null>(null);
+    const [waitingForSecondOperand, setWaitingForSecondOperand] = useState(false);
+    const [memory, setMemory] = useState<number | null>(null);
+
+    const handleDigitClick = (digit: string) => {
+        if (waitingForSecondOperand) {
+            setDisplayValue(digit);
+            setWaitingForSecondOperand(false);
+        } else {
+            setDisplayValue(displayValue === "0" ? digit : displayValue + digit);
+        }
+    };
+
+    const handleDecimalClick = () => {
+        if (!displayValue.includes(".")) {
+            setDisplayValue(displayValue + ".");
+        }
+    };
+
+    const handleOperatorClick = (nextOperator: string) => {
+        const inputValue = parseFloat(displayValue);
+
+        if (operator && !waitingForSecondOperand) {
+            const result = calculate(firstOperand!, inputValue, operator);
+            setDisplayValue(String(result));
+            setFirstOperand(result);
+        } else {
+            setFirstOperand(inputValue);
+        }
+
+        setWaitingForSecondOperand(true);
+        setOperator(nextOperator);
+    };
+
+    const calculate = (first: number, second: number, op: string): number => {
+        switch (op) {
+            case "+": return first + second;
+            case "-": return first - second;
+            case "*": return first * second;
+            case "/": return first / second;
+            default: return second;
+        }
+    };
+    
+    const handleEqualsClick = () => {
+        const inputValue = parseFloat(displayValue);
+        if (operator && firstOperand !== null) {
+            const result = calculate(firstOperand, inputValue, operator);
+            setDisplayValue(String(result));
+            setFirstOperand(result);
+            setOperator(null);
+            setWaitingForSecondOperand(false);
+        }
+    };
+
+    const handleClear = () => {
+        setDisplayValue("0");
+        setOperator(null);
+        setFirstOperand(null);
+        setWaitingForSecondOperand(false);
+    };
+
+    const handlePlusMinus = () => {
+        setDisplayValue(String(parseFloat(displayValue) * -1));
+    };
+
+    const handlePercent = () => {
+        setDisplayValue(String(parseFloat(displayValue) / 100));
+    };
+
+    const handleMemoryClear = () => setMemory(null);
+    const handleMemoryRecall = () => {
+        if (memory !== null) setDisplayValue(String(memory));
+    };
+    const handleMemoryAdd = () => {
+        const currentVal = parseFloat(displayValue);
+        setMemory((memory || 0) + currentVal);
+    };
+    const handleMemorySubtract = () => {
+        const currentVal = parseFloat(displayValue);
+        setMemory((memory || 0) - currentVal);
+    };
+
+    const buttons = [
+        ['C', '±', '%', '/'],
+        ['7', '8', '9', '*'],
+        ['4', '5', '6', '-'],
+        ['1', '2', '3', '+'],
+        ['0', '.', '=']
+    ];
+    
+    const memoryButtons = ['MC', 'MR', 'M+', 'M-'];
+
+    const getButtonAction = (btn: string) => {
+        if (!isNaN(parseInt(btn))) return () => handleDigitClick(btn);
+        switch (btn) {
+            case '.': return handleDecimalClick;
+            case '+':
+            case '-':
+            case '*':
+            case '/': return () => handleOperatorClick(btn);
+            case '=': return handleEqualsClick;
+            case 'C': return handleClear;
+            case '±': return handlePlusMinus;
+            case '%': return handlePercent;
+            case 'MC': return handleMemoryClear;
+            case 'MR': return handleMemoryRecall;
+            case 'M+': return handleMemoryAdd;
+            case 'M-': return handleMemorySubtract;
+            default: return () => {};
+        }
+    }
+    
+    const getButtonClass = (btn: string) => {
+        if (['/', '*', '-', '+', '='].includes(btn)) return "bg-primary/90 hover:bg-primary text-primary-foreground";
+        if (['C', '±', '%'].includes(btn)) return "bg-muted hover:bg-muted/80";
+        return "bg-background hover:bg-muted";
+    }
+
+    return (
+        <DialogContent className="max-w-xs w-full">
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2"><Calculator className="h-5 w-5"/> Calculadora</DialogTitle>
+            </DialogHeader>
+            <div className="p-4 bg-muted rounded-lg text-right">
+                <div className="text-4xl font-mono break-all">{displayValue}</div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+                {memoryButtons.map(btn => (
+                    <Button key={btn} onClick={getButtonAction(btn)} variant="outline" className="text-xs">{btn}</Button>
+                ))}
+            </div>
+             <div className="grid grid-cols-4 gap-2">
+                {buttons.flat().map((btn) => (
+                    <Button 
+                        key={btn} 
+                        onClick={getButtonAction(btn)} 
+                        className={cn("h-14 text-xl", getButtonClass(btn), btn === '0' && 'col-span-2')}
+                    >
+                        {btn}
+                    </Button>
+                ))}
+            </div>
+        </DialogContent>
+    );
+}
     
 
     
