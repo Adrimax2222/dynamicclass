@@ -377,7 +377,7 @@ export default function StudyPage() {
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
                 <ChevronLeft />
             </Button>
-            <div className="flex-1 flex justify-center items-center gap-2">
+            <div className="flex items-center gap-2">
                 <h1 className="text-lg font-bold">Modo Estudio</h1>
                 <ScannerDialog>
                     <Button variant="ghost" size="icon">
@@ -608,6 +608,27 @@ export default function StudyPage() {
                             <ScanLine className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
                         </div>
                     </ScannerDialog>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <div className="relative p-4 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform">
+                                <div className="relative z-10">
+                                    <h3 className="font-bold">Calculadora</h3>
+                                    <p className="text-xs opacity-80">Acceso rápido a la calculadora científica.</p>
+                                </div>
+                                <Sigma className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
+                            </div>
+                        </DialogTrigger>
+                        <ScienceCalculatorDialog />
+                    </Dialog>
+                    <WipDialog>
+                        <div className="relative p-4 rounded-lg bg-gradient-to-br from-purple-400 to-violet-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform">
+                            <div className="relative z-10">
+                                <h3 className="font-bold">Documentos</h3>
+                                <p className="text-xs opacity-80">Historial de tus apuntes escaneados.</p>
+                            </div>
+                            <FileCheck2 className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
+                        </div>
+                    </WipDialog>
                 </CardContent>
             </Card>
 
@@ -829,8 +850,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             if (!renderedImg) return;
             
             const { naturalWidth, naturalHeight } = img;
-            const { clientWidth, clientHeight } = renderedImg;
-
+            
             const imageAspectRatio = naturalWidth / naturalHeight;
             const containerAspectRatio = container.clientWidth / container.clientHeight;
 
@@ -846,7 +866,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 renderWidth = renderHeight * imageAspectRatio;
                 offsetX = (container.clientWidth - renderWidth) / 2;
             }
-
+            
             const scaleX = naturalWidth / renderWidth;
             const scaleY = naturalHeight / renderHeight;
             
@@ -965,16 +985,22 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 </DialogHeader>
 
                  <div className="flex-grow flex flex-col min-h-0 space-y-4">
-                    {isCameraActive && (
+                    {mode === 'capture' && (
                         <div className="absolute inset-0 bg-background/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
-                            <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                            <div className="flex items-center gap-4 mt-4">
-                                <Button onClick={stopCamera} variant="outline">
-                                    Cancelar
-                                </Button>
-                                <Button onClick={takePicture} className="h-16 w-16 rounded-full">
-                                    <Camera className="h-8 w-8" />
-                                </Button>
+                            <div className="bg-background p-8 rounded-lg shadow-2xl border">
+                                {isCameraActive ? (
+                                    <>
+                                        <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                                        <div className="flex items-center gap-4 mt-4">
+                                            <Button onClick={stopCamera} variant="outline">
+                                                Cancelar
+                                            </Button>
+                                            <Button onClick={takePicture} className="h-16 w-16 rounded-full">
+                                                <Camera className="h-8 w-8" />
+                                            </Button>
+                                        </div>
+                                    </>
+                                ) : renderCaptureUI()}
                             </div>
                         </div>
                     )}
@@ -983,34 +1009,36 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                         className="flex-grow min-h-0 relative border rounded-lg bg-muted/30 flex items-center justify-center"
                         onDragStart={(e) => e.preventDefault()}
                     >
-                        {mode === 'capture' ? renderCaptureUI() : (
-                            pages.length > 0 && activePage ? (
-                                <div 
-                                    ref={previewContainerRef}
-                                    className="w-full h-full flex items-center justify-center p-2"
-                                    onMouseDown={handleCropMouseDown}
-                                    onMouseMove={handleCropMouseMove}
-                                    onMouseUp={handleCropMouseUp}
-                                    onMouseLeave={handleCropMouseUp}
-                                >
-                                    <img src={activePage.processedSrc} alt={`Page ${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
-                                    {isCropping && activePage.crop && (
-                                        <div
-                                            className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
-                                            style={{
-                                                left: activePage.crop.x,
-                                                top: activePage.crop.y,
-                                                width: activePage.crop.width,
-                                                height: activePage.crop.height,
-                                            }}
-                                        />
-                                    )}
-                                </div>
-                            ) : renderCaptureUI()
+                        {pages.length > 0 && activePage ? (
+                            <div 
+                                ref={previewContainerRef}
+                                className="w-full h-full flex items-center justify-center p-2"
+                                onMouseDown={handleCropMouseDown}
+                                onMouseMove={handleCropMouseMove}
+                                onMouseUp={handleCropMouseUp}
+                                onMouseLeave={handleCropMouseUp}
+                            >
+                                <img src={activePage.processedSrc} alt={`Page ${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
+                                {isCropping && activePage.crop && (
+                                    <div
+                                        className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
+                                        style={{
+                                            left: activePage.crop.x,
+                                            top: activePage.crop.y,
+                                            width: activePage.crop.width,
+                                            height: activePage.crop.height,
+                                        }}
+                                    />
+                                )}
+                            </div>
+                        ) : (
+                            <div className="text-center text-muted-foreground p-8">
+                                <p>Añade una página para empezar</p>
+                            </div>
                         )}
                     </div>
                     
-                    <ScrollArea className="flex-shrink-0">
+                    <ScrollArea>
                          <div className="flex items-center gap-2 p-2">
                             {pages.map((p, index) => (
                                 <div key={p.id} className="relative group shrink-0" onClick={() => setActivePageId(p.id)}>
