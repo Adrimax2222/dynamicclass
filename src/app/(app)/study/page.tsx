@@ -39,6 +39,9 @@ import {
   Settings2,
   Target,
   Sigma,
+  Copy,
+  History,
+  Scale,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -181,7 +184,7 @@ export default function StudyPage() {
             audio.src = selectedSound.url;
         }
         if (audio.paused) {
-          audio.play().catch(error => console.log("User interaction needed to play audio."));
+          audio.play().catch(error => console.log("Esperando interacción del usuario..."));
         }
     } else {
       audio.pause();
@@ -428,7 +431,7 @@ export default function StudyPage() {
                         </div>
                     </div>
 
-                    <Progress value={progress} className={cn("h-2 [&>div]:transition-all [&>div]:duration-500", phaseProgressColor)} />
+                    <Progress value={progress} className={cn("h-2", `[&>div]:bg-gradient-to-r ${phaseColors}`)} />
 
                     <div className="flex justify-between items-center gap-2 mt-6">
                         <Dialog>
@@ -760,7 +763,9 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
 function ScienceCalculatorDialog() {
     const [expression, setExpression] = useState<string>("");
     const [display, setDisplay] = useState<string>("0");
-    const [isRad, setIsRad] = useState(true);
+    const [history, setHistory] = useState<string[]>([]);
+    const [showHistory, setShowHistory] = useState(false);
+    const { toast } = useToast();
 
     const handleInput = (char: string) => {
         if (display === "Error") {
@@ -768,10 +773,14 @@ function ScienceCalculatorDialog() {
             setExpression("");
         }
         
-        if (display === "0" && "123456789".includes(char)) {
+        if (display === "0" && "123456789.()".indexOf(char) === -1) {
+             setExpression(prev => prev + char);
+             setDisplay(char);
+        } else if (display === "0" && "123456789.()".indexOf(char) > -1) {
             setDisplay(char);
-            setExpression(prev => prev + char);
-        } else {
+            setExpression(char);
+        }
+        else {
             setDisplay(prev => prev + char);
             setExpression(prev => prev + char);
         }
@@ -779,45 +788,41 @@ function ScienceCalculatorDialog() {
     
     const handleOperator = (op: string) => {
         setExpression(prev => prev + op);
-        setDisplay("0");
+        setDisplay(prev => prev + op);
     };
 
-    const handleFunction = (func: string) => {
-        setExpression(prev => `${func}(${prev})`);
+    const handleConstant = (name: string, value: number) => {
+        handleInput(String(value));
     };
 
     const calculateResult = () => {
+        if (!expression) return;
         try {
+            // Replace visual operators with evaluatable ones
             let evalExpr = expression
                 .replace(/√/g, 'Math.sqrt')
-                .replace(/∛/g, 'cbrt')
+                .replace(/∛/g, 'Math.cbrt')
                 .replace(/π/g, 'Math.PI')
                 .replace(/e/g, 'Math.E')
-                .replace(/sin/g, 'Math.sin')
-                .replace(/cos/g, 'Math.cos')
-                .replace(/tan/g, 'Math.tan')
-                .replace(/ln/g, 'Math.log')
-                .replace(/log/g, 'Math.log10')
+                .replace(/sin\(/g, 'Math.sin(')
+                .replace(/cos\(/g, 'Math.cos(')
+                .replace(/tan\(/g, 'Math.tan(')
+                .replace(/ln\(/g, 'Math.log(')
+                .replace(/log\(/g, 'Math.log10(')
+                .replace(/G/g, '9.8')
+                .replace(/c/g, '299792458')
+                .replace(/h/g, '6.62607015e-34')
                 .replace(/\^/g, '**');
-
-            const degToRad = (deg: number) => deg * (Math.PI / 180);
-            
-            // Custom cbrt function for Math object
-            (Math as any).cbrt = (x: number) => Math.cbrt(x);
-
-            if (!isRad) {
-                evalExpr = evalExpr.replace(/(Math.sin|Math.cos|Math.tan)\(([^)]+)\)/g, (match, func, angle) => {
-                    return `${func}(${degToRad(eval(angle))})`;
-                });
-            }
 
             const result = new Function('return ' + evalExpr)();
             if (typeof result !== 'number' || isNaN(result)) {
                 throw new Error("Invalid calculation");
             }
             
-            setDisplay(String(result));
-            setExpression(String(result));
+            const resultString = String(result);
+            setDisplay(resultString);
+            setExpression(resultString);
+            setHistory(prev => [`${expression} = ${resultString}`, ...prev].slice(0, 10));
         } catch (e) {
             setDisplay("Error");
             setExpression("");
@@ -833,57 +838,103 @@ function ScienceCalculatorDialog() {
         setExpression(prev => prev.slice(0, -1));
         setDisplay(prev => prev.slice(0, -1) || "0");
     };
-    
-    const renderButton = (label: string, onClick: () => void, className = "", span = "col-span-1") => (
-        <Button key={label} onClick={onClick} variant="outline" className={cn("h-12 text-lg font-semibold", span, className)}>
-            {label}
-        </Button>
-    );
 
-    const sciFunctions = [
-        { label: "sin", func: () => handleOperator('sin(') }, { label: "cos", func: () => handleOperator('cos(') }, { label: "tan", func: () => handleOperator('tan(') },
-        { label: "x²", func: () => handleOperator('^2') }, { label: "x³", func: () => handleOperator('^3') }, { label: "xʸ", func: () => handleOperator('^') },
-        { label: "√", func: () => handleOperator('√(') }, { label: "∛", func: () => handleOperator('∛(') }, { label: "ln", func: () => handleOperator('ln(') },
-        { label: "log", func: () => handleOperator('log(') }, { label: "π", func: () => handleInput('π') }, { label: "e", func: () => handleInput('e') }
-    ];
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(display);
+        toast({ title: "Resultado copiado al portapapeles" });
+    }
+
+    const useFromHistory = (calc: string) => {
+        const result = calc.split(" = ")[1];
+        if (result) {
+            setDisplay(result);
+            setExpression(result);
+            setShowHistory(false);
+        }
+    }
 
     return (
-        <DialogContent className="max-w-md w-full">
+        <DialogContent className="max-w-lg w-full">
             <DialogHeader>
                 <DialogTitle className="flex items-center gap-2"><Sigma className="h-5 w-5"/> Calculadora Científica</DialogTitle>
             </DialogHeader>
-            <div className="space-y-2">
-                <div className="p-4 bg-muted rounded-lg text-right break-all">
-                    <div className="text-xs text-muted-foreground h-5">{expression || " "}</div>
-                    <div className="text-4xl font-mono text-foreground">{display}</div>
+            <div className="space-y-2 relative">
+                <div className="p-4 bg-muted rounded-lg text-right break-all min-h-[96px]">
+                    <div className="text-xs text-muted-foreground h-5 flex justify-end items-center gap-2">
+                        <span>{expression || " "}</span>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={copyToClipboard}><Copy className="h-3 w-3"/></Button>
+                    </div>
+                    <div className="text-4xl font-bold text-foreground">{display}</div>
                 </div>
 
+                {showHistory && (
+                    <Card className="absolute top-0 left-0 right-0 z-10 p-4 bg-background/95 backdrop-blur-sm">
+                        <h4 className="font-semibold mb-2">Historial</h4>
+                        <ScrollArea className="h-48">
+                            {history.length > 0 ? (
+                                history.map((calc, i) => (
+                                    <div key={i} className="text-sm p-2 rounded hover:bg-muted cursor-pointer" onClick={() => useFromHistory(calc)}>
+                                        {calc}
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-muted-foreground text-center pt-8">No hay historial.</p>
+                            )}
+                        </ScrollArea>
+                        <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => setShowHistory(false)}>Cerrar</Button>
+                    </Card>
+                )}
+
                 <div className="grid grid-cols-5 gap-2">
-                    <div className="grid grid-cols-2 gap-2 col-span-2">
-                        {sciFunctions.map(f => (
-                           <Button key={f.label} onClick={f.func} variant="outline" className="h-10 text-sm font-semibold bg-muted/50">{f.label}</Button> 
-                        ))}
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 col-span-3">
-                         <Button onClick={() => handleInput('(')} variant="outline" className="h-10 bg-muted/50 text-lg">(</Button>
-                         <Button onClick={() => handleInput(')')} variant="outline" className="h-10 bg-muted/50 text-lg">)</Button>
-                         <Button onClick={() => setIsRad(!isRad)} variant="outline" className="h-10 text-xs bg-muted/50">{isRad ? "Rad" : "Deg"}</Button>
-                         <Button onClick={clear} variant="destructive" className="h-10 text-lg col-span-2">C</Button>
-                         <Button onClick={backspace} variant="destructive" className="h-10">⌫</Button>
+                    {/* Scientific Functions */}
+                    <Button onClick={() => handleOperator('^')} variant="outline" className="h-12 bg-accent/10 text-accent">xʸ</Button>
+                    <Button onClick={() => handleOperator('√(')} variant="outline" className="h-12 bg-accent/10 text-accent">√</Button>
+                    <Button onClick={() => handleOperator('sin(')} variant="outline" className="h-12 bg-accent/10 text-accent">sin</Button>
+                    <Button onClick={() => handleOperator('cos(')} variant="outline" className="h-12 bg-accent/10 text-accent">cos</Button>
+                    <Button onClick={() => handleOperator('tan(')} variant="outline" className="h-12 bg-accent/10 text-accent">tan</Button>
+                    <Button onClick={() => handleOperator('(')} variant="outline" className="h-12 bg-accent/10 text-accent">(</Button>
+                    <Button onClick={() => handleOperator(')')} variant="outline" className="h-12 bg-accent/10 text-accent">)</Button>
+                    <Button onClick={() => handleConstant('π', Math.PI)} variant="outline" className="h-12 bg-accent/10 text-accent">π</Button>
+                    <Button onClick={() => handleConstant('e', Math.E)} variant="outline" className="h-12 bg-accent/10 text-accent">e</Button>
+                    <Button onClick={() => handleOperator('log(')} variant="outline" className="h-12 bg-accent/10 text-accent">log</Button>
+                    <Button onClick={() => handleOperator('ln(')} variant="outline" className="h-12 bg-accent/10 text-accent">ln</Button>
+                    <Button onClick={() => handleConstant('G', 9.8)} variant="outline" className="h-12 bg-accent/10 text-accent">G</Button>
+                    <Button onClick={() => handleConstant('c', 299792458)} variant="outline" className="h-12 bg-accent/10 text-accent">c</Button>
+                    <Button onClick={() => handleConstant('h', 6.62607015e-34)} variant="outline" className="h-12 bg-accent/10 text-accent">h</Button>
+                    <WipDialog>
+                      <Button variant="outline" className="h-12 bg-accent/10 text-accent"><Scale className="h-5 w-5"/></Button>
+                    </WipDialog>
 
-                         {["7","8","9"].map(n => <Button key={n} onClick={() => handleInput(n)} variant="outline" className="h-10 text-lg">{n}</Button>)}
-                         {["4","5","6"].map(n => <Button key={n} onClick={() => handleInput(n)} variant="outline" className="h-10 text-lg">{n}</Button>)}
-                         {["1","2","3"].map(n => <Button key={n} onClick={() => handleInput(n)} variant="outline" className="h-10 text-lg">{n}</Button>)}
-                         <Button onClick={() => handleInput('0')} variant="outline" className="h-10 text-lg">0</Button>
-                         <Button onClick={() => handleInput('.')} variant="outline" className="h-10 text-lg">.</Button>
-                         <Button onClick={() => handleOperator('%')} variant="outline" className="h-10 text-lg bg-muted/50">%</Button>
 
-                         <Button onClick={() => handleOperator('/')} variant="outline" className="h-10 text-lg bg-primary/20">÷</Button>
-                         <Button onClick={() => handleOperator('*')} variant="outline" className="h-10 text-lg bg-primary/20">×</Button>
-                         <Button onClick={() => handleOperator('-')} variant="outline" className="h-10 text-lg bg-primary/20">−</Button>
-                         <Button onClick={() => handleOperator('+')} variant="outline" className="h-10 text-lg bg-primary/20">+</Button>
-                         <Button onClick={calculateResult} className="h-20 text-xl col-span-2 row-span-2">=</Button>
-                    </div>
+                    {/* Basic Operations & Numbers */}
+                    <Button onClick={() => clear()} variant="destructive" className="h-12 text-lg font-bold">C</Button>
+                    <Button onClick={() => backspace()} variant="destructive" className="h-12 font-bold">⌫</Button>
+                    <Button onClick={() => handleOperator('%')} variant="outline" className="h-12 text-lg bg-primary/20 text-primary">%</Button>
+                    <Button onClick={() => handleOperator('/')} variant="outline" className="h-12 text-lg bg-primary/20 text-primary">÷</Button>
+                    <Button onClick={() => setShowHistory(!showHistory)} variant="outline" className="h-12 text-lg"><History className="h-5 w-5"/></Button>
+
+                    
+                    <Button onClick={() => handleInput('7')} variant="outline" className="h-12 text-lg font-bold">7</Button>
+                    <Button onClick={() => handleInput('8')} variant="outline" className="h-12 text-lg font-bold">8</Button>
+                    <Button onClick={() => handleInput('9')} variant="outline" className="h-12 text-lg font-bold">9</Button>
+                    <Button onClick={() => handleOperator('*')} variant="outline" className="h-12 text-lg bg-primary/20 text-primary">×</Button>
+                    <div></div>
+
+                    <Button onClick={() => handleInput('4')} variant="outline" className="h-12 text-lg font-bold">4</Button>
+                    <Button onClick={() => handleInput('5')} variant="outline" className="h-12 text-lg font-bold">5</Button>
+                    <Button onClick={() => handleInput('6')} variant="outline" className="h-12 text-lg font-bold">6</Button>
+                    <Button onClick={() => handleOperator('-')} variant="outline" className="h-12 text-lg bg-primary/20 text-primary">−</Button>
+                    <div></div>
+
+                    <Button onClick={() => handleInput('1')} variant="outline" className="h-12 text-lg font-bold">1</Button>
+                    <Button onClick={() => handleInput('2')} variant="outline" className="h-12 text-lg font-bold">2</Button>
+                    <Button onClick={() => handleInput('3')} variant="outline" className="h-12 text-lg font-bold">3</Button>
+                    <Button onClick={() => handleOperator('+')} variant="outline" className="h-12 text-lg bg-primary/20 text-primary">+</Button>
+                    <div></div>
+
+                    <Button onClick={() => handleInput('0')} variant="outline" className="h-12 text-lg col-span-2 font-bold">0</Button>
+                    <Button onClick={() => handleInput('.')} variant="outline" className="h-12 text-lg font-bold">.</Button>
+                    <Button onClick={calculateResult} className="h-12 text-2xl col-span-2 bg-primary hover:bg-primary/90 shadow-md">=</Button>
                 </div>
             </div>
         </DialogContent>
@@ -891,8 +942,3 @@ function ScienceCalculatorDialog() {
 }
 
     
-
-    
-
-    
-
