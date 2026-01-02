@@ -47,6 +47,10 @@ import {
   Upload,
   Download,
   FileCheck2,
+  RotateCw,
+  Crop,
+  X,
+  Check,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -350,9 +354,8 @@ export default function StudyPage() {
 
   const progress = useMemo(() => {
     const totalDuration = modes[mode][phase] * 60;
-    if (totalDuration === 0) return 0;
-    const value = (1 - timeLeft / totalDuration) * 100;
-    return value;
+    if (totalDuration === 0) return 100;
+    return (timeLeft / totalDuration) * 100;
   }, [timeLeft, mode, phase, modes]);
   
   if (!user) return null;
@@ -440,7 +443,7 @@ export default function StudyPage() {
                         </div>
                     </div>
 
-                    <Progress value={progress} className={cn("h-2", `[&>div]:bg-gradient-to-r ${phaseColors}`)} />
+                    <Progress value={100 - progress} className={cn("h-2", `[&>div]:bg-gradient-to-r ${phaseColors}`)} />
 
                     <div className="flex justify-between items-center gap-2 mt-6">
                         <Dialog>
@@ -606,8 +609,16 @@ export default function StudyPage() {
   );
 }
 
+interface CropData {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
 function ScannerDialog({ children }: { children: React.ReactNode }) {
     const [imageSrc, setImageSrc] = useState<string | null>(null);
+    const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(null);
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
     const [fileName, setFileName] = useState('apuntes-escaneados.pdf');
     const [isSaving, setIsSaving] = useState(false);
@@ -615,9 +626,17 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
+    
+    // Editing states
+    const [rotation, setRotation] = useState(0);
+    const [isCropping, setIsCropping] = useState(false);
+    const [cropData, setCropData] = useState<CropData | null>(null);
+    const [startCropPoint, setStartCropPoint] = useState<{ x: number; y: number } | null>(null);
+    const previewContainerRef = useRef<HTMLDivElement>(null);
+
 
     useEffect(() => {
-        return () => {
+        return () => { // Cleanup on unmount
             if (videoRef.current && videoRef.current.srcObject) {
                 const stream = videoRef.current.srcObject as MediaStream;
                 stream.getTracks().forEach(track => track.stop());
@@ -649,7 +668,12 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const result = e.target?.result as string;
-                processImage(result);
+                const img = new Image();
+                img.onload = () => {
+                    setOriginalImage(img);
+                    processImage(img);
+                };
+                img.src = result;
             };
             reader.readAsDataURL(file);
         }
@@ -665,50 +689,118 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             if (context) {
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const dataUrl = canvas.toDataURL('image/png');
-                processImage(dataUrl);
+                
+                const img = new Image();
+                img.onload = () => {
+                    setOriginalImage(img);
+                    processImage(img);
+                };
+                img.src = dataUrl;
 
+                // Stop camera after taking picture
                 const stream = video.srcObject as MediaStream;
                 stream.getTracks().forEach(track => track.stop());
             }
         }
     };
     
-    const processImage = (dataUrl: string) => {
+    const processImage = (img: HTMLImageElement, crop: CropData | null = null) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const context = canvas.getContext('2d');
         if (!context) return;
+        
+        const angle = rotation * Math.PI / 180;
+        const sin = Math.sin(angle);
+        const cos = Math.cos(angle);
+        
+        let newWidth = Math.abs(img.width * cos) + Math.abs(img.height * sin);
+        let newHeight = Math.abs(img.width * sin) + Math.abs(img.height * cos);
 
-        const img = new Image();
-        img.onload = () => {
-            canvas.width = img.width;
-            canvas.height = img.height;
-            context.drawImage(img, 0, 0);
-            
-            context.filter = 'grayscale(100%) contrast(1.8)';
-            context.drawImage(img, 0, 0);
-            
-            setImageSrc(canvas.toDataURL('image/jpeg'));
+        let sourceX = 0, sourceY = 0, sourceWidth = img.width, sourceHeight = img.height;
+
+        if (crop) {
+            sourceX = crop.x;
+            sourceY = crop.y;
+            sourceWidth = crop.width;
+            sourceHeight = crop.height;
+            newWidth = Math.abs(sourceWidth * cos) + Math.abs(sourceHeight * sin);
+            newHeight = Math.abs(sourceWidth * sin) + Math.abs(sourceHeight * cos);
+        }
+
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+
+        context.translate(newWidth / 2, newHeight / 2);
+        context.rotate(angle);
+
+        context.filter = 'grayscale(100%) contrast(1.7)';
+        context.drawImage(
+            img, 
+            sourceX, sourceY, sourceWidth, sourceHeight,
+            -sourceWidth/2, -sourceHeight/2, sourceWidth, sourceHeight
+        );
+        
+        context.filter = 'none'; // Reset filter
+        context.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+
+        setImageSrc(canvas.toDataURL('image/jpeg'));
+    };
+
+    const handleRotate = () => {
+        if (!originalImage) return;
+        const newRotation = (rotation + 90) % 360;
+        setRotation(newRotation);
+        processImage(originalImage, cropData);
+    };
+
+    const handleApplyCrop = () => {
+        if (!originalImage || !cropData) return;
+        processImage(originalImage, cropData);
+        setIsCropping(false);
+    }
+    
+    const handleCropMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!isCropping || !previewContainerRef.current) return;
+        const rect = previewContainerRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        setStartCropPoint({ x, y });
+        setCropData({ x, y, width: 0, height: 0 });
+    };
+
+    const handleCropMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!isCropping || !startCropPoint || !previewContainerRef.current) return;
+        const rect = previewContainerRef.current.getBoundingClientRect();
+        const currentX = e.clientX - rect.left;
+        const currentY = e.clientY - rect.top;
+
+        const newCropData = {
+            x: Math.min(startCropPoint.x, currentX),
+            y: Math.min(startCropPoint.y, currentY),
+            width: Math.abs(currentX - startCropPoint.x),
+            height: Math.abs(currentY - startCropPoint.y),
         };
-        img.src = dataUrl;
+        setCropData(newCropData);
+    };
+    
+    const handleCropMouseUp = () => {
+        setStartCropPoint(null);
     };
 
     const downloadAsPDF = () => {
         if (!imageSrc || !canvasRef.current) return;
         setIsSaving(true);
         try {
-            const img = new Image();
-            img.onload = () => {
-                const pdf = new jsPDF({
-                    orientation: img.width > img.height ? 'l' : 'p',
-                    unit: 'px',
-                    format: [img.width, img.height]
-                });
-                pdf.addImage(imageSrc, 'JPEG', 0, 0, img.width, img.height);
-                pdf.save(fileName);
-                toast({ title: 'PDF Descargado', description: `Se ha guardado como ${fileName}.` });
-            };
-            img.src = imageSrc;
+            const canvas = canvasRef.current;
+            const pdf = new jsPDF({
+                orientation: canvas.width > canvas.height ? 'l' : 'p',
+                unit: 'px',
+                format: [canvas.width, canvas.height]
+            });
+            pdf.addImage(imageSrc, 'JPEG', 0, 0, canvas.width, canvas.height);
+            pdf.save(fileName);
+            toast({ title: 'PDF Descargado', description: `Se ha guardado como ${fileName}.` });
         } catch (error) {
             console.error("Error creating PDF", error);
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo generar el PDF.' });
@@ -717,44 +809,91 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const resetScanner = () => {
-        setImageSrc(null);
-        setHasCameraPermission(null);
+    const resetScanner = (fullReset = true) => {
+        if (fullReset) {
+            setOriginalImage(null);
+            setImageSrc(null);
+            setHasCameraPermission(null);
+        }
+        setRotation(0);
+        setIsCropping(false);
+        setCropData(null);
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
             stream.getTracks().forEach(track => track.stop());
             videoRef.current.srcObject = null;
         }
     };
+    
+    const resetEdits = () => {
+        if (originalImage) {
+            setRotation(0);
+            setIsCropping(false);
+            setCropData(null);
+            processImage(originalImage, null);
+        }
+    };
+
 
     return (
         <Dialog onOpenChange={(open) => !open && resetScanner()}>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="max-w-lg w-[95vw] flex flex-col">
+            <DialogContent className="max-w-lg w-[95vw] flex flex-col h-[90vh]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2"><ScanLine className="h-5 w-5"/> Escáner de Apuntes</DialogTitle>
                     <DialogDescription>
-                        Captura o sube una imagen de tus apuntes y guárdala como un PDF limpio.
+                        Captura o sube una imagen, edítala y guárdala como un PDF limpio.
                     </DialogDescription>
                 </DialogHeader>
                 
                 {imageSrc ? (
-                    <div className="flex flex-col min-h-0">
-                         <h3 className="font-semibold text-center mb-2 flex-shrink-0">Previsualización del Escaneo</h3>
-                         <ScrollArea className="flex-grow">
-                             <img src={imageSrc} alt="Processed document" className="rounded-lg border shadow-sm w-full"/>
-                         </ScrollArea>
-                         <div className="space-y-4 pt-4 flex-shrink-0">
+                    <div className="flex-grow flex flex-col min-h-0">
+                         <div className="flex-grow min-h-0 relative mb-4" ref={previewContainerRef}>
+                            <ScrollArea className="w-full h-full border rounded-lg">
+                                <div 
+                                    className="relative w-fit h-fit mx-auto"
+                                    onMouseDown={handleCropMouseDown}
+                                    onMouseMove={handleCropMouseMove}
+                                    onMouseUp={handleCropMouseUp}
+                                    onMouseLeave={handleCropMouseUp}
+                                >
+                                    <img src={imageSrc} alt="Processed document" className={cn("max-w-full max-h-full", isCropping && "cursor-crosshair")} />
+                                    {isCropping && cropData && (
+                                        <div
+                                            className="absolute border-2 border-dashed border-primary bg-primary/20"
+                                            style={{
+                                                left: cropData.x,
+                                                top: cropData.y,
+                                                width: cropData.width,
+                                                height: cropData.height,
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        </div>
+
+                         <div className="flex-shrink-0 space-y-4 pt-2">
+                             <div className="flex items-center gap-2">
+                                <Button onClick={handleRotate} variant="outline" size="icon"><RotateCw className="h-4 w-4" /></Button>
+                                <Button onClick={() => setIsCropping(!isCropping)} variant={isCropping ? "default" : "outline"} size="icon"><Crop className="h-4 w-4" /></Button>
+                                <Button onClick={resetEdits} variant="outline" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                {isCropping && (
+                                    <Button onClick={handleApplyCrop} variant="secondary" className="flex-1">
+                                        <Check className="mr-2 h-4 w-4" /> Aplicar Recorte
+                                    </Button>
+                                )}
+                            </div>
                              <div className="space-y-2">
                                 <Label htmlFor="pdf-filename">Nombre del Archivo</Label>
                                 <Input id="pdf-filename" value={fileName} onChange={e => setFileName(e.target.value)} />
                              </div>
                             <div className="grid grid-cols-2 gap-2">
-                                <Button onClick={resetScanner} variant="outline">
+                                <Button onClick={() => resetScanner(true)} variant="outline">
                                     Escanear Otro
                                 </Button>
                                 <Button onClick={downloadAsPDF} disabled={isSaving}>
-                                    <Download className="mr-2 h-4 w-4" />
+                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Download className="mr-2 h-4 w-4" />}
                                     Descargar PDF
                                 </Button>
                             </div>
@@ -766,7 +905,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                         <Button onClick={takePicture} className="w-full">
                             <Camera className="mr-2 h-4 w-4" /> Tomar Foto
                         </Button>
-                         <Button onClick={resetScanner} variant="outline" className="w-full">
+                         <Button onClick={() => resetScanner(true)} variant="outline" className="w-full">
                             Volver
                         </Button>
                     </div>
