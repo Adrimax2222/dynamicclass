@@ -162,7 +162,7 @@ function RankingTab({ user, isOpen }: { user: User; isOpen: boolean }) {
                 </div>
             ) : ranking.length > 0 ? (
                 <div>
-                    <div className="grid grid-cols-3 gap-2 text-center mb-8 items-end">
+                     <div className="grid grid-cols-3 gap-2 text-center mb-8 items-end h-48">
                         <PodiumPlace user={top3[1]} place={2} />
                         <PodiumPlace user={top3[0]} place={1} />
                         <PodiumPlace user={top3[2]} place={3} />
@@ -263,45 +263,47 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
     );
 }
 
-
 function PodiumPlace({ user, place }: { user?: User; place: 1 | 2 | 3 }) {
-    if (!user) return <div className={cn(place === 1 ? "h-40" : place === 2 ? "h-32" : "h-28")} />;
-
     const placeStyles = {
-        1: { icon: Gem, color: "text-amber-400", size: "h-32 w-32", text: "text-4xl", shadow: "shadow-amber-400/50" },
-        2: { icon: Medal, color: "text-slate-400", size: "h-24 w-24", text: "text-3xl", shadow: "shadow-slate-400/50" },
-        3: { icon: Medal, color: "text-orange-600", size: "h-20 w-20", text: "text-2xl", shadow: "shadow-orange-600/40" },
+        1: { icon: Gem, color: "text-amber-400", size: "h-24 w-24", podiumHeight: "h-28", podiumColor: "bg-amber-400/80" },
+        2: { icon: Medal, color: "text-slate-400", size: "h-20 w-20", podiumHeight: "h-20", podiumColor: "bg-slate-400/80" },
+        3: { icon: Medal, color: "text-orange-600", size: "h-20 w-20", podiumHeight: "h-16", podiumColor: "bg-orange-600/70" },
     };
+    
+    if (!user) return <div className={cn("flex flex-col items-center justify-end", placeStyles[place].podiumHeight)} />;
 
     const style = placeStyles[place];
     const Icon = style.icon;
 
     return (
-        <div className={cn("flex flex-col items-center gap-1", place === 1 ? "-mt-4" : "")}>
-            <div className="relative">
+        <div className="flex flex-col items-center justify-end h-full">
+             <div className="relative">
                 <Avatar className={cn(style.size, "ring-4 ring-offset-2 ring-offset-background", `ring-amber-400/50`)}>
                     <AvatarImage src={user.avatar} />
                     <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div className={cn("absolute -bottom-3 right-0 rounded-full bg-background/80 p-1.5 shadow-lg", style.shadow)}>
-                     <Icon className={cn("h-7 w-7", style.color)} />
+                <div className="absolute -bottom-2 -right-2 rounded-full bg-background/80 p-1.5 shadow-lg">
+                     <Icon className={cn("h-6 w-6", style.color)} />
                 </div>
             </div>
-            <p className="font-bold text-sm truncate w-full">{user.name.split(' ')[0]}</p>
+            <p className="font-bold text-sm truncate w-full mt-2">{user.name.split(' ')[0]}</p>
             <div className="flex items-center gap-1">
                  <Trophy className="h-4 w-4 text-yellow-400" />
-                <span className="font-bold text-lg">
-                    {user.trophies}
-                </span>
+                <span className="font-semibold text-sm">{user.trophies}</span>
             </div>
+            <div className={cn(
+                "w-[90%] rounded-t-md mt-2 transition-all", 
+                style.podiumHeight, 
+                style.podiumColor
+            )}></div>
         </div>
     );
 }
 
 function RankingItem({ user, rank, isCurrentUser }: { user: User; rank: number; isCurrentUser: boolean }) {
     return (
-        <div className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors", isCurrentUser ? "bg-primary/10 border-2 border-primary/50" : "bg-muted/50 border")}>
-            <div className="text-lg font-bold text-muted-foreground w-6 text-center">{rank}</div>
+        <div className={cn("flex items-center gap-4 rounded-lg p-2 transition-colors", isCurrentUser ? "bg-primary/10 border-2 border-primary/50" : "bg-muted/50 border")}>
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted font-bold text-sm text-muted-foreground">{rank}</div>
             <Avatar className="h-10 w-10">
                 <AvatarImage src={user.avatar} />
                 <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
@@ -327,5 +329,3 @@ const shopItems = [
     { id: 'bureau-vallee', name: 'Bureau Vallée', imageUrl: 'https://www.uvimark.com/wp-content/uploads/2024/10/Logo-bureau-vallee-2021.png', values: [5, 10, 15, 20] },
     { id: 'cinesa', name: 'Cinesa', imageUrl: 'https://www.cclasrosas.es/wp-content/uploads/2017/12/logo-cinesa.jpg', values: [5, 10, 15, 20] },
 ];
-
-    
