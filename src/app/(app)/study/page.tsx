@@ -109,15 +109,17 @@ export default function StudyPage() {
     const audio = audioRef.current;
     if (!audio) return;
 
-    if (isActive && selectedSound) {
-      audio.src = selectedSound.url;
+    if (selectedSound) {
+      if (audio.src !== selectedSound.url) {
+        audio.src = selectedSound.url;
+      }
       audio.loop = true;
       audio.volume = volume / 100;
       audio.play().catch(error => console.error("Error playing audio:", error));
     } else {
       audio.pause();
     }
-  }, [isActive, selectedSound, volume]);
+  }, [selectedSound, volume]);
 
   // Handle streak logic
   const handleStreak = useCallback(async () => {
