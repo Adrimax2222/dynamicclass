@@ -43,6 +43,10 @@ import {
   History,
   Scale,
   ArrowRightLeft,
+  Camera,
+  Upload,
+  Download,
+  FileCheck2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -57,6 +61,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import jsPDF from 'jspdf';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 
 type TimerMode = "pomodoro" | "long" | "deep" | "custom";
@@ -579,7 +585,7 @@ export default function StudyPage() {
                           <Calculator className="absolute top-2 right-2 h-6 w-6 opacity-20" />
                       </div>
                    </GradeCalculatorDialog>
-                    <WipDialog>
+                    <ScannerDialog>
                         <div
                             className="relative p-4 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform"
                         >
@@ -589,7 +595,7 @@ export default function StudyPage() {
                             </div>
                             <ScanLine className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
                         </div>
-                    </WipDialog>
+                    </ScannerDialog>
                 </CardContent>
             </Card>
 
@@ -597,6 +603,194 @@ export default function StudyPage() {
       </ScrollArea>
     </div>
   );
+}
+
+function ScannerDialog({ children }: { children: React.ReactNode }) {
+    const [imageSrc, setImageSrc] = useState<string | null>(null);
+    const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+    const [fileName, setFileName] = useState('apuntes-escaneados.pdf');
+    const [isSaving, setIsSaving] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        // Stop camera stream when the component unmounts or image is cleared
+        return () => {
+            if (videoRef.current && videoRef.current.srcObject) {
+                const stream = videoRef.current.srcObject as MediaStream;
+                stream.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, [imageSrc]);
+
+    const getCameraPermission = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            setHasCameraPermission(true);
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (error) {
+            console.error('Error accessing camera:', error);
+            setHasCameraPermission(false);
+            toast({
+                variant: 'destructive',
+                title: 'Acceso a la Cámara Denegado',
+                description: 'Por favor, activa los permisos de cámara en tu navegador.',
+            });
+        }
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const result = e.target?.result as string;
+                processImage(result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const takePicture = () => {
+        if (videoRef.current && canvasRef.current) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            if (context) {
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL('image/png');
+                processImage(dataUrl);
+
+                // Stop camera after taking picture
+                const stream = video.srcObject as MediaStream;
+                stream.getTracks().forEach(track => track.stop());
+            }
+        }
+    };
+    
+    const processImage = (dataUrl: string) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const context = canvas.getContext('2d');
+        if (!context) return;
+
+        const img = new Image();
+        img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            context.drawImage(img, 0, 0);
+            
+            // Apply high-contrast filter
+            context.filter = 'grayscale(100%) contrast(1.8)';
+            context.drawImage(img, 0, 0);
+            
+            setImageSrc(canvas.toDataURL('image/jpeg'));
+        };
+        img.src = dataUrl;
+    };
+
+    const downloadAsPDF = () => {
+        if (!imageSrc || !canvasRef.current) return;
+        setIsSaving(true);
+        try {
+            const img = new Image();
+            img.onload = () => {
+                const pdf = new jsPDF({
+                    orientation: img.width > img.height ? 'l' : 'p',
+                    unit: 'px',
+                    format: [img.width, img.height]
+                });
+                pdf.addImage(imageSrc, 'JPEG', 0, 0, img.width, img.height);
+                pdf.save(fileName);
+                toast({ title: 'PDF Descargado', description: `Se ha guardado como ${fileName}.` });
+            };
+            img.src = imageSrc;
+        } catch (error) {
+            console.error("Error creating PDF", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo generar el PDF.' });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const resetScanner = () => {
+        setImageSrc(null);
+        setHasCameraPermission(null);
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+    };
+
+    return (
+        <Dialog onOpenChange={(open) => !open && resetScanner()}>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogContent className="max-w-lg w-[95vw]">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><ScanLine className="h-5 w-5"/> Escáner de Apuntes</DialogTitle>
+                    <DialogDescription>
+                        Captura o sube una imagen de tus apuntes y guárdala como un PDF limpio.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    {imageSrc ? (
+                        <div className="space-y-4">
+                            <h3 className="font-semibold text-center">Previsualización del Escaneo</h3>
+                            <img src={imageSrc} alt="Processed document" className="rounded-lg border shadow-sm w-full"/>
+                             <div className="space-y-2">
+                                <Label htmlFor="pdf-filename">Nombre del Archivo</Label>
+                                <Input id="pdf-filename" value={fileName} onChange={e => setFileName(e.target.value)} />
+                             </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button onClick={resetScanner} variant="outline">
+                                    Escanear Otro
+                                </Button>
+                                <Button onClick={downloadAsPDF} disabled={isSaving}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Descargar PDF
+                                </Button>
+                            </div>
+                        </div>
+                    ) : hasCameraPermission === true ? (
+                        <div className="space-y-4">
+                            <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                            <Button onClick={takePicture} className="w-full">
+                                <Camera className="mr-2 h-4 w-4" /> Tomar Foto
+                            </Button>
+                             <Button onClick={resetScanner} variant="outline" className="w-full">
+                                Volver
+                            </Button>
+                        </div>
+                    ) : (
+                         <div className="space-y-4">
+                            <Button onClick={getCameraPermission} className="w-full">
+                                <Camera className="mr-2 h-4 w-4" /> Usar Cámara
+                            </Button>
+                            <Button onClick={() => fileInputRef.current?.click()} className="w-full">
+                                <Upload className="mr-2 h-4 w-4" /> Subir Archivo
+                            </Button>
+                            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden"/>
+                             {hasCameraPermission === false && (
+                                <Alert variant="destructive">
+                                    <AlertDescription>
+                                        El acceso a la cámara fue denegado. Por favor, habilítalo en la configuración de tu navegador.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                        </div>
+                    )}
+                </div>
+                 <canvas ref={canvasRef} className="hidden" />
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 function CustomTimerDialog({ children, customMode, setCustomMode }: { children: React.ReactNode, customMode: CustomMode, setCustomMode: (mode: CustomMode) => void }) {
