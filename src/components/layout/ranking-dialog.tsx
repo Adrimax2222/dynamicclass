@@ -168,7 +168,7 @@ function RankingTab({ user, isOpen }: { user: User; isOpen: boolean }) {
                     </div>
                     <div className="space-y-2">
                         {rest.map((rankedUser, index) => (
-                            <RankingItem key={rankedUser.uid} user={rankedUser} rank={index + 4} isCurrentUser={rankedUser.uid === user.uid} />
+                            <RankingItem key={rankedUser.uid || index} user={rankedUser} rank={index + 4} isCurrentUser={rankedUser.uid === user.uid} />
                         ))}
                     </div>
                      {userRank > 0 && (
@@ -326,3 +326,5 @@ const shopItems = [
     { id: 'bureau-vallee', name: 'Bureau Vallée', imageUrl: 'https://www.uvimark.com/wp-content/uploads/2024/10/Logo-bureau-vallee-2021.png', values: [5, 10, 15, 20] },
     { id: 'cinesa', name: 'Cinesa', imageUrl: 'https://www.cclasrosas.es/wp-content/uploads/2017/12/logo-cinesa.jpg', values: [5, 10, 15, 20] },
 ];
+
+    
