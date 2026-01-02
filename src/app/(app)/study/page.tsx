@@ -42,6 +42,7 @@ import {
   Copy,
   History,
   Scale,
+  ArrowRightLeft,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -55,6 +56,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 type TimerMode = "pomodoro" | "long" | "deep" | "custom";
@@ -804,9 +806,9 @@ function ScienceCalculatorDialog() {
                 .replace(/∛/g, 'Math.cbrt')
                 .replace(/π/g, 'Math.PI')
                 .replace(/e/g, 'Math.E')
-                .replace(/sin\(/g, 'Math.sin(')
-                .replace(/cos\(/g, 'Math.cos(')
-                .replace(/tan\(/g, 'Math.tan(')
+                .replace(/sin\(/g, 'Math.sin(Math.PI / 180 *')
+                .replace(/cos\(/g, 'Math.cos(Math.PI / 180 *')
+                .replace(/tan\(/g, 'Math.tan(Math.PI / 180 *')
                 .replace(/ln\(/g, 'Math.log(')
                 .replace(/log\(/g, 'Math.log10(')
                 .replace(/G/g, '9.8')
@@ -901,9 +903,9 @@ function ScienceCalculatorDialog() {
                     <Button onClick={() => handleConstant('G', 9.8)} variant="outline" className="h-12 bg-accent/10 text-accent">G</Button>
                     <Button onClick={() => handleConstant('c', 299792458)} variant="outline" className="h-12 bg-accent/10 text-accent">c</Button>
                     <Button onClick={() => handleConstant('h', 6.62607015e-34)} variant="outline" className="h-12 bg-accent/10 text-accent">h</Button>
-                    <WipDialog>
+                    <UnitConverterDialog>
                       <Button variant="outline" className="h-12 bg-accent/10 text-accent"><Scale className="h-5 w-5"/></Button>
-                    </WipDialog>
+                    </UnitConverterDialog>
 
 
                     {/* Basic Operations & Numbers */}
@@ -941,4 +943,151 @@ function ScienceCalculatorDialog() {
     );
 }
 
+function UnitConverterDialog({ children }: { children: React.ReactNode }) {
+    return (
+        <Dialog>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogContent className="max-w-md w-full">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><Scale className="h-5 w-5"/> Conversor de Unidades</DialogTitle>
+                </DialogHeader>
+                <UnitConverter />
+                 <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline">Cerrar</Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+const conversionFactors = {
+  length: {
+    km: 1000,
+    m: 1,
+    cm: 0.01,
+    mm: 0.001,
+    mi: 1609.34,
+    yd: 0.9144,
+    ft: 0.3048,
+    in: 0.0254,
+  },
+  mass: {
+    t: 1000,
+    kg: 1,
+    g: 0.001,
+    mg: 1e-6,
+    lb: 0.453592,
+    oz: 0.0283495,
+  },
+};
+
+const unitLabels = {
+    length: { km: 'Kilómetros', m: 'Metros', cm: 'Centímetros', mm: 'Milímetros', mi: 'Millas', yd: 'Yardas', ft: 'Pies', in: 'Pulgadas' },
+    mass: { t: 'Toneladas', kg: 'Kilogramos', g: 'Gramos', mg: 'Miligramos', lb: 'Libras', oz: 'Onzas' },
+    temperature: { c: 'Celsius', f: 'Fahrenheit', k: 'Kelvin' }
+}
+
+function UnitConverter() {
+    const [type, setType] = useState<'length' | 'mass' | 'temperature'>('length');
+    const [fromUnit, setFromUnit] = useState<string>('m');
+    const [toUnit, setToUnit] = useState<string>('km');
+    const [fromValue, setFromValue] = useState<string>('1');
+    const [toValue, setToValue] = useState<string>('');
+
+    const convert = useCallback(() => {
+        const value = parseFloat(fromValue);
+        if (isNaN(value)) {
+            setToValue('');
+            return;
+        }
+
+        let result: number;
+        if (type === 'temperature') {
+            if (fromUnit === 'c') {
+                if (toUnit === 'f') result = (value * 9/5) + 32;
+                else if (toUnit === 'k') result = value + 273.15;
+                else result = value;
+            } else if (fromUnit === 'f') {
+                if (toUnit === 'c') result = (value - 32) * 5/9;
+                else if (toUnit === 'k') result = (value - 32) * 5/9 + 273.15;
+                else result = value;
+            } else { // from Kelvin
+                if (toUnit === 'c') result = value - 273.15;
+                else if (toUnit === 'f') result = (value - 273.15) * 9/5 + 32;
+                else result = value;
+            }
+        } else {
+            const factors = conversionFactors[type] as Record<string, number>;
+            const fromFactor = factors[fromUnit];
+            const toFactor = factors[toUnit];
+            result = (value * fromFactor) / toFactor;
+        }
+        
+        setToValue(result.toPrecision(5));
+    }, [fromValue, fromUnit, toUnit, type]);
     
+    useEffect(() => {
+        convert();
+    }, [convert]);
+
+    useEffect(() => {
+        const units = Object.keys(unitLabels[type]);
+        setFromUnit(units[1] || units[0]);
+        setToUnit(units[0]);
+        setFromValue('1');
+    }, [type]);
+
+    const units = unitLabels[type];
+
+    return (
+        <Tabs defaultValue="length" onValueChange={(v) => setType(v as any)} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="length">Longitud</TabsTrigger>
+                <TabsTrigger value="mass">Masa</TabsTrigger>
+                <TabsTrigger value="temperature">Temperatura</TabsTrigger>
+            </TabsList>
+            <div className="py-4 space-y-4">
+                <div className="flex items-center gap-2">
+                    <div className="flex-1 space-y-1">
+                        <Label htmlFor="from-value">Valor</Label>
+                        <Input id="from-value" type="number" value={fromValue} onChange={(e) => setFromValue(e.target.value)} />
+                    </div>
+                     <Select value={fromUnit} onValueChange={setFromUnit}>
+                        <SelectTrigger className="w-[150px]">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {Object.entries(units).map(([key, label]) => (
+                                <SelectItem key={key} value={key}>{label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                 <div className="flex items-center justify-center">
+                    <ArrowRightLeft className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="flex-1 space-y-1">
+                        <Label htmlFor="to-value">Resultado</Label>
+                        <Input id="to-value" type="text" value={toValue} readOnly className="bg-muted font-bold" />
+                    </div>
+                     <Select value={toUnit} onValueChange={setToUnit}>
+                        <SelectTrigger className="w-[150px]">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {Object.entries(units).map(([key, label]) => (
+                                <SelectItem key={key} value={key}>{label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+        </Tabs>
+    );
+}
+
+    
+```
