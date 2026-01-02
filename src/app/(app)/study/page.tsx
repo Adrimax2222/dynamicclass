@@ -44,7 +44,7 @@ import { WipDialog } from "@/components/layout/wip-dialog";
 
 type TimerMode = "pomodoro" | "long" | "deep";
 type Phase = "focus" | "break";
-type Sound = "rain" | "coffee" | "forest" | "noise";
+type Sound = "rain" | "coffee" | "forest" | "noise" | null;
 
 const modes = {
   pomodoro: { focus: 25, break: 5, label: "Pomodoro (25/5)" },
@@ -70,7 +70,10 @@ export default function StudyPage() {
   const [mode, setMode] = useState<TimerMode>("pomodoro");
   const [phase, setPhase] = useState<Phase>("focus");
   const [isActive, setIsActive] = useState(false);
-  const [selectedSound, setSelectedSound] = useState<Sound>("rain");
+  const [selectedSound, setSelectedSound] = useState<Sound>(null);
+  const [volume, setVolume] = useState(33);
+
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   // Ref to track if a minute has been logged
   const lastLoggedMinuteRef = useRef<number | null>(null);
@@ -83,10 +86,26 @@ export default function StudyPage() {
   }, [mode, phase]);
 
   const [timeLeft, setTimeLeft] = useState(getInitialTime);
-
+  
+  // Update time left when mode or phase changes
   useEffect(() => {
     setTimeLeft(getInitialTime());
   }, [mode, phase, getInitialTime]);
+
+  // Audio playback effect
+   useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isActive && selectedSound) {
+      audio.src = `/sounds/${selectedSound}.mp3`;
+      audio.loop = true;
+      audio.volume = volume / 100;
+      audio.play().catch(error => console.error("Error playing audio:", error));
+    } else {
+      audio.pause();
+    }
+  }, [isActive, selectedSound, volume]);
 
   // Handle streak logic
   const handleStreak = useCallback(async () => {
@@ -96,7 +115,6 @@ export default function StudyPage() {
     const todayStr = formatDate(today, 'yyyy-MM-dd');
     const lastStudyDay = user.lastStudyDay ? new Date(user.lastStudyDay) : null;
 
-    // To prevent multiple updates on the same day after a page refresh
     if (lastStudyDay && isSameDay(today, lastStudyDay)) {
         streakUpdatedTodayRef.current = true;
         return;
@@ -106,10 +124,8 @@ export default function StudyPage() {
     let newStreak = user.streak || 0;
 
     if (lastStudyDay && isSameDay(yesterday, lastStudyDay)) {
-        // Streak continues
         newStreak++;
     } else {
-        // Streak is broken or it's the first day
         newStreak = 1;
     }
     
@@ -135,7 +151,6 @@ export default function StudyPage() {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
     } else if (isActive && timeLeft === 0) {
-      // Time is up, switch phase
       const nextPhase = phase === "focus" ? "break" : "focus";
       const nextPhaseDuration = modes[mode][nextPhase];
       
@@ -146,7 +161,7 @@ export default function StudyPage() {
 
       setPhase(nextPhase);
       setTimeLeft(modes[mode][nextPhase] * 60);
-      setIsActive(true); // Keep timer running for the next phase
+      setIsActive(true); 
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -157,7 +172,6 @@ export default function StudyPage() {
   useEffect(() => {
     if (!firestore || !user || !isActive || phase !== 'focus') return;
 
-    // Handle streak on first active focus second of the day
     if (!streakUpdatedTodayRef.current) {
         handleStreak();
     }
@@ -172,7 +186,6 @@ export default function StudyPage() {
             studyMinutes: increment(1)
         }).then(() => {
             console.log('Study minute logged');
-            // Update context locally to avoid re-fetching user data
             updateUser({ studyMinutes: (user.studyMinutes || 0) + 1 });
         }).catch(err => {
             console.error("Failed to log study minute:", err);
@@ -186,11 +199,9 @@ export default function StudyPage() {
     setIsActive(false);
     setMode(newMode);
     setPhase("focus");
-    setTimeLeft(modes[newMode].focus * 60);
   };
 
   const handleToggle = () => {
-    // Reset minute tracker when timer starts from a paused state
     if (!isActive) {
         lastLoggedMinuteRef.current = Math.floor((modes[mode].focus * 60 - timeLeft) / 60);
     }
@@ -199,7 +210,8 @@ export default function StudyPage() {
 
   const handleReset = () => {
     setIsActive(false);
-    setTimeLeft(getInitialTime());
+    setPhase("focus");
+    setTimeLeft(modes[mode].focus * 60);
     lastLoggedMinuteRef.current = null;
   };
 
@@ -207,9 +219,25 @@ export default function StudyPage() {
     setIsActive(false);
     const nextPhase = phase === "focus" ? "break" : "focus";
     setPhase(nextPhase);
-    setTimeLeft(modes[mode][nextPhase] * 60);
     lastLoggedMinuteRef.current = null;
   };
+  
+  const handleVolumeChange = (value: number[]) => {
+    const newVolume = value[0];
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume / 100;
+    }
+  };
+
+  const handleSoundSelect = (soundId: Sound) => {
+      if (selectedSound === soundId) {
+          setSelectedSound(null); // Deselect if clicked again
+      } else {
+          setSelectedSound(soundId);
+      }
+  }
+
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -242,6 +270,7 @@ export default function StudyPage() {
 
   return (
     <div className="flex flex-col h-screen bg-muted/30">
+        <audio ref={audioRef} />
         <header className="p-4 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ChevronLeft />
@@ -326,7 +355,7 @@ export default function StudyPage() {
                             return (
                                 <button 
                                     key={sound.id} 
-                                    onClick={() => setSelectedSound(sound.id as Sound)}
+                                    onClick={() => handleSoundSelect(sound.id as Sound)}
                                     className={cn(
                                         "flex flex-col items-center justify-center gap-2 p-2 rounded-lg border-2 transition-colors",
                                         selectedSound === sound.id 
@@ -345,7 +374,12 @@ export default function StudyPage() {
                             );
                         })}
                     </div>
-                    <Slider defaultValue={[33]} max={100} step={1} />
+                    <Slider 
+                        defaultValue={[volume]} 
+                        max={100} 
+                        step={1} 
+                        onValueChange={handleVolumeChange} 
+                    />
                 </CardContent>
             </Card>
             
@@ -414,5 +448,3 @@ export default function StudyPage() {
     </div>
   );
 }
-
-    
