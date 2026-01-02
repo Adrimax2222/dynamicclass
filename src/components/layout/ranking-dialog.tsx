@@ -155,14 +155,14 @@ function RankingTab({ user, isOpen }: { user: User; isOpen: boolean }) {
 
             {isLoading ? (
                 <div className="space-y-4">
-                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-40 w-full" />
                     <Skeleton className="h-12 w-full" />
                     <Skeleton className="h-12 w-full" />
                     <Skeleton className="h-12 w-full" />
                 </div>
             ) : ranking.length > 0 ? (
                 <div>
-                     <div className="grid grid-cols-3 gap-2 text-center mb-8 items-end h-48">
+                     <div className="relative grid grid-cols-3 gap-2 text-center items-end h-48 mb-8">
                         <PodiumPlace user={top3[1]} place={2} />
                         <PodiumPlace user={top3[0]} place={1} />
                         <PodiumPlace user={top3[2]} place={3} />
@@ -265,25 +265,25 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
 
 function PodiumPlace({ user, place }: { user?: User; place: 1 | 2 | 3 }) {
     const placeStyles = {
-        1: { icon: Gem, color: "text-amber-400", size: "h-24 w-24", podiumHeight: "h-28", podiumColor: "bg-amber-400/80" },
-        2: { icon: Medal, color: "text-slate-400", size: "h-20 w-20", podiumHeight: "h-20", podiumColor: "bg-slate-400/80" },
-        3: { icon: Medal, color: "text-orange-600", size: "h-20 w-20", podiumHeight: "h-16", podiumColor: "bg-orange-600/70" },
+        1: { icon: Gem, color: "text-amber-400", size: "h-20 w-20", podiumHeight: "h-28", podiumColor: "bg-amber-400/80" },
+        2: { icon: Medal, color: "text-slate-400", size: "h-16 w-16", podiumHeight: "h-20", podiumColor: "bg-slate-400/80" },
+        3: { icon: Medal, color: "text-orange-600", size: "h-16 w-16", podiumHeight: "h-16", podiumColor: "bg-orange-600/70" },
     };
     
-    if (!user) return <div className={cn("flex flex-col items-center justify-end", placeStyles[place].podiumHeight)} />;
+    if (!user) return <div className={cn("flex flex-col items-center justify-end w-full", placeStyles[place].podiumHeight)} />;
 
     const style = placeStyles[place];
     const Icon = style.icon;
 
     return (
-        <div className="flex flex-col items-center justify-end h-full">
+        <div className="flex flex-col items-center justify-end h-full w-full">
              <div className="relative">
                 <Avatar className={cn(style.size, "ring-4 ring-offset-2 ring-offset-background", `ring-amber-400/50`)}>
                     <AvatarImage src={user.avatar} />
                     <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="absolute -bottom-2 -right-2 rounded-full bg-background/80 p-1.5 shadow-lg">
-                     <Icon className={cn("h-6 w-6", style.color)} />
+                     <Icon className={cn("h-5 w-5", style.color)} />
                 </div>
             </div>
             <p className="font-bold text-sm truncate w-full mt-2">{user.name.split(' ')[0]}</p>
