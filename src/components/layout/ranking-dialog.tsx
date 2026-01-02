@@ -162,7 +162,7 @@ function RankingTab({ user, isOpen }: { user: User; isOpen: boolean }) {
                 </div>
             ) : ranking.length > 0 ? (
                 <div>
-                     <div className="relative grid grid-cols-3 gap-2 text-center items-end h-48 mb-8">
+                     <div className="relative grid grid-cols-3 gap-2 text-center items-end h-56 mb-8">
                         <PodiumPlace user={top3[1]} place={2} />
                         <PodiumPlace user={top3[0]} place={1} />
                         <PodiumPlace user={top3[2]} place={3} />
@@ -265,9 +265,9 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
 
 function PodiumPlace({ user, place }: { user?: User; place: 1 | 2 | 3 }) {
     const placeStyles = {
-        1: { icon: Gem, color: "text-amber-400", size: "h-20 w-20", podiumHeight: "h-28", podiumColor: "bg-amber-400/80" },
-        2: { icon: Medal, color: "text-slate-400", size: "h-16 w-16", podiumHeight: "h-20", podiumColor: "bg-slate-400/80" },
-        3: { icon: Medal, color: "text-orange-600", size: "h-16 w-16", podiumHeight: "h-16", podiumColor: "bg-orange-600/70" },
+        1: { icon: Gem, color: "text-amber-400", size: "h-16 w-16", podiumHeight: "h-28", podiumColor: "bg-amber-400/80" },
+        2: { icon: Medal, color: "text-slate-400", size: "h-14 w-14", podiumHeight: "h-20", podiumColor: "bg-slate-400/80" },
+        3: { icon: Medal, color: "text-orange-600", size: "h-14 w-14", podiumHeight: "h-16", podiumColor: "bg-orange-600/70" },
     };
     
     if (!user) return <div className={cn("flex flex-col items-center justify-end w-full", placeStyles[place].podiumHeight)} />;
