@@ -36,6 +36,7 @@ import {
   Timer,
   Brain,
   Plus,
+  Settings2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -122,12 +123,12 @@ export default function StudyPage() {
   
   const [customMode, setCustomMode] = useState<CustomMode>({ focus: 45, break: 15 });
 
-  const modes = {
+  const modes = useMemo(() => ({
     pomodoro: { focus: 25, break: 5, label: "Pomodoro", icon: Timer, colors: "from-blue-400 to-blue-500" },
-    long: { focus: 50, break: 10, label: "Bloque Largo", icon: Brain, colors: "from-purple-400 to-purple-500" },
+    long: { focus: 50, break: 10, label: "Largo", icon: Brain, colors: "from-purple-400 to-purple-500" },
     deep: { focus: 90, break: 20, label: "Deep Work", icon: Brain, colors: "from-indigo-400 to-indigo-500" },
-    custom: { focus: customMode.focus, break: customMode.break, label: "Personalizado", icon: Plus, colors: "from-green-400 to-green-500" }
-  };
+    custom: { focus: customMode.focus, break: customMode.break, label: "Personalizado", icon: Settings2, colors: "from-green-400 to-green-500" }
+  }), [customMode]);
   
   useEffect(() => {
     setIsMounted(true);
@@ -145,14 +146,12 @@ export default function StudyPage() {
     }
   }, []);
 
-  // Save user playlists to localStorage
   useEffect(() => {
     if (isMounted) {
       localStorage.setItem('userPlaylists', JSON.stringify(userPlaylists));
     }
   }, [userPlaylists, isMounted]);
 
-  // Save custom mode to localStorage
   useEffect(() => {
     if (isMounted) {
       localStorage.setItem('customStudyMode', JSON.stringify(customMode));
@@ -177,12 +176,12 @@ export default function StudyPage() {
     if (!audio) return;
     
     if (selectedSound && isActive) {
-      if (audio.src !== selectedSound.url) {
-        audio.src = selectedSound.url;
-      }
-      if (audio.paused) {
-        audio.play().catch(error => console.log("User interaction needed to play audio."));
-      }
+        if(audio.paused) {
+            if (audio.src !== selectedSound.url) {
+                audio.src = selectedSound.url;
+            }
+            audio.play().catch(error => console.log("User interaction needed to play audio."));
+        }
     } else {
       audio.pause();
     }
@@ -384,17 +383,17 @@ export default function StudyPage() {
         <main className="p-4 space-y-6">
             <Card className="w-full max-w-sm mx-auto shadow-xl overflow-hidden">
                 <CardContent className="p-4">
-                    <div className="flex justify-center items-center gap-2 mb-4">
+                    <div className="grid grid-cols-2 gap-2 mb-4">
                         {Object.keys(modes).map((key) => {
-                            if (key === 'custom' && !customMode) return null;
                             const modeData = modes[key as TimerMode];
                             const Icon = modeData.icon;
-                            return (
+                             const isCustom = key === 'custom';
+
+                            const content = (
                                 <button
-                                    key={key}
                                     onClick={() => handleModeChange(key as TimerMode)}
                                     className={cn(
-                                        "flex-1 flex flex-col items-center justify-center gap-1 p-2 rounded-lg border-2 transition-all duration-300",
+                                        "w-full flex flex-col items-center justify-center gap-1 p-3 rounded-lg border-2 transition-all duration-300",
                                         mode === key
                                             ? `border-transparent bg-gradient-to-br text-white shadow-lg ${modeData.colors}`
                                             : "border-dashed bg-muted/50 hover:bg-muted"
@@ -402,10 +401,19 @@ export default function StudyPage() {
                                 >
                                     <Icon className="h-5 w-5" />
                                     <span className="text-xs font-semibold">{modeData.label}</span>
+                                    <span className="text-xs opacity-70">{modes[key as TimerMode].focus} min</span>
                                 </button>
                             );
+
+                            if (isCustom) {
+                                return (
+                                    <CustomTimerDialog key={key} customMode={customMode} setCustomMode={setCustomMode}>
+                                        {content}
+                                    </CustomTimerDialog>
+                                )
+                            }
+                            return <div key={key}>{content}</div>;
                         })}
-                         <CustomTimerDialog customMode={customMode} setCustomMode={setCustomMode} />
                     </div>
                     
                     <div className="relative flex items-center justify-center my-6">
@@ -571,7 +579,7 @@ export default function StudyPage() {
   );
 }
 
-function CustomTimerDialog({ customMode, setCustomMode }: { customMode: CustomMode, setCustomMode: (mode: CustomMode) => void }) {
+function CustomTimerDialog({ children, customMode, setCustomMode }: { children: React.ReactNode, customMode: CustomMode, setCustomMode: (mode: CustomMode) => void }) {
     const [focus, setFocus] = useState(customMode.focus.toString());
     const [rest, setRest] = useState(customMode.break.toString());
     const [isOpen, setIsOpen] = useState(false);
@@ -585,16 +593,18 @@ function CustomTimerDialog({ customMode, setCustomMode }: { customMode: CustomMo
             setIsOpen(false);
         }
     };
+    
+    useEffect(() => {
+        if(isOpen) {
+            setFocus(customMode.focus.toString());
+            setRest(customMode.break.toString());
+        }
+    }, [isOpen, customMode]);
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <button
-                    className="flex-1 flex flex-col items-center justify-center gap-1 p-2 rounded-lg border-2 border-dashed bg-muted/50 hover:bg-muted transition-colors duration-300"
-                >
-                    <Plus className="h-5 w-5" />
-                    <span className="text-xs font-semibold">Personalizar</span>
-                </button>
+                {children}
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -731,5 +741,7 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
         </Dialog>
     )
 }
+
+    
 
     
