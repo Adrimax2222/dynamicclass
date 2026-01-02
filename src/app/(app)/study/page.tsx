@@ -351,7 +351,8 @@ export default function StudyPage() {
   const progress = useMemo(() => {
     const totalDuration = modes[mode][phase] * 60;
     if (totalDuration === 0) return 0;
-    return (1 - timeLeft / totalDuration) * 100;
+    const value = (1 - timeLeft / totalDuration) * 100;
+    return value;
   }, [timeLeft, mode, phase, modes]);
   
   if (!user) return null;
@@ -616,14 +617,13 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
     const { toast } = useToast();
 
     useEffect(() => {
-        // Stop camera stream when the component unmounts or image is cleared
         return () => {
             if (videoRef.current && videoRef.current.srcObject) {
                 const stream = videoRef.current.srcObject as MediaStream;
                 stream.getTracks().forEach(track => track.stop());
             }
         };
-    }, [imageSrc]);
+    }, []);
 
     const getCameraPermission = async () => {
         try {
@@ -667,7 +667,6 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 const dataUrl = canvas.toDataURL('image/png');
                 processImage(dataUrl);
 
-                // Stop camera after taking picture
                 const stream = video.srcObject as MediaStream;
                 stream.getTracks().forEach(track => track.stop());
             }
@@ -686,7 +685,6 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             canvas.height = img.height;
             context.drawImage(img, 0, 0);
             
-            // Apply high-contrast filter
             context.filter = 'grayscale(100%) contrast(1.8)';
             context.drawImage(img, 0, 0);
             
@@ -732,18 +730,21 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
     return (
         <Dialog onOpenChange={(open) => !open && resetScanner()}>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="max-w-lg w-[95vw]">
+            <DialogContent className="max-w-lg w-[95vw] flex flex-col">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2"><ScanLine className="h-5 w-5"/> Escáner de Apuntes</DialogTitle>
                     <DialogDescription>
                         Captura o sube una imagen de tus apuntes y guárdala como un PDF limpio.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                    {imageSrc ? (
-                        <div className="space-y-4">
-                            <h3 className="font-semibold text-center">Previsualización del Escaneo</h3>
-                            <img src={imageSrc} alt="Processed document" className="rounded-lg border shadow-sm w-full"/>
+                
+                {imageSrc ? (
+                    <div className="flex flex-col min-h-0">
+                         <h3 className="font-semibold text-center mb-2 flex-shrink-0">Previsualización del Escaneo</h3>
+                         <ScrollArea className="flex-grow">
+                             <img src={imageSrc} alt="Processed document" className="rounded-lg border shadow-sm w-full"/>
+                         </ScrollArea>
+                         <div className="space-y-4 pt-4 flex-shrink-0">
                              <div className="space-y-2">
                                 <Label htmlFor="pdf-filename">Nombre del Archivo</Label>
                                 <Input id="pdf-filename" value={fileName} onChange={e => setFileName(e.target.value)} />
@@ -758,35 +759,35 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 </Button>
                             </div>
                         </div>
-                    ) : hasCameraPermission === true ? (
-                        <div className="space-y-4">
-                            <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                            <Button onClick={takePicture} className="w-full">
-                                <Camera className="mr-2 h-4 w-4" /> Tomar Foto
-                            </Button>
-                             <Button onClick={resetScanner} variant="outline" className="w-full">
-                                Volver
-                            </Button>
-                        </div>
-                    ) : (
-                         <div className="space-y-4">
-                            <Button onClick={getCameraPermission} className="w-full">
-                                <Camera className="mr-2 h-4 w-4" /> Usar Cámara
-                            </Button>
-                            <Button onClick={() => fileInputRef.current?.click()} className="w-full">
-                                <Upload className="mr-2 h-4 w-4" /> Subir Archivo
-                            </Button>
-                            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden"/>
-                             {hasCameraPermission === false && (
-                                <Alert variant="destructive">
-                                    <AlertDescription>
-                                        El acceso a la cámara fue denegado. Por favor, habilítalo en la configuración de tu navegador.
-                                    </AlertDescription>
-                                </Alert>
-                            )}
-                        </div>
-                    )}
-                </div>
+                    </div>
+                ) : hasCameraPermission === true ? (
+                    <div className="space-y-4">
+                        <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                        <Button onClick={takePicture} className="w-full">
+                            <Camera className="mr-2 h-4 w-4" /> Tomar Foto
+                        </Button>
+                         <Button onClick={resetScanner} variant="outline" className="w-full">
+                            Volver
+                        </Button>
+                    </div>
+                ) : (
+                     <div className="space-y-4 py-4">
+                        <Button onClick={getCameraPermission} className="w-full">
+                            <Camera className="mr-2 h-4 w-4" /> Usar Cámara
+                        </Button>
+                        <Button onClick={() => fileInputRef.current?.click()} className="w-full">
+                            <Upload className="mr-2 h-4 w-4" /> Subir Archivo
+                        </Button>
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden"/>
+                         {hasCameraPermission === false && (
+                            <Alert variant="destructive">
+                                <AlertDescription>
+                                    El acceso a la cámara fue denegado. Por favor, habilítalo en la configuración de tu navegador.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                    </div>
+                )}
                  <canvas ref={canvasRef} className="hidden" />
             </DialogContent>
         </Dialog>
