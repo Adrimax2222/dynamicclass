@@ -40,7 +40,7 @@ const shopAvatarMap = new Map(SHOP_AVATARS.map(item => [item.id, item]));
 
 function SantaHat() {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" width="512" zoomAndPan="magnify" viewBox="0 0 384 383.999986" height="512" preserveAspectRatio="xMidYMid meet" version="1.0"
+        <svg xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" width="512" zoomAndPan="magnify" viewBox="0 0 384 383.999986" height="512" preserveAspectRatio="xMidYMid" version="1.0"
             className="absolute -top-[50%] -right-[40%] w-[120%] h-[120%] transform rotate-[15deg] z-10 pointer-events-none"
             style={{ filter: 'drop-shadow(2px 2px 2px rgba(0,0,0,0.2))' }}
         >
@@ -108,8 +108,8 @@ export function RankingDialog({ children, user, openTo = "ranking" }: { children
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col h-[80vh] bg-card/90 backdrop-blur-xl">
-                <div className="absolute inset-0 bg-repeat bg-center opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Cpath d=\'M27.5 55.5C27.5 53.0147 25.4853 51 23 51C20.5147 51 18.5 53.0147 18.5 55.5V70.5C18.5 72.9853 20.5147 75 23 75C25.4853 75 27.5 72.9853 27.5 70.5V55.5ZM72.5 55.5C72.5 53.0147 70.4853 51 68 51C65.5147 51 63.5 53.0147 63.5 55.5V70.5C63.5 72.9853 65.5147 75 68 75C70.4853 75 72.5 72.9853 72.5 70.5V55.5ZM45.5 25C56.8284 25 66 34.1716 66 45.5C66 56.8284 56.8284 66 45.5 66C34.1716 66 25 56.8284 25 45.5C25 34.1716 34.1716 25 45.5 25ZM45.5 30C54.0604 30 61 36.9396 61 45.5C61 54.0604 54.0604 61 45.5 61C36.9396 61 30 54.0604 30 45.5C30 36.9396 36.9396 30 45.5 30Z\' fill=\'%23a0aec0\'/%3E%3C/svg%3E")' }}></div>
+            <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col h-[80vh]">
+                 <div className="absolute inset-0 bg-trophy-pattern opacity-5" style={{ backgroundSize: '100px 100px' }} />
                  <Tabs defaultValue={openTo} className="w-full h-full flex flex-col z-10">
                     <DialogHeader className="p-6 pb-0 flex-shrink-0">
                         <div className="flex items-center gap-3">
@@ -240,7 +240,7 @@ function RankingTab({ user, isOpen }: { user: User; isOpen: boolean }) {
                 </div>
             ) : ranking.length > 0 ? (
                 <div>
-                     <div className="relative grid grid-cols-3 gap-2 text-center items-end h-40 mb-8">
+                     <div className="relative grid grid-cols-3 gap-2 text-center items-end h-56 mb-8">
                         <PodiumPlace user={top3[1]} place={2} scope={scope} />
                         <PodiumPlace user={top3[0]} place={1} scope={scope} />
                         <PodiumPlace user={top3[2]} place={3} scope={scope} />
@@ -343,15 +343,15 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
 
 function PodiumPlace({ user, place, scope }: { user?: User; place: 1 | 2 | 3; scope: RankingScope }) {
     const classStyles = {
-        1: { icon: Gem, color: "text-amber-400", size: "h-14 w-14", ring: "ring-amber-400/50", podiumHeight: "h-24", podiumColor: "bg-amber-400/80 shadow-[0_0_15px_rgba(251,191,36,0.6)]" },
-        2: { icon: Medal, color: "text-slate-400", size: "h-12 w-12", ring: "ring-slate-400/50", podiumHeight: "h-16", podiumColor: "bg-slate-400/80 shadow-[0_0_15px_rgba(148,163,184,0.5)]" },
-        3: { icon: Medal, color: "text-orange-600", size: "h-12 w-12", ring: "ring-orange-600/50", podiumHeight: "h-12", podiumColor: "bg-orange-600/70 shadow-[0_0_15px_rgba(234,88,12,0.5)]" },
+        1: { icon: Gem, color: "text-amber-400", ring: "ring-amber-400/50", podiumHeight: "h-32", podiumColor: "bg-amber-400/80 shadow-[0_0_15px_rgba(251,191,36,0.6)]", avatarSize: "h-16 w-16" },
+        2: { icon: Medal, color: "text-slate-400", ring: "ring-slate-400/50", podiumHeight: "h-24", podiumColor: "bg-slate-400/80 shadow-[0_0_15px_rgba(148,163,184,0.5)]", avatarSize: "h-14 w-14" },
+        3: { icon: Medal, color: "text-orange-600", ring: "ring-orange-600/50", podiumHeight: "h-20", podiumColor: "bg-orange-600/70 shadow-[0_0_15px_rgba(234,88,12,0.5)]", avatarSize: "h-14 w-14" },
     };
 
     const centerStyles = {
-        1: { icon: Gem, color: "text-blue-400", size: "h-14 w-14", ring: "ring-blue-400/50", podiumHeight: "h-24", podiumColor: "bg-blue-500/80 shadow-[0_0_15px_rgba(59,130,246,0.6)]" },
-        2: { icon: Medal, color: "text-sky-400", size: "h-12 w-12", ring: "ring-sky-400/50", podiumHeight: "h-16", podiumColor: "bg-sky-500/80 shadow-[0_0_15px_rgba(14,165,233,0.5)]" },
-        3: { icon: Medal, color: "text-cyan-400", size: "h-12 w-12", ring: "ring-cyan-400/50", podiumHeight: "h-12", podiumColor: "bg-cyan-500/70 shadow-[0_0_15px_rgba(6,182,212,0.5)]" },
+        1: { icon: Gem, color: "text-blue-400", ring: "ring-blue-400/50", podiumHeight: "h-32", podiumColor: "bg-blue-500/80 shadow-[0_0_15px_rgba(59,130,246,0.6)]", avatarSize: "h-16 w-16" },
+        2: { icon: Medal, color: "text-sky-400", ring: "ring-sky-400/50", podiumHeight: "h-24", podiumColor: "bg-sky-500/80 shadow-[0_0_15px_rgba(14,165,233,0.5)]", avatarSize: "h-14 w-14" },
+        3: { icon: Medal, color: "text-cyan-400", ring: "ring-cyan-400/50", podiumHeight: "h-20", podiumColor: "bg-cyan-500/70 shadow-[0_0_15px_rgba(6,182,212,0.5)]", avatarSize: "h-14 w-14" },
     };
 
     const styles = scope === 'class' ? classStyles : centerStyles;
@@ -364,7 +364,7 @@ function PodiumPlace({ user, place, scope }: { user?: User; place: 1 | 2 | 3; sc
     return (
         <div className="flex flex-col items-center justify-end h-full w-full">
              <div className="relative">
-                <RankingAvatarDisplay user={user} className={cn(style.size, "ring-4 ring-offset-2 ring-offset-background dark:ring-offset-slate-900", style.ring)} />
+                <RankingAvatarDisplay user={user} className={cn(style.avatarSize, "ring-4 ring-offset-2 ring-offset-background dark:ring-offset-slate-900 rounded-full", style.ring)} />
                 <div className="absolute -bottom-2 -right-2 rounded-full bg-background/80 p-1.5 shadow-lg">
                      <Icon className={cn("h-5 w-5", style.color)} />
                 </div>
@@ -388,6 +388,11 @@ function RankingItem({ user, rank, isCurrentUser, scope }: { user: User; rank: n
         class: "bg-primary/10 border-primary/50",
         center: "bg-blue-500/10 border-blue-500/50"
     };
+    
+    const hexColors = {
+        class: "hsl(var(--primary) / 0.2)",
+        center: "hsl(221, 83%, 53%, 0.2)"
+    }
 
     return (
         <div className={cn("flex items-center gap-4 rounded-lg p-2 transition-colors", isCurrentUser ? colors[scope] : "bg-muted/50 border")}>
@@ -397,7 +402,7 @@ function RankingItem({ user, rank, isCurrentUser, scope }: { user: User; rank: n
                     width: '32px',
                     height: '32px',
                     clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-                    backgroundColor: isCurrentUser ? (scope === 'class' ? 'hsl(var(--primary) / 0.2)' : 'hsl(221, 83%, 53%, 0.2)') : 'hsl(var(--muted))'
+                    backgroundColor: isCurrentUser ? hexColors[scope] : 'hsl(var(--muted))'
                 }}
             >
                 {rank}
