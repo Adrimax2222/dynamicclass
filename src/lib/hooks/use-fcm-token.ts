@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -21,6 +22,9 @@ export const useFcmToken = () => {
     const messaging = getMessaging(app);
 
     const requestPermissionAndToken = async () => {
+      // Deactivated to prevent build/runtime errors
+      return; 
+      
       try {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
@@ -56,3 +60,5 @@ export const useFcmToken = () => {
 
   }, [app, firestore, user]);
 };
+
+    

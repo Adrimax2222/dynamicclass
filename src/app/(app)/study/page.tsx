@@ -83,7 +83,7 @@ export default function StudyPage() {
   const [phase, setPhase] = useState<Phase>("focus");
   const [isActive, setIsActive] = useState(false);
   const [selectedSound, setSelectedSound] = useState<Sound>(null);
-  const [volume, setVolume] = useState(33);
+  const [volume, setVolume] = useState(100);
 
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -111,8 +111,6 @@ export default function StudyPage() {
     const audio = audioRef.current;
     if (!audio) return;
     
-    audio.crossOrigin = 'anonymous';
-
     if (selectedSound) {
       if (audio.src !== selectedSound.url) {
         audio.src = selectedSound.url;
@@ -465,3 +463,5 @@ export default function StudyPage() {
     </div>
   );
 }
+
+    
