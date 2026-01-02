@@ -152,6 +152,9 @@ function ScannerHistoryClient() {
                                             </Button>
                                         </DialogTrigger>
                                         <DialogContent className="max-w-3xl w-[95vw] h-[90vh] flex flex-col p-2 sm:p-4">
+                                            <DialogHeader className="p-2">
+                                                <DialogTitle className="truncate">{doc.name}</DialogTitle>
+                                            </DialogHeader>
                                             <Carousel className="w-full h-full flex-1">
                                                 <CarouselContent className="h-full">
                                                     {doc.pages.map((pageSrc, i) => (
