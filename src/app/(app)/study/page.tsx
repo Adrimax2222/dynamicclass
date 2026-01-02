@@ -19,10 +19,13 @@ import {
   SkipForward,
   Infinity,
   Headphones,
-  Wind,
-  Coffee,
   Trees,
+  Coffee,
   Waves,
+  Building2,
+  BookOpen,
+  CloudRain,
+  Leaf,
   Grid,
   Percent,
   Calculator,
@@ -44,7 +47,12 @@ import { WipDialog } from "@/components/layout/wip-dialog";
 
 type TimerMode = "pomodoro" | "long" | "deep";
 type Phase = "focus" | "break";
-type Sound = "rain" | "coffee" | "forest" | "noise" | null;
+type Sound = {
+    id: string;
+    label: string;
+    icon: React.ElementType;
+    url: string;
+} | null;
 
 const modes = {
   pomodoro: { focus: 25, break: 5, label: "Pomodoro (25/5)" },
@@ -53,10 +61,14 @@ const modes = {
 };
 
 const sounds = [
-    { id: "rain", label: "Lluvia", icon: Wind },
-    { id: "coffee", label: "Cafetería", icon: Coffee },
-    { id: "forest", label: "Bosque", icon: Trees },
-    { id: "noise", label: "Ruido Blanco", icon: Waves },
+    { id: "rain", label: "Lluvia", icon: CloudRain, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/relaxing-rain-419012.mp3?alt=media" },
+    { id: "cafe", label: "Cafetería", icon: Coffee, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/casual-cafe-restaurant-noise-73945.mp3?alt=media" },
+    { id: "forest", label: "Bosque", icon: Trees, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/ambiente-de-bosque-arvi-ambix-17159.mp3?alt=media" },
+    { id: "noise", label: "Ruido Blanco", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/white-noise-358382.mp3?alt=media" },
+    { id: "library", label: "Biblioteca", icon: BookOpen, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/biblioteca.mp3?alt=media" },
+    { id: "nature", label: "Naturaleza", icon: Leaf, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/birds-frogs-nature-8257.mp3?alt=media" },
+    { id: "city", label: "Ciudad", icon: Building2, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/city-ambience-121693.mp3?alt=media" },
+    { id: "sea", label: "Mar", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/mar-agitado-272999.mp3?alt=media" },
 ]
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
@@ -98,7 +110,7 @@ export default function StudyPage() {
     if (!audio) return;
 
     if (isActive && selectedSound) {
-      audio.src = `/sounds/${selectedSound}.mp3`;
+      audio.src = selectedSound.url;
       audio.loop = true;
       audio.volume = volume / 100;
       audio.play().catch(error => console.error("Error playing audio:", error));
@@ -230,11 +242,11 @@ export default function StudyPage() {
     }
   };
 
-  const handleSoundSelect = (soundId: Sound) => {
-      if (selectedSound === soundId) {
+  const handleSoundSelect = (sound: Sound) => {
+      if (selectedSound?.id === sound?.id) {
           setSelectedSound(null); // Deselect if clicked again
       } else {
-          setSelectedSound(soundId);
+          setSelectedSound(sound);
       }
   }
 
@@ -355,17 +367,17 @@ export default function StudyPage() {
                             return (
                                 <button 
                                     key={sound.id} 
-                                    onClick={() => handleSoundSelect(sound.id as Sound)}
+                                    onClick={() => handleSoundSelect(sound)}
                                     className={cn(
                                         "flex flex-col items-center justify-center gap-2 p-2 rounded-lg border-2 transition-colors",
-                                        selectedSound === sound.id 
+                                        selectedSound?.id === sound.id 
                                             ? "border-primary bg-primary/10"
                                             : "border-transparent bg-muted/60 hover:bg-muted"
                                     )}
                                 >
                                     <div className={cn(
                                         "h-10 w-10 rounded-full flex items-center justify-center",
-                                         selectedSound === sound.id ? "bg-primary/20 text-primary" : "bg-background"
+                                         selectedSound?.id === sound.id ? "bg-primary/20 text-primary" : "bg-background"
                                     )}>
                                         <SoundIcon className="h-5 w-5" />
                                     </div>
@@ -378,7 +390,8 @@ export default function StudyPage() {
                         defaultValue={[volume]} 
                         max={100} 
                         step={1} 
-                        onValueChange={handleVolumeChange} 
+                        onValueChange={handleVolumeChange}
+                        disabled={!selectedSound}
                     />
                 </CardContent>
             </Card>
