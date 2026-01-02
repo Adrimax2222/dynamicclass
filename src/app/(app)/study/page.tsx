@@ -375,9 +375,16 @@ export default function StudyPage() {
         <audio ref={audioRef} crossOrigin="anonymous" loop />
         <header className="p-4 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ChevronLeft />
+                <ChevronLeft />
             </Button>
-            <h1 className="text-lg font-bold">Modo Estudio</h1>
+            <div className="flex items-center gap-2">
+                <h1 className="text-lg font-bold">Modo Estudio</h1>
+                <ScannerDialog>
+                    <Button variant="ghost" size="icon">
+                        <Camera className="h-5 w-5" />
+                    </Button>
+                </ScannerDialog>
+            </div>
             <div className="flex items-center gap-2">
                 <Badge variant="outline" className="flex items-center gap-1.5">
                     <Clock className="h-4 w-4"/>
@@ -821,9 +828,9 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             const renderedImgElement = previewContainer.querySelector('img');
             if (!renderedImgElement) return;
 
-            const scaleX = img.naturalWidth / renderedImgElement.width;
-            const scaleY = img.naturalHeight / renderedImgElement.height;
-            
+            const scaleX = img.naturalWidth / renderedImgElement.clientWidth;
+            const scaleY = img.naturalHeight / renderedImgElement.clientHeight;
+
             const offsetX = (renderedImgElement.offsetWidth - previewContainer.clientWidth) / 2;
             const offsetY = (renderedImgElement.offsetHeight - previewContainer.clientHeight) / 2;
 
@@ -911,23 +918,21 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
     
     const renderCaptureUI = () => {
         return (
-            <div className="flex-grow flex flex-col items-center justify-center space-y-4 py-4 w-full">
-                <div className="flex flex-col items-center justify-center space-y-4 py-4 w-full">
-                    <Button onClick={getCameraPermission} className="w-full max-w-xs">
-                        <Camera className="mr-2 h-4 w-4" /> Usar Cámara
-                    </Button>
-                    <Button onClick={() => fileInputRef.current?.click()} className="w-full max-w-xs">
-                        <Upload className="mr-2 h-4 w-4" /> Subir Archivo
-                    </Button>
-                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden"/>
-                    {hasCameraPermission === false && (
-                        <Alert variant="destructive" className="max-w-xs">
-                            <AlertDescription>
-                                El acceso a la cámara fue denegado.
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                </div>
+            <div className={cn("flex flex-col items-center justify-center space-y-4 py-4", pages.length > 0 ? "h-auto" : "flex-grow w-full")}>
+                <Button onClick={getCameraPermission} className="w-full max-w-xs">
+                    <Camera className="mr-2 h-4 w-4" /> Usar Cámara
+                </Button>
+                <Button onClick={() => fileInputRef.current?.click()} className="w-full max-w-xs">
+                    <Upload className="mr-2 h-4 w-4" /> Subir Archivo
+                </Button>
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden"/>
+                {hasCameraPermission === false && (
+                    <Alert variant="destructive" className="max-w-xs">
+                        <AlertDescription>
+                            El acceso a la cámara fue denegado.
+                        </AlertDescription>
+                    </Alert>
+                )}
             </div>
         );
     };
@@ -944,25 +949,27 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 </DialogHeader>
 
                 <div className="flex-grow flex flex-col min-h-0 space-y-4">
+                    {isCameraActive ? (
+                        <div className="absolute inset-0 bg-background/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
+                            <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                            <div className="flex items-center gap-4 mt-4">
+                                <Button onClick={stopCamera} variant="outline">
+                                    Cancelar
+                                </Button>
+                                <Button onClick={takePicture} className="h-16 w-16 rounded-full">
+                                    <Camera className="h-8 w-8" />
+                                </Button>
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {mode === 'capture' && <div className="absolute inset-x-0 inset-y-0 bg-background/50 z-40 flex items-center justify-center">{renderCaptureUI()}</div>}
+                    
                     <div
                         className="flex-grow min-h-0 relative border rounded-lg bg-muted/30 flex items-center justify-center"
                         onDragStart={(e) => e.preventDefault()}
                     >
-                         {isCameraActive ? (
-                            <div className="absolute inset-0 bg-background/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
-                                <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                                <div className="flex items-center gap-4 mt-4">
-                                    <Button onClick={stopCamera} variant="outline">
-                                        Cancelar
-                                    </Button>
-                                    <Button onClick={takePicture} className="h-16 w-16 rounded-full">
-                                        <Camera className="h-8 w-8" />
-                                    </Button>
-                                </div>
-                            </div>
-                         ) : mode === 'capture' ? (
-                            renderCaptureUI()
-                         ) : activePage ? (
+                         {pages.length > 0 && activePage ? (
                             <div 
                                 ref={previewContainerRef}
                                 className="w-full h-full flex items-center justify-center p-2"
@@ -985,13 +992,13 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 )}
                             </div>
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">Selecciona una página para editar.</div>
+                           <div className="w-full h-full" />
                         )}
                     </div>
 
                      <div className="flex-shrink-0 space-y-4 pt-2">
-                        <ScrollArea className="w-full whitespace-nowrap">
-                            <div className="flex items-center gap-2 p-2">
+                         <ScrollArea className="h-full">
+                             <div className="flex items-center gap-2 p-2">
                                 {pages.map((p, index) => (
                                     <div key={p.id} className="relative group shrink-0" onClick={() => setActivePageId(p.id)}>
                                          <img 
@@ -1020,8 +1027,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                     <span className="text-xs mt-1 text-muted-foreground">Añadir</span>
                                   </button>
                             </div>
-                            <div className="h-1" />
-                        </ScrollArea>
+                         </ScrollArea>
                         
                          <div className="flex items-center gap-2">
                             <Button onClick={handleRotate} variant="outline" size="icon" disabled={!activePage || mode === 'capture'}><RotateCw className="h-4 w-4" /></Button>
