@@ -60,15 +60,15 @@ const modes = {
   deep: { focus: 90, break: 20, label: "Deep Work (90/20)" },
 };
 
-const sounds = [
+const sounds: Sound[] = [
     { id: "rain", label: "Lluvia", icon: CloudRain, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/relaxing-rain-419012.mp3?alt=media&token=aa591a3a-8eed-42d0-9347-f8e0da836dcf" },
     { id: "cafe", label: "Cafetería", icon: Coffee, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/casual-cafe-restaurant-noise-73945.mp3?alt=media&token=bc050ad2-746b-410d-8fdb-4c89c620f10c" },
     { id: "forest", label: "Bosque", icon: Trees, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/ambiente-de-bosque-arvi-ambix-17159.mp3?alt=media&token=3311c173-b307-4fbb-97ff-8450fbc3cdc8" },
+    { id: "sea", label: "Mar", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/mar-agitado-272999.mp3?alt=media&token=d7322a3a-6397-42eb-9039-b569be846fc7" },
     { id: "noise", label: "Ruido Blanco", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/white-noise-358382.mp3?alt=media&token=e4fae111-a420-45f0-a75a-9a3e09d8a357" },
-    { id: "library", label: "Biblioteca", icon: BookOpen, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/biblioteca.mp3?alt=media&token=b60acf9f-d0c9-40f5-9cf4-0e63af7d9385" },
     { id: "nature", label: "Pájaros", icon: Leaf, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/birds-frogs-nature-8257.mp3?alt=media&token=462a8b0e-ffd7-46a0-917f-5510f4085649" },
     { id: "city", label: "Ciudad", icon: Building2, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/city-ambience-121693.mp3?alt=media&token=00c7c7fa-cba2-4a8a-b091-6d07e56262c0" },
-    { id: "sea", label: "Mar", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/mar-agitado-272999.mp3?alt=media&token=d7322a3a-6397-42eb-9039-b569be846fc7" },
+    { id: "library", label: "Biblioteca", icon: BookOpen, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/biblioteca.mp3?alt=media&token=b60acf9f-d0c9-40f5-9cf4-0e63af7d9385" },
 ];
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
@@ -114,12 +114,14 @@ export default function StudyPage() {
     if (selectedSound) {
       if (audio.src !== selectedSound.url) {
         audio.src = selectedSound.url;
-        audio.load();
       }
-      audio.loop = true;
-      audio.volume = 1.0;
-      audio.crossOrigin = "anonymous";
-      audio.play().catch(error => console.error("Error playing audio:", error));
+      if (audio.paused) {
+        audio.play().catch(error => {
+          // This can happen if the user hasn't interacted with the page yet.
+          // The audio will play once they click anywhere.
+          console.log("Audio playback waiting for user interaction.", error);
+        });
+      }
     } else {
       audio.pause();
     }
@@ -288,7 +290,7 @@ export default function StudyPage() {
 
   return (
     <div className="flex flex-col h-screen bg-muted/30">
-        <audio ref={audioRef} crossOrigin="anonymous" />
+        <audio ref={audioRef} crossOrigin="anonymous" loop volume={1.0} />
         <header className="p-4 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ChevronLeft />
