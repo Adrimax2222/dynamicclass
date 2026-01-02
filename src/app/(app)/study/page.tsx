@@ -633,6 +633,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
     const [cropData, setCropData] = useState<CropData | null>(null);
     const [startCropPoint, setStartCropPoint] = useState<{ x: number; y: number } | null>(null);
     const previewContainerRef = useRef<HTMLDivElement>(null);
+    const previewImageRef = useRef<HTMLImageElement>(null);
 
 
     useEffect(() => {
@@ -749,18 +750,31 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         if (!originalImage) return;
         const newRotation = (rotation + 90) % 360;
         setRotation(newRotation);
-        processImage(originalImage, newRotation, cropData);
+        processImage(originalImage, newRotation, null);
+        setCropData(null);
     };
 
     const handleApplyCrop = () => {
-        if (!originalImage || !cropData) return;
-        processImage(originalImage, rotation, cropData);
+        if (!originalImage || !cropData || !previewImageRef.current) return;
+
+        const displayedImg = previewImageRef.current;
+        const scaleX = originalImage.naturalWidth / displayedImg.width;
+        const scaleY = originalImage.naturalHeight / displayedImg.height;
+
+        const actualCropData = {
+            x: cropData.x * scaleX,
+            y: cropData.y * scaleY,
+            width: cropData.width * scaleX,
+            height: cropData.height * scaleY,
+        };
+        
+        processImage(originalImage, rotation, actualCropData);
         setIsCropping(false);
     }
     
     const handleCropMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!isCropping || !previewContainerRef.current) return;
-        const rect = previewContainerRef.current.getBoundingClientRect();
+        const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         setStartCropPoint({ x, y });
@@ -769,7 +783,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
 
     const handleCropMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!isCropping || !startCropPoint || !previewContainerRef.current) return;
-        const rect = previewContainerRef.current.getBoundingClientRect();
+        const rect = e.currentTarget.getBoundingClientRect();
         const currentX = e.clientX - rect.left;
         const currentY = e.clientY - rect.top;
 
@@ -846,16 +860,18 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 
                 {imageSrc ? (
                     <div className="flex-grow flex flex-col min-h-0">
-                        <div className="flex-grow min-h-0 relative mb-4" ref={previewContainerRef} onDragStart={(e) => e.preventDefault()}>
-                            <ScrollArea className="w-full h-full border rounded-lg">
-                                <div 
-                                    className="relative w-fit h-fit mx-auto"
+                         <div className="flex-grow min-h-0 relative mb-4">
+                            <ScrollArea className="w-full h-full border rounded-lg bg-muted/30">
+                               <div 
+                                    ref={previewContainerRef}
+                                    className="relative w-full h-full flex items-center justify-center"
                                     onMouseDown={handleCropMouseDown}
                                     onMouseMove={handleCropMouseMove}
                                     onMouseUp={handleCropMouseUp}
                                     onMouseLeave={handleCropMouseUp}
+                                    onDragStart={(e) => e.preventDefault()}
                                 >
-                                    <img src={imageSrc} alt="Processed document" className={cn("max-w-full max-h-full", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
+                                    <img ref={previewImageRef} src={imageSrc} alt="Processed document" className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
                                     {isCropping && cropData && cropData.width > 0 && cropData.height > 0 && (
                                         <div
                                             className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
