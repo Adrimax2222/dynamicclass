@@ -587,48 +587,56 @@ export default function StudyPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
-                   <GradeCalculatorDialog isScheduleAvailable={isScheduleAvailable} user={user}>
-                     <div className="relative p-4 rounded-lg bg-gradient-to-br from-red-400 to-pink-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform">
-                          <div className="relative z-10">
-                              <h3 className="font-bold">Nota Necesaria</h3>
-                              <p className="text-xs opacity-80">Calcula cuánto necesitas para aprobar.</p>
-                          </div>
-                          <Percent className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
-                          <Calculator className="absolute top-2 right-2 h-6 w-6 opacity-20" />
-                      </div>
-                   </GradeCalculatorDialog>
-                    <ScannerDialog>
-                        <div
-                            className="relative p-4 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform"
-                        >
-                            <div className="relative z-10">
-                                <h3 className="font-bold">Escanear</h3>
-                                <p className="text-xs opacity-80">Digitaliza tus apuntes al instante.</p>
-                            </div>
-                            <ScanLine className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
-                        </div>
-                    </ScannerDialog>
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <div className="relative p-4 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform">
+                   <div className="flex">
+                        <GradeCalculatorDialog isScheduleAvailable={isScheduleAvailable} user={user}>
+                            <div className="relative p-4 rounded-lg bg-gradient-to-br from-red-400 to-pink-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform flex-1">
                                 <div className="relative z-10">
-                                    <h3 className="font-bold">Calculadora</h3>
-                                    <p className="text-xs opacity-80">Acceso rápido a la calculadora científica.</p>
+                                    <h3 className="font-bold">Nota Necesaria</h3>
+                                    <p className="text-xs opacity-80">Calcula cuánto necesitas para aprobar.</p>
                                 </div>
-                                <Sigma className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
+                                <Percent className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
+                                <Calculator className="absolute top-2 right-2 h-6 w-6 opacity-20" />
                             </div>
-                        </DialogTrigger>
-                        <ScienceCalculatorDialog />
-                    </Dialog>
-                    <WipDialog>
-                        <div className="relative p-4 rounded-lg bg-gradient-to-br from-purple-400 to-violet-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform">
-                            <div className="relative z-10">
-                                <h3 className="font-bold">Documentos</h3>
-                                <p className="text-xs opacity-80">Historial de tus apuntes escaneados.</p>
+                        </GradeCalculatorDialog>
+                   </div>
+                   <div className="flex">
+                        <ScannerDialog>
+                            <div
+                                className="relative p-4 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform flex-1"
+                            >
+                                <div className="relative z-10">
+                                    <h3 className="font-bold">Escanear</h3>
+                                    <p className="text-xs opacity-80">Digitaliza tus apuntes al instante.</p>
+                                </div>
+                                <ScanLine className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
                             </div>
-                            <FileCheck2 className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
-                        </div>
-                    </WipDialog>
+                        </ScannerDialog>
+                   </div>
+                   <div className="flex">
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <div className="relative p-4 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform flex-1">
+                                    <div className="relative z-10">
+                                        <h3 className="font-bold">Calculadora</h3>
+                                        <p className="text-xs opacity-80">Acceso rápido a la calculadora científica.</p>
+                                    </div>
+                                    <Sigma className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
+                                </div>
+                            </DialogTrigger>
+                            <ScienceCalculatorDialog />
+                        </Dialog>
+                   </div>
+                   <div className="flex">
+                        <WipDialog>
+                            <div className="relative p-4 rounded-lg bg-gradient-to-br from-purple-400 to-violet-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform flex-1">
+                                <div className="relative z-10">
+                                    <h3 className="font-bold">Documentos</h3>
+                                    <p className="text-xs opacity-80">Historial de tus apuntes escaneados.</p>
+                                </div>
+                                <FileCheck2 className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
+                            </div>
+                        </WipDialog>
+                   </div>
                 </CardContent>
             </Card>
 
@@ -985,34 +993,32 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 </DialogHeader>
 
                  <div className="flex-grow flex flex-col min-h-0 space-y-4">
-                    {mode === 'capture' && (
-                        <div className="absolute inset-0 bg-background/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
-                            <div className="bg-background p-8 rounded-lg shadow-2xl border">
-                                {isCameraActive ? (
-                                    <>
-                                        <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                                        <div className="flex items-center gap-4 mt-4">
-                                            <Button onClick={stopCamera} variant="outline">
-                                                Cancelar
-                                            </Button>
-                                            <Button onClick={takePicture} className="h-16 w-16 rounded-full">
-                                                <Camera className="h-8 w-8" />
-                                            </Button>
-                                        </div>
-                                    </>
-                                ) : renderCaptureUI()}
+                    <div className="flex-grow min-h-0 relative border rounded-lg bg-muted/30 flex items-center justify-center">
+                        {mode === 'capture' ? (
+                            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4">
+                                <div className="bg-background p-8 rounded-lg shadow-2xl border">
+                                    {isCameraActive ? (
+                                        <>
+                                            <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                                            <div className="flex items-center gap-4 mt-4">
+                                                <Button onClick={stopCamera} variant="outline">
+                                                    Cancelar
+                                                </Button>
+                                                <Button onClick={takePicture} className="h-16 w-16 rounded-full">
+                                                    <Camera className="h-8 w-8" />
+                                                </Button>
+                                            </div>
+                                        </>
+                                    ) : renderCaptureUI()}
+                                </div>
                             </div>
-                        </div>
-                    )}
-                    
-                    <div
-                        className="flex-grow min-h-0 relative border rounded-lg bg-muted/30 flex items-center justify-center"
-                        onDragStart={(e) => e.preventDefault()}
-                    >
+                        ) : null}
+                        
                         {pages.length > 0 && activePage ? (
-                            <div 
+                             <div 
                                 ref={previewContainerRef}
                                 className="w-full h-full flex items-center justify-center p-2"
+                                onDragStart={(e) => e.preventDefault()}
                                 onMouseDown={handleCropMouseDown}
                                 onMouseMove={handleCropMouseMove}
                                 onMouseUp={handleCropMouseUp}
@@ -1032,9 +1038,11 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 )}
                             </div>
                         ) : (
-                            <div className="text-center text-muted-foreground p-8">
+                           mode === 'preview' && (
+                             <div className="text-center text-muted-foreground p-8">
                                 <p>Añade una página para empezar</p>
                             </div>
+                           )
                         )}
                     </div>
                     
