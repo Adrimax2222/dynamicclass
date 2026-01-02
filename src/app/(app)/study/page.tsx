@@ -671,7 +671,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 const img = new Image();
                 img.onload = () => {
                     setOriginalImage(img);
-                    processImage(img);
+                    processImage(img, 0, null);
                 };
                 img.src = result;
             };
@@ -693,7 +693,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 const img = new Image();
                 img.onload = () => {
                     setOriginalImage(img);
-                    processImage(img);
+                    processImage(img, 0, null);
                 };
                 img.src = dataUrl;
 
@@ -704,19 +704,16 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         }
     };
     
-    const processImage = (img: HTMLImageElement, crop: CropData | null = null) => {
+    const processImage = (img: HTMLImageElement, angleDegrees: number, crop: CropData | null) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const context = canvas.getContext('2d');
         if (!context) return;
         
-        const angle = rotation * Math.PI / 180;
+        const angle = angleDegrees * Math.PI / 180;
         const sin = Math.sin(angle);
         const cos = Math.cos(angle);
         
-        let newWidth = Math.abs(img.width * cos) + Math.abs(img.height * sin);
-        let newHeight = Math.abs(img.width * sin) + Math.abs(img.height * cos);
-
         let sourceX = 0, sourceY = 0, sourceWidth = img.width, sourceHeight = img.height;
 
         if (crop) {
@@ -724,9 +721,10 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             sourceY = crop.y;
             sourceWidth = crop.width;
             sourceHeight = crop.height;
-            newWidth = Math.abs(sourceWidth * cos) + Math.abs(sourceHeight * sin);
-            newHeight = Math.abs(sourceWidth * sin) + Math.abs(sourceHeight * cos);
         }
+        
+        const newWidth = Math.abs(sourceWidth * cos) + Math.abs(sourceHeight * sin);
+        const newHeight = Math.abs(sourceWidth * sin) + Math.abs(sourceHeight * cos);
 
         canvas.width = newWidth;
         canvas.height = newHeight;
@@ -751,12 +749,12 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         if (!originalImage) return;
         const newRotation = (rotation + 90) % 360;
         setRotation(newRotation);
-        processImage(originalImage, cropData);
+        processImage(originalImage, newRotation, cropData);
     };
 
     const handleApplyCrop = () => {
         if (!originalImage || !cropData) return;
-        processImage(originalImage, cropData);
+        processImage(originalImage, rotation, cropData);
         setIsCropping(false);
     }
     
@@ -830,7 +828,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             setRotation(0);
             setIsCropping(false);
             setCropData(null);
-            processImage(originalImage, null);
+            processImage(originalImage, 0, null);
         }
     };
 
@@ -848,7 +846,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 
                 {imageSrc ? (
                     <div className="flex-grow flex flex-col min-h-0">
-                         <div className="flex-grow min-h-0 relative mb-4" ref={previewContainerRef}>
+                        <div className="flex-grow min-h-0 relative mb-4" ref={previewContainerRef} onDragStart={(e) => e.preventDefault()}>
                             <ScrollArea className="w-full h-full border rounded-lg">
                                 <div 
                                     className="relative w-fit h-fit mx-auto"
@@ -857,10 +855,10 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                     onMouseUp={handleCropMouseUp}
                                     onMouseLeave={handleCropMouseUp}
                                 >
-                                    <img src={imageSrc} alt="Processed document" className={cn("max-w-full max-h-full", isCropping && "cursor-crosshair")} />
-                                    {isCropping && cropData && (
+                                    <img src={imageSrc} alt="Processed document" className={cn("max-w-full max-h-full", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
+                                    {isCropping && cropData && cropData.width > 0 && cropData.height > 0 && (
                                         <div
-                                            className="absolute border-2 border-dashed border-primary bg-primary/20"
+                                            className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
                                             style={{
                                                 left: cropData.x,
                                                 top: cropData.y,
@@ -877,7 +875,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                              <div className="flex items-center gap-2">
                                 <Button onClick={handleRotate} variant="outline" size="icon"><RotateCw className="h-4 w-4" /></Button>
                                 <Button onClick={() => setIsCropping(!isCropping)} variant={isCropping ? "default" : "outline"} size="icon"><Crop className="h-4 w-4" /></Button>
-                                <Button onClick={resetEdits} variant="outline" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                <Button onClick={resetEdits} variant="outline" size="icon" aria-label="Restablecer edición"><RotateCcw className="h-4 w-4 text-destructive" /></Button>
                                 {isCropping && (
                                     <Button onClick={handleApplyCrop} variant="secondary" className="flex-1">
                                         <Check className="mr-2 h-4 w-4" /> Aplicar Recorte
