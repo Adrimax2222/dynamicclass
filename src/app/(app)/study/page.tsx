@@ -101,23 +101,27 @@ export default function StudyPage() {
   
   // Update time left when mode or phase changes
   useEffect(() => {
-    setTimeLeft(getInitialTime());
-  }, [mode, phase, getInitialTime]);
+    if (!isActive) {
+      setTimeLeft(getInitialTime());
+    }
+  }, [mode, phase, getInitialTime, isActive]);
 
   // Audio playback effect
    useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    if (selectedSound) {
-      if (audio.src !== selectedSound.url) {
+    if (selectedSound && audio.src !== selectedSound.url) {
         audio.src = selectedSound.url;
-      }
-      audio.loop = true;
-      audio.volume = volume / 100;
-      audio.play().catch(error => console.error("Error playing audio:", error));
+        audio.load();
+    }
+    
+    if (selectedSound) {
+        audio.loop = true;
+        audio.volume = volume / 100;
+        audio.play().catch(error => console.error("Error playing audio:", error));
     } else {
-      audio.pause();
+        audio.pause();
     }
   }, [selectedSound, volume]);
 
@@ -463,3 +467,5 @@ export default function StudyPage() {
     </div>
   );
 }
+
+    
