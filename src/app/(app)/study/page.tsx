@@ -377,7 +377,7 @@ export default function StudyPage() {
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
                 <ChevronLeft />
             </Button>
-            <div className="flex items-center gap-2">
+            <div className="flex-1 flex justify-center items-center gap-2">
                 <h1 className="text-lg font-bold">Modo Estudio</h1>
                 <ScannerDialog>
                     <Button variant="ghost" size="icon">
@@ -824,19 +824,35 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
 
         const img = new Image();
         img.onload = () => {
-            const previewContainer = previewContainerRef.current!;
-            const renderedImgElement = previewContainer.querySelector('img');
-            if (!renderedImgElement) return;
+            const container = previewContainerRef.current!;
+            const renderedImg = container.querySelector('img');
+            if (!renderedImg) return;
+            
+            const { naturalWidth, naturalHeight } = img;
+            const { clientWidth, clientHeight } = renderedImg;
 
-            const scaleX = img.naturalWidth / renderedImgElement.clientWidth;
-            const scaleY = img.naturalHeight / renderedImgElement.clientHeight;
+            const imageAspectRatio = naturalWidth / naturalHeight;
+            const containerAspectRatio = container.clientWidth / container.clientHeight;
 
-            const offsetX = (renderedImgElement.offsetWidth - previewContainer.clientWidth) / 2;
-            const offsetY = (renderedImgElement.offsetHeight - previewContainer.clientHeight) / 2;
+            let renderWidth: number, renderHeight: number;
+            let offsetX = 0, offsetY = 0;
 
+            if (imageAspectRatio > containerAspectRatio) {
+                renderWidth = container.clientWidth;
+                renderHeight = renderWidth / imageAspectRatio;
+                offsetY = (container.clientHeight - renderHeight) / 2;
+            } else {
+                renderHeight = container.clientHeight;
+                renderWidth = renderHeight * imageAspectRatio;
+                offsetX = (container.clientWidth - renderWidth) / 2;
+            }
+
+            const scaleX = naturalWidth / renderWidth;
+            const scaleY = naturalHeight / renderHeight;
+            
             const actualCropData: CropData = {
-                x: (activePage.crop!.x + offsetX) * scaleX,
-                y: (activePage.crop!.y + offsetY) * scaleY,
+                x: (activePage.crop!.x - offsetX) * scaleX,
+                y: (activePage.crop!.y - offsetY) * scaleY,
                 width: activePage.crop!.width * scaleX,
                 height: activePage.crop!.height * scaleY,
             };
@@ -918,7 +934,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
     
     const renderCaptureUI = () => {
         return (
-            <div className={cn("flex flex-col items-center justify-center space-y-4 py-4", pages.length > 0 ? "h-auto" : "flex-grow w-full")}>
+             <div className="flex flex-col items-center justify-center space-y-4 p-4 h-full">
                 <Button onClick={getCameraPermission} className="w-full max-w-xs">
                     <Camera className="mr-2 h-4 w-4" /> Usar Cámara
                 </Button>
@@ -948,8 +964,8 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex-grow flex flex-col min-h-0 space-y-4">
-                    {isCameraActive ? (
+                 <div className="flex-grow flex flex-col min-h-0 space-y-4">
+                    {isCameraActive && (
                         <div className="absolute inset-0 bg-background/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
                             <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
                             <div className="flex items-center gap-4 mt-4">
@@ -961,102 +977,100 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 </Button>
                             </div>
                         </div>
-                    ) : null}
-
-                    {mode === 'capture' && <div className="absolute inset-x-0 inset-y-0 bg-background/50 z-40 flex items-center justify-center">{renderCaptureUI()}</div>}
+                    )}
                     
                     <div
                         className="flex-grow min-h-0 relative border rounded-lg bg-muted/30 flex items-center justify-center"
                         onDragStart={(e) => e.preventDefault()}
                     >
-                         {pages.length > 0 && activePage ? (
-                            <div 
-                                ref={previewContainerRef}
-                                className="w-full h-full flex items-center justify-center p-2"
-                                onMouseDown={handleCropMouseDown}
-                                onMouseMove={handleCropMouseMove}
-                                onMouseUp={handleCropMouseUp}
-                                onMouseLeave={handleCropMouseUp}
-                            >
-                                <img src={activePage.processedSrc} alt={`Page ${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
-                                {isCropping && activePage.crop && (
-                                    <div
-                                        className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
-                                        style={{
-                                            left: activePage.crop.x,
-                                            top: activePage.crop.y,
-                                            width: activePage.crop.width,
-                                            height: activePage.crop.height,
-                                        }}
-                                    />
-                                )}
-                            </div>
-                        ) : (
-                           <div className="w-full h-full" />
+                        {mode === 'capture' ? renderCaptureUI() : (
+                            pages.length > 0 && activePage ? (
+                                <div 
+                                    ref={previewContainerRef}
+                                    className="w-full h-full flex items-center justify-center p-2"
+                                    onMouseDown={handleCropMouseDown}
+                                    onMouseMove={handleCropMouseMove}
+                                    onMouseUp={handleCropMouseUp}
+                                    onMouseLeave={handleCropMouseUp}
+                                >
+                                    <img src={activePage.processedSrc} alt={`Page ${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
+                                    {isCropping && activePage.crop && (
+                                        <div
+                                            className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
+                                            style={{
+                                                left: activePage.crop.x,
+                                                top: activePage.crop.y,
+                                                width: activePage.crop.width,
+                                                height: activePage.crop.height,
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            ) : renderCaptureUI()
                         )}
                     </div>
-
-                     <div className="flex-shrink-0 space-y-4 pt-2">
-                         <ScrollArea className="h-full">
-                             <div className="flex items-center gap-2 p-2">
-                                {pages.map((p, index) => (
-                                    <div key={p.id} className="relative group shrink-0" onClick={() => setActivePageId(p.id)}>
-                                         <img 
-                                            src={p.processedSrc} 
-                                            alt={`Thumbnail ${index + 1}`}
-                                            className={cn(
-                                                "h-20 w-20 object-cover rounded-md border-2 cursor-pointer transition-all",
-                                                activePageId === p.id ? "border-primary shadow-lg scale-105" : "border-transparent hover:border-primary/50"
-                                            )}
-                                         />
-                                         <Button 
-                                            variant="destructive" size="icon"
-                                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                            onClick={(e) => { e.stopPropagation(); deletePage(p.id); }}
-                                         >
-                                            <X className="h-4 w-4" />
-                                         </Button>
-                                         <div className="absolute bottom-1 left-1 bg-background/70 text-xs font-bold px-1.5 py-0.5 rounded-full">{index + 1}</div>
-                                    </div>
-                                ))}
-                                  <button
-                                    onClick={() => setMode('capture')}
-                                    className="h-20 w-20 flex flex-col items-center justify-center rounded-md border-2 border-dashed bg-muted/50 hover:bg-muted hover:border-primary transition-colors shrink-0"
-                                  >
-                                    <PlusCircle className="h-6 w-6 text-muted-foreground" />
-                                    <span className="text-xs mt-1 text-muted-foreground">Añadir</span>
-                                  </button>
-                            </div>
-                         </ScrollArea>
-                        
-                         <div className="flex items-center gap-2">
-                            <Button onClick={handleRotate} variant="outline" size="icon" disabled={!activePage || mode === 'capture'}><RotateCw className="h-4 w-4" /></Button>
-                            <Button onClick={() => setIsCropping(!isCropping)} variant={isCropping ? "default" : "outline"} size="icon" disabled={!activePage || mode === 'capture'} className={cn(isCropping && "ring-2 ring-primary ring-offset-2")}>
-                              <Crop className="h-4 w-4" />
-                            </Button>
-                            <Button onClick={resetEdits} variant="outline" size="icon" aria-label="Restablecer edición" disabled={!activePage || mode === 'capture'}><RotateCcw className="h-4 w-4 text-red-500" /></Button>
-                            {isCropping && (
-                                <Button onClick={handleApplyCrop} variant="secondary" className="flex-1">
-                                    <Check className="mr-2 h-4 w-4" /> Aplicar Recorte
-                                </Button>
-                            )}
+                    
+                    <ScrollArea className="flex-shrink-0">
+                         <div className="flex items-center gap-2 p-2">
+                            {pages.map((p, index) => (
+                                <div key={p.id} className="relative group shrink-0" onClick={() => setActivePageId(p.id)}>
+                                     <img 
+                                        src={p.processedSrc} 
+                                        alt={`Thumbnail ${index + 1}`}
+                                        className={cn(
+                                            "h-20 w-20 object-cover rounded-md border-2 cursor-pointer transition-all",
+                                            activePageId === p.id ? "border-primary shadow-lg scale-105" : "border-transparent hover:border-primary/50"
+                                        )}
+                                     />
+                                     <Button 
+                                        variant="destructive" size="icon"
+                                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={(e) => { e.stopPropagation(); deletePage(p.id); }}
+                                     >
+                                        <X className="h-4 w-4" />
+                                     </Button>
+                                     <div className="absolute bottom-1 left-1 bg-background/70 text-xs font-bold px-1.5 py-0.5 rounded-full">{index + 1}</div>
+                                </div>
+                            ))}
+                              <button
+                                onClick={() => setMode('capture')}
+                                className="h-20 w-20 flex flex-col items-center justify-center rounded-md border-2 border-dashed bg-muted/50 hover:bg-muted hover:border-primary transition-colors shrink-0"
+                              >
+                                <PlusCircle className="h-6 w-6 text-muted-foreground" />
+                                <span className="text-xs mt-1 text-muted-foreground">Añadir</span>
+                              </button>
                         </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="pdf-filename">Nombre del Archivo</Label>
-                            <Input id="pdf-filename" value={fileName} onChange={e => setFileName(e.target.value)} />
-                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <Button onClick={resetScanner} variant="outline">
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Limpiar Todo
-                            </Button>
-                            <Button onClick={downloadAsPDF} disabled={isSaving || pages.length === 0}>
-                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Download className="mr-2 h-4 w-4" />}
-                                Descargar PDF
-                            </Button>
-                        </div>
-                    </div>
+                    </ScrollArea>
                 </div>
+                
+                <DialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
+                     <div className="flex items-center gap-2">
+                        <Button onClick={handleRotate} variant="outline" size="icon" disabled={!activePage}><RotateCw className="h-4 w-4" /></Button>
+                        <Button onClick={() => setIsCropping(!isCropping)} variant={isCropping ? "default" : "outline"} size="icon" disabled={!activePage} className={cn(isCropping && "ring-2 ring-primary ring-offset-2")}>
+                          <Crop className="h-4 w-4" />
+                        </Button>
+                        <Button onClick={resetEdits} variant="outline" size="icon" aria-label="Restablecer edición" disabled={!activePage}><RotateCcw className="h-4 w-4 text-red-500" /></Button>
+                        {isCropping && (
+                            <Button onClick={handleApplyCrop} variant="secondary" className="flex-1">
+                                <Check className="mr-2 h-4 w-4" /> Aplicar Recorte
+                            </Button>
+                        )}
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="pdf-filename">Nombre del Archivo</Label>
+                        <Input id="pdf-filename" value={fileName} onChange={e => setFileName(e.target.value)} />
+                     </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button onClick={resetScanner} variant="outline">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Limpiar Todo
+                        </Button>
+                        <Button onClick={downloadAsPDF} disabled={isSaving || pages.length === 0}>
+                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Download className="mr-2 h-4 w-4" />}
+                            Descargar PDF
+                        </Button>
+                    </div>
+                </DialogFooter>
                  <canvas ref={canvasRef} className="hidden" />
             </DialogContent>
         </Dialog>
