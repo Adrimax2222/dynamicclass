@@ -252,17 +252,21 @@ export default function StudyPage() {
   };
 
   const handleToggle = () => {
-    if (!isActive) {
-        lastLoggedMinuteRef.current = Math.floor((modes[mode].focus * 60 - timeLeft) / 60);
-    }
     const audio = audioRef.current;
-    if (audio && selectedSound) {
-        if (audio.paused) {
-            audio.play().catch(error => console.log("Esperando interacción del usuario..."));
+    if (isActive) {
+        // If we are pausing
+        if (audio) {
+            audio.pause();
+        }
+    } else {
+        // If we are starting
+        lastLoggedMinuteRef.current = Math.floor((modes[mode].focus * 60 - timeLeft) / 60);
+        if (audio && selectedSound && audio.paused) {
+            audio.play().catch(error => console.log("Error playing sound on start:", error));
         }
     }
     setIsActive(!isActive);
-  }
+}
 
   const handleReset = () => {
     setIsActive(false);
@@ -287,10 +291,20 @@ export default function StudyPage() {
   };
 
   const handleSoundSelect = (sound: Sound) => {
+      const audio = audioRef.current;
+      if (!audio) return;
+
       if (selectedSound?.id === sound?.id) {
           setSelectedSound(null);
+          audio.pause();
       } else {
           setSelectedSound(sound);
+          if (sound) {
+            audio.src = sound.url;
+            if (isActive) { // Only play if timer is active
+                audio.play().catch(error => console.log("Error playing new sound:", error));
+            }
+          }
       }
   }
 
@@ -635,5 +649,3 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
         </Dialog>
     )
 }
-
-    
