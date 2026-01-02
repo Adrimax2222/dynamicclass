@@ -110,6 +110,8 @@ export default function StudyPage() {
    useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    
+    audio.crossOrigin = 'anonymous';
 
     if (selectedSound) {
       if (audio.src !== selectedSound.url) {
@@ -117,12 +119,12 @@ export default function StudyPage() {
         audio.load();
       }
       audio.loop = true;
-      audio.volume = 1.0;
+      audio.volume = volume / 100;
       audio.play().catch(error => console.error("Error playing audio:", error));
     } else {
       audio.pause();
     }
-  }, [selectedSound]);
+  }, [selectedSound, volume]);
 
   // Handle streak logic
   const handleStreak = useCallback(async () => {
@@ -242,9 +244,6 @@ export default function StudyPage() {
   const handleVolumeChange = (value: number[]) => {
     const newVolume = value[0];
     setVolume(newVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = newVolume / 100;
-    }
   };
 
   const handleSoundSelect = (sound: Sound) => {
