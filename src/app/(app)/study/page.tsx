@@ -71,6 +71,15 @@ const sounds: Sound[] = [
     { id: "library", label: "Biblioteca", icon: BookOpen, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.firebasestorage.app/o/biblioteca.mp3?alt=media&token=b60acf9f-d0c9-40f5-9cf4-0e63af7d9385" },
 ];
 
+const playlists = [
+    { id: "lofi", name: "Lofi", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DZ06evO0FDzS8?utm_source=generator" },
+    { id: "hits", name: "Exitos España", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DXaxEKcoCdWHD?utm_source=generator" },
+    { id: "jazz", name: "Jazz", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DXbITWG1ZJKYt?utm_source=generator" },
+    { id: "vgm", name: "Videojuegos", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DXdfOcg1fm0VG?utm_source=generator" },
+    { id: "focus", name: "Focus", url: "https://open.spotify.com/embed/playlist/37i9dQZF1DWZeKCadgRdKQ?utm_source=generator" },
+];
+
+
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
 
 export default function StudyPage() {
@@ -84,6 +93,8 @@ export default function StudyPage() {
   const [isActive, setIsActive] = useState(false);
   const [selectedSound, setSelectedSound] = useState<Sound>(null);
   const [volume, setVolume] = useState(100);
+  const [activePlaylist, setActivePlaylist] = useState(playlists[0]);
+
 
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -117,9 +128,7 @@ export default function StudyPage() {
       }
       if (audio.paused) {
         audio.play().catch(error => {
-          // This can happen if the user hasn't interacted with the page yet.
-          // The audio will play once they click anywhere.
-          console.log("Audio playback waiting for user interaction.", error);
+          console.log("Esperando interacción del usuario...");
         });
       }
     } else {
@@ -258,6 +267,13 @@ export default function StudyPage() {
       }
   }
 
+  const handlePlaylistChange = (playlistId: string) => {
+      const newPlaylist = playlists.find(p => p.id === playlistId);
+      if (newPlaylist) {
+          setActivePlaylist(newPlaylist);
+      }
+  }
+
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -290,7 +306,7 @@ export default function StudyPage() {
 
   return (
     <div className="flex flex-col h-screen bg-muted/30">
-        <audio ref={audioRef} crossOrigin="anonymous" loop volume={1.0} />
+        <audio ref={audioRef} crossOrigin="anonymous" loop />
         <header className="p-4 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ChevronLeft />
@@ -405,33 +421,41 @@ export default function StudyPage() {
                 </CardContent>
             </Card>
             
-            <WipDialog>
-                <Card className="w-full max-w-sm mx-auto shadow-lg cursor-pointer hover:border-primary/50 transition-colors">
-                    <CardHeader>
-                        <CardTitle className="text-base flex items-center gap-2">
-                            <Music className="h-5 w-5 text-primary"/>
-                            Control de Música
-                            <Badge variant="outline">Próximamente</Badge>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center gap-4">
-                            <div className="h-14 w-14 rounded-md bg-muted flex-shrink-0"></div>
-                            <div className="flex-1 space-y-1">
-                                <div className="h-4 w-3/4 rounded-md bg-muted"></div>
-                                <div className="h-3 w-1/2 rounded-md bg-muted/50"></div>
-                            </div>
-                        </div>
-                        <div className="flex justify-center items-center gap-6 text-muted-foreground">
-                            <Rewind className="h-6 w-6" />
-                            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-foreground">
-                                <Play className="h-6 w-6" />
-                            </div>
-                            <FastForward className="h-6 w-6" />
-                        </div>
-                    </CardContent>
-                </Card>
-            </WipDialog>
+            <Card className="w-full max-w-sm mx-auto shadow-lg">
+                <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                        <Music className="h-5 w-5 text-primary"/>
+                        Control de Música
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                        {playlists.map(playlist => (
+                            <Button 
+                                key={playlist.id} 
+                                variant={activePlaylist.id === playlist.id ? "default" : "secondary"}
+                                size="sm"
+                                className="text-xs h-7 rounded-full"
+                                onClick={() => handlePlaylistChange(playlist.id)}
+                            >
+                                {playlist.name}
+                            </Button>
+                        ))}
+                    </div>
+                    <div className="aspect-video w-full">
+                        <iframe 
+                            style={{borderRadius: "12px"}}
+                            src={activePlaylist.url}
+                            width="100%" 
+                            height="100%" 
+                            frameBorder="0" 
+                            allowFullScreen
+                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                            loading="lazy"
+                        ></iframe>
+                    </div>
+                </CardContent>
+            </Card>
 
              <Card className="w-full max-w-sm mx-auto shadow-lg">
                 <CardHeader>
@@ -470,5 +494,3 @@ export default function StudyPage() {
     </div>
   );
 }
-
-    
