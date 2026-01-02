@@ -105,7 +105,8 @@ function RankingTab({ user, isOpen }: { user: User; isOpen: boolean }) {
             try {
                 const querySnapshot = await getDocs(usersQuery);
                 const usersList = querySnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
-                setRanking(usersList);
+                const filteredList = usersList.filter(u => u.role !== 'admin');
+                setRanking(filteredList);
             } catch (error) {
                 console.error("Error fetching ranking:", error);
             } finally {
