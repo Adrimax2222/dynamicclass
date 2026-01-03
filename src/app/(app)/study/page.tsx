@@ -52,7 +52,8 @@ import {
   X,
   Check,
   Loader2,
-  Palette
+  Palette,
+  Save
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -665,6 +666,7 @@ interface Page {
 }
 
 function ScannerDialog({ children }: { children: React.ReactNode }) {
+    const { saveScannedDocs } = useApp();
     const [pages, setPages] = useState<Page[]>([]);
     const [activePageId, setActivePageId] = useState<number | null>(null);
     const [mode, setMode] = useState<'capture' | 'preview'>('capture');
@@ -950,20 +952,23 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             
             pdf.save(fileName);
             
-            // Save to localStorage
-            const savedDocsString = localStorage.getItem('scannedDocuments');
-            const savedDocs = savedDocsString ? JSON.parse(savedDocsString) : [];
-            const newDoc = {
-                id: Date.now(),
-                name: fileName,
-                timestamp: new Date().toISOString(),
-                thumbnail: pages[0].processedSrc,
-                pages: pages.map(p => p.processedSrc)
-            };
-            savedDocs.push(newDoc);
-            localStorage.setItem('scannedDocuments', JSON.stringify(savedDocs));
+            if (saveScannedDocs) {
+              const savedDocsString = localStorage.getItem('scannedDocuments');
+              const savedDocs = savedDocsString ? JSON.parse(savedDocsString) : [];
+              const newDoc = {
+                  id: Date.now(),
+                  name: fileName,
+                  timestamp: new Date().toISOString(),
+                  thumbnail: pages[0].processedSrc,
+                  pages: pages.map(p => p.processedSrc)
+              };
+              savedDocs.push(newDoc);
+              localStorage.setItem('scannedDocuments', JSON.stringify(savedDocs));
+              toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${fileName}" en tu historial.` });
+            } else {
+              toast({ title: 'PDF Descargado', description: `El guardado en el historial está desactivado.` });
+            }
 
-            toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${fileName}" en tu historial.` });
         } catch (error) {
             console.error("Error creating PDF", error);
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo generar el PDF.' });

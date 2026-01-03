@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ChevronLeft, FileText, Download, Eye, Trash2 } from 'lucide-react';
+import { ChevronLeft, FileText, Download, Eye, Trash2, Settings, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +38,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Link from 'next/link';
 
 function ScannerHistoryClient() {
     const [documents, setDocuments] = useState<ScannedDocument[]>([]);
@@ -111,7 +113,7 @@ function ScannerHistoryClient() {
     }
 
     return (
-        <div className="columns-1 sm:columns-2 gap-4 space-y-4">
+        <div className="columns-1 md:columns-2 gap-4 space-y-4">
             {documents.map(doc => (
                 <div key={doc.id} className="break-inside-avoid">
                     <Card className="overflow-hidden group relative transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
@@ -210,17 +212,25 @@ export default function ScannerHistoryPage() {
             </header>
             
             <Card className="mb-8 bg-muted/30 border-dashed">
-                <CardHeader className="flex flex-row items-center gap-4">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                      <div className="p-3 bg-primary/10 rounded-lg">
                         <FileText className="h-6 w-6 text-primary" />
                     </div>
-                    <div>
+                    <div className='flex-1'>
                         <h2 className="font-semibold">Tu Biblioteca Digital</h2>
                         <CardDescription>
                             Aquí encontrarás todos los documentos que has creado con el escáner.
                         </CardDescription>
                     </div>
                 </CardHeader>
+                <CardContent>
+                    <Alert className="bg-yellow-100/50 dark:bg-yellow-900/20 border-yellow-500/30 text-yellow-800 dark:text-yellow-200">
+                        <Info className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                           Puedes desactivar el guardado automático del historial desde la página de <Link href="/settings" className="font-bold underline">Ajustes</Link>.
+                        </AlertDescription>
+                    </Alert>
+                </CardContent>
             </Card>
 
             <main>

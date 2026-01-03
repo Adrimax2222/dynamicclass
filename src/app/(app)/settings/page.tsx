@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore } from "@/firebase";
@@ -46,7 +47,7 @@ import { doc, increment, updateDoc } from "firebase/firestore";
 
 
 export default function SettingsPage() {
-  const { user, theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, toggleChatBubble } = useApp();
+  const { user, theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, toggleChatBubble, saveScannedDocs, setSaveScannedDocs } = useApp();
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
@@ -101,9 +102,9 @@ export default function SettingsPage() {
       <div className="space-y-8">
         <Card>
           <CardHeader>
-            <CardTitle>Apariencia</CardTitle>
+            <CardTitle>Apariencia y Accesibilidad</CardTitle>
             <CardDescription>
-              Personaliza el aspecto de la aplicación.
+              Personaliza el aspecto y el comportamiento de la aplicación.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -128,6 +129,18 @@ export default function SettingsPage() {
                     id="ai-bubble-switch"
                     checked={isChatBubbleVisible}
                     onCheckedChange={toggleChatBubble}
+                />
+            </div>
+            <Separator />
+             <div className="flex items-center justify-between">
+                <Label htmlFor="save-scans-switch" className="flex items-center gap-2">
+                    <Save className="h-5 w-5" />
+                    <span>Guardar archivos en el historial</span>
+                </Label>
+                <Switch
+                    id="save-scans-switch"
+                    checked={saveScannedDocs}
+                    onCheckedChange={setSaveScannedDocs}
                 />
             </div>
           </CardContent>

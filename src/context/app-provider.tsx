@@ -31,6 +31,10 @@ export interface AppContextType {
   activeChatId: string | null;
   setActiveChatId: (chatId: string | null) => void;
   isChatsLoading: boolean;
+
+  // Scanner settings
+  saveScannedDocs: boolean;
+  setSaveScannedDocs: (save: boolean) => void;
 }
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
@@ -43,6 +47,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('light');
   const [isChatBubbleVisible, setIsChatBubbleVisible] = useState(true);
   const [isChatDrawerOpen, setChatDrawerOpen] = useState(false);
+  const [saveScannedDocs, setSaveScannedDocsState] = useState(true);
   
   // Chat history state
   const [chats, setChats] = useState<Chat[]>([]);
@@ -56,6 +61,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const storedTheme = (localStorage.getItem('classconnect-theme') as Theme) || 'light';
     setThemeState(storedTheme);
     document.documentElement.classList.add(storedTheme);
+    
+    const storedSaveDocs = localStorage.getItem('saveScannedDocs');
+    if (storedSaveDocs !== null) {
+      setSaveScannedDocsState(JSON.parse(storedSaveDocs));
+    }
   }, []);
 
   useEffect(() => {
@@ -146,6 +156,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.add(newTheme);
   }, []);
 
+  const setSaveScannedDocs = useCallback((save: boolean) => {
+      setSaveScannedDocsState(save);
+      localStorage.setItem('saveScannedDocs', JSON.stringify(save));
+  }, []);
+
   const login = (userData: User) => {
     setUser(userData);
   };
@@ -202,6 +217,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     activeChatId,
     setActiveChatId,
     isChatsLoading,
+    // Scanner settings
+    saveScannedDocs,
+    setSaveScannedDocs,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
