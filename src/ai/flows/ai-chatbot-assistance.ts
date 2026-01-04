@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -32,9 +33,8 @@ const assistancePrompt = ai.definePrompt({
   name: 'chatbotAssistancePrompt',
   model: 'googleai/gemini-1.5-flash',
   input: { schema: AIChatbotAssistanceInputSchema },
-  output: { 
+  output: {
     schema: AIChatbotAssistanceOutputSchema,
-    format: 'json' 
   },
   config: {
     temperature: 0.7,
@@ -64,23 +64,11 @@ Eres ADRIMAX AI, un asistente educativo experto, amigable y motivador.
 **Pregunta del estudiante:**
 {{{query}}}
 
-{{#if responseLength}}
-{{#if (eq responseLength "breve")}}
-**Formato:** Respuesta concisa (máximo 3 párrafos). Ve directo al punto.
-{{/if}}
-{{#if (eq responseLength "detallada")}}
-**Formato:** Respuesta completa con:
-- Explicación profunda del concepto
-- Ejemplos prácticos y aplicaciones reales
-- Analogías para facilitar la comprensión
-- Ejercicios o preguntas para reflexionar
-{{/if}}
-{{#if (eq responseLength "normal")}}
-**Formato:** Respuesta equilibrada y clara. Explica bien sin extenderte demasiado.
-{{/if}}
-{{else}}
-**Formato:** Respuesta clara y equilibrada.
-{{/if}}
+**Formato de respuesta:**
+Ajusta la longitud según el parámetro "{{responseLength}}":
+- Si es "breve": Respuesta concisa (máximo 3 párrafos). Ve directo al punto.
+- Si es "detallada": Respuesta completa con explicación profunda, ejemplos prácticos, analogías y ejercicios.
+- Si es "normal" o vacío: Respuesta equilibrada y clara.
 
 **Instrucciones importantes:**
 1. Usa Markdown para formatear (negritas, listas, código si es necesario)
@@ -102,75 +90,38 @@ Proporciona tu respuesta en formato JSON con la clave "response".
 export async function aiChatbotAssistance(
   input: AIChatbotAssistanceInput
 ): Promise<AIChatbotAssistanceOutput> {
-  
-  const startTime = Date.now();
-  
   try {
-    // 1. Validar entrada
     const validatedInput = AIChatbotAssistanceInputSchema.parse(input);
-    
-    console.log('📝 Procesando consulta:', {
-      queryLength: validatedInput.query.length,
-      responseLength: validatedInput.responseLength,
-      hasContext: !!validatedInput.context,
-      hasSubject: !!validatedInput.subject,
-    });
 
-    // 2. Llamar al modelo con retry logic
-    let retries = 0;
-    const maxRetries = 3;
-    let lastError: Error | null = null;
+    const result = await assistancePrompt(validatedInput);
+    const output = result.output();
 
-    while (retries < maxRetries) {
-      try {
-        const result = await assistancePrompt(validatedInput);
-        const output = result.output();
-
-        if (!output || !output.response) {
-          throw new Error('La IA no generó una respuesta válida (output vacío)');
-        }
-
-        const duration = Date.now() - startTime;
-        console.log(`✅ Respuesta generada exitosamente en ${duration}ms`);
-
-        return {
-          response: output.response.trim(),
-        };
-
-      } catch (error) {
-        lastError = error as Error;
-        retries++;
-        
-        if (retries < maxRetries) {
-          console.warn(`⚠️ Intento ${retries} falló, reintentando...`, error);
-          // Espera exponencial: 1s, 2s, 4s
-          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retries - 1)));
-        }
-      }
-    }
-
-    // Si llegamos aquí, todos los reintentos fallaron
-    throw lastError || new Error('Error desconocido después de reintentos');
-
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    console.error(`❌ Error en aiChatbotAssistance después de ${duration}ms:`, error);
-
-    // Determinar mensaje de error específico
-    let errorMessage = 'Lo siento, he encontrado un problema al procesar tu solicitud.';
-
-    if (error instanceof z.ZodError) {
-      errorMessage = 'La consulta no es válida: ' + error.errors[0].message;
-    } else if ((error as Error).message?.includes('API key')) {
-      errorMessage = 'Error de configuración: La API key no es válida. Contacta al administrador.';
-    } else if ((error as Error).message?.includes('quota')) {
-      errorMessage = 'Se ha alcanzado el límite de uso de la API. Por favor, intenta más tarde.';
-    } else if ((error as Error).message?.includes('timeout')) {
-      errorMessage = 'La solicitud tardó demasiado. Por favor, intenta con una consulta más corta.';
+    if (!output || !output.response) {
+      throw new Error('La IA no generó una respuesta válida.');
     }
 
     return {
-      response: `${errorMessage}\n\n*Si el problema persiste, por favor contacta al soporte técnico.*`,
+      response: output.response.trim(),
+    };
+  } catch (error) {
+    console.error(`❌ Error en aiChatbotAssistance:`, error);
+
+    let userMessage = 'Lo siento, he encontrado un problema al procesar tu solicitud.';
+    if (error instanceof z.ZodError) {
+        userMessage = 'La consulta no es válida: ' + error.errors[0].message;
+    } else if (error instanceof Error) {
+        if (error.message.includes('API key') || error.message.includes('API_KEY')) {
+            userMessage = 'Error de configuración. Contacta al administrador.';
+        } else if (error.message.includes('quota') || error.message.includes('exceeded')) {
+            userMessage = 'Se ha alcanzado el límite de uso de la API. Por favor, intenta más tarde.';
+        } else if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+            userMessage = 'La solicitud tardó demasiado. Por favor, intenta con una consulta más corta.';
+        }
+    }
+    
+    // Devolver siempre una respuesta con el formato esperado
+    return {
+      response: `${userMessage}\n\n*Si el problema persiste, por favor contacta al soporte técnico.*`,
     };
   }
 }
@@ -191,7 +142,7 @@ export async function verifyAISetup(): Promise<{ success: boolean; message: stri
     if (testResult.response.includes('Error') || testResult.response.includes('problema')) {
       return {
         success: false,
-        message: 'La IA respondió pero con errores',
+        message: `La IA respondió con un error: ${testResult.response}`,
       };
     }
 

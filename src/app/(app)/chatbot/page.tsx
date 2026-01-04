@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -13,6 +14,8 @@ import {
   Grid,
   BrainCircuit,
   RefreshCw,
+  Copy,
+  Check,
 } from "lucide-react";
 
 // UI Components
@@ -105,6 +108,7 @@ export default function ChatbotPage() {
   const [responseLength, setResponseLength] = useState<ResponseLength>('normal');
   const [error, setError] = useState<ErrorState>({ hasError: false, message: '', canRetry: false });
   const [pendingMessage, setPendingMessage] = useState<string>("");
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -235,17 +239,10 @@ export default function ChatbotPage() {
         setInput("");
       }
 
-      // Call the AI flow with timeout
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout: La solicitud tardó demasiado')), 30000);
-      });
-
-      const aiPromise = aiChatbotAssistance({ 
+      const result = await aiChatbotAssistance({ 
         query: messageToSend,
         responseLength,
       });
-
-      const result = await Promise.race([aiPromise, timeoutPromise]) as Awaited<ReturnType<typeof aiChatbotAssistance>>;
 
       // Validate response
       if (!result || !result.response || result.response.trim() === '') {
@@ -317,6 +314,17 @@ export default function ChatbotPage() {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Función para copiar texto al portapapeles
+  const copyToClipboard = async (text: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (err) {
+      console.error('Error al copiar:', err);
+    }
+  };
+
   // ============= RENDER CONDITIONS =============
 
   const showWelcomeScreen = !isChatsLoading && (!activeChatId || (activeChatId && messages.length === 0 && !isMessagesLoading));
@@ -327,7 +335,7 @@ export default function ChatbotPage() {
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
       {/* Header */}
-      <header className="border-b p-4 flex items-center justify-between relative">
+      <header className="border-b p-4 flex items-center justify-between relative bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <ChatHistorySheet
           chats={chats}
           isChatsLoading={isChatsLoading}
@@ -338,9 +346,14 @@ export default function ChatbotPage() {
         />
         
         <div className="flex flex-1 items-center justify-center gap-2">
-          <Sparkles className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-bold font-headline tracking-tighter">ADRIMAX AI</h1>
-          <Badge variant="outline">Beta</Badge>
+          <div className="relative">
+            <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+            <div className="absolute inset-0 bg-primary/20 blur-xl animate-pulse"></div>
+          </div>
+          <h1 className="text-xl font-bold font-headline tracking-tighter bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            ADRIMAX AI
+          </h1>
+          <Badge variant="outline" className="text-xs">Beta</Badge>
         </div>
         
         <AiModulesSheet />
@@ -372,56 +385,85 @@ export default function ChatbotPage() {
               <div
                 key={message.id}
                 className={cn(
-                  "flex items-end gap-3",
+                  "flex items-end gap-3 message-enter",
                   message.role === "user" ? "justify-end" : "justify-start"
                 )}
               >
                 {message.role !== "user" && (
-                  <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
+                  <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center ring-2 ring-primary/20">
                     <Logo className="h-5 w-5" />
                   </Avatar>
                 )}
                 
                 <div
                   className={cn(
-                    "max-w-[80%] rounded-lg p-3",
+                    "max-w-[80%] rounded-lg p-3 shadow-sm transition-all hover:shadow-md group relative",
                     message.role === "user"
                       ? "bg-primary text-primary-foreground"
                       : message.role === "assistant"
-                      ? "bg-muted"
+                      ? "bg-muted border border-border/50"
                       : "bg-destructive/10 text-destructive border border-destructive/20"
                   )}
                 >
+                  {/* Botón de copiar para mensajes de la IA */}
+                  {message.role === 'assistant' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity bg-background shadow-md hover:bg-accent"
+                      onClick={() => copyToClipboard(message.content, message.id)}
+                    >
+                      {copiedMessageId === message.id ? (
+                        <Check className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </Button>
+                  )}
+
                   {message.role === 'assistant' ? (
-                    <MarkdownRenderer content={message.content} />
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <MarkdownRenderer content={message.content} />
+                    </div>
                   ) : (
                     <div className="whitespace-pre-wrap break-words">{message.content}</div>
                   )}
-                  <p className="mt-1 text-right text-[10px] opacity-60">
+                  <p className="mt-2 text-right text-[10px] opacity-60 flex items-center justify-end gap-1">
+                    {message.role === "assistant" && (
+                      <Sparkles className="h-3 w-3" />
+                    )}
                     {formatTimestamp(message.timestamp)}
                   </p>
                 </div>
                 
                 {message.role === "user" && user && (
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-8 w-8 ring-2 ring-primary/20">
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+                      {user.name?.charAt(0)}
+                    </AvatarFallback>
                   </Avatar>
                 )}
               </div>
             ))
           )}
 
-          {/* Loading indicator */}
+          {/* Loading indicator with shimmer effect */}
           {isSending && (
             <div className="flex items-end gap-3 justify-start">
               <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
                 <Logo className="h-5 w-5" />
               </Avatar>
-              <div className="max-w-md rounded-lg p-3 bg-muted">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span className="text-sm text-muted-foreground">Pensando...</span>
+              <div className="max-w-md rounded-lg p-3 bg-muted space-y-2">
+                {/* Shimmer lines effect like Gemini */}
+                <div className="space-y-2">
+                  <div className="h-4 bg-gradient-to-r from-muted-foreground/20 via-muted-foreground/40 to-muted-foreground/20 rounded animate-shimmer bg-[length:200%_100%]" style={{ width: '90%' }}></div>
+                  <div className="h-4 bg-gradient-to-r from-muted-foreground/20 via-muted-foreground/40 to-muted-foreground/20 rounded animate-shimmer bg-[length:200%_100%]" style={{ width: '75%', animationDelay: '0.1s' }}></div>
+                  <div className="h-4 bg-gradient-to-r from-muted-foreground/20 via-muted-foreground/40 to-muted-foreground/20 rounded animate-shimmer bg-[length:200%_100%]" style={{ width: '85%', animationDelay: '0.2s' }}></div>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span className="animate-pulse">Pensando...</span>
                 </div>
               </div>
             </div>
@@ -454,7 +496,7 @@ export default function ChatbotPage() {
       )}
 
       {/* Input Area */}
-      <div className="mt-auto border-t bg-background p-4 space-y-2">
+      <div className="mt-auto border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-4 space-y-2">
         <div className="relative">
           <Textarea
             ref={textareaRef}
@@ -463,9 +505,9 @@ export default function ChatbotPage() {
                 ? "Debes iniciar sesión..."
                 : isInputDisabled
                 ? "Esperando respuesta..."
-                : "Escribe tu duda aquí..."
+                : "Escribe tu duda aquí... (Shift+Enter para nueva línea)"
             }
-            className="pr-12 min-h-[80px] resize-none"
+            className="pr-12 min-h-[80px] resize-none transition-all focus:ring-2 focus:ring-primary/20"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -477,11 +519,17 @@ export default function ChatbotPage() {
             disabled={isInputDisabled}
             maxLength={4000}
           />
-          <div className="absolute right-2 bottom-2">
+          <div className="absolute right-2 bottom-2 flex items-center gap-2">
+            {input.length > 3500 && (
+              <Badge variant="secondary" className="text-xs">
+                {input.length}/4000
+              </Badge>
+            )}
             <Button
               size="icon"
               onClick={() => handleSend()}
               disabled={isSending || !input.trim() || !user}
+              className="transition-all hover:scale-105"
             >
               {isSending ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -498,21 +546,39 @@ export default function ChatbotPage() {
             defaultValue={responseLength}
             disabled={isSending}
           >
-            <SelectTrigger className="w-full h-8 text-xs">
+            <SelectTrigger className="w-full h-9 text-xs border-border/50 hover:border-border transition-colors">
               <SelectValue placeholder="Longitud de respuesta" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="breve">⚡ Breve</SelectItem>
-              <SelectItem value="normal">📝 Normal</SelectItem>
-              <SelectItem value="detallada">📚 Detallada</SelectItem>
+              <SelectItem value="breve">
+                <div className="flex items-center gap-2">
+                  <span>⚡</span>
+                  <div className="text-left">
+                    <div className="font-medium">Breve</div>
+                    <div className="text-xs text-muted-foreground">Respuesta directa</div>
+                  </div>
+                </div>
+              </SelectItem>
+              <SelectItem value="normal">
+                <div className="flex items-center gap-2">
+                  <span>📝</span>
+                  <div className="text-left">
+                    <div className="font-medium">Normal</div>
+                    <div className="text-xs text-muted-foreground">Explicación clara</div>
+                  </div>
+                </div>
+              </SelectItem>
+              <SelectItem value="detallada">
+                <div className="flex items-center gap-2">
+                  <span>📚</span>
+                  <div className="text-left">
+                    <div className="font-medium">Detallada</div>
+                    <div className="text-xs text-muted-foreground">Con ejemplos y profundidad</div>
+                  </div>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
-          
-          {input.length > 3500 && (
-            <Badge variant="outline" className="text-xs">
-              {input.length}/4000
-            </Badge>
-          )}
         </div>
       </div>
     </div>
