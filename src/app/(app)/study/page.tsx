@@ -53,7 +53,8 @@ import {
   Check,
   Loader2,
   Palette,
-  Save
+  Save,
+  Sparkles,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -589,57 +590,69 @@ export default function StudyPage() {
                         Herramientas
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4">
-                   <div className="flex">
-                        <GradeCalculatorDialog isScheduleAvailable={isScheduleAvailable} user={user}>
-                            <div className="relative p-4 rounded-lg bg-gradient-to-br from-red-400 to-pink-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform flex-1">
-                                <div className="relative z-10">
-                                    <h3 className="font-bold">Nota Necesaria</h3>
-                                    <p className="text-xs opacity-80">Calcula cuánto necesitas para aprobar.</p>
-                                </div>
-                                <Percent className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
-                                <Calculator className="absolute top-2 right-2 h-6 w-6 opacity-20" />
-                            </div>
-                        </GradeCalculatorDialog>
-                   </div>
-                   <div className="flex">
-                        <ScannerDialog>
-                            <div
-                                className="relative p-4 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform flex-1"
-                            >
-                                <div className="relative z-10">
-                                    <h3 className="font-bold">Escanear</h3>
-                                    <p className="text-xs opacity-80">Digitaliza tus apuntes al instante.</p>
-                                </div>
-                                <ScanLine className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
-                            </div>
-                        </ScannerDialog>
-                   </div>
-                   <div className="flex">
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <div className="relative p-4 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform flex-1">
+                <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="flex">
+                            <GradeCalculatorDialog isScheduleAvailable={isScheduleAvailable} user={user}>
+                                <div className="relative p-4 rounded-lg bg-gradient-to-br from-red-400 to-pink-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform flex-1">
                                     <div className="relative z-10">
-                                        <h3 className="font-bold">Calculadora</h3>
-                                        <p className="text-xs opacity-80">Acceso rápido a la calculadora científica.</p>
+                                        <h3 className="font-bold">Nota Necesaria</h3>
+                                        <p className="text-xs opacity-80">Calcula cuánto necesitas para aprobar.</p>
                                     </div>
-                                    <Sigma className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
+                                    <Percent className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
+                                    <Calculator className="absolute top-2 right-2 h-6 w-6 opacity-20" />
                                 </div>
-                            </DialogTrigger>
-                            <ScienceCalculatorDialog />
-                        </Dialog>
-                   </div>
-                   <div className="flex">
-                        <Link href="/scanner" className="flex-1">
-                            <div className="relative p-4 rounded-lg bg-gradient-to-br from-purple-400 to-violet-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform flex-1 h-full">
-                                <div className="relative z-10">
-                                    <h3 className="font-bold">Documentos</h3>
-                                    <p className="text-xs opacity-80">Historial de tus apuntes escaneados.</p>
+                            </GradeCalculatorDialog>
+                       </div>
+                       <div className="flex">
+                            <ScannerDialog>
+                                <div
+                                    className="relative p-4 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform flex-1"
+                                >
+                                    <div className="relative z-10">
+                                        <h3 className="font-bold">Escanear</h3>
+                                        <p className="text-xs opacity-80">Digitaliza tus apuntes al instante.</p>
+                                    </div>
+                                    <ScanLine className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
                                 </div>
-                                <FileCheck2 className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
-                            </div>
-                        </Link>
-                   </div>
+                            </ScannerDialog>
+                       </div>
+                       <div className="flex">
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <div className="relative p-4 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform flex-1">
+                                        <div className="relative z-10">
+                                            <h3 className="font-bold">Calculadora</h3>
+                                            <p className="text-xs opacity-80">Acceso rápido a la calculadora científica.</p>
+                                        </div>
+                                        <Sigma className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
+                                    </div>
+                                </DialogTrigger>
+                                <ScienceCalculatorDialog />
+                            </Dialog>
+                       </div>
+                       <div className="flex">
+                            <Link href="/scanner" className="flex-1">
+                                <div className="relative p-4 rounded-lg bg-gradient-to-br from-purple-400 to-violet-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform flex-1 h-full">
+                                    <div className="relative z-10">
+                                        <h3 className="font-bold">Documentos</h3>
+                                        <p className="text-xs opacity-80">Historial de tus apuntes escaneados.</p>
+                                    </div>
+                                    <FileCheck2 className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
+                                </div>
+                            </Link>
+                       </div>
+                    </div>
+                    <Link href="/editor" className="block mt-4">
+                        <div className="relative p-6 rounded-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-transform ring-2 ring-white/20 hover:ring-white/40">
+                             <div className="absolute inset-0 bg-black/10"></div>
+                             <Sparkles className="h-10 w-10 text-white/20 absolute -top-3 -right-2 animate-pulse-slow"/>
+                             <div className="relative z-10">
+                                <h3 className="text-lg font-bold">✨ MODO EDITOR MÁGICO</h3>
+                                <p className="text-sm opacity-80">Transforma tus apuntes con IA.</p>
+                             </div>
+                        </div>
+                    </Link>
                 </CardContent>
             </Card>
 
