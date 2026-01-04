@@ -1,16 +1,12 @@
-
 'use server';
 
 /**
- * @fileOverview Generates flashcards from a chat history.
- *
- * - generateFlashcards - A function that takes a chat history and returns a list of flashcards.
- * - GenerateFlashcardsInput - The input type for the generateFlashcards function.
- * - GenerateFlashcardsOutput - The return type for the generateFlashcards function.
+ * @fileOverview Generador de Flashcards de alto rendimiento.
+ * Configurado para Gemini 2.0 Flash (2026).
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import {z} from 'genkit';
 
 const GenerateFlashcardsInputSchema = z.object({
   chatHistory: z.array(z.object({
@@ -18,16 +14,19 @@ const GenerateFlashcardsInputSchema = z.object({
     content: z.string(),
   })).describe('El historial de la conversación del chat.'),
 });
+
 export type GenerateFlashcardsInput = z.infer<typeof GenerateFlashcardsInputSchema>;
 
 const FlashcardSchema = z.object({
   question: z.string().describe('La pregunta o el anverso de la tarjeta.'),
   answer: z.string().describe('La respuesta o el reverso de la tarjeta.'),
+  hint: z.string().describe('Información clave para el campo "Para Recordar".'),
 });
 
 const GenerateFlashcardsOutputSchema = z.object({
-  flashcards: z.array(FlashcardSchema).describe('Una lista de tarjetas didácticas generadas a partir del chat.'),
+  flashcards: z.array(FlashcardSchema).describe('Lista de tarjetas generadas.'),
 });
+
 export type GenerateFlashcardsOutput = z.infer<typeof GenerateFlashcardsOutputSchema>;
 
 export async function generateFlashcards(input: GenerateFlashcardsInput): Promise<GenerateFlashcardsOutput> {
@@ -36,15 +35,19 @@ export async function generateFlashcards(input: GenerateFlashcardsInput): Promis
 
 const prompt = ai.definePrompt({
   name: 'generateFlashcardsPrompt',
-  model: 'googleai/gemini-pro',
+  // Usamos el modelo principal de 2026
+  model: 'googleai/gemini-2.0-flash', 
   input: {schema: GenerateFlashcardsInputSchema},
   output: {schema: GenerateFlashcardsOutputSchema},
   prompt: `
-    Analiza el siguiente historial de chat y extrae los conceptos clave, definiciones y preguntas importantes.
-    Genera una lista de tarjetas didácticas (flashcards) basadas en esta información. Cada tarjeta debe tener una pregunta clara y una respuesta concisa.
-    Concéntrate en la información educativa y omite los saludos o conversaciones triviales.
-
-    Historial del Chat:
+    Actúa como un tutor experto. Tu misión es transformar la conversación en un set de estudio eficaz.
+    
+    REGLAS:
+    1. Extrae los conceptos más importantes del chat.
+    2. Crea tarjetas con preguntas claras y respuestas que ayuden a entender el "por qué" de las cosas.
+    3. Para el campo 'hint', genera una pista mnemotécnica o un dato curioso que ayude al estudiante cuando pulse "Repasar".
+    
+    HISTORIAL A ANALIZAR:
     {{#each chatHistory}}
       {{role}}: {{{content}}}
     {{/each}}
@@ -58,6 +61,7 @@ const generateFlashcardsFlow = ai.defineFlow(
     outputSchema: GenerateFlashcardsOutputSchema,
   },
   async input => {
+    // Este flujo se ejecutará en cuanto la cuota de la API se libere
     const {output} = await prompt(input);
     return output!;
   }

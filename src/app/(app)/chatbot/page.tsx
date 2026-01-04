@@ -9,50 +9,22 @@ import {
   Sparkles,
   MessageSquarePlus,
   Trash2,
-  PanelLeftClose,
-  PanelLeftOpen,
   History,
   AlertTriangle,
-  MessageCircle,
   Grid,
   BrainCircuit,
-  ClipboardList,
-  FileQuestion,
-  GraduationCap,
-  Presentation,
-  Music,
-  Video,
 } from "lucide-react";
+
+// UI Components (using alias paths)
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import type { ChatMessage, Chat, ResponseLength } from "@/lib/types";
-import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance";
-import { useApp } from "@/lib/hooks/use-app";
-import { Logo } from "@/components/icons";
-import { MarkdownRenderer } from "@/components/chatbot/markdown-renderer";
-import {
-  useFirestore,
-  useCollection,
-  useMemoFirebase,
-} from "@/firebase";
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-  query,
-  orderBy,
-  Timestamp,
-  doc,
-  deleteDoc,
-  writeBatch,
-  getDocs,
-  updateDoc,
-} from "firebase/firestore";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -69,17 +41,52 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
   SheetDescription,
   SheetClose,
 } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// Custom Components & Hooks (using alias paths)
+import type { ChatMessage, Chat, ResponseLength } from "@/lib/types";
+import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance";
+import { useApp } from "@/lib/hooks/use-app";
+import { Logo } from "@/components/icons";
+import { MarkdownRenderer } from "@/components/chatbot/markdown-renderer";
 import { WipDialog } from "@/components/layout/wip-dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Firebase (using alias paths)
+import {
+  useFirestore,
+  useCollection,
+  useMemoFirebase,
+} from "@/firebase";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  orderBy,
+  Timestamp,
+  doc,
+  deleteDoc,
+  writeBatch,
+  getDocs,
+} from "firebase/firestore";
 
+// Utils
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+
+// --- INTERFACES ---
+interface ChatHistorySheetProps {
+    chats: Chat[];
+    isChatsLoading: boolean;
+    activeChatId: string | null;
+    setActiveChatId: (id: string | null) => void;
+    deleteChat: (id: string) => Promise<void>;
+    createNewChat: () => Promise<void>;
+}
+
+// --- MAIN COMPONENT ---
 export default function ChatbotPage() {
   const { user, activeChatId, setActiveChatId, chats, isChatsLoading } = useApp();
   const [input, setInput] = useState("");
@@ -88,7 +95,7 @@ export default function ChatbotPage() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const firestore = useFirestore();
 
-  // Memoize the query for messages of the active chat
+  // Query for messages of the active chat
   const messagesCollection = useMemoFirebase(() => {
     if (!firestore || !user || !activeChatId) return null;
     return query(
@@ -99,7 +106,7 @@ export default function ChatbotPage() {
 
   const { data: messages = [], isLoading: isMessagesLoading } = useCollection<ChatMessage>(messagesCollection);
 
-  // Auto-scroll to bottom
+  // Auto-scroll to the latest message
   useEffect(() => {
     const viewport = scrollAreaRef.current?.querySelector('div[data-radix-scroll-area-viewport]');
     if (viewport) {
@@ -109,10 +116,9 @@ export default function ChatbotPage() {
 
   const createNewChat = async () => {
     if (!firestore || !user) return;
-    
     const newChatRef = await addDoc(collection(firestore, `users/${user.uid}/chats`), {
         userId: user.uid,
-        title: `Chat ${chats.length + 1}`,
+        title: `Nuevo Chat ${chats.length + 1}`,
         createdAt: serverTimestamp(),
     });
     setActiveChatId(newChatRef.id);
@@ -120,61 +126,53 @@ export default function ChatbotPage() {
 
   const deleteChat = async (chatId: string) => {
     if (!firestore || !user) return;
-
-    // First, delete all messages in the chat
     const messagesQuery = query(collection(firestore, `users/${user.uid}/chats/${chatId}/messages`));
     const batch = writeBatch(firestore);
-    // In a real app, you might want to fetch docs in batches for very large collections
     const messagesSnapshot = await getDocs(messagesQuery);
-    messagesSnapshot.forEach(doc => {
-      batch.delete(doc.ref);
-    });
+    messagesSnapshot.forEach(doc => batch.delete(doc.ref));
     await batch.commit();
-
-    // Then, delete the chat document itself
-    const chatDocRef = doc(firestore, `users/${user.uid}/chats`, chatId);
-    await deleteDoc(chatDocRef);
+    await deleteDoc(doc(firestore, `users/${user.uid}/chats`, chatId));
     
-    // If the deleted chat was the active one, switch to another chat or set to null
     if (activeChatId === chatId) {
         const remainingChats = chats.filter(c => c.id !== chatId);
         setActiveChatId(remainingChats.length > 0 ? remainingChats[0].id : null);
     }
   }
 
-
   const handleSend = async () => {
     if (!input.trim() || !user || !firestore) return;
-
+    setIsSending(true);
     let currentChatId = activeChatId;
 
-    // If there's no active chat, create one first
-    if (!currentChatId) {
+    try {
+      // Create a new chat if one doesn't exist
+      if (!currentChatId) {
         const newChatRef = await addDoc(collection(firestore, `users/${user.uid}/chats`), {
-            userId: user.uid,
-            title: `Chat ${chats.length + 1}`, // Use numeric title
-            createdAt: serverTimestamp(),
+          userId: user.uid,
+          title: input.substring(0, 25), // Use first part of the message as title
+          createdAt: serverTimestamp(),
         });
         currentChatId = newChatRef.id;
         setActiveChatId(currentChatId);
-    }
-    
-    const userMessage: Omit<ChatMessage, 'id'> = {
-      role: "user",
-      content: input,
-      timestamp: Timestamp.now(),
-    };
-    
-    const currentInput = input;
-    setInput("");
-    setIsSending(true);
-
-    try {
+      }
+      
       const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
+      
+      // Save user message to Firestore
+      const userMessage: Omit<ChatMessage, 'id'> = {
+        role: "user",
+        content: input,
+        timestamp: Timestamp.now(),
+      };
       await addDoc(messagesRef, userMessage);
       
+      const currentInput = input;
+      setInput(""); // Clear input immediately
+      
+      // Call the AI flow (Server Action)
       const result = await aiChatbotAssistance({ query: currentInput, responseLength });
       
+      // Save assistant's response to Firestore
       const assistantMessage: Omit<ChatMessage, 'id'> = {
         role: "assistant",
         content: result.response,
@@ -186,7 +184,7 @@ export default function ChatbotPage() {
       console.error("AI Error:", error);
       const errorMessage: Omit<ChatMessage, 'id'> = {
         role: "system",
-        content: `Lo siento, he encontrado un problema: ${error.message || 'Error desconocido'}. Por favor, inténtalo de nuevo.`,
+        content: `Error: ${error.message || 'No se pudo obtener respuesta'}.`,
         timestamp: Timestamp.now(),
       };
        if (currentChatId) {
@@ -198,15 +196,13 @@ export default function ChatbotPage() {
     }
   };
   
-  const formatTimestamp = (timestamp: Timestamp | null) => {
+  const formatTimestamp = (timestamp: any): string => {
     if (!timestamp) return "";
-    return new Date(timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const date = timestamp instanceof Timestamp ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const placeholderText = "Pregúntame sobre cualquier tema...";
-  
   const showWelcomeScreen = !isChatsLoading && (!activeChatId || (activeChatId && messages.length === 0 && !isMessagesLoading));
-
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
@@ -221,9 +217,7 @@ export default function ChatbotPage() {
             />
             <div className="flex flex-1 items-center justify-center gap-2">
                  <Sparkles className="h-6 w-6 text-primary" />
-                 <h1 className="text-xl font-bold font-headline tracking-tighter">
-                    ADRIMAX AI
-                 </h1>
+                 <h1 className="text-xl font-bold font-headline tracking-tighter">ADRIMAX AI</h1>
                 <Badge variant="outline">Beta</Badge>
             </div>
             <AiModulesSheet />
@@ -235,119 +229,97 @@ export default function ChatbotPage() {
                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 mt-16">
                     <div className="relative mb-4">
                         <Logo className="h-20 w-20 text-primary" />
-                        <Sparkles className="h-8 w-8 text-yellow-400 absolute -top-2 -right-2 animate-pulse-slow" />
+                        <Sparkles className="h-8 w-8 text-yellow-400 absolute -top-2 -right-2 animate-pulse" />
                     </div>
                     <p className="text-lg font-semibold text-foreground">Tu Asistente Educativo Personal</p>
-                    <p className="mb-6">{placeholderText}</p>
+                    <p className="mb-6">Pregúntame sobre cualquier tema...</p>
                     <Alert variant="destructive" className="max-w-sm text-xs">
                         <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription>
-                            Esta es una función beta. Las respuestas pueden no ser siempre precisas.
-                        </AlertDescription>
+                        <AlertDescription>Beta: Las respuestas pueden variar en precisión.</AlertDescription>
                     </Alert>
                 </div>
             ) : isMessagesLoading ? (
-                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 mt-16">
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 mt-16 text-muted-foreground">
                     <Loader2 className="h-12 w-12 mb-4 animate-spin" />
                     <p className="text-lg font-semibold">Cargando chat...</p>
-                    <p>Espera un momento.</p>
                 </div>
             ) : (
                 messages.map((message) => (
-                    <div
-                    key={message.id}
-                    className={cn(
-                        "flex items-end gap-3",
-                        message.role === "user" ? "justify-end" : "justify-start"
-                    )}
-                    >
-                    {(message.role === "assistant" || message.role === 'system') && (
-                        <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
-                            <Logo className="h-5 w-5" />
-                        </Avatar>
-                    )}
-                    <div
-                        className={cn(
-                        "max-w-[80%] rounded-lg p-3",
-                        message.role === "user" && "bg-primary text-primary-foreground",
-                        message.role === "assistant" && "bg-muted",
-                        message.role === 'system' && "bg-destructive text-destructive-foreground"
+                    <div key={message.id} className={cn("flex items-end gap-3", message.role === "user" ? "justify-end" : "justify-start")}>
+                        {message.role !== "user" && (
+                            <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
+                                <Logo className="h-5 w-5" />
+                            </Avatar>
                         )}
-                    >
-                        {message.role === 'assistant' ? (
-                            <MarkdownRenderer content={message.content} />
-                        ) : (
-                            <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                        <div className={cn("max-w-[80%] rounded-lg p-3", 
+                            message.role === "user" ? "bg-primary text-primary-foreground" : 
+                            message.role === "assistant" ? "bg-muted" : "bg-destructive text-destructive-foreground")}>
+                            {message.role === 'assistant' ? (
+                                <MarkdownRenderer content={message.content} />
+                            ) : (
+                                <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                            )}
+                            <p className="mt-1 text-right text-[10px] opacity-60">{formatTimestamp(message.timestamp)}</p>
+                        </div>
+                        {message.role === "user" && user && (
+                            <Avatar className="h-8 w-8">
+                                <AvatarImage src={user.avatar} alt={user.name} />
+                                <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
+                            </Avatar>
                         )}
-                        <p className="mt-1 pb-1 text-right text-xs opacity-60">{formatTimestamp(message.timestamp)}</p>
-                    </div>
-                    {message.role === "user" && user && (
-                        <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                    )}
                     </div>
                 ))
             )}
             {isSending && (
                 <div className="flex items-end gap-3 justify-start">
-                <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
-                    <Logo className="h-5 w-5" />
-                </Avatar>
-                <div className="max-w-md rounded-lg p-3 bg-muted flex items-center">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                </div>
+                    <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
+                        <Logo className="h-5 w-5" />
+                    </Avatar>
+                    <div className="max-w-md rounded-lg p-3 bg-muted">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                    </div>
                 </div>
             )}
             </div>
         </ScrollArea>
+
         <div className="mt-auto border-t bg-background p-4 space-y-2">
             <div className="relative">
                 <Textarea
-                    placeholder={placeholderText}
-                    className="pr-12"
+                    placeholder="Escribe tu duda aquí..."
+                    className="pr-12 min-h-[80px]"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                    }
+                        if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSend();
+                        }
                     }}
-                    disabled={isMessagesLoading}
+                    disabled={isMessagesLoading || isSending}
                 />
-                <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
+                <div className="absolute right-2 bottom-2">
                     <Button size="icon" onClick={handleSend} disabled={isSending || !input.trim()}>
-                        <Send className="h-5 w-5" />
+                        {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                     </Button>
                 </div>
             </div>
-            <div className="flex items-center gap-2">
-                 <Select onValueChange={(value: ResponseLength) => setResponseLength(value)} defaultValue={responseLength}>
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Respuesta..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="breve">Breve</SelectItem>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="detallada">Detallada</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
+            <Select onValueChange={(value: ResponseLength) => setResponseLength(value)} defaultValue={responseLength}>
+                <SelectTrigger className="w-full h-8 text-xs">
+                    <SelectValue placeholder="Longitud de respuesta" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="breve">Breve</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="detallada">Detallada</SelectItem>
+                </SelectContent>
+            </Select>
         </div>
     </div>
   );
 }
 
-interface ChatHistorySheetProps {
-    chats: Chat[];
-    isChatsLoading: boolean;
-    activeChatId: string | null;
-    setActiveChatId: (id: string | null) => void;
-    deleteChat: (id: string) => void;
-    createNewChat: () => void;
-}
+// --- SUBCOMPONENTS ---
 
 function ChatHistorySheet({ chats, isChatsLoading, activeChatId, setActiveChatId, deleteChat, createNewChat }: ChatHistorySheetProps) {
     return (
@@ -363,71 +335,64 @@ function ChatHistorySheet({ chats, isChatsLoading, activeChatId, setActiveChatId
                 </SheetHeader>
                 <div className="p-4 flex-none">
                     <Button onClick={createNewChat} className="w-full">
-                        <MessageSquarePlus className="mr-2 h-4 w-4" />
-                        Nuevo Chat
+                        <MessageSquarePlus className="mr-2 h-4 w-4" /> Nuevo Chat
                     </Button>
                 </div>
-                <ScrollArea className="flex-1">
-                    <div className="p-4 pt-0 space-y-1">
+                <ScrollArea className="flex-1 px-4">
+                    <div className="space-y-1">
                         {isChatsLoading ? (
                             <div className="p-4 text-center text-sm text-muted-foreground">Cargando...</div>
                         ) : chats.length === 0 ? (
-                            <div className="p-4 text-center text-sm text-muted-foreground">No hay chats.</div>
+                            <div className="p-4 text-center text-sm text-muted-foreground">Sin chats previos.</div>
                         ) : (
                             chats.map((chat) => (
-                               <div key={chat.id} className="relative group flex items-center">
-                                 <Button
-                                    variant={activeChatId === chat.id ? "secondary" : "ghost"}
-                                    className="w-full justify-start truncate"
-                                    onClick={() => setActiveChatId(chat.id)}
-                                >
-                                    {chat.title}
-                                </Button>
+                               <div key={chat.id} className="relative group flex items-center gap-1">
+                                 <SheetClose asChild>
+                                    <Button
+                                        variant={activeChatId === chat.id ? "secondary" : "ghost"}
+                                        className="w-full justify-start truncate pr-8"
+                                        onClick={() => setActiveChatId(chat.id)}
+                                    >
+                                        {chat.title}
+                                    </Button>
+                                 </SheetClose>
                                  <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 absolute right-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive">
                                             <Trash2 className="h-4 w-4"/>
                                         </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle>¿Eliminar este chat?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Esta acción es permanente y no se puede deshacer.
-                                            </AlertDialogDescription>
+                                            <AlertDialogTitle>¿Eliminar chat?</AlertDialogTitle>
+                                            <AlertDialogDescription>Esta acción es permanente.</AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => deleteChat(chat.id)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                                            <AlertDialogCancel>No</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => deleteChat(chat.id)} className="bg-destructive hover:bg-destructive/90">Sí, eliminar</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
-                                </AlertDialog>
+                                 </AlertDialog>
                                </div>
                             ))
                         )}
                     </div>
                 </ScrollArea>
-                <div className="p-4 border-t text-xs text-muted-foreground">
-                    <p>{format(new Date(), "d 'de' MMMM, yyyy", { locale: es })}</p>
+                <div className="p-4 border-t text-[10px] text-muted-foreground text-center">
+                    {format(new Date(), "d 'de' MMMM, yyyy", { locale: es })}
                 </div>
             </SheetContent>
         </Sheet>
     );
 }
 
-const aiModules = [
-    { id: 'audio-summary', title: "Resumen de audio", description: "Crea resúmenes a partir de archivos de audio.", icon: Music, functional: false },
-    { id: 'video-summary', title: "Resumen de video", description: "Extrae lo más importante de un video.", icon: Video, functional: false },
-    { id: 'mind-map', title: "Mapa mental", description: "Organiza ideas en un esquema visual.", icon: BrainCircuit, functional: false },
-    { id: 'reports', title: "Informes", description: "Genera documentos detallados sobre un tema.", icon: ClipboardList, functional: false },
-    { id: 'flashcards', title: "Tarjetas didácticas", description: "Crea tarjetas de estudio para repasar.", icon: GraduationCap, functional: true },
-    { id: 'quiz', title: "Cuestionario", description: "Genera preguntas para evaluar conocimientos.", icon: FileQuestion, functional: true },
-    { id: 'infographic', title: "Infografía", description: "Transforma datos en una imagen atractiva.", icon: Presentation, functional: false },
-    { id: 'presentation', title: "Presentación", description: "Crea diapositivas listas para exponer.", icon: Presentation, functional: false },
-];
-
 function AiModulesSheet() {
     const { activeChatId } = useApp();
+
+    const aiModules = [
+        { id: 'flashcards', title: "Flashcards", icon: BrainCircuit, functional: true, href: `/chatbot/flashcards/${activeChatId}` },
+        { id: 'quiz', title: "Quiz", icon: BrainCircuit, functional: false, href: '#' },
+    ];
 
     return (
         <Sheet>
@@ -438,77 +403,36 @@ function AiModulesSheet() {
             </SheetTrigger>
             <SheetContent className="w-full max-w-sm flex flex-col p-0">
                 <SheetHeader className="p-4 border-b">
-                    <SheetTitle>Módulos de IA</SheetTitle>
-                    <SheetDescription>
-                        Genera contenido estructurado a partir de tu chat activo.
-                    </SheetDescription>
+                    <SheetTitle>Herramientas IA</SheetTitle>
+                    <SheetDescription>Genera contenido a partir del chat actual.</SheetDescription>
                 </SheetHeader>
-                <ScrollArea className="flex-1">
-                    <div className="p-4 grid grid-cols-2 gap-4">
+                <ScrollArea className="flex-1 p-4">
+                    <div className="grid grid-cols-2 gap-3">
                         {aiModules.map((module) => {
                             const Icon = module.icon;
                             const isClickable = module.functional && activeChatId;
 
                             const cardContent = (
-                                <Card className={cn(
-                                    "hover:bg-muted/50 transition-colors h-full",
-                                    isClickable ? "cursor-pointer" : "cursor-not-allowed opacity-50",
-                                    module.functional && "border-primary/50 hover:border-primary"
-                                )}>
-                                    <CardHeader>
-                                        <div className={cn("p-2 rounded-lg w-fit mb-2", module.functional ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground")}>
-                                            <Icon className="h-6 w-6" />
-                                        </div>
-                                        <CardTitle className="text-base">{module.title}</CardTitle>
+                                <Card className={cn("hover:bg-accent transition-colors", !isClickable && "opacity-40 cursor-not-allowed")}>
+                                    <CardHeader className="p-3">
+                                        <Icon className={cn("h-5 w-5 mb-1", module.functional ? "text-primary" : "text-muted-foreground")} />
+                                        <CardTitle className="text-xs">{module.title}</CardTitle>
                                     </CardHeader>
                                 </Card>
                             );
 
-                            if (module.id === 'flashcards' && isClickable) {
+                            if (isClickable) {
                                 return (
-                                     <SheetClose asChild key={module.id}>
-                                        <Link href={`/chatbot/flashcards/${activeChatId}`}>
-                                            {cardContent}
-                                        </Link>
+                                    <SheetClose asChild key={module.id}>
+                                        <Link href={module.href}>{cardContent}</Link>
                                     </SheetClose>
                                 );
                             }
-                            
-                             if (module.id === 'quiz' && isClickable) {
-                                return (
-                                     <WipDialog key={module.id}>
-                                        {cardContent}
-                                     </WipDialog>
-                                );
-                            }
-
-                            return (
-                                <WipDialog key={module.id}>
-                                    {cardContent}
-                                </WipDialog>
-                            );
+                            return <WipDialog key={module.id}>{cardContent}</WipDialog>;
                         })}
                     </div>
-                     {!activeChatId && (
-                        <div className="px-4">
-                            <Alert variant="destructive" className="text-xs">
-                                <AlertTriangle className="h-4 w-4" />
-                                <AlertDescription>
-                                    Inicia o selecciona un chat para activar los módulos.
-                                </AlertDescription>
-                            </Alert>
-                        </div>
-                    )}
                 </ScrollArea>
-                 <div className="p-4 border-t text-xs text-muted-foreground">
-                    <p>Inspirado en NotebookLM de Google Labs.</p>
-                </div>
             </SheetContent>
         </Sheet>
     )
 }
-    
-
-    
-
-    
