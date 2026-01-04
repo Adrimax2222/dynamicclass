@@ -11,10 +11,16 @@ import jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
 
 // Visual Simulation Component for the floating menu
-const MagicFloatingMenu = () => {
-    // Hidden by default, ready for future implementation on text selection
+const MagicFloatingMenu = ({ position, isVisible }: { position: { top: number; left: number }, isVisible: boolean }) => {
     return (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 bg-slate-800/50 text-white p-2 rounded-2xl shadow-lg backdrop-blur-sm transition-opacity opacity-0 hover:opacity-100">
+        <div 
+            style={{ 
+                top: `${position.top}px`, 
+                left: `${position.left}px`,
+                display: isVisible ? 'flex' : 'none'
+            }}
+            className="absolute z-50 items-center gap-1 bg-slate-800/50 text-white p-2 rounded-2xl shadow-lg backdrop-blur-sm transition-opacity"
+        >
             <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
                 <Sparkles className="h-4 w-4" />
             </Button>
@@ -22,7 +28,7 @@ const MagicFloatingMenu = () => {
                 <BookText className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
-                <GraduationCap className="h-4 w-4" />
+                <UserGraduate className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
                 <Globe className="h-4 w-4" />
@@ -57,10 +63,15 @@ export default function MagicEditorPage() {
     const [wordCount, setWordCount] = useState(0);
     const [charCount, setCharCount] = useState(0);
     const [isCopied, setIsCopied] = useState(false);
+    
+    const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+    const [isMenuVisible, setIsMenuVisible] = useState(false);
+
     const router = useRouter();
     const { toast } = useToast();
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const editorContainerRef = useRef<HTMLDivElement>(null);
 
     // Auto-resize textarea and calculate stats
     useEffect(() => {
@@ -91,6 +102,38 @@ export default function MagicEditorPage() {
             toast({ title: "Error", description: "No se pudo exportar el documento.", variant: "destructive" });
         }
     };
+    
+    const handleMouseUp = () => {
+        const selection = window.getSelection();
+        if (selection && selection.toString().trim().length > 0) {
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            
+            const containerRect = editorContainerRef.current?.getBoundingClientRect();
+            if (!containerRect) return;
+
+            setMenuPosition({
+                top: rect.bottom + window.scrollY - containerRect.top,
+                left: rect.left + rect.width / 2 - containerRect.left,
+            });
+            setIsMenuVisible(true);
+        } else {
+            setIsMenuVisible(false);
+        }
+    };
+
+     useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (isMenuVisible) {
+                setIsMenuVisible(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isMenuVisible]);
+
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -100,8 +143,8 @@ export default function MagicEditorPage() {
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Título del Documento"
-                    className="text-xl font-serif text-slate-800 bg-transparent focus:outline-none w-full max-w-md truncate rounded-lg px-3 py-1.5 h-9 border-2 border-indigo-500/20 focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+                    placeholder="Documento sin Título"
+                    className="text-xl font-serif text-slate-800 bg-transparent focus:outline-none w-full max-w-md truncate rounded-lg px-3 py-1.5 h-9 border-2 border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500/50"
                 />
                 <Button onClick={handleExport} size="sm">
                     <FileDown className="h-4 w-4 mr-2" />
@@ -111,7 +154,7 @@ export default function MagicEditorPage() {
             
             {/* Contenedor principal con scroll */}
             <main className="flex-1 overflow-y-auto pb-20">
-                <div className="max-w-3xl mx-auto w-full mt-8 relative px-4">
+                <div className="max-w-3xl mx-auto w-full mt-8 relative px-4" ref={editorContainerRef} onMouseUp={handleMouseUp}>
                     
                     {/* Banner Superior */}
                     <div className="w-full text-center p-6 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl shadow-lg mb-8 text-white">
@@ -122,8 +165,8 @@ export default function MagicEditorPage() {
                         <p className="text-sm opacity-80 mt-1">Usa las herramientas de IA para perfeccionar tu texto.</p>
                     </div>
 
-                    {/* Simulación del Menú Flotante */}
-                    <MagicFloatingMenu />
+                    {/* Menú Flotante */}
+                    <MagicFloatingMenu position={menuPosition} isVisible={isMenuVisible} />
 
                     {/* La Hoja */}
                     <div className="bg-white shadow-lg rounded-2xl">
