@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, BookOpen, Languages, FileDown, Wand, BrainCircuit, Type, FileSignature, X, ArrowLeft } from 'lucide-react';
+import { Sparkles, BookOpen, Languages, FileDown, Wand, BrainCircuit, Type, FileSignature, X, ArrowLeft, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
@@ -49,7 +49,9 @@ export default function MagicEditorPage() {
     const [title, setTitle] = useState('');
     const [text, setText] = useState('');
     const [wordCount, setWordCount] = useState(0);
+    const [charCount, setCharCount] = useState(0);
     const [tone, setTone] = useState<Tone>('student');
+    const [isCopied, setIsCopied] = useState(false);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const { toast } = useToast();
@@ -62,7 +64,15 @@ export default function MagicEditorPage() {
         }
         const words = text.trim().split(/\s+/).filter(Boolean);
         setWordCount(words.length === 1 && words[0] === '' ? 0 : words.length);
+        setCharCount(text.length);
     }, [text]);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(text);
+        setIsCopied(true);
+        toast({ title: 'Copiado', description: 'El texto ha sido copiado al portapapeles.' });
+        setTimeout(() => setIsCopied(false), 2000);
+    };
 
     const handleExportPdf = () => {
         if (!text.trim() && !title.trim()) {
@@ -120,7 +130,7 @@ export default function MagicEditorPage() {
                     ✨ MODO EDITOR
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" onClick={handleExportPdf}>
+                    <Button onClick={handleExportPdf} variant="default">
                         <FileDown className="mr-2 h-4 w-4" />
                         Exportar
                     </Button>
@@ -144,23 +154,36 @@ export default function MagicEditorPage() {
                     </div>
 
                     {/* Editor Canvas */}
-                    <div className="rounded-2xl bg-white p-8 sm:p-12 shadow-xl shadow-slate-200/50">
+                    <div className="rounded-2xl bg-white shadow-xl shadow-slate-200/50 overflow-hidden">
                          <input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="Documento sin título..."
-                            className="w-full text-3xl font-bold bg-transparent border-none focus:ring-0 focus:outline-none font-serif text-slate-800 mb-6"
+                            className="w-full text-3xl font-bold bg-transparent border-none focus:ring-0 focus:outline-none font-serif text-slate-800 p-8 sm:p-12"
                         />
                         <Textarea
                             ref={textareaRef}
                             value={text}
                             onChange={(e) => setText(e.target.value)}
                             placeholder="Empieza a escribir tu obra maestra aquí..."
-                            className="w-full h-auto min-h-[20vh] resize-none p-0 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-slate-700 text-lg leading-relaxed selection:bg-purple-200"
+                            className="w-full h-auto min-h-[20vh] resize-none p-8 sm:p-12 pt-0 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-slate-700 text-lg leading-relaxed selection:bg-purple-200"
                         />
-                        <div className="text-right text-xs text-slate-400 mt-4 font-mono">
-                            {wordCount} {wordCount === 1 ? 'palabra' : 'palabras'}
+                         <div className="bg-slate-50/70 border-t border-slate-200/80 px-4 py-2 flex items-center justify-between text-xs text-slate-500 font-mono">
+                            <div className="flex items-center gap-4">
+                                <span>{wordCount} {wordCount === 1 ? 'palabra' : 'palabras'}</span>
+                                <span>{charCount} caracteres</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                 <Button variant="ghost" size="sm" onClick={handleCopy} className="h-7 text-xs">
+                                    {isCopied ? <Check className="h-4 w-4 mr-1 text-green-500"/> : <Copy className="h-3 w-3 mr-1"/>}
+                                    Copiar
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={handleExportPdf} className="h-7 text-xs">
+                                    <FileDown className="h-3 w-3 mr-1"/>
+                                    Exportar
+                                </Button>
+                            </div>
                         </div>
                     </div>
                     
