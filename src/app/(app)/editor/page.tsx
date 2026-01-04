@@ -7,7 +7,8 @@ import {
   Copy, Languages, Download, Share2, Zap, MessageSquare,
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, Quote, Heading1, Heading2, Code, Link,
-  Smile, ImageIcon, Table, Star, Globe, FileDown
+  Smile, ImageIcon, Table, Star, Globe, FileDown,
+  UserGraduate
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -284,7 +285,7 @@ export default function MagicEditorPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Título"
-              className="text-lg font-semibold text-slate-800 bg-transparent focus:outline-none focus:bg-slate-50 rounded-lg px-3 py-1.5 transition-colors flex-1 min-w-0 h-10 border border-indigo-500/50 focus:ring-2 focus:ring-indigo-500 font-serif"
+              className="text-lg font-semibold text-slate-800 bg-transparent focus:outline-none rounded-lg px-3 py-1.5 transition-colors flex-1 min-w-0 h-10 border border-indigo-500/50 focus:ring-2 focus:ring-indigo-500 font-serif"
             />
           </div>
 
@@ -364,7 +365,6 @@ export default function MagicEditorPage() {
               className="w-full min-h-[30vh] max-h-[70vh] p-0 border-none focus:outline-none text-base text-slate-800 leading-relaxed font-serif overflow-y-auto"
               onInput={(e) => setText(e.currentTarget.innerHTML)}
               onMouseUp={handleTextSelection}
-              dangerouslySetInnerHTML={{ __html: text }}
             />
           </div>
 
