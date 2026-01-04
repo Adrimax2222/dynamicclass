@@ -1,7 +1,9 @@
-
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // ============= HELPER FUNCTIONS =============
     
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
@@ -28,40 +30,85 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/centers/$(centerId)).data;
     }
 
+    function isValidMessage() {
+      return request.resource.data.keys().hasAll(['role', 'content', 'timestamp']) &&
+             request.resource.data.role in ['user', 'assistant', 'system'] &&
+             request.resource.data.content is string &&
+             request.resource.data.content.size() > 0 &&
+             request.resource.data.content.size() <= 10000;
+    }
+
+    function isValidChat() {
+      return request.resource.data.keys().hasAll(['userId', 'title', 'createdAt']) &&
+             request.resource.data.userId is string &&
+             request.resource.data.title is string &&
+             request.resource.data.title.size() > 0 &&
+             request.resource.data.title.size() <= 200;
+    }
+
+    // ============= USERS COLLECTION =============
+
     match /users/{userId} {
       allow get, update: if isOwner(userId) || isAdmin();
       allow list: if request.auth != null;
       allow create: if request.auth != null;
       allow delete: if isOwner(userId) || isAdmin(); // Allow users to delete their own account and admins to delete any
 
-      // Allow users to manage their own notes collection
+      // Notes subcollection
       match /notes/{noteId} {
         allow list, get, create, update, delete: if isOwner(userId);
       }
-       // Allow users to manage their own events collection
+      
+      // Events subcollection
       match /events/{eventId} {
         allow list, get, create, update, delete: if isOwner(userId);
       }
       
-      // Allow users to manage their own chat history
+      // ============= CHATBOT: Chats & Messages =============
+      
+      // Chats subcollection - MEJORADO
       match /chats/{chatId} {
-        allow list, get, create, update, delete: if isOwner(userId);
+        // Users can only access their own chats
+        allow read: if isOwner(userId);
         
+        // Validate chat creation with proper structure
+        allow create: if isOwner(userId) && isValidChat() && request.resource.data.userId == userId;
+        
+        // Allow updates only to specific fields (e.g., title)
+        allow update: if isOwner(userId) && 
+                      request.resource.data.userId == resource.data.userId && // userId cannot be changed
+                      request.resource.data.createdAt == resource.data.createdAt; // createdAt cannot be changed
+        
+        // Allow deletion
+        allow delete: if isOwner(userId);
+        
+        // Messages subcollection - MEJORADO
         match /messages/{messageId} {
-          allow list, get, create, update, delete: if isOwner(userId);
+          // Users can only access messages in their own chats
+          allow read: if isOwner(userId);
+          
+          // Strict validation for message creation
+          allow create: if isOwner(userId) && isValidMessage();
+          
+          // Allow update and delete (for editing/removing messages)
+          allow update, delete: if isOwner(userId);
         }
       }
 
-      // Allow users to manage their own completed items history
+      // Completed items history subcollection
       match /completedItems/{itemId} {
         allow list, get, create: if isOwner(userId);
         // No update/delete to keep history immutable
       }
     }
     
+    // ============= USER TOKENS =============
+    
     match /userTokens/{userId} {
       allow read, write: if isOwner(userId);
     }
+
+    // ============= ANNOUNCEMENTS =============
 
     match /announcements/{announcementId} {
       allow list: if request.auth != null;
@@ -70,11 +117,20 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // ============= CENTERS =============
+
     match /centers/{centerId} {
-        // Admins can do anything
-        allow read, write: if isAdmin();
-        // Authenticated users can read the list of centers
-        allow list, get: if request.auth != null;
+      // Admins can do anything
+      allow read, write: if isAdmin();
+      // Authenticated users can read the list of centers
+      allow list, get: if request.auth != null;
+    }
+    
+    // ============= DEFAULT DENY =============
+    
+    // Deny all other access by default
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
