@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -156,7 +157,7 @@ export default function MagicEditorPage() {
                             value={text}
                             onChange={(e) => setText(e.target.value)}
                             placeholder="Empieza a escribir tu obra maestra aquí..."
-                            className="w-full h-auto min-h-[40vh] resize-none p-0 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-slate-700 text-lg leading-relaxed selection:bg-purple-200"
+                            className="w-full h-auto min-h-[20vh] resize-none p-0 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-slate-700 text-lg leading-relaxed selection:bg-purple-200"
                         />
                         <div className="text-right text-xs text-slate-400 mt-4 font-mono">
                             {wordCount} {wordCount === 1 ? 'palabra' : 'palabras'}
