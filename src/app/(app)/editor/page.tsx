@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import { cn } from '@/lib/utils';
 import { WipDialog } from '@/components/layout/wip-dialog';
+import { Label } from '@/components/ui/label';
 
 type Tone = 'student' | 'academic' | 'informative';
 
