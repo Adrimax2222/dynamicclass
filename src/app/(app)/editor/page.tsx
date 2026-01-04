@@ -143,10 +143,12 @@ export default function MagicEditorPage() {
                  <div className="mx-auto max-w-4xl">
                      {/* Informative Banner */}
                      <div className="mb-8 rounded-xl bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 p-6 text-center shadow-sm border border-slate-200/80">
-                        <h1 className="text-xl font-bold text-slate-800 flex items-center justify-center gap-2">
-                           <Sparkles className="h-5 w-5 text-indigo-500"/>
-                           Editor Mágico: Tu compañero de redacción
-                        </h1>
+                        <div className="flex items-center justify-center gap-2">
+                            <Sparkles className="h-5 w-5 text-indigo-500"/>
+                            <h1 className="text-xl font-bold text-slate-800">
+                                Editor Mágico: Tu compañero de redacción
+                            </h1>
+                        </div>
                         <p className="text-slate-600 mt-1 text-sm">
                             Mejora la coherencia, corrige la gramática y expande tus ideas con un solo clic.
                         </p>
