@@ -35,7 +35,7 @@ const MagicFloatingMenu = () => {
 const ActionCard = ({ icon: Icon, title, description, color, isFeatured = false, onClick }: { icon: React.ElementType, title: string, description: string, color: string, isFeatured?: boolean, onClick?: () => void }) => {
     return (
         <button onClick={onClick} className={cn(
-            "text-left bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4 transition-all hover:shadow-md hover:-translate-y-0.5 w-full", 
+            "text-left bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4 transition-all hover:shadow-md hover:-translate-y-0.5 w-full",
             isFeatured && "ring-2 ring-indigo-300/50"
         )}>
             <div className={cn("p-3 rounded-xl", color)}>
@@ -51,7 +51,7 @@ const ActionCard = ({ icon: Icon, title, description, color, isFeatured = false,
 
 
 export default function MagicEditorPage() {
-    const [title, setTitle] = useState('Documento sin título');
+    const [title, setTitle] = useState('');
     const [text, setText] = useState('');
     const [wordCount, setWordCount] = useState(0);
     const [charCount, setCharCount] = useState(0);
@@ -83,7 +83,7 @@ export default function MagicEditorPage() {
         try {
             const doc = new jsPDF();
             doc.text(text, 10, 10);
-            doc.save(`${title.replace(/\s/g, '_')}.pdf`);
+            doc.save(`${title.replace(/\s/g, '_') || 'documento'}.pdf`);
             toast({ title: '¡Exportado!', description: 'Tu documento ha sido exportado como PDF.' });
         } catch (error) {
             console.error("Error exporting to PDF:", error);
@@ -94,37 +94,39 @@ export default function MagicEditorPage() {
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
             {/* Cabecera Fija */}
-            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 h-16 flex items-center justify-between px-6">
+            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 h-20 flex items-center justify-between px-6">
                 <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="text-xl font-serif text-slate-800 bg-transparent focus:outline-none w-80 truncate"
+                    placeholder="Documento sin título"
+                    className="text-2xl font-serif text-slate-800 bg-transparent focus:outline-none w-full max-w-md truncate"
                 />
                 <div className="flex items-center gap-2">
-                    <Button onClick={handleExport} variant="default" size="sm">Exportar</Button>
-                    <Button onClick={() => router.back()} size="sm" variant="outline">
+                    <Button onClick={() => router.back()} size="sm" variant="ghost">
                         Listo
                     </Button>
                 </div>
             </header>
-
-            {/* Banner Superior */}
-            <div className="w-full text-center py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-slate-200">
-                <p className="text-sm font-medium text-indigo-800">
-                    ✨ Estás en el Modo Escritura Inteligente. Usa las herramientas para perfeccionar tu texto.
-                </p>
-            </div>
             
             {/* Contenedor principal con scroll */}
             <main className="flex-1 overflow-y-auto pb-20">
-                <div className="max-w-3xl mx-auto w-full mt-4 relative">
+                <div className="max-w-3xl mx-auto w-full mt-8 relative px-4">
                     
+                    {/* Banner Superior */}
+                    <div className="w-full text-center p-6 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl shadow-lg mb-8 text-white">
+                        <h2 className="text-xl font-bold flex items-center justify-center gap-2">
+                            <Sparkles className="h-5 w-5" />
+                            Modo Escritura Mágica
+                        </h2>
+                        <p className="text-sm opacity-80 mt-1">Usa las herramientas de IA para perfeccionar tu texto.</p>
+                    </div>
+
                     {/* Simulación del Menú Flotante */}
                     <MagicFloatingMenu />
 
                     {/* La Hoja */}
-                    <div className="bg-white shadow-sm rounded-2xl min-h-full">
+                    <div className="bg-white shadow-lg rounded-2xl">
                         <div className="p-8">
                              {/* Título y cuerpo del texto */}
                             <input 
@@ -141,7 +143,7 @@ export default function MagicEditorPage() {
                         </div>
 
                          {/* Bandeja de Herramientas */}
-                        <div className="sticky bottom-0 bg-white/80 backdrop-blur-md border-t border-slate-200 p-2 flex items-center justify-between rounded-b-2xl">
+                        <div className="sticky bottom-0 bg-white/90 backdrop-blur-sm border-t border-slate-200 p-2 flex items-center justify-between rounded-b-2xl">
                            <div className="flex items-center gap-4 text-sm text-slate-500">
                                 <span className="pl-2">{wordCount} palabras</span>
                                 <Separator orientation="vertical" className="h-4" />
@@ -162,7 +164,7 @@ export default function MagicEditorPage() {
                 </div>
 
                 {/* Panel de Herramientas Mágicas */}
-                <div className="max-w-3xl mx-auto w-full mt-12 px-8">
+                <div className="max-w-3xl mx-auto w-full mt-12 px-4">
                     <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Herramientas Recomendadas</h3>
                     <div className="grid grid-cols-1 gap-4">
                         <ActionCard
@@ -196,4 +198,3 @@ export default function MagicEditorPage() {
         </div>
     );
 }
-
