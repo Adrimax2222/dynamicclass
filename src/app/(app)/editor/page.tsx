@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -100,7 +99,7 @@ export default function MagicEditorPage() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Documento sin título"
-                    className="text-xl font-serif text-slate-800 bg-transparent focus:outline-none w-full max-w-md truncate border border-transparent rounded-lg px-3 py-1.5 h-9 focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+                    className="text-xl font-serif text-slate-800 bg-transparent focus:outline-none w-full max-w-md truncate rounded-lg px-3 py-1.5 h-9 border-2 border-indigo-500/20 focus-visible:ring-2 focus-visible:ring-indigo-500/50"
                 />
                 <Button onClick={handleExport} size="sm">
                     <FileDown className="h-4 w-4 mr-2" />
