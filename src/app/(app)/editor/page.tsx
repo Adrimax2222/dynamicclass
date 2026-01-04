@@ -8,7 +8,7 @@ import {
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, Quote, Heading1, Heading2, Code, Link,
   Smile, ImageIcon, Table, Star, Globe, FileDown,
-  UserGraduate, Text, Pilcrow, Type
+  Text, Pilcrow, Type
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -238,6 +238,22 @@ export default function MagicEditorPage() {
         case 'formatBlock':
             if (value) document.execCommand('formatBlock', false, `<${value}>`);
             break;
+        case 'fontSize':
+            if (value) {
+                document.execCommand('fontSize', false, value);
+                const fontElements = document.getElementById('main-editor')?.getElementsByTagName('font');
+                if (fontElements) {
+                    for (let i = 0; i < fontElements.length; i++) {
+                        const element = fontElements[i];
+                        if (element.size) {
+                            const newSize = (parseInt(element.size) * 4) + 'px';
+                            element.style.fontSize = newSize;
+                            element.removeAttribute('size');
+                        }
+                    }
+                }
+            }
+            break;
         case 'fontName':
             if (value) document.execCommand('fontName', false, value);
             break;
@@ -272,6 +288,25 @@ export default function MagicEditorPage() {
     { value: 'it', label: '🇮🇹 Italiano' },
     { value: 'pt', label: '🇵🇹 Portugués' },
     { value: 'ca', label: '🏴 Catalán' },
+  ];
+  
+  const fontOptions = [
+    { value: 'Arial', label: 'Arial' },
+    { value: 'Verdana', label: 'Verdana' },
+    { value: 'Times New Roman', label: 'Times New Roman' },
+    { value: 'Garamond', label: 'Garamond' },
+    { value: 'Georgia', label: 'Georgia' },
+    { value: 'Courier New', label: 'Courier New' },
+    { value: 'Trebuchet MS', label: 'Trebuchet MS' }
+  ];
+  
+  const fontSizeOptions = [
+    { value: '1', label: '12' }, // Corresponds to <font size="1"> ~10px
+    { value: '2', label: '14' }, // Corresponds to <font size="2"> ~13px
+    { value: '3', label: '16' }, // Corresponds to <font size="3"> ~16px
+    { value: '4', label: '18' }, // Corresponds to <font size="4"> ~18px
+    { value: '5', label: '24' }, // Corresponds to <font size="5"> ~24px
+    { value: '6', label: '36' }, // Corresponds to <font size="6"> ~32px
   ];
 
   return (
@@ -329,26 +364,25 @@ export default function MagicEditorPage() {
         <div className="bg-white rounded-xl shadow-lg border border-slate-200/60 overflow-hidden mb-6">
           {/* Barra de formato */}
            <div className="border-b border-slate-200 px-4 py-2 flex items-center gap-1 bg-slate-50/80 flex-wrap">
-             <Select onValueChange={(value) => handleFormatAction('formatBlock', value)}>
-                <SelectTrigger className="w-[120px] h-8 text-xs font-semibold">
-                    <SelectValue placeholder="Normal" />
+             <Select onValueChange={(value) => handleFormatAction('fontSize', value)}>
+                <SelectTrigger className="w-[80px] h-8 text-xs font-semibold">
+                    <SelectValue placeholder="Tamaño" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="p">Normal</SelectItem>
-                    <SelectItem value="h1">Título 1</SelectItem>
-                    <SelectItem value="h2">Título 2</SelectItem>
-                    <SelectItem value="h3">Subtítulo</SelectItem>
+                    {fontSizeOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
                 </SelectContent>
             </Select>
 
             <Select onValueChange={(value) => handleFormatAction('fontName', value)}>
-                <SelectTrigger className="w-[120px] h-8 text-xs font-semibold">
+                <SelectTrigger className="w-[140px] h-8 text-xs font-semibold">
                     <SelectValue placeholder="Fuente" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="serif">Serif</SelectItem>
-                    <SelectItem value="sans-serif">Sans-serif</SelectItem>
-                    <SelectItem value="monospace">Mono</SelectItem>
+                    {fontOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
                 </SelectContent>
             </Select>
 
@@ -380,7 +414,7 @@ export default function MagicEditorPage() {
             <div 
               id="main-editor"
               contentEditable
-              className="w-full min-h-[30vh] max-h-[70vh] p-0 border-none focus:outline-none text-base text-slate-800 leading-relaxed font-serif overflow-y-auto"
+              className="w-full min-h-[30vh] max-h-[70vh] p-0 border-none focus:outline-none text-base text-slate-800 leading-relaxed font-serif overflow-y-auto focus-visible:ring-0 focus-visible:ring-offset-0"
               onInput={(e) => setText(e.currentTarget.innerHTML)}
               onMouseUp={handleTextSelection}
             />
