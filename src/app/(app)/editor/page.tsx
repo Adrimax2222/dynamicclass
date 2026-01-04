@@ -103,8 +103,9 @@ export default function MagicEditorPage() {
                     className="text-2xl font-serif text-slate-800 bg-transparent focus:outline-none w-full max-w-md truncate"
                 />
                 <div className="flex items-center gap-2">
-                    <Button onClick={() => router.back()} size="sm" variant="ghost">
-                        Listo
+                    <Button onClick={handleExport} size="sm">
+                        <FileDown className="h-4 w-4 mr-2" />
+                        Exportar
                     </Button>
                 </div>
             </header>
