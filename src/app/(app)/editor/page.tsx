@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -13,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { WipDialog } from '@/components/layout/wip-dialog';
 import { useRouter } from 'next/navigation';
 import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
 
 type Tone = 'student' | 'academic' | 'informative';
 
@@ -56,7 +56,7 @@ export default function MagicEditorPage() {
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${textarea` + "`" + `${textareaRef.current.scrollHeight}px` + "`" + `}`;
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
         }
         const words = text.trim().split(/\s+/).filter(Boolean);
         setWordCount(words.length === 1 && words[0] === '' ? 0 : words.length);
@@ -194,7 +194,7 @@ export default function MagicEditorPage() {
                                 isWip
                             />
                              <Card className="p-4 bg-white col-span-1 md:col-span-2 lg:col-span-1">
-                                <label htmlFor="tone-select" className="text-sm font-semibold text-slate-600">Cambio de Tono</label>
+                                <Label htmlFor="tone-select" className="text-sm font-semibold text-slate-600">Cambio de Tono</Label>
                                  <div className="flex flex-wrap gap-2 mt-2">
                                    <Button onClick={() => handleToneChange('student')} variant={tone === 'student' ? 'default' : 'outline'} size="sm" className="flex-1">Estudiante</Button>
                                    <Button onClick={() => handleToneChange('academic')} variant={tone === 'academic' ? 'default' : 'outline'} size="sm" className="flex-1">Académico</Button>
