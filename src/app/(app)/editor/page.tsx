@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Wand2, BookText, GraduationCap, Globe, Sparkles, Languages, Check, FileDown, Copy } from 'lucide-react';
+import { Wand2, BookText, GraduationCap, Globe, Sparkles, Languages, Check, FileDown, Copy, UserGraduate } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import jsPDF from 'jspdf';
@@ -12,8 +12,9 @@ import { useToast } from '@/hooks/use-toast';
 
 // Visual Simulation Component for the floating menu
 const MagicFloatingMenu = () => {
+    // Hidden by default, ready for future implementation on text selection
     return (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 bg-slate-900 text-white p-2 rounded-2xl shadow-lg backdrop-blur-sm bg-opacity-80">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 bg-slate-800/50 text-white p-2 rounded-2xl shadow-lg backdrop-blur-sm transition-opacity opacity-0 hover:opacity-100">
             <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
                 <Sparkles className="h-4 w-4" />
             </Button>
@@ -29,6 +30,7 @@ const MagicFloatingMenu = () => {
         </div>
     );
 };
+
 
 // Action Card Component for the bottom tools
 const ActionCard = ({ icon: Icon, title, description, color, isFeatured = false, onClick }: { icon: React.ElementType, title: string, description: string, color: string, isFeatured?: boolean, onClick?: () => void }) => {
@@ -98,7 +100,7 @@ export default function MagicEditorPage() {
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Documento sin título"
+                    placeholder="Título del Documento"
                     className="text-xl font-serif text-slate-800 bg-transparent focus:outline-none w-full max-w-md truncate rounded-lg px-3 py-1.5 h-9 border-2 border-indigo-500/20 focus-visible:ring-2 focus-visible:ring-indigo-500/50"
                 />
                 <Button onClick={handleExport} size="sm">
@@ -128,7 +130,7 @@ export default function MagicEditorPage() {
                         <div className="p-8">
                              {/* Título y cuerpo del texto */}
                             <input 
-                                placeholder="Empieza a escribir el título..."
+                                placeholder="Título"
                                 className="w-full text-3xl font-bold font-serif text-slate-900 focus:outline-none mb-8 bg-transparent"
                             />
                             <Textarea
@@ -136,7 +138,7 @@ export default function MagicEditorPage() {
                                 value={text}
                                 onChange={(e) => setText(e.target.value)}
                                 placeholder="Empieza a escribir aquí..."
-                                className="w-full resize-none p-0 border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-lg text-slate-800 leading-relaxed min-h-[20vh]"
+                                className="w-full resize-none p-0 border-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none text-lg text-slate-800 leading-relaxed min-h-[20vh]"
                             />
                         </div>
 
