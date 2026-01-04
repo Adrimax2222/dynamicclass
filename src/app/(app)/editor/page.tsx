@@ -8,7 +8,7 @@ import {
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, Quote, Heading1, Heading2, Code, Link,
   Smile, ImageIcon, Table, Star, Globe, FileDown,
-  UserGraduate
+  UserGraduate, Text, Pilcrow, Type
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -67,7 +67,7 @@ const MagicFloatingMenu = ({
   );
 };
 
-const ActionCard = ({ 
+const AIToolCard = ({ 
   icon: Icon, 
   title, 
   description, 
@@ -224,25 +224,28 @@ export default function MagicEditorPage() {
     }
   };
 
-  const handleFormatAction = (action: string) => {
-    // Enfocamos el editor antes de aplicar el formato
+  const handleFormatAction = (action: string, value?: string) => {
     const editor = document.getElementById('main-editor');
     if (editor) editor.focus();
 
     switch(action) {
-      case 'bold': document.execCommand('bold', false); break;
-      case 'italic': document.execCommand('italic', false); break;
-      case 'underline': document.execCommand('underline', false); break;
-      case 'h1': document.execCommand('formatBlock', false, '<h1>'); break;
-      case 'h2': document.execCommand('formatBlock', false, '<h2>'); break;
-      case 'list': document.execCommand('insertUnorderedList', false); break;
-      case 'orderedList': document.execCommand('insertOrderedList', false); break;
-      case 'quote': document.execCommand('formatBlock', false, '<blockquote>'); break;
-      case 'code': document.execCommand('formatBlock', false, '<pre>'); break;
+        case 'bold': document.execCommand('bold', false); break;
+        case 'italic': document.execCommand('italic', false); break;
+        case 'underline': document.execCommand('underline', false); break;
+        case 'list': document.execCommand('insertUnorderedList', false); break;
+        case 'orderedList': document.execCommand('insertOrderedList', false); break;
+        case 'quote': document.execCommand('formatBlock', false, '<blockquote>'); break;
+        case 'formatBlock':
+            if (value) document.execCommand('formatBlock', false, `<${value}>`);
+            break;
+        case 'fontName':
+            if (value) document.execCommand('fontName', false, value);
+            break;
+        default: break;
     }
-    
     toast({ title: 'Formato aplicado', description: `Estilo ${action} actualizado.` });
-  };
+};
+
 
   useEffect(() => {
     const handleClickOutside = () => {
@@ -285,7 +288,7 @@ export default function MagicEditorPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Título"
-              className="text-lg font-semibold text-slate-800 bg-transparent focus:outline-none rounded-lg px-3 py-1.5 transition-colors flex-1 min-w-0 h-10 border border-indigo-500/50 focus:ring-2 focus:ring-indigo-500 font-serif"
+              className="text-lg font-semibold text-slate-800 bg-transparent focus:outline-none rounded-lg px-3 py-1.5 transition-colors flex-1 min-w-0 h-10 border border-indigo-500 focus:ring-2 focus:ring-indigo-500 font-serif"
             />
           </div>
 
@@ -325,7 +328,32 @@ export default function MagicEditorPage() {
         {/* Editor */}
         <div className="bg-white rounded-xl shadow-lg border border-slate-200/60 overflow-hidden mb-6">
           {/* Barra de formato */}
-          <div className="border-b border-slate-200 px-4 py-2.5 flex items-center gap-1 bg-slate-50/80 flex-wrap">
+           <div className="border-b border-slate-200 px-4 py-2 flex items-center gap-1 bg-slate-50/80 flex-wrap">
+             <Select onValueChange={(value) => handleFormatAction('formatBlock', value)}>
+                <SelectTrigger className="w-[120px] h-8 text-xs font-semibold">
+                    <SelectValue placeholder="Normal" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="p">Normal</SelectItem>
+                    <SelectItem value="h1">Título 1</SelectItem>
+                    <SelectItem value="h2">Título 2</SelectItem>
+                    <SelectItem value="h3">Subtítulo</SelectItem>
+                </SelectContent>
+            </Select>
+
+            <Select onValueChange={(value) => handleFormatAction('fontName', value)}>
+                <SelectTrigger className="w-[120px] h-8 text-xs font-semibold">
+                    <SelectValue placeholder="Fuente" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="serif">Serif</SelectItem>
+                    <SelectItem value="sans-serif">Sans-serif</SelectItem>
+                    <SelectItem value="monospace">Mono</SelectItem>
+                </SelectContent>
+            </Select>
+
+            <Separator orientation="vertical" className="h-6 mx-1" />
+
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Negrita" onClick={() => handleFormatAction('bold')}>
               <Bold className="h-4 w-4" />
             </Button>
@@ -336,13 +364,7 @@ export default function MagicEditorPage() {
               <Underline className="h-4 w-4" />
             </Button>
             <Separator orientation="vertical" className="h-6 mx-1" />
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Título 1" onClick={() => handleFormatAction('h1')}>
-              <Heading1 className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Título 2" onClick={() => handleFormatAction('h2')}>
-              <Heading2 className="h-4 w-4" />
-            </Button>
-            <Separator orientation="vertical" className="h-6 mx-1" />
+            
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Lista" onClick={() => handleFormatAction('list')}>
               <List className="h-4 w-4" />
             </Button>
@@ -352,14 +374,10 @@ export default function MagicEditorPage() {
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Cita" onClick={() => handleFormatAction('quote')}>
               <Quote className="h-4 w-4" />
             </Button>
-            <Separator orientation="vertical" className="h-6 mx-1" />
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Código" onClick={() => handleFormatAction('code')}>
-              <Code className="h-4 w-4" />
-            </Button>
           </div>
 
           <div className="p-8">
-             <div 
+            <div 
               id="main-editor"
               contentEditable
               className="w-full min-h-[30vh] max-h-[70vh] p-0 border-none focus:outline-none text-base text-slate-800 leading-relaxed font-serif overflow-y-auto"
@@ -419,7 +437,7 @@ export default function MagicEditorPage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            <ActionCard
+            <AIToolCard
               icon={Languages}
               title="Traducir Texto"
               description="Traduce instantáneamente a cualquier idioma."
@@ -429,14 +447,14 @@ export default function MagicEditorPage() {
               selectorPlaceholder="Selecciona idioma"
             />
             
-            <ActionCard
+            <AIToolCard
               icon={Wand2}
               title="Cambiar Tono"
               description="Adapta el texto a un tono más informal o creativo."
               color="bg-gradient-to-br from-orange-500 to-orange-600"
             />
             
-            <ActionCard
+            <AIToolCard
               icon={BookText}
               title="Generar Resumen"
               description="Crea resúmenes personalizados del contenido."
