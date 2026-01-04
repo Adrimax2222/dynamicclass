@@ -16,13 +16,14 @@ import { Label } from '@/components/ui/label';
 
 type Tone = 'student' | 'academic' | 'informative';
 
-const PowerUpCard = ({ icon: Icon, title, description, isFeatured = false, isWip = true, onClick }: { icon: React.ElementType, title: string, description: string, isFeatured?: boolean, isWip?: boolean, onClick?: () => void }) => {
+const PowerUpCard = ({ icon: Icon, title, description, isFeatured = false, isWip = true, onClick, className }: { icon: React.ElementType, title: string, description: string, isFeatured?: boolean, isWip?: boolean, onClick?: () => void, className?: string }) => {
     const cardContent = (
         <Card className={cn(
-            "w-full text-left transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl",
+            "w-full text-left transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl h-full",
             isFeatured 
                 ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg" 
-                : "bg-white hover:bg-slate-50"
+                : "bg-white hover:bg-slate-50",
+            className
         )}>
             <CardHeader className="p-4">
                 <div className="flex items-center gap-3 mb-1">
@@ -40,7 +41,7 @@ const PowerUpCard = ({ icon: Icon, title, description, isFeatured = false, isWip
         return <WipDialog>{cardContent}</WipDialog>;
     }
 
-    return <button onClick={onClick} className="w-full">{cardContent}</button>;
+    return <button onClick={onClick} className="w-full h-full">{cardContent}</button>;
 };
 
 export default function MagicEditorPage() {
@@ -155,7 +156,7 @@ export default function MagicEditorPage() {
                             value={text}
                             onChange={(e) => setText(e.target.value)}
                             placeholder="Empieza a escribir tu obra maestra aquí..."
-                            className="w-full h-full min-h-[50vh] resize-none p-0 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-slate-700 text-lg leading-relaxed selection:bg-purple-200"
+                            className="w-full h-auto min-h-[40vh] resize-none p-0 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-slate-700 text-lg leading-relaxed selection:bg-purple-200"
                         />
                         <div className="text-right text-xs text-slate-400 mt-4 font-mono">
                             {wordCount} {wordCount === 1 ? 'palabra' : 'palabras'}
@@ -167,7 +168,7 @@ export default function MagicEditorPage() {
                     {/* Power-Ups Section */}
                     <div className="space-y-6">
                         <h3 className="font-semibold text-slate-600 tracking-wide uppercase text-center">Power-Ups de IA</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="space-y-4">
                              <PowerUpCard 
                                 icon={Wand}
                                 title="Perfeccionar Texto"
@@ -175,24 +176,26 @@ export default function MagicEditorPage() {
                                 isFeatured
                                 isWip
                             />
-                            <PowerUpCard
-                                icon={BookOpen}
-                                title="Resumen Mágico"
-                                description="Genera un resumen ejecutivo del texto."
-                                isWip
-                            />
-                             <PowerUpCard
-                                icon={BrainCircuit}
-                                title="Expandir Concepto"
-                                description="Busca datos extra sobre una palabra seleccionada."
-                                isWip
-                            />
-                            <PowerUpCard
-                                icon={Languages}
-                                title="Traductor Contextual"
-                                description="Traduce fragmentos manteniendo el sentido."
-                                isWip
-                            />
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <PowerUpCard
+                                    icon={BookOpen}
+                                    title="Resumen Mágico"
+                                    description="Genera un resumen ejecutivo del texto."
+                                    isWip
+                                />
+                                 <PowerUpCard
+                                    icon={BrainCircuit}
+                                    title="Expandir Concepto"
+                                    description="Busca datos extra sobre una palabra seleccionada."
+                                    isWip
+                                />
+                                <PowerUpCard
+                                    icon={Languages}
+                                    title="Traductor Contextual"
+                                    description="Traduce fragmentos manteniendo el sentido."
+                                    isWip
+                                />
+                            </div>
                              <Card className="p-4 bg-white col-span-1 md:col-span-2 lg:col-span-1">
                                 <Label htmlFor="tone-select" className="text-sm font-semibold text-slate-600">Cambio de Tono</Label>
                                  <div className="flex flex-wrap gap-2 mt-2">
