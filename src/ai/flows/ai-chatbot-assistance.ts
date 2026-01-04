@@ -93,8 +93,7 @@ export async function aiChatbotAssistance(
   try {
     const validatedInput = AIChatbotAssistanceInputSchema.parse(input);
 
-    const result = await assistancePrompt(validatedInput);
-    const output = result.output();
+    const { output } = await assistancePrompt(validatedInput);
 
     if (!output || !output.response) {
       throw new Error('La IA no generó una respuesta válida.');
@@ -105,8 +104,8 @@ export async function aiChatbotAssistance(
     };
   } catch (error) {
     console.error(`❌ Error en aiChatbotAssistance:`, error);
-
     let userMessage = 'Lo siento, he encontrado un problema al procesar tu solicitud.';
+    
     if (error instanceof z.ZodError) {
         userMessage = 'La consulta no es válida: ' + error.errors[0].message;
     } else if (error instanceof Error) {
@@ -116,10 +115,11 @@ export async function aiChatbotAssistance(
             userMessage = 'Se ha alcanzado el límite de uso de la API. Por favor, intenta más tarde.';
         } else if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
             userMessage = 'La solicitud tardó demasiado. Por favor, intenta con una consulta más corta.';
+        } else if (error.message.includes('La IA no generó una respuesta válida')) {
+            userMessage = 'La IA no pudo generar una respuesta. Intenta reformular tu pregunta.';
         }
     }
     
-    // Devolver siempre una respuesta con el formato esperado
     return {
       response: `${userMessage}\n\n*Si el problema persiste, por favor contacta al soporte técnico.*`,
     };
