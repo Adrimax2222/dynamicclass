@@ -29,7 +29,7 @@ export type AIChatbotAssistanceOutput = z.infer<typeof AIChatbotAssistanceOutput
 // Prompt de Genkit que define la interacción con el modelo de IA.
 const assistancePrompt = ai.definePrompt({
     name: 'chatbotAssistancePrompt',
-    // Usamos el modelo gemini-1.5-flash para un balance óptimo entre coste y rendimiento.
+    // Usamos gemini-1.5-flash para un balance óptimo entre coste y rendimiento.
     model: 'googleai/gemini-1.5-flash',
     input: { schema: AIChatbotAssistanceInputSchema },
     output: { schema: AIChatbotAssistanceOutputSchema },
