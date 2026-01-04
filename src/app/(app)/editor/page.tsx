@@ -94,20 +94,18 @@ export default function MagicEditorPage() {
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
             {/* Cabecera Fija */}
-            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 h-20 flex items-center justify-between px-6">
+            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 h-20 flex items-center justify-between px-6 gap-4">
                 <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Documento sin título"
-                    className="text-2xl font-serif text-slate-800 bg-transparent focus:outline-none w-full max-w-md truncate"
+                    className="text-xl font-serif text-slate-800 bg-transparent focus:outline-none w-full max-w-md truncate border border-transparent rounded-lg px-3 py-1.5 h-9 focus-visible:ring-2 focus-visible:ring-indigo-500/50"
                 />
-                <div className="flex items-center gap-2">
-                    <Button onClick={handleExport} size="sm">
-                        <FileDown className="h-4 w-4 mr-2" />
-                        Exportar
-                    </Button>
-                </div>
+                <Button onClick={handleExport} size="sm">
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Exportar
+                </Button>
             </header>
             
             {/* Contenedor principal con scroll */}
