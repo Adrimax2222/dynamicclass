@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -185,7 +184,7 @@ export default function ChatbotPage() {
       console.error("AI Error:", error);
       const errorMessage: Omit<ChatMessage, 'id'> = {
         role: "system",
-        content: `Error: ${error.message || 'No se pudo obtener respuesta'}.`,
+        content: `Lo siento, he encontrado un problema al procesar tu solicitud.`,
         timestamp: Timestamp.now(),
       };
        if (currentChatId) {
