@@ -1,243 +1,353 @@
+
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Wand2, BookText, GraduationCap, Globe, Sparkles, Check, FileDown, Copy, Languages } from 'lucide-react';
+import { 
+  Sparkles, BookText, GraduationCap, Globe, Languages, Wand2, FileDown, 
+  Copy, Check, File as FileIcon, Trash2, RotateCw, Crop, Palette, X, Loader2
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
 import jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// Visual Simulation Component for the floating menu
-const MagicFloatingMenu = ({ position, isVisible }: { position: { top: number; left: number }, isVisible: boolean }) => {
-    return (
-        <div 
-            style={{ 
-                top: `${position.top}px`, 
-                left: `${position.left}px`,
-                display: isVisible ? 'flex' : 'none'
-            }}
-            className="absolute z-50 items-center gap-1 bg-slate-800/50 text-white p-2 rounded-2xl shadow-lg backdrop-blur-sm transition-opacity"
-        >
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
-                <Sparkles className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
-                <BookText className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
-                <GraduationCap className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
-                <Globe className="h-4 w-4" />
-            </Button>
-        </div>
-    );
+// Menú flotante que aparece al seleccionar texto
+const MagicFloatingMenu = ({ isVisible, position }: { isVisible: boolean; position: { top: number; left: number; }}) => {
+  if (!isVisible) {
+    return null;
+  }
+  
+  return (
+    <div
+      className="fixed z-50 transition-opacity duration-300"
+      style={{ top: `${position.top}px`, left: `${position.left}px`, transform: 'translateX(-50%)' }}
+    >
+       <div className="flex items-center gap-1 rounded-full bg-slate-900/80 p-1.5 shadow-2xl backdrop-blur-md border border-slate-700">
+        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
+          <Sparkles className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
+          <BookText className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
+          <GraduationCap className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
+          <Globe className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
 };
 
 
-// Action Card Component for the bottom tools
-const ActionCard = ({ icon: Icon, title, description, color, isFeatured = false, onClick }: { icon: React.ElementType, title: string, description: string, color: string, isFeatured?: boolean, onClick?: () => void }) => {
-    return (
-        <button onClick={onClick} className={cn(
-            "text-left bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4 transition-all hover:shadow-md hover:-translate-y-0.5 w-full",
-            isFeatured && "ring-2 ring-indigo-300/50"
-        )}>
-            <div className={cn("p-3 rounded-xl", color)}>
-                <Icon className="h-5 w-5 text-white" />
-            </div>
-            <div>
-                <h4 className="font-semibold text-slate-800">{title}</h4>
-                <p className="text-sm text-slate-500">{description}</p>
-            </div>
-        </button>
-    );
+// Tarjeta de herramienta mejorada
+const AIToolCard = ({ 
+  icon: Icon, 
+  title, 
+  description, 
+  color, 
+  onClick,
+  hasSelector,
+  selectorOptions,
+  selectorPlaceholder
+}: { 
+  icon: React.ElementType; 
+  title: string; 
+  description: string; 
+  color: string; 
+  onClick?: (value?: string) => void;
+  hasSelector?: boolean;
+  selectorOptions?: { value: string; label: string }[];
+  selectorPlaceholder?: string;
+}) => {
+  const [selectedValue, setSelectedValue] = useState<string>('');
+
+  return (
+    <div className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 flex flex-col">
+      <div className="flex items-start gap-4 mb-4">
+        <div className={cn("p-3 rounded-xl flex-shrink-0 shadow-md transition-transform group-hover:scale-110", color)}>
+          <Icon className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h4 className="font-bold text-slate-900 text-base mb-1">{title}</h4>
+        </div>
+      </div>
+      
+      <div className="flex-grow">
+          <p className="text-sm text-slate-500 leading-relaxed">{description}</p>
+      </div>
+      
+      <div className="mt-4 pt-4 border-t border-slate-100">
+        {hasSelector && selectorOptions ? (
+          <div className="flex gap-2">
+            <Select value={selectedValue} onValueChange={setSelectedValue}>
+              <SelectTrigger className="h-9 text-sm flex-1">
+                <SelectValue placeholder={selectorPlaceholder} />
+              </SelectTrigger>
+              <SelectContent>
+                {selectorOptions.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value} className="text-sm">
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button 
+              size="sm" 
+              className="h-9 px-4"
+              onClick={() => onClick?.(selectedValue)}
+              disabled={!selectedValue}
+            >
+              Aplicar
+            </Button>
+          </div>
+        ) : (
+          <Button 
+            size="sm" 
+            className="h-9 w-full"
+            onClick={() => onClick?.()}
+          >
+            Aplicar
+          </Button>
+        )}
+      </div>
+    </div>
+  );
 };
 
 
 export default function MagicEditorPage() {
-    const [title, setTitle] = useState('');
-    const [text, setText] = useState('');
-    const [wordCount, setWordCount] = useState(0);
-    const [charCount, setCharCount] = useState(0);
-    const [isCopied, setIsCopied] = useState(false);
-    
-    const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-    const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [title, setTitle] = useState('');
+  const [text, setText] = useState('');
+  const [wordCount, setWordCount] = useState(0);
+  const [charCount, setCharCount] = useState(0);
+  const [isCopied, setIsCopied] = useState(false);
+  const { toast } = useToast();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
-    const router = useRouter();
-    const { toast } = useToast();
+  const handleMouseUp = useCallback(() => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + window.scrollY + 10,
+        left: rect.left + rect.width / 2,
+      });
+      setIsMenuVisible(true);
+    } else {
+      setIsMenuVisible(false);
+    }
+  }, []);
 
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const editorContainerRef = useRef<HTMLDivElement>(null);
-
-    // Auto-resize textarea and calculate stats
-    useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-        }
-        const words = text.trim().split(/\s+/).filter(Boolean);
-        setWordCount(words.length === 1 && words[0] === '' ? 0 : words.length);
-        setCharCount(text.length);
-    }, [text]);
-
-    const handleCopy = () => {
-        navigator.clipboard.writeText(text);
-        setIsCopied(true);
-        toast({ title: '¡Copiado!', description: 'El texto ha sido copiado al portapapeles.' });
-        setTimeout(() => setIsCopied(false), 2000);
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setIsMenuVisible(false);
     };
-
-    const handleExport = () => {
-        try {
-            const doc = new jsPDF();
-            doc.text(text, 10, 10);
-            doc.save(`${title.replace(/\s/g, '_') || 'documento'}.pdf`);
-            toast({ title: '¡Exportado!', description: 'Tu documento ha sido exportado como PDF.' });
-        } catch (error) {
-            console.error("Error exporting to PDF:", error);
-            toast({ title: "Error", description: "No se pudo exportar el documento.", variant: "destructive" });
-        }
-    };
-    
-    const handleMouseUp = () => {
-        const selection = window.getSelection();
-        if (selection && selection.toString().trim().length > 0) {
-            const range = selection.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-            
-            const containerRect = editorContainerRef.current?.getBoundingClientRect();
-            if (!containerRect) return;
-
-            setMenuPosition({
-                top: rect.bottom + window.scrollY - containerRect.top,
-                left: rect.left + rect.width / 2 - containerRect.left,
-            });
-            setIsMenuVisible(true);
-        } else {
-            setIsMenuVisible(false);
-        }
-    };
-
-     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (isMenuVisible) {
-                setIsMenuVisible(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isMenuVisible]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
 
-    return (
-        <div className="min-h-screen bg-slate-50 flex flex-col">
-            {/* Cabecera Fija */}
-            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 h-20 flex items-center justify-between px-6 gap-4">
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+    const words = text.trim().split(/\s+/).filter(Boolean);
+    const wordCountValue = words.length === 1 && words[0] === '' ? 0 : words.length;
+    setWordCount(wordCountValue);
+    setCharCount(text.length);
+  }, [text]);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    toast({ title: '✓ Copiado', description: 'El texto ha sido copiado al portapapeles.' });
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const handleExportPDF = () => {
+    try {
+      const doc = new jsPDF();
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(12);
+      
+      const content = `${title}\n\n${text}`;
+      const lines = doc.splitTextToSize(content, 180);
+      doc.text(lines, 15, 20);
+      
+      doc.save(`${title.replace(/\s/g, '_') || 'documento'}.pdf`);
+      toast({ title: '✓ Exportado', description: 'Tu documento se ha guardado como PDF.' });
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'Error', description: 'No se pudo exportar el documento.', variant: 'destructive' });
+    }
+  };
+  
+  const languages = [
+    { value: 'es', label: '🇪🇸 Español' },
+    { value: 'en', label: '🇬🇧 Inglés' },
+    { value: 'fr', label: '🇫🇷 Francés' },
+    { value: 'de', label: '🇩🇪 Alemán' },
+    { value: 'it', label: '🇮🇹 Italiano' },
+    { value: 'pt', label: '🇵🇹 Portugués' },
+    { value: 'ca', label: '🏴 Catalán' },
+  ];
+
+  const tones = [
+    { value: 'formal', label: 'Formal y profesional' },
+    { value: 'casual', label: 'Casual y amigable' },
+    { value: 'academic', label: 'Académico y técnico' },
+    { value: 'creative', label: 'Creativo y original' },
+    { value: 'persuasive', label: 'Persuasivo y convincente' },
+  ];
+
+  const summaryTypes = [
+    { value: 'short', label: 'Resumen corto (3-4 líneas)' },
+    { value: 'medium', label: 'Resumen medio (1 párrafo)' },
+    { value: 'detailed', label: 'Resumen detallado' },
+    { value: 'bullets', label: 'Puntos clave' },
+  ];
+
+  const handleAIAction = (action: string, value?: string) => {
+    const message = value ? `${action} (${value})` : action;
+    toast({ 
+      title: '🎨 Función en desarrollo', 
+      description: `"${message}" estará disponible pronto.` 
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50" onMouseUp={handleMouseUp}>
+        <MagicFloatingMenu isVisible={isMenuVisible} position={menuPosition} />
+        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200">
+            <div className="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
                 <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Documento sin Título"
-                    className="text-xl font-serif text-slate-800 bg-transparent focus:outline-none w-full max-w-md truncate rounded-lg px-3 py-1.5 h-9 border-2 border-indigo-500"
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Título del documento"
+                  className="text-2xl font-serif text-slate-800 bg-transparent focus:outline-none w-full p-2 border-2 border-indigo-500/50 rounded-lg h-12 focus:ring-2 focus:ring-indigo-500/50"
                 />
-                <Button onClick={handleExport} size="sm">
-                    <FileDown className="h-4 w-4 mr-2" />
+                <Button onClick={handleExportPDF} size="lg" className="h-12 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-md hover:shadow-lg transition-shadow">
+                    <FileDown className="h-5 w-5 mr-2" />
                     Exportar
                 </Button>
-            </header>
+            </div>
+        </header>
+
+        <main className="max-w-3xl mx-auto w-full px-4 sm:px-6">
+            <div className="mt-8 mb-6 p-6 bg-gradient-to-r from-indigo-500/95 to-purple-600/95 rounded-2xl shadow-xl text-white relative overflow-hidden">
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-50"></div>
+                <div className="relative z-10 text-center">
+                    <h2 className="text-2xl font-bold mb-1 font-serif">Modo Escritura Mágica</h2>
+                    <p className="text-sm text-white/90 max-w-lg mx-auto">
+                        Usa las herramientas de IA para refinar, resumir o traducir tu texto. Selecciona cualquier palabra para empezar.
+                    </p>
+                </div>
+            </div>
+
+            <div className="bg-white rounded-t-2xl shadow-lg border-x border-t border-slate-200/80 overflow-hidden">
+                <div className="p-8 sm:p-12">
+                     <Textarea
+                        ref={textareaRef}
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        placeholder="Empieza a escribir aquí..."
+                        className="w-full resize-none p-0 border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-lg text-slate-800 leading-relaxed min-h-[40vh] bg-transparent font-serif"
+                    />
+                </div>
+            </div>
             
-            {/* Contenedor principal con scroll */}
-            <main className="flex-1 overflow-y-auto pb-20">
-                <div className="max-w-3xl mx-auto w-full mt-8 relative px-4" ref={editorContainerRef} onMouseUp={handleMouseUp}>
-                    
-                    {/* Banner Superior */}
-                    <div className="w-full text-center p-6 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl shadow-lg mb-8 text-white">
-                        <h2 className="text-xl font-bold flex items-center justify-center gap-2">
-                            <Sparkles className="h-5 w-5" />
-                            Modo Escritura Mágica
-                        </h2>
-                        <p className="text-sm opacity-80 mt-1">Usa las herramientas de IA para perfeccionar tu texto.</p>
+            <div className="sticky bottom-0 z-30">
+                <div className="h-4 bg-gradient-to-b from-white/0 via-slate-50/80 to-slate-50"></div>
+                <div className="bg-white/80 backdrop-blur-md rounded-b-2xl border-x border-b border-slate-200/80 shadow-lg p-3 flex items-center justify-between text-sm text-slate-600">
+                    <div className="flex items-center gap-4">
+                        <span><strong className="text-slate-800">{wordCount}</strong> palabras</span>
+                        <span><strong className="text-slate-800">{charCount}</strong> caracteres</span>
                     </div>
-
-                    {/* Menú Flotante */}
-                    <MagicFloatingMenu position={menuPosition} isVisible={isMenuVisible} />
-
-                    {/* La Hoja */}
-                    <div className="bg-white shadow-lg rounded-2xl">
-                        <div className="p-8">
-                             {/* Título y cuerpo del texto */}
-                            <input 
-                                placeholder="Título"
-                                className="w-full text-3xl font-bold font-serif text-slate-900 focus:outline-none mb-8 bg-transparent"
-                            />
-                            <Textarea
-                                ref={textareaRef}
-                                value={text}
-                                onChange={(e) => setText(e.target.value)}
-                                placeholder="Empieza a escribir aquí..."
-                                className="w-full resize-none p-0 border-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none text-lg text-slate-800 leading-relaxed min-h-[20vh]"
-                            />
-                        </div>
-
-                         {/* Bandeja de Herramientas */}
-                        <div className="sticky bottom-0 bg-white/90 backdrop-blur-sm border-t border-slate-200 p-2 flex items-center justify-between rounded-b-2xl">
-                           <div className="flex items-center gap-4 text-sm text-slate-500">
-                                <span className="pl-2">{wordCount} palabras</span>
-                                <Separator orientation="vertical" className="h-4" />
-                                <span>{charCount} caracteres</span>
-                           </div>
-                           <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="sm" onClick={handleCopy}>
-                                    {isCopied ? <Check className="h-4 w-4 mr-2 text-green-500"/> : <Copy className="h-4 w-4 mr-2" />}
-                                    Copiar
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={handleExport}>
-                                    <FileDown className="h-4 w-4 mr-2" />
-                                    Exportar
-                                </Button>
-                           </div>
-                        </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={handleCopy} className="h-8">
+                            {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={handleExportPDF} className="h-8">
+                            <FileDown className="h-4 w-4" />
+                        </Button>
                     </div>
                 </div>
-
-                {/* Panel de Herramientas Mágicas */}
-                <div className="max-w-3xl mx-auto w-full mt-12 px-4">
-                    <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Herramientas Recomendadas</h3>
-                    <div className="grid grid-cols-1 gap-4">
-                        <ActionCard
-                            icon={Wand2}
-                            title="Perfeccionar Escritura"
-                            description="Corrige gramática, estilo y fluidez con un clic."
-                            color="bg-indigo-500"
-                            isFeatured
-                        />
-                        <ActionCard
-                            icon={BookText}
-                            title="Resumen Ejecutivo"
-                            description="Crea un resumen conciso de tu texto."
-                            color="bg-blue-500"
-                        />
-                        <ActionCard
-                            icon={GraduationCap}
-                            title="Elevar Nivel Académico"
-                            description="Adapta el texto a un tono más formal y riguroso."
-                            color="bg-purple-500"
-                        />
-                         <ActionCard
-                            icon={Languages}
-                            title="Cambiar Tono"
-                            description="Adapta el texto a un tono más informal o creativo."
-                            color="bg-orange-500"
-                        />
-                    </div>
-                </div>
-            </main>
-        </div>
-    );
+            </div>
+        </main>
+        
+        <section className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-12">
+            <div className="space-y-6">
+                 <h3 className="text-lg font-bold text-slate-800 text-center">Herramientas Inteligentes</h3>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <AIToolCard
+                        icon={Wand2}
+                        title="Perfeccionar Texto"
+                        description="Mejora la gramática, claridad y estilo de tu escritura."
+                        color="bg-gradient-to-br from-green-500 to-green-600"
+                        onClick={() => handleAIAction('Mejorar escritura')}
+                    />
+                    <AIToolCard
+                        icon={BookText}
+                        title="Generar Resumen"
+                        description="Crea resúmenes personalizados del contenido."
+                        color="bg-gradient-to-br from-blue-500 to-blue-600"
+                        hasSelector
+                        selectorOptions={summaryTypes}
+                        selectorPlaceholder="Tipo de resumen"
+                        onClick={(value) => handleAIAction('Resumen', value)}
+                    />
+                    <AIToolCard
+                        icon={GraduationCap}
+                        title="Tono Académico"
+                        description="Adapta el texto para un entorno formal y académico."
+                        color="bg-gradient-to-br from-red-500 to-red-600"
+                        onClick={() => handleAIAction('Tono Académico')}
+                    />
+                    <AIToolCard
+                        icon={Languages}
+                        title="Traducir Texto"
+                        description="Traduce instantáneamente a cualquier idioma."
+                        color="bg-gradient-to-br from-sky-500 to-sky-600"
+                        hasSelector
+                        selectorOptions={languages}
+                        selectorPlaceholder="Selecciona idioma"
+                        onClick={(value) => handleAIAction('Traducir', value)}
+                    />
+                     <AIToolCard
+                        icon={Wand2}
+                        title="Cambiar Tono"
+                        description="Ajusta el estilo y personalidad de tu texto."
+                        color="bg-gradient-to-br from-purple-500 to-purple-600"
+                        hasSelector
+                        selectorOptions={tones}
+                        selectorPlaceholder="Selecciona tono"
+                        onClick={(value) => handleAIAction('Cambiar tono', value)}
+                    />
+                    <AIToolCard
+                        icon={Sparkles}
+                        title="Expandir Texto"
+                        description="Desarrolla tus ideas con mayor profundidad y detalle."
+                        color="bg-gradient-to-br from-orange-500 to-orange-600"
+                        onClick={() => handleAIAction('Expandir texto')}
+                    />
+                 </div>
+            </div>
+        </section>
+    </div>
+  );
 }
