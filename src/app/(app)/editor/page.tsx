@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Wand2, BookText, GraduationCap, Globe, Sparkles, Languages, Check, FileDown, Copy, UserGraduate } from 'lucide-react';
+import { Wand2, BookText, UserGraduate, Globe, Sparkles, Languages, Check, FileDown, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import jsPDF from 'jspdf';
@@ -224,7 +224,7 @@ export default function MagicEditorPage() {
                             color="bg-blue-500"
                         />
                         <ActionCard
-                            icon={GraduationCap}
+                            icon={UserGraduate}
                             title="Elevar Nivel Académico"
                             description="Adapta el texto a un tono más formal y riguroso."
                             color="bg-purple-500"
@@ -241,3 +241,5 @@ export default function MagicEditorPage() {
         </div>
     );
 }
+
+    
