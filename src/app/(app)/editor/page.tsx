@@ -1,11 +1,10 @@
-
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Wand2, BookText, GraduationCap, Globe, Sparkles, Languages, Check, FileDown, Copy } from 'lucide-react';
+import { Wand2, BookText, GraduationCap, Globe, Sparkles, Check, FileDown, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import jsPDF from 'jspdf';
