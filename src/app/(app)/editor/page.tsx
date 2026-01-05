@@ -24,8 +24,6 @@ import {
 } from "@/components/ui/select";
 import { WipDialog } from '@/components/layout/wip-dialog';
 import { processEditorAction, type EditorActionInput } from './actions';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 
 
 const ActionCard = ({
@@ -113,20 +111,31 @@ export default function MagicEditorPage() {
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [fontSize, setFontSize] = useState('16');
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  const editorRef = useRef<HTMLDivElement>(null);
 
   const { toast } = useToast();
   
   useEffect(() => {
-    const words = editorContent.trim().split(/\s+/).filter(Boolean);
+    const text = editorRef.current?.innerText || '';
+    const words = text.trim().split(/\s+/).filter(Boolean);
     const wordCountValue = words.length === 1 && words[0] === '' ? 0 : words.length;
     
     setWordCount(wordCountValue);
-    setCharCount(editorContent.length);
+    setCharCount(text.length);
     setReadingTime(Math.ceil(wordCountValue / 200));
   }, [editorContent]);
+  
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== editorContent) {
+        editorRef.current.innerHTML = editorContent;
+    }
+  }, [editorContent]);
+
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(editorContent);
+    const text = editorRef.current?.innerText || '';
+    navigator.clipboard.writeText(text);
     setIsCopied(true);
     toast({ title: '✓ Copiado', description: 'Texto copiado al portapapeles.' });
     setTimeout(() => setIsCopied(false), 2000);
@@ -144,7 +153,8 @@ export default function MagicEditorPage() {
       
       doc.setFontSize(12);
       doc.setFont('helvetica', 'normal');
-      const splitText = doc.splitTextToSize(editorContent, pageWidth - (margin * 2));
+      const text = editorRef.current?.innerText || '';
+      const splitText = doc.splitTextToSize(text, pageWidth - (margin * 2));
       doc.text(splitText, margin, margin + 15);
 
       doc.save(`${title.replace(/\s/g, '_') || 'documento'}.pdf`);
@@ -156,28 +166,37 @@ export default function MagicEditorPage() {
   };
 
   const handleShare = () => {
-    if (navigator.share && editorContent) {
-      navigator.share({ title: title || 'Mi documento', text: editorContent }).catch(() => handleCopy());
+    const text = editorRef.current?.innerText || '';
+    if (navigator.share && text) {
+      navigator.share({ title: title || 'Mi documento', text: text }).catch(() => handleCopy());
     } else {
       handleCopy();
     }
   };
 
   const handleAiAction = async (actionType: EditorActionInput['actionType'], option?: string) => {
-    if (!editorContent.trim() || isProcessing) return;
+    const text = editorRef.current?.innerText || '';
+    if (!text.trim() || isProcessing) return;
 
     setIsProcessing(true);
     toast({ title: 'Procesando con IA...', description: 'Tu texto está siendo mejorado.' });
 
     try {
         const result = await processEditorAction({
-            text: editorContent,
+            text: text,
             actionType,
             option,
         });
 
-        setEditorContent(result.processedText);
-        toast({ title: '¡Texto mejorado!', description: 'La IA ha procesado tu solicitud.' });
+        if (result && result.processedText) {
+            setEditorContent(result.processedText);
+            if (editorRef.current) {
+                editorRef.current.innerHTML = result.processedText;
+            }
+            toast({ title: '¡Texto mejorado!', description: 'La IA ha procesado tu solicitud.' });
+        } else {
+             throw new Error("La IA no devolvió un resultado válido.");
+        }
 
     } catch (error) {
         console.error('AI Action Failed:', error);
@@ -241,7 +260,7 @@ export default function MagicEditorPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+    <div className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -289,10 +308,13 @@ export default function MagicEditorPage() {
         
         <div className="bg-white rounded-xl shadow-lg border border-slate-200/60 overflow-hidden mb-6">
           <div className="p-8">
-            <Textarea
-              value={editorContent}
-              onChange={(e) => setEditorContent(e.target.value)}
-              className="w-full min-h-[30vh] max-h-[70vh] p-0 border-none focus:outline-none text-base text-slate-800 leading-relaxed font-serif overflow-y-auto focus-visible:ring-0 focus-visible:ring-offset-0"
+             <div
+              ref={editorRef}
+              contentEditable={!isProcessing}
+              onInput={(e) => setEditorContent(e.currentTarget.innerHTML)}
+              className="w-full min-h-[30vh] max-h-[70vh] p-0 border-none focus:outline-none text-base text-slate-800 leading-relaxed font-serif overflow-y-auto"
+              suppressContentEditableWarning={true}
+              dangerouslySetInnerHTML={{ __html: editorContent }}
               placeholder="Empieza a escribir tu obra maestra..."
             />
           </div>

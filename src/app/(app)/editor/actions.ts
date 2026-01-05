@@ -82,8 +82,8 @@ const editorActionFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await editorActionPrompt(input);
-    if (!output) {
-      return { processedText: input.text }; // Devuelve el texto original si no hay salida
+    if (!output?.processedText) {
+      throw new Error("La respuesta de la IA no fue válida.");
     }
     return { processedText: output.processedText.trim() };
   }
@@ -103,6 +103,6 @@ export async function processEditorAction(input: EditorActionInput): Promise<Edi
   } catch (error) {
     console.error("Error in processEditorAction:", error);
     // Devuelve el texto original en caso de error para no perder el trabajo del usuario
-    return { processedText: input.text };
+    return { processedText: `Error al procesar: ${input.text}` };
   }
 }
