@@ -68,7 +68,7 @@ const MagicFloatingMenu = ({
   );
 };
 
-const AIToolCard = ({ 
+const ActionCard = ({ 
   icon: Icon, 
   title, 
   description, 
@@ -90,50 +90,49 @@ const AIToolCard = ({
   const [selectedValue, setSelectedValue] = useState<string>('');
 
   const cardContent = (
-    <div className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 w-full flex flex-col h-full">
-      <div className="flex items-start gap-4 mb-4">
-        <div className={cn("p-3 rounded-xl flex-shrink-0 shadow-md transition-transform group-hover:scale-110", color)}>
-          <Icon className="h-5 w-5 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
+    <div className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 w-full flex items-start gap-5">
+      <div className={cn("p-3 rounded-xl flex-shrink-0 shadow-md transition-transform group-hover:scale-110", color)}>
+        <Icon className="h-5 w-5 text-white" />
+      </div>
+      <div className="flex-1 flex flex-col h-full">
+        <div className="flex-1">
           <h4 className="font-bold text-slate-900 text-base mb-1">{title}</h4>
           <p className="text-sm text-slate-500 leading-relaxed">{description}</p>
         </div>
-      </div>
-      
-      <div className="mt-auto pt-4">
-        {hasSelector && selectorOptions ? (
-          <div className="flex gap-2">
-            <Select value={selectedValue} onValueChange={setSelectedValue}>
-              <SelectTrigger className="h-9 text-sm flex-1">
-                <SelectValue placeholder={selectorPlaceholder} />
-              </SelectTrigger>
-              <SelectContent>
-                {selectorOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value} className="text-sm">
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="mt-4">
+          {hasSelector && selectorOptions ? (
+            <div className="flex gap-2">
+              <Select value={selectedValue} onValueChange={setSelectedValue}>
+                <SelectTrigger className="h-9 text-sm flex-1">
+                  <SelectValue placeholder={selectorPlaceholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectorOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value} className="text-sm">
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                size="sm" 
+                className="h-9 px-4"
+                onClick={() => onClick?.(selectedValue)}
+                disabled={!selectedValue}
+              >
+                Aplicar
+              </Button>
+            </div>
+          ) : (
             <Button 
               size="sm" 
-              className="h-9 px-4"
-              onClick={() => onClick?.(selectedValue)}
-              disabled={!selectedValue}
+              className="h-9 w-full"
+              onClick={() => onClick?.()}
             >
               Aplicar
             </Button>
-          </div>
-        ) : (
-          <Button 
-            size="sm" 
-            className="h-9 w-full"
-            onClick={() => onClick?.()}
-          >
-            Aplicar
-          </Button>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
@@ -221,7 +220,7 @@ export default function MagicEditorPage() {
     }
   };
 
-const handleFormatAction = (action: string, value?: string) => {
+  const handleFormatAction = (action: string, value?: string) => {
     const editor = document.getElementById('main-editor');
     if (editor) editor.focus();
 
@@ -466,8 +465,8 @@ const handleFormatAction = (action: string, value?: string) => {
             </h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            <AIToolCard
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <ActionCard
               icon={Languages}
               title="Traducir Texto"
               description="Traduce instantáneamente a cualquier idioma."
@@ -477,35 +476,35 @@ const handleFormatAction = (action: string, value?: string) => {
               selectorPlaceholder="Selecciona idioma"
             />
             
-            <AIToolCard
+            <ActionCard
               icon={Wand2}
               title="Cambiar Tono"
               description="Adapta el texto a un tono más informal o creativo."
               color="bg-gradient-to-br from-orange-500 to-orange-600"
             />
             
-            <AIToolCard
+            <ActionCard
               icon={BookText}
               title="Generar Resumen"
               description="Crea resúmenes personalizados del contenido."
               color="bg-gradient-to-br from-purple-500 to-purple-600"
             />
 
-            <AIToolCard
+            <ActionCard
               icon={TextCursorInput}
               title="Continuar Escritura"
               description="La IA continúa el texto donde lo dejaste."
               color="bg-gradient-to-br from-green-500 to-green-600"
             />
 
-            <AIToolCard
+            <ActionCard
               icon={Brain}
               title="Simplificar Texto"
               description="Reescribe el texto para que sea más fácil de entender."
               color="bg-gradient-to-br from-teal-500 to-teal-600"
             />
 
-            <AIToolCard
+            <ActionCard
               icon={Bug}
               title="Buscar Errores"
               description="Revisa la gramática y ortografía de tu documento."
@@ -517,3 +516,4 @@ const handleFormatAction = (action: string, value?: string) => {
     </div>
   );
 }
+
