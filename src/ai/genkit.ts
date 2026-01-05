@@ -29,6 +29,7 @@ export const ai = genkit({
   plugins: [
     googleAI({
       apiKey: apiKey,
+      defaultModel: 'gemini-1.5-flash',
     }),
   ],
   // En producción: 'error', en desarrollo: 'debug'
