@@ -1,11 +1,10 @@
 'use server';
 
 /**
- * @fileOverview Server Action para procesar acciones del Editor Mágico usando Genkit.
+ * @fileOverview Server Action para procesar acciones del Editor Mágico usando @google/generative-ai.
  */
 
-import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { z } from 'zod';
 
 // Define los tipos de acción que puede procesar la IA
@@ -34,7 +33,15 @@ const EditorActionOutputSchema = z.object({
 export type EditorActionInput = z.infer<typeof EditorActionInputSchema>;
 export type EditorActionOutput = z.infer<typeof EditorActionOutputSchema>;
 
-// --- Lógica de la IA con Genkit ---
+// --- Lógica de la IA con @google/generative-ai ---
+
+// Inicializa la API con la clave desde las variables de entorno
+const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
+if (!apiKey) {
+  throw new Error("La clave de API de Google/Gemini no está configurada en las variables de entorno.");
+}
+const genAI = new GoogleGenerativeAI(apiKey);
+
 
 // Un mapa para obtener el prompt correcto basado en el tipo de acción
 const getPromptText = (actionType: z.infer<typeof ActionTypeSchema>, option?: string) => {
@@ -68,28 +75,27 @@ const getPromptText = (actionType: z.infer<typeof ActionTypeSchema>, option?: st
  * @returns El texto procesado por la IA.
  */
 export async function processEditorAction(input: EditorActionInput): Promise<EditorActionOutput> {
-  console.log('Processing editor action with Genkit:', input.actionType, 'with option:', input.option);
+  console.log('Processing editor action with @google/generative-ai:', input.actionType, 'with option:', input.option);
   try {
     // 1. Validar la entrada con Zod
     const { text, actionType, option } = EditorActionInputSchema.parse(input);
-    
-    // 2. Construir el prompt dinámico
-    const promptText = `${getPromptText(actionType, option)}\n\n${text}`;
 
-    // 3. Llamar a la IA usando Genkit
-    const { text: processedText } = await ai.generate({
-      model: googleAI('gemini-1.5-flash'), // Modelo compatible
-      prompt: promptText,
-      config: {
-        temperature: 0.5,
-      }
-    });
+    // 2. Configura el modelo
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    // 3. Construir el prompt dinámico
+    const prompt = `${getPromptText(actionType, option)}\n\n---\n\n${text}`;
+
+    // 4. Llamar a la IA
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const processedText = response.text();
 
     if (!processedText) {
       throw new Error("La IA no generó una respuesta válida.");
     }
     
-    // 4. Devolver la salida en el formato esperado
+    // 5. Devolver la salida en el formato esperado
     return { processedText: processedText.trim() };
 
   } catch (error: any) {
