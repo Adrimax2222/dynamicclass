@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -32,6 +33,10 @@ export type EditorActionInput = z.infer<typeof EditorActionInputSchema>;
 
 // 1. Validación de la clave antes de cualquier ejecución
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
+
+// DEBUG: Imprimir los primeros caracteres de la clave
+console.log("DEBUG KEY:", apiKey?.slice(0, 5) + "...");
+
 if (!apiKey) {
   console.error("CRÍTICO: La variable GEMINI_API_KEY o GOOGLE_GENAI_API_KEY no está definida en el entorno.");
 }
@@ -51,7 +56,7 @@ const getPromptInstruction = (actionType: z.infer<typeof ActionTypeSchema>, opti
             }
             return `Crea un resumen en ${option || 'un párrafo corto'} del siguiente texto. Devuelve solo el resumen, sin añadir introducciones:`;
         case 'continue':
-            return `Continúa escribiendo a partir del siguiente texto, añadiendo ${option || 'un párrafo'}. Mantén el estilo y el tono originales. Devuelve solo la continuación, sin añadir introducciones:`;
+            return `Continúa escribiendo a partir del siguiente texto, añadiendo ${option || 'un párrafo'}. Mantén el estilo y el tono originales. Devuelve solo la continuación, sin añadir introduciones:`;
         case 'simplify':
              if (option === 'para-ninos') {
                 return `Simplifica el siguiente texto para que un niño de 10 años pueda entenderlo fácilmente. Devuelve solo el texto simplificado, sin añadir introducciones:`;
@@ -60,7 +65,6 @@ const getPromptInstruction = (actionType: z.infer<typeof ActionTypeSchema>, opti
         case 'fix':
             return `Corrige la gramática y la ortografía del siguiente texto. Devuelve solo el texto corregido, sin añadir introducciones y manteniendo el formato original tanto como sea posible:`;
         default:
-            // Esto nunca debería ocurrir gracias a Zod, pero es una buena práctica tener un fallback.
             return `Procesa el siguiente texto:`;
     }
 }
@@ -72,7 +76,6 @@ const getPromptInstruction = (actionType: z.infer<typeof ActionTypeSchema>, opti
  * @returns El texto procesado por la IA.
  */
 export async function processEditorAction(input: EditorActionInput): Promise<{ processedText: string }> {
-  // Validar la entrada con Zod para seguridad.
   const validation = EditorActionInputSchema.safeParse(input);
   if (!validation.success) {
     throw new Error("Entrada inválida para la acción del editor.");
@@ -86,9 +89,9 @@ export async function processEditorAction(input: EditorActionInput): Promise<{ p
   const fullPrompt = `${instruction}\n\n---\n\n${text}`;
 
   try {
-    // 2. Nombre de modelo estricto
+    // DEBUG: Cambiar temporalmente al modelo "pro" para diagnóstico
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash" 
+      model: "gemini-1.5-pro" 
     });
 
     const result = await model.generateContent(fullPrompt);
@@ -102,8 +105,8 @@ export async function processEditorAction(input: EditorActionInput): Promise<{ p
     return { processedText: processedText.trim() };
 
   } catch (error: any) {
-    // 3. Captura detallada del error
-    console.error("[GEMINI ERROR]:", error);
+    // DEBUG: Imprimir el objeto de error completo para un análisis detallado
+    console.dir(error, { depth: null });
     
     // Propaga un mensaje de error útil al cliente
     throw new Error(
