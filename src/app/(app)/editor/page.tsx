@@ -163,15 +163,16 @@ export default function MagicEditorPage() {
   const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Cuando editorContent cambia (ej. por la IA), actualizamos el div editable
+    // Sincroniza el estado con el editor solo si el contenido es diferente
     if (editorRef.current && editorRef.current.innerHTML !== editorContent) {
         editorRef.current.innerHTML = editorContent;
     }
-}, [editorContent]);
+  }, [editorContent]);
 
 
   useEffect(() => {
-    const plainText = editorContent.replace(/<[^>]*>?/gm, '');
+    if (!editorRef.current) return;
+    const plainText = editorRef.current.innerText || '';
     const words = plainText.trim().split(/\s+/).filter(Boolean);
     const wordCountValue = words.length === 1 && words[0] === '' ? 0 : words.length;
     
@@ -181,7 +182,8 @@ export default function MagicEditorPage() {
   }, [editorContent]);
 
   const handleCopy = () => {
-    const plainText = editorContent.replace(/<[^>]*>?/gm, '');
+    if (!editorRef.current) return;
+    const plainText = editorRef.current.innerText;
     navigator.clipboard.writeText(plainText);
     setIsCopied(true);
     toast({ title: '✓ Copiado', description: 'Texto copiado al portapapeles.' });
@@ -190,6 +192,7 @@ export default function MagicEditorPage() {
 
   const handleExport = () => {
     try {
+      if (!editorRef.current) return;
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 20;
@@ -198,7 +201,7 @@ export default function MagicEditorPage() {
       doc.setFont('helvetica', 'bold');
       doc.text(title || 'Documento sin título', margin, margin);
       
-      doc.html(editorContent, {
+      doc.html(editorRef.current.innerHTML, {
         x: margin,
         y: margin + 15,
         width: pageWidth - (margin * 2),
@@ -214,7 +217,8 @@ export default function MagicEditorPage() {
   };
 
   const handleShare = () => {
-    const plainText = editorContent.replace(/<[^>]*>?/gm, '');
+    if (!editorRef.current) return;
+    const plainText = editorRef.current.innerText;
     if (navigator.share && plainText) {
       navigator.share({ title: title || 'Mi documento', text: plainText }).catch(() => handleCopy());
     } else {
@@ -289,17 +293,22 @@ export default function MagicEditorPage() {
   }, [isMenuVisible]);
 
   const handleAiAction = async (actionType: EditorActionInput['actionType'], option?: string) => {
-    if (!editorContent.trim() || isProcessing) return;
+    const plainText = editorRef.current?.innerText || '';
+    if (!plainText.trim() || isProcessing) return;
 
     setIsProcessing(true);
     toast({ title: 'Procesando con IA...', description: 'Tu texto está siendo mejorado.' });
 
     try {
         const result = await processEditorAction({
-            text: editorContent,
+            text: plainText,
             actionType,
             option,
         });
+
+        if (editorRef.current) {
+          editorRef.current.innerHTML = result.processedText;
+        }
         setEditorContent(result.processedText);
     } catch (error) {
         console.error('AI Action Failed:', error);
