@@ -6,17 +6,19 @@ import { config } from 'dotenv';
 // Cargar variables de entorno
 config();
 
-// Validar que la API key esté presente
-const apiKey = process.env.GOOGLE_GENAI_API_KEY;
+// Validar que la API key esté presente, buscando ambas variables
+const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY;
 
 if (!apiKey) {
-  console.error('❌ ERROR CRÍTICO: GOOGLE_GENAI_API_KEY no está configurada');
-  throw new Error('GOOGLE_GENAI_API_KEY no está configurada en las variables de entorno');
+  const errorMsg = 'No se encontró la API Key. Asegúrate de que GOOGLE_GENAI_API_KEY o GEMINI_API_KEY estén configuradas en tu archivo .env';
+  console.error(`❌ ERROR CRÍTICO: ${errorMsg}`);
+  throw new Error(errorMsg);
 }
 
 if (apiKey.startsWith('TU_') || apiKey === '') {
-  console.error('❌ ERROR: La API key no es válida. Reemplázala en el archivo .env');
-  throw new Error('API key no válida');
+  const errorMsg = 'La API key no es válida. Reemplázala en el archivo .env';
+  console.error(`❌ ERROR: ${errorMsg}`);
+  throw new Error(errorMsg);
 }
 
 /**
