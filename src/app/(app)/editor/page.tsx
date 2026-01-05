@@ -102,7 +102,7 @@ const ActionCard = ({
       </div>
       <div className="flex-1 min-w-0">
         <h4 className="font-bold text-slate-900 text-base">{title}</h4>
-        <p className="text-sm text-slate-500 leading-relaxed truncate">
+        <p className="text-sm text-slate-500 leading-relaxed">
           {description}
         </p>
       </div>
@@ -135,7 +135,7 @@ const ActionCard = ({
             </Button>
           </div>
         ) : (
-          <Button size="sm" className="h-9" onClick={() => onClick?.()}>
+          <Button size="sm" className="h-9 px-4" onClick={() => onClick?.()}>
             Aplicar
           </Button>
         )}
@@ -145,6 +145,7 @@ const ActionCard = ({
 
   return onClick ? cardContent : <WipDialog>{cardContent}</WipDialog>;
 };
+
 
 export default function MagicEditorPage() {
   const [title, setTitle] = useState('');
@@ -551,5 +552,6 @@ export default function MagicEditorPage() {
     </div>
   );
 }
+
 
 
