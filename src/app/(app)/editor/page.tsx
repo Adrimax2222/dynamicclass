@@ -91,35 +91,33 @@ const ActionCard = ({
   const [selectedValue, setSelectedValue] = useState("");
 
   const cardContent = (
-    <div className="group bg-white p-4 rounded-2xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 w-full flex items-center gap-5">
-      <div
-        className={cn(
-          "p-3 rounded-xl flex-shrink-0 shadow-md",
-          color
-        )}
-      >
-        <Icon className="h-5 w-5 text-white" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <h4 className="font-bold text-slate-900 text-base">{title}</h4>
-        <p className="text-sm text-slate-500 leading-relaxed">
+    <div className="group bg-white p-4 rounded-2xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 w-full flex items-center gap-4">
+      {/* Columna Izquierda (Texto) */}
+      <div className="w-[70%] flex flex-col items-start gap-2">
+        <div className="flex items-center gap-3">
+            <div className={cn("p-3 rounded-xl flex-shrink-0 shadow-md", color)}>
+                <Icon className="h-5 w-5 text-white" />
+            </div>
+            <div>
+                <h4 className="font-bold text-slate-900 text-base">{title}</h4>
+            </div>
+        </div>
+        <p className="text-sm text-slate-500 leading-relaxed pl-1">
           {description}
         </p>
       </div>
-      <div className="flex-shrink-0">
+
+      {/* Columna Derecha (Controles) */}
+      <div className="w-[30%] flex flex-col justify-center items-center gap-2">
         {hasSelector && selectorOptions ? (
-          <div className="flex gap-2 items-center">
+          <>
             <Select value={selectedValue} onValueChange={setSelectedValue}>
-              <SelectTrigger className="h-9 text-sm w-40">
+              <SelectTrigger className="h-9 text-sm w-full">
                 <SelectValue placeholder={selectorPlaceholder} />
               </SelectTrigger>
               <SelectContent>
                 {selectorOptions.map((opt) => (
-                  <SelectItem
-                    key={opt.value}
-                    value={opt.value}
-                    className="text-sm"
-                  >
+                  <SelectItem key={opt.value} value={opt.value} className="text-sm">
                     {opt.label}
                   </SelectItem>
                 ))}
@@ -127,15 +125,15 @@ const ActionCard = ({
             </Select>
             <Button
               size="sm"
-              className="h-9 px-4"
+              className="h-9 px-4 w-full"
               onClick={() => onClick?.(selectedValue)}
               disabled={!selectedValue}
             >
               Aplicar
             </Button>
-          </div>
+          </>
         ) : (
-          <Button size="sm" className="h-9 px-4" onClick={() => onClick?.()}>
+          <Button size="sm" className="h-9 px-4 w-full" onClick={() => onClick?.()}>
             Aplicar
           </Button>
         )}
@@ -236,7 +234,7 @@ export default function MagicEditorPage() {
         case 'underline': document.execCommand('underline', false); break;
         case 'list': document.execCommand('insertUnorderedList', false); break;
         case 'orderedList': document.execCommand('insertOrderedList', false); break;
-        case 'quote': document.execCommand('formatBlock', false, '<blockquote>'); break;
+        case 'quote': document.execCommand('formatBlock', false, 'blockquote'); break;
         case 'formatBlock':
             if (value) document.execCommand('formatBlock', false, `<${value}>`);
             break;
@@ -552,6 +550,7 @@ export default function MagicEditorPage() {
     </div>
   );
 }
+
 
 
 
