@@ -89,7 +89,7 @@ const editorActionFlow = ai.defineFlow(
   async (input) => {
     const { output } = await editorActionPrompt(input);
     if (!output?.processedText) {
-      throw new Error("La respuesta de la IA no fue válida.");
+      throw new Error("La respuesta de la IA no fue válida o estaba vacía.");
     }
     return { processedText: output.processedText.trim() };
   }
@@ -104,11 +104,13 @@ const editorActionFlow = ai.defineFlow(
 export async function processEditorAction(input: EditorActionInput): Promise<EditorActionOutput> {
   console.log('Processing editor action:', input.actionType, 'with option:', input.option);
   try {
+    // Validar la entrada con Zod antes de llamar al flujo
+    EditorActionInputSchema.parse(input);
     const result = await editorActionFlow(input);
     return result;
-  } catch (error) {
-    console.error("Error in processEditorAction:", error);
-    // Devuelve el texto original en caso de error para no perder el trabajo del usuario
-    return { processedText: `Error al procesar: ${input.text}` };
+  } catch (error: any) {
+    console.error("[Server Action Error] Error in processEditorAction:", error);
+    // Lanzar una excepción para que el cliente pueda manejarla en su bloque catch.
+    throw new Error(error.message || "No se pudo procesar la solicitud de IA.");
   }
 }

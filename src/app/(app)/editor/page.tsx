@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { WipDialog } from '@/components/layout/wip-dialog';
 import { processEditorAction, type EditorActionInput } from './actions';
+import { Input } from '@/components/ui/input';
 
 
 const ActionCard = ({
@@ -51,49 +52,61 @@ const ActionCard = ({
 }) => {
   const [selectedValue, setSelectedValue] = useState("");
 
+  const handleApplyClick = () => {
+    onClick(action, selectedValue);
+  };
+  
+  const handleSimpleClick = () => {
+    onClick(action);
+  };
+
   return (
-    <div className="group bg-white p-4 rounded-2xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 w-full flex items-center justify-between gap-4">
-      <div className="flex items-center gap-4">
-        <div className={cn("p-3 rounded-xl flex-shrink-0 shadow-md", color)}>
+    <div className="group relative bg-white p-4 rounded-xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        {/* Left Side: Icon & Text */}
+        <div className="flex items-center gap-4 flex-1">
+          <div className={cn("p-3 rounded-xl flex-shrink-0 shadow-md", color)}>
             <Icon className="h-5 w-5 text-white" />
-        </div>
-        <div className="flex flex-col gap-1">
+          </div>
+          <div className="flex-1">
             <h4 className="font-bold text-slate-900 text-base">{title}</h4>
-            <p className="text-sm text-slate-500 leading-relaxed">
+            <p className="text-sm text-slate-500 leading-relaxed mt-1">
               {description}
             </p>
-        </div>
-      </div>
-      
-      <div className="flex-shrink-0">
-        {hasSelector && selectorOptions ? (
-          <div className="flex items-center gap-2">
-            <Select value={selectedValue} onValueChange={setSelectedValue}>
-              <SelectTrigger className="h-9 text-sm w-40">
-                <SelectValue placeholder={selectorPlaceholder} />
-              </SelectTrigger>
-              <SelectContent>
-                {selectorOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value} className="text-sm">
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              size="sm"
-              className="h-9 px-4"
-              onClick={() => onClick(action, selectedValue)}
-              disabled={isProcessing || !selectedValue}
-            >
-              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Aplicar'}
-            </Button>
           </div>
-        ) : (
-          <Button size="sm" className="h-9 px-4" onClick={() => onClick(action)} disabled={isProcessing}>
-             {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Aplicar'}
-          </Button>
-        )}
+        </div>
+
+        {/* Right Side: Actions */}
+        <div className="w-full sm:w-auto flex-shrink-0 flex sm:flex-col items-center justify-end gap-2">
+           {hasSelector && selectorOptions ? (
+             <>
+                <Select value={selectedValue} onValueChange={setSelectedValue}>
+                  <SelectTrigger className="h-9 text-sm w-full sm:w-40">
+                    <SelectValue placeholder={selectorPlaceholder} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectorOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value} className="text-sm">
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  className="h-9 px-4 w-full sm:w-auto"
+                  onClick={handleApplyClick}
+                  disabled={isProcessing || !selectedValue}
+                >
+                  {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Aplicar'}
+                </Button>
+             </>
+            ) : (
+                <Button size="sm" className="h-9 px-4 w-full sm:w-auto" onClick={handleSimpleClick} disabled={isProcessing}>
+                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Aplicar'}
+                </Button>
+            )}
+        </div>
       </div>
     </div>
   );
@@ -131,6 +144,13 @@ export default function MagicEditorPage() {
         editorRef.current.innerHTML = editorContent;
     }
   }, [editorContent]);
+
+  const handleFormatAction = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) {
+        setEditorContent(editorRef.current.innerHTML);
+    }
+  };
 
 
   const handleCopy = () => {
@@ -187,20 +207,17 @@ export default function MagicEditorPage() {
             actionType,
             option,
         });
+        
+        setEditorContent(result.processedText);
+        toast({ title: '¡Texto mejorado!', description: 'La IA ha procesado tu solicitud.' });
 
-        if (result && result.processedText) {
-            setEditorContent(result.processedText);
-            if (editorRef.current) {
-                editorRef.current.innerHTML = result.processedText;
-            }
-            toast({ title: '¡Texto mejorado!', description: 'La IA ha procesado tu solicitud.' });
-        } else {
-             throw new Error("La IA no devolvió un resultado válido.");
-        }
-
-    } catch (error) {
+    } catch (error: any) {
         console.error('AI Action Failed:', error);
-        toast({ title: 'Error de IA', description: 'No se pudo procesar la solicitud.', variant: 'destructive' });
+        toast({ 
+          title: 'Error de IA', 
+          description: error.message || 'No se pudo procesar la solicitud.', 
+          variant: 'destructive' 
+        });
     } finally {
         setIsProcessing(false);
     }
@@ -307,6 +324,44 @@ export default function MagicEditorPage() {
         </div>
         
         <div className="bg-white rounded-xl shadow-lg border border-slate-200/60 overflow-hidden mb-6">
+           <div className="border-b border-slate-200 p-2 flex items-center gap-1 flex-wrap">
+             <Button variant="ghost" size="icon" onClick={() => handleFormatAction('bold')}><Bold className="h-4 w-4"/></Button>
+             <Button variant="ghost" size="icon" onClick={() => handleFormatAction('italic')}><Italic className="h-4 w-4"/></Button>
+             <Button variant="ghost" size="icon" onClick={() => handleFormatAction('underline')}><Underline className="h-4 w-4"/></Button>
+             <Separator orientation="vertical" className="h-6 mx-1"/>
+             <Button variant="ghost" size="icon" onClick={() => handleFormatAction('justifyLeft')}><AlignLeft className="h-4 w-4"/></Button>
+             <Button variant="ghost" size="icon" onClick={() => handleFormatAction('justifyCenter')}><AlignCenter className="h-4 w-4"/></Button>
+             <Button variant="ghost" size="icon" onClick={() => handleFormatAction('justifyRight')}><AlignRight className="h-4 w-4"/></Button>
+             <Separator orientation="vertical" className="h-6 mx-1"/>
+             <Button variant="ghost" size="icon" onClick={() => handleFormatAction('insertUnorderedList')}><List className="h-4 w-4"/></Button>
+             <Button variant="ghost" size="icon" onClick={() => handleFormatAction('insertOrderedList')}><ListOrdered className="h-4 w-4"/></Button>
+             <Separator orientation="vertical" className="h-6 mx-1"/>
+              <div className="flex items-center gap-1">
+                <Input
+                    type="number"
+                    value={fontSize}
+                    onChange={(e) => {
+                        setFontSize(e.target.value);
+                        handleFormatAction('fontSize', '7');
+                        const tempSpan = document.createElement('span');
+                        tempSpan.style.fontSize = `${e.target.value}px`;
+                        document.execCommand('insertHTML', false, tempSpan.outerHTML.replace(tempSpan.innerText, ''));
+                    }}
+                    className="w-16 h-8 text-sm"
+                    min="8"
+                    max="72"
+                />
+                <Select onValueChange={(value) => { setFontSize(value); handleFormatAction('fontSize', '7'); const tempSpan = document.createElement('span'); tempSpan.style.fontSize = `${value}px`; document.execCommand('insertHTML', false, tempSpan.outerHTML.replace(tempSpan.innerText, '')); }}>
+                    <SelectTrigger className="h-8 w-12 border-l-0 rounded-l-none"><ChevronsUpDown className="h-3 w-3"/></SelectTrigger>
+                    <SelectContent>
+                        {fontSizeOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
+             <WipDialog>
+                <Button variant="ghost" size="icon"><Link className="h-4 w-4"/></Button>
+             </WipDialog>
+          </div>
           <div className="p-8">
              <div
               ref={editorRef}
@@ -315,7 +370,7 @@ export default function MagicEditorPage() {
               className="w-full min-h-[30vh] max-h-[70vh] p-0 border-none focus:outline-none text-base text-slate-800 leading-relaxed font-serif overflow-y-auto"
               suppressContentEditableWarning={true}
               dangerouslySetInnerHTML={{ __html: editorContent }}
-              placeholder="Empieza a escribir tu obra maestra..."
+              style={{ fontSize: `${fontSize}px` }}
             />
           </div>
 
