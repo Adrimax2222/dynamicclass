@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -164,7 +163,7 @@ export default function MagicEditorPage() {
   const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Cuando editorContent cambia, actualizamos el div editable
+    // Cuando editorContent cambia (ej. por la IA), actualizamos el div editable
     if (editorRef.current && editorRef.current.innerHTML !== editorContent) {
         editorRef.current.innerHTML = editorContent;
     }
