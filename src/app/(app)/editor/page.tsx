@@ -87,52 +87,50 @@ const ActionCard = ({
   selectorOptions?: { value: string; label: string }[];
   selectorPlaceholder?: string;
 }) => {
-  const [selectedValue, setSelectedValue] = useState<string>('');
+  const [selectedValue, setSelectedValue] = useState('');
 
   const cardContent = (
-    <div className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 w-full flex items-start gap-5">
-      <div className={cn("p-3 rounded-xl flex-shrink-0 shadow-md transition-transform group-hover:scale-110", color)}>
+    <div className="group bg-white p-4 rounded-2xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 w-full flex items-center gap-5">
+      <div className={cn("p-3 rounded-xl flex-shrink-0 shadow-md", color)}>
         <Icon className="h-5 w-5 text-white" />
       </div>
-      <div className="flex-1 flex flex-col h-full">
-        <div className="flex-1">
-          <h4 className="font-bold text-slate-900 text-base mb-1">{title}</h4>
-          <p className="text-sm text-slate-500 leading-relaxed">{description}</p>
-        </div>
-        <div className="mt-4">
-          {hasSelector && selectorOptions ? (
-            <div className="flex gap-2">
-              <Select value={selectedValue} onValueChange={setSelectedValue}>
-                <SelectTrigger className="h-9 text-sm flex-1">
-                  <SelectValue placeholder={selectorPlaceholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  {selectorOptions.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value} className="text-sm">
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button 
-                size="sm" 
-                className="h-9 px-4"
-                onClick={() => onClick?.(selectedValue)}
-                disabled={!selectedValue}
-              >
-                Aplicar
-              </Button>
-            </div>
-          ) : (
+      <div className="flex-1">
+        <h4 className="font-bold text-slate-900 text-base">{title}</h4>
+        <p className="text-sm text-slate-500 leading-relaxed">{description}</p>
+      </div>
+      <div className="flex-shrink-0">
+        {hasSelector && selectorOptions ? (
+          <div className="flex gap-2 items-center">
+            <Select value={selectedValue} onValueChange={setSelectedValue}>
+              <SelectTrigger className="h-9 text-sm w-40">
+                <SelectValue placeholder={selectorPlaceholder} />
+              </SelectTrigger>
+              <SelectContent>
+                {selectorOptions.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value} className="text-sm">
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button 
               size="sm" 
-              className="h-9 w-full"
-              onClick={() => onClick?.()}
+              className="h-9 px-4"
+              onClick={() => onClick?.(selectedValue)}
+              disabled={!selectedValue}
             >
               Aplicar
             </Button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <Button 
+            size="sm" 
+            className="h-9"
+            onClick={() => onClick?.()}
+          >
+            Aplicar
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -465,7 +463,7 @@ export default function MagicEditorPage() {
             </h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 gap-4">
             <ActionCard
               icon={Languages}
               title="Traducir Texto"
@@ -516,4 +514,3 @@ export default function MagicEditorPage() {
     </div>
   );
 }
-
