@@ -8,7 +8,7 @@ import {
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, Quote, Heading1, Heading2, Code, Link,
   Smile, ImageIcon, Table, Star, Globe, FileDown,
-  Text, Pilcrow, Type
+  Text, Pilcrow, Type, Brain, Bug, TextCursorInput
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -21,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from '@/components/ui/textarea';
+import { WipDialog } from '@/components/layout/wip-dialog';
+
 
 const MagicFloatingMenu = ({ 
   isVisible, 
@@ -88,8 +89,8 @@ const AIToolCard = ({
 }) => {
   const [selectedValue, setSelectedValue] = useState<string>('');
 
-  return (
-    <div className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 w-full flex flex-col">
+  const cardContent = (
+    <div className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 w-full flex flex-col h-full">
       <div className="flex items-start gap-4 mb-4">
         <div className={cn("p-3 rounded-xl flex-shrink-0 shadow-md transition-transform group-hover:scale-110", color)}>
           <Icon className="h-5 w-5 text-white" />
@@ -136,6 +137,8 @@ const AIToolCard = ({
       </div>
     </div>
   );
+
+  return onClick ? cardContent : <WipDialog>{cardContent}</WipDialog>;
 };
 
 export default function MagicEditorPage() {
@@ -162,7 +165,6 @@ export default function MagicEditorPage() {
   }, [text]);
 
   const handleCopy = () => {
-    // Strip HTML for plain text copy
     const plainText = text.replace(/<[^>]*>?/gm, '');
     navigator.clipboard.writeText(plainText);
     setIsCopied(true);
@@ -175,21 +177,16 @@ export default function MagicEditorPage() {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 20;
-      const maxWidth = pageWidth - 2 * margin;
       
       doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
       doc.text(title || 'Documento sin título', margin, margin);
       
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      
-      // Use html method for rich text, it's more robust
       doc.html(text, {
         x: margin,
         y: margin + 15,
-        width: maxWidth,
-        windowWidth: maxWidth,
+        width: pageWidth - (margin * 2),
+        windowWidth: pageWidth - (margin * 2),
         callback: (doc) => {
           doc.save(`${title.replace(/\s/g, '_') || 'documento'}.pdf`);
           toast({ title: '✓ Exportado', description: 'Documento guardado como PDF.' });
@@ -215,7 +212,7 @@ export default function MagicEditorPage() {
       const range = selection.getRangeAt(0);
       const rect = range.getBoundingClientRect();
       setMenuPosition({
-        top: rect.bottom + window.scrollY + 8, // Position below selection
+        top: rect.bottom + window.scrollY + 8,
         left: rect.left + rect.width / 2,
       });
       setIsMenuVisible(true);
@@ -224,7 +221,7 @@ export default function MagicEditorPage() {
     }
   };
 
-  const handleFormatAction = (action: string, value?: string) => {
+const handleFormatAction = (action: string, value?: string) => {
     const editor = document.getElementById('main-editor');
     if (editor) editor.focus();
 
@@ -266,7 +263,6 @@ export default function MagicEditorPage() {
   useEffect(() => {
     const handleClickOutside = () => {
       if (isMenuVisible) {
-        // Delay hiding to allow menu clicks
         setTimeout(() => {
             const selection = window.getSelection();
             if (!selection || selection.toString().trim().length === 0) {
@@ -291,22 +287,22 @@ export default function MagicEditorPage() {
   ];
   
   const fontOptions = [
-    { value: 'Arial', label: 'Arial' },
-    { value: 'Verdana', label: 'Verdana' },
-    { value: 'Times New Roman', label: 'Times New Roman' },
-    { value: 'Garamond', label: 'Garamond' },
-    { value: 'Georgia', label: 'Georgia' },
-    { value: 'Courier New', label: 'Courier New' },
-    { value: 'Trebuchet MS', label: 'Trebuchet MS' }
+    { value: 'Arial, sans-serif', label: 'Arial' },
+    { value: 'Verdana, sans-serif', label: 'Verdana' },
+    { value: '"Times New Roman", serif', label: 'Times New Roman' },
+    { value: 'Garamond, serif', label: 'Garamond' },
+    { value: 'Georgia, serif', label: 'Georgia' },
+    { value: '"Courier New", monospace', label: 'Courier New' },
+    { value: '"Trebuchet MS", sans-serif', label: 'Trebuchet MS' }
   ];
   
   const fontSizeOptions = [
-    { value: '1', label: '12' }, // Corresponds to <font size="1"> ~10px
-    { value: '2', label: '14' }, // Corresponds to <font size="2"> ~13px
-    { value: '3', label: '16' }, // Corresponds to <font size="3"> ~16px
-    { value: '4', label: '18' }, // Corresponds to <font size="4"> ~18px
-    { value: '5', label: '24' }, // Corresponds to <font size="5"> ~24px
-    { value: '6', label: '36' }, // Corresponds to <font size="6"> ~32px
+    { value: '1', label: '12' },
+    { value: '2', label: '14' },
+    { value: '3', label: '16' },
+    { value: '4', label: '18' },
+    { value: '5', label: '24' },
+    { value: '6', label: '36' },
   ];
 
   return (
@@ -323,7 +319,7 @@ export default function MagicEditorPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Título"
-              className="text-lg font-semibold text-slate-800 bg-transparent focus:outline-none rounded-lg px-3 py-1.5 transition-colors flex-1 min-w-0 h-10 border border-indigo-500 focus:ring-2 focus:ring-indigo-500 font-serif"
+              className="text-lg font-semibold text-slate-800 bg-transparent focus:outline-none rounded-lg px-3 py-1.5 transition-colors flex-1 min-w-0 h-10 border-0 focus:ring-0"
             />
           </div>
 
@@ -493,6 +489,27 @@ export default function MagicEditorPage() {
               title="Generar Resumen"
               description="Crea resúmenes personalizados del contenido."
               color="bg-gradient-to-br from-purple-500 to-purple-600"
+            />
+
+            <AIToolCard
+              icon={TextCursorInput}
+              title="Continuar Escritura"
+              description="La IA continúa el texto donde lo dejaste."
+              color="bg-gradient-to-br from-green-500 to-green-600"
+            />
+
+            <AIToolCard
+              icon={Brain}
+              title="Simplificar Texto"
+              description="Reescribe el texto para que sea más fácil de entender."
+              color="bg-gradient-to-br from-teal-500 to-teal-600"
+            />
+
+            <AIToolCard
+              icon={Bug}
+              title="Buscar Errores"
+              description="Revisa la gramática y ortografía de tu documento."
+              color="bg-gradient-to-br from-red-500 to-red-600"
             />
           </div>
         </div>
