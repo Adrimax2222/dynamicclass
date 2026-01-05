@@ -2,6 +2,7 @@
 
 /**
  * @fileOverview Server Action para procesar acciones del Editor Mágico usando @google/generative-ai.
+ * Implementación robusta siguiendo las directrices del usuario para corregir errores 404.
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -17,34 +18,28 @@ const ActionTypeSchema = z.enum([
   'fix',
 ]);
 
-// Define el esquema de entrada
+// Define el esquema de entrada para la validación en el cliente
 const EditorActionInputSchema = z.object({
   text: z.string().describe('El texto del editor para procesar.'),
   actionType: ActionTypeSchema.describe('El tipo de acción a realizar.'),
   option: z.string().optional().describe('Una opción adicional, como el idioma o el tipo de resumen.'),
 });
 
-// Define el esquema de salida
-const EditorActionOutputSchema = z.object({
-  processedText: z.string().describe('El texto resultante después de la acción de la IA.'),
-});
-
 // Tipos inferidos de los esquemas
 export type EditorActionInput = z.infer<typeof EditorActionInputSchema>;
-export type EditorActionOutput = z.infer<typeof EditorActionOutputSchema>;
 
 // --- Lógica de la IA con @google/generative-ai ---
 
-// Inicializa la API con la clave desde las variables de entorno
+// 1. Validación de la clave antes de cualquier ejecución
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
 if (!apiKey) {
-  throw new Error("La clave de API de Google/Gemini no está configurada en las variables de entorno.");
+  console.error("CRÍTICO: La variable GEMINI_API_KEY o GOOGLE_GENAI_API_KEY no está definida en el entorno.");
 }
-const genAI = new GoogleGenerativeAI(apiKey);
 
+const genAI = new GoogleGenerativeAI(apiKey || "");
 
 // Un mapa para obtener el prompt correcto basado en el tipo de acción
-const getPromptText = (actionType: z.infer<typeof ActionTypeSchema>, option?: string) => {
+const getPromptInstruction = (actionType: z.infer<typeof ActionTypeSchema>, option?: string) => {
     switch (actionType) {
         case 'translate':
             return `Traduce el siguiente texto al ${option || 'inglés'}. Devuelve solo el texto traducido, sin añadir introducciones. Mantén el formato original (saltos de línea, etc.):`;
@@ -65,42 +60,56 @@ const getPromptText = (actionType: z.infer<typeof ActionTypeSchema>, option?: st
         case 'fix':
             return `Corrige la gramática y la ortografía del siguiente texto. Devuelve solo el texto corregido, sin añadir introducciones y manteniendo el formato original tanto como sea posible:`;
         default:
+            // Esto nunca debería ocurrir gracias a Zod, pero es una buena práctica tener un fallback.
             return `Procesa el siguiente texto:`;
     }
 }
+
 
 /**
  * Server Action que se llama desde el cliente para procesar el texto del editor.
  * @param input - El objeto con el texto, tipo de acción y opción.
  * @returns El texto procesado por la IA.
  */
-export async function processEditorAction(input: EditorActionInput): Promise<EditorActionOutput> {
-  console.log('Processing editor action with @google/generative-ai:', input.actionType, 'with option:', input.option);
+export async function processEditorAction(input: EditorActionInput): Promise<{ processedText: string }> {
+  // Validar la entrada con Zod para seguridad.
+  const validation = EditorActionInputSchema.safeParse(input);
+  if (!validation.success) {
+    throw new Error("Entrada inválida para la acción del editor.");
+  }
+  const { text, actionType, option } = validation.data;
+  
+  if (!text) throw new Error("El texto es requerido.");
+  if (!apiKey) throw new Error("Configuración de API ausente en el servidor.");
+
+  const instruction = getPromptInstruction(actionType, option);
+  const fullPrompt = `${instruction}\n\n---\n\n${text}`;
+
   try {
-    // 1. Validar la entrada con Zod
-    const { text, actionType, option } = EditorActionInputSchema.parse(input);
+    // 2. Nombre de modelo estricto
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash" 
+    });
 
-    // 2. Configura el modelo
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    
-    // 3. Construir el prompt dinámico
-    const prompt = `${getPromptText(actionType, option)}\n\n---\n\n${text}`;
-
-    // 4. Llamar a la IA
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(fullPrompt);
     const response = await result.response;
     const processedText = response.text();
 
     if (!processedText) {
-      throw new Error("La IA no generó una respuesta válida.");
+      throw new Error("La IA devolvió una respuesta vacía.");
     }
     
-    // 5. Devolver la salida en el formato esperado
     return { processedText: processedText.trim() };
 
   } catch (error: any) {
-    console.error("[Server Action Error] Error in processEditorAction:", error);
-    // Lanzar una excepción para que el cliente pueda manejarla en su bloque catch.
-    throw new Error(error.message || "No se pudo procesar la solicitud de IA.");
+    // 3. Captura detallada del error
+    console.error("[GEMINI ERROR]:", error);
+    
+    // Propaga un mensaje de error útil al cliente
+    throw new Error(
+      error.message?.includes("not found") 
+        ? "Modelo no disponible. Verifica que la API Key sea de AI Studio." 
+        : "Error en el servicio de IA: " + error.message
+    );
   }
 }
