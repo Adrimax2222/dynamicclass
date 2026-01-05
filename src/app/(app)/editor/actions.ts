@@ -64,7 +64,7 @@ const getPrompt = (actionType: z.infer<typeof ActionTypeSchema>, option?: string
 // Definición del prompt dinámico de Genkit
 const editorActionPrompt = ai.definePrompt({
     name: 'editorActionPrompt',
-    model: 'googleai/gemini-1.5-flash-latest',
+    model: 'googleai/gemini-1.5-flash',
     input: { schema: EditorActionInputSchema },
     output: { schema: EditorActionOutputSchema },
     prompt: (input) => getPrompt(input.actionType, input.option),
