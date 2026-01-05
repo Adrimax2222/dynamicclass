@@ -25,51 +25,8 @@ import {
 import { WipDialog } from '@/components/layout/wip-dialog';
 import { processEditorAction, type EditorActionInput } from './actions';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
-
-const MagicFloatingMenu = ({ 
-  isVisible, 
-  position 
-}: { 
-  isVisible: boolean;
-  position: { top: number; left: number }; 
-}) => {
-  if (!isVisible) return null;
-
-  return (
-    <div 
-      style={{ 
-        position: 'fixed',
-        top: `${position.top}px`, 
-        left: `${position.left}px`,
-        transform: 'translateX(-50%)',
-        zIndex: 10000
-      }}
-      className="animate-in fade-in slide-in-from-bottom-2 duration-200"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="flex items-center gap-1 bg-slate-900/80 text-white px-2 py-2 rounded-lg shadow-2xl border border-slate-700 backdrop-blur-sm">
-        <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 h-8 px-3 text-xs">
-          <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-          Mejorar
-        </Button>
-        <Separator orientation="vertical" className="h-6 bg-slate-600 mx-1" />
-        <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 h-8 px-3 text-xs">
-          <BookText className="h-3.5 w-3.5 mr-1.5" />
-          Resumir
-        </Button>
-        <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 h-8 px-3 text-xs">
-          <GraduationCap className="h-3.5 w-3.5 mr-1.5" />
-          Simplificar
-        </Button>
-        <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 h-8 px-3 text-xs">
-          <Globe className="h-3.5 w-3.5 mr-1.5" />
-          Traducir
-        </Button>
-      </div>
-    </div>
-  );
-};
 
 const ActionCard = ({
   icon: Icon,
@@ -96,7 +53,7 @@ const ActionCard = ({
 }) => {
   const [selectedValue, setSelectedValue] = useState("");
 
-  const cardContent = (
+  return (
     <div className="group bg-white p-4 rounded-2xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 w-full flex items-center justify-between gap-4">
       <div className="flex items-center gap-4">
         <div className={cn("p-3 rounded-xl flex-shrink-0 shadow-md", color)}>
@@ -142,8 +99,6 @@ const ActionCard = ({
       </div>
     </div>
   );
-
-  return cardContent;
 };
 
 
@@ -160,31 +115,18 @@ export default function MagicEditorPage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const { toast } = useToast();
-  const editorRef = useRef<HTMLDivElement>(null);
-
+  
   useEffect(() => {
-    // Sincroniza el estado con el editor solo si el contenido es diferente
-    if (editorRef.current && editorRef.current.innerHTML !== editorContent) {
-        editorRef.current.innerHTML = editorContent;
-    }
-  }, [editorContent]);
-
-
-  useEffect(() => {
-    if (!editorRef.current) return;
-    const plainText = editorRef.current.innerText || '';
-    const words = plainText.trim().split(/\s+/).filter(Boolean);
+    const words = editorContent.trim().split(/\s+/).filter(Boolean);
     const wordCountValue = words.length === 1 && words[0] === '' ? 0 : words.length;
     
     setWordCount(wordCountValue);
-    setCharCount(plainText.length);
+    setCharCount(editorContent.length);
     setReadingTime(Math.ceil(wordCountValue / 200));
   }, [editorContent]);
 
   const handleCopy = () => {
-    if (!editorRef.current) return;
-    const plainText = editorRef.current.innerText;
-    navigator.clipboard.writeText(plainText);
+    navigator.clipboard.writeText(editorContent);
     setIsCopied(true);
     toast({ title: '✓ Copiado', description: 'Texto copiado al portapapeles.' });
     setTimeout(() => setIsCopied(false), 2000);
@@ -192,7 +134,6 @@ export default function MagicEditorPage() {
 
   const handleExport = () => {
     try {
-      if (!editorRef.current) return;
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 20;
@@ -201,115 +142,43 @@ export default function MagicEditorPage() {
       doc.setFont('helvetica', 'bold');
       doc.text(title || 'Documento sin título', margin, margin);
       
-      doc.html(editorRef.current.innerHTML, {
-        x: margin,
-        y: margin + 15,
-        width: pageWidth - (margin * 2),
-        windowWidth: pageWidth - (margin * 2),
-        callback: (doc) => {
-          doc.save(`${title.replace(/\s/g, '_') || 'documento'}.pdf`);
-          toast({ title: '✓ Exportado', description: 'Documento guardado como PDF.' });
-        }
-      });
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      const splitText = doc.splitTextToSize(editorContent, pageWidth - (margin * 2));
+      doc.text(splitText, margin, margin + 15);
+
+      doc.save(`${title.replace(/\s/g, '_') || 'documento'}.pdf`);
+      toast({ title: '✓ Exportado', description: 'Documento guardado como PDF.' });
+
     } catch (error) {
       toast({ title: "Error", description: "No se pudo exportar el PDF.", variant: "destructive" });
     }
   };
 
   const handleShare = () => {
-    if (!editorRef.current) return;
-    const plainText = editorRef.current.innerText;
-    if (navigator.share && plainText) {
-      navigator.share({ title: title || 'Mi documento', text: plainText }).catch(() => handleCopy());
+    if (navigator.share && editorContent) {
+      navigator.share({ title: title || 'Mi documento', text: editorContent }).catch(() => handleCopy());
     } else {
       handleCopy();
     }
   };
 
-  const handleTextSelection = () => {
-    const selection = window.getSelection();
-    if (selection && selection.toString().trim().length > 0) {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      setMenuPosition({
-        top: rect.bottom + window.scrollY + 8,
-        left: rect.left + rect.width / 2,
-      });
-      setIsMenuVisible(true);
-    } else {
-      setIsMenuVisible(false);
-    }
-  };
-
-  const handleFormatAction = (action: string, value?: string) => {
-    if (editorRef.current) editorRef.current.focus();
-
-    switch(action) {
-        case 'bold': document.execCommand('bold', false); break;
-        case 'italic': document.execCommand('italic', false); break;
-        case 'underline': document.execCommand('underline', false); break;
-        case 'list': document.execCommand('insertUnorderedList', false); break;
-        case 'orderedList': document.execCommand('insertOrderedList', false); break;
-        case 'quote': document.execCommand('formatBlock', false, 'blockquote'); break;
-        case 'formatBlock':
-            if (value) document.execCommand('formatBlock', false, `<${value}>`);
-            break;
-        case 'fontSize':
-            if (value) document.execCommand('fontSize', false, "1"); // Use a dummy value
-                const fontElements = document.getElementById('main-editor')?.getElementsByTagName('font');
-                if (fontElements) {
-                    for (let i = 0; i < fontElements.length; i++) {
-                        const element = fontElements[i];
-                        if (element.size) {
-                            element.style.fontSize = value + 'px';
-                            element.removeAttribute('size');
-                        }
-                    }
-                }
-            break;
-        case 'fontName':
-            if (value) document.execCommand('fontName', false, value);
-            break;
-        default: break;
-    }
-    toast({ title: 'Formato aplicado', description: `Estilo ${action} actualizado.` });
-};
-
-
-  useEffect(() => {
-    const handleClickOutside = () => {
-      if (isMenuVisible) {
-        setTimeout(() => {
-            const selection = window.getSelection();
-            if (!selection || selection.toString().trim().length === 0) {
-                 setIsMenuVisible(false);
-            }
-        }, 200);
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isMenuVisible]);
-
   const handleAiAction = async (actionType: EditorActionInput['actionType'], option?: string) => {
-    const plainText = editorRef.current?.innerText || '';
-    if (!plainText.trim() || isProcessing) return;
+    if (!editorContent.trim() || isProcessing) return;
 
     setIsProcessing(true);
     toast({ title: 'Procesando con IA...', description: 'Tu texto está siendo mejorado.' });
 
     try {
         const result = await processEditorAction({
-            text: plainText,
+            text: editorContent,
             actionType,
             option,
         });
 
-        if (editorRef.current) {
-          editorRef.current.innerHTML = result.processedText;
-        }
         setEditorContent(result.processedText);
+        toast({ title: '¡Texto mejorado!', description: 'La IA ha procesado tu solicitud.' });
+
     } catch (error) {
         console.error('AI Action Failed:', error);
         toast({ title: 'Error de IA', description: 'No se pudo procesar la solicitud.', variant: 'destructive' });
@@ -319,13 +188,13 @@ export default function MagicEditorPage() {
 };
 
   const languages = [
-    { value: 'es', label: '🇪🇸 Español' },
-    { value: 'en', label: '🇬🇧 Inglés' },
-    { value: 'fr', label: '🇫🇷 Francés' },
-    { value: 'de', label: '🇩🇪 Alemán' },
-    { value: 'it', label: '🇮🇹 Italiano' },
-    { value: 'pt', label: '🇵🇹 Portugués' },
-    { value: 'ca', label: '🏴 Catalán' },
+    { value: 'Español', label: '🇪🇸 Español' },
+    { value: 'Inglés', label: '🇬🇧 Inglés' },
+    { value: 'Francés', label: '🇫🇷 Francés' },
+    { value: 'Alemán', label: '🇩🇪 Alemán' },
+    { value: 'Italiano', label: '🇮🇹 Italiano' },
+    { value: 'Portugués', label: '🇵🇹 Portugués' },
+    { value: 'Catalán', label: '🏴 Catalán' },
   ];
   
   const fontOptions = [
@@ -356,19 +225,19 @@ export default function MagicEditorPage() {
 
   const summaryOptions = [
     { value: 'puntos-clave', label: 'Puntos Clave' },
-    { value: 'parrafo-corto', label: 'Párrafo Corto' },
+    { value: 'un párrafo corto', label: 'Párrafo Corto' },
     { value: 'resumen-extenso', label: 'Resumen Extenso' },
   ];
 
   const continuationOptions = [
-    { value: 'un-parrafo', label: 'Un párrafo' },
+    { value: 'un párrafo', label: 'Un párrafo' },
     { value: 'varios-parrafos', label: 'Varios párrafos' },
     { value: 'completar-idea', label: 'Completar idea' },
   ];
 
   const simplificationOptions = [
-      { value: 'para-ninos', label: 'Para un niño' },
-      { value: 'lenguaje-sencillo', label: 'Lenguaje sencillo' },
+      { value: 'para un niño de 10 años', label: 'Para un niño' },
+      { value: 'lenguaje más sencillo', label: 'Lenguaje sencillo' },
   ];
 
   return (
@@ -412,86 +281,19 @@ export default function MagicEditorPage() {
             <div className="flex-1">
               <h2 className="text-lg font-bold mb-1 font-serif">Modo Escritura Mágica</h2>
               <p className="text-sm text-white/90 leading-relaxed">
-                Escribe, edita y da formato con facilidad. Selecciona texto para revelar herramientas de IA o usa las tarjetas de abajo para transformar tu contenido.
+                Escribe, edita y da formato con facilidad. Utiliza las tarjetas de abajo para transformar tu contenido con IA.
               </p>
             </div>
           </div>
         </div>
         
-        <MagicFloatingMenu position={menuPosition} isVisible={isMenuVisible} />
-
         <div className="bg-white rounded-xl shadow-lg border border-slate-200/60 overflow-hidden mb-6">
-           <div className="border-b border-slate-200 px-4 py-2 flex items-center gap-1 bg-slate-50/80 flex-wrap">
-             <div className="flex items-center border border-slate-300 rounded-md">
-                <Input
-                    type="number"
-                    value={fontSize}
-                    onChange={(e) => {
-                        setFontSize(e.target.value);
-                        handleFormatAction('fontSize', e.target.value);
-                    }}
-                    className="w-16 h-8 text-xs font-semibold border-0 rounded-r-none focus-visible:ring-0"
-                    min="8"
-                    max="72"
-                />
-                <Select onValueChange={(value) => {
-                    setFontSize(value);
-                    handleFormatAction('fontSize', value);
-                }}>
-                    <SelectTrigger className="w-[40px] h-8 text-xs font-semibold border-0 border-l rounded-l-none pl-1.5">
-                        <ChevronsUpDown className="h-3 w-3" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {fontSizeOptions.map(option => (
-                            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-
-            <Select onValueChange={(value) => handleFormatAction('fontName', value)}>
-                <SelectTrigger className="w-[140px] h-8 text-xs font-semibold">
-                    <SelectValue placeholder="Fuente" />
-                </SelectTrigger>
-                <SelectContent>
-                    {fontOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-
-            <Separator orientation="vertical" className="h-6 mx-1" />
-
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Negrita" onClick={() => handleFormatAction('bold')}>
-              <Bold className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Cursiva" onClick={() => handleFormatAction('italic')}>
-              <Italic className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Subrayado" onClick={() => handleFormatAction('underline')}>
-              <Underline className="h-4 w-4" />
-            </Button>
-            <Separator orientation="vertical" className="h-6 mx-1" />
-            
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Lista" onClick={() => handleFormatAction('list')}>
-              <List className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Lista numerada" onClick={() => handleFormatAction('orderedList')}>
-              <ListOrdered className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Cita" onClick={() => handleFormatAction('quote')}>
-              <Quote className="h-4 w-4" />
-            </Button>
-          </div>
-
           <div className="p-8">
-            <div 
-              ref={editorRef}
-              id="main-editor"
-              contentEditable
+            <Textarea
+              value={editorContent}
+              onChange={(e) => setEditorContent(e.target.value)}
               className="w-full min-h-[30vh] max-h-[70vh] p-0 border-none focus:outline-none text-base text-slate-800 leading-relaxed font-serif overflow-y-auto focus-visible:ring-0 focus-visible:ring-offset-0"
-              onInput={(e) => setEditorContent(e.currentTarget.innerHTML)}
-              onMouseUp={handleTextSelection}
+              placeholder="Empieza a escribir tu obra maestra..."
             />
           </div>
 
