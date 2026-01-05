@@ -83,7 +83,7 @@ export async function processEditorAction(input: EditorActionInput): Promise<Edi
     EditorActionInputSchema.parse(input);
     
     // 2. Configurar el modelo
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
     // 3. Construir el prompt
     const prompt = getPrompt(input.text, input.actionType, input.option);
