@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -68,35 +69,42 @@ const MagicFloatingMenu = ({
   );
 };
 
-const ActionCard = ({ 
-  icon: Icon, 
-  title, 
-  description, 
-  color, 
+const ActionCard = ({
+  icon: Icon,
+  title,
+  description,
+  color,
   onClick,
   hasSelector,
   selectorOptions,
-  selectorPlaceholder
-}: { 
-  icon: React.ElementType; 
-  title: string; 
-  description: string; 
-  color: string; 
+  selectorPlaceholder,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  color: string;
   onClick?: (value?: string) => void;
   hasSelector?: boolean;
   selectorOptions?: { value: string; label: string }[];
   selectorPlaceholder?: string;
 }) => {
-  const [selectedValue, setSelectedValue] = useState('');
+  const [selectedValue, setSelectedValue] = useState("");
 
   const cardContent = (
     <div className="group bg-white p-4 rounded-2xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 w-full flex items-center gap-5">
-      <div className={cn("p-3 rounded-xl flex-shrink-0 shadow-md", color)}>
+      <div
+        className={cn(
+          "p-3 rounded-xl flex-shrink-0 shadow-md",
+          color
+        )}
+      >
         <Icon className="h-5 w-5 text-white" />
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <h4 className="font-bold text-slate-900 text-base">{title}</h4>
-        <p className="text-sm text-slate-500 leading-relaxed">{description}</p>
+        <p className="text-sm text-slate-500 leading-relaxed truncate">
+          {description}
+        </p>
       </div>
       <div className="flex-shrink-0">
         {hasSelector && selectorOptions ? (
@@ -106,15 +114,19 @@ const ActionCard = ({
                 <SelectValue placeholder={selectorPlaceholder} />
               </SelectTrigger>
               <SelectContent>
-                {selectorOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value} className="text-sm">
+                {selectorOptions.map((opt) => (
+                  <SelectItem
+                    key={opt.value}
+                    value={opt.value}
+                    className="text-sm"
+                  >
                     {opt.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               className="h-9 px-4"
               onClick={() => onClick?.(selectedValue)}
               disabled={!selectedValue}
@@ -123,11 +135,7 @@ const ActionCard = ({
             </Button>
           </div>
         ) : (
-          <Button 
-            size="sm" 
-            className="h-9"
-            onClick={() => onClick?.()}
-          >
+          <Button size="sm" className="h-9" onClick={() => onClick?.()}>
             Aplicar
           </Button>
         )}
@@ -151,7 +159,6 @@ export default function MagicEditorPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Strip HTML for accurate counts
     const plainText = text.replace(/<[^>]*>?/gm, '');
     const words = plainText.trim().split(/\s+/).filter(Boolean);
     const wordCountValue = words.length === 1 && words[0] === '' ? 0 : words.length;
@@ -302,9 +309,32 @@ export default function MagicEditorPage() {
     { value: '6', label: '36' },
   ];
 
+  const toneOptions = [
+    { value: 'informal', label: 'Informal' },
+    { value: 'profesional', label: 'Profesional' },
+    { value: 'creativo', label: 'Creativo' },
+    { value: 'academico', label: 'Académico' },
+  ];
+
+  const summaryOptions = [
+    { value: 'puntos-clave', label: 'Puntos Clave' },
+    { value: 'parrafo-corto', label: 'Párrafo Corto' },
+    { value: 'resumen-extenso', label: 'Resumen Extenso' },
+  ];
+
+  const continuationOptions = [
+    { value: 'un-parrafo', label: 'Un párrafo' },
+    { value: 'varios-parrafos', label: 'Varios párrafos' },
+    { value: 'completar-idea', label: 'Completar idea' },
+  ];
+
+  const simplificationOptions = [
+      { value: 'para-ninos', label: 'Para un niño' },
+      { value: 'lenguaje-sencillo', label: 'Lenguaje sencillo' },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
-      {/* Header */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -335,7 +365,6 @@ export default function MagicEditorPage() {
 
       <main className="max-w-4xl mx-auto px-6 py-6">
         
-        {/* Banner */}
         <div className="mb-6 p-6 bg-gradient-to-r from-indigo-500/95 to-purple-600/95 rounded-2xl shadow-lg text-white relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-50"></div>
           <div className="relative flex items-start gap-4">
@@ -353,9 +382,7 @@ export default function MagicEditorPage() {
         
         <MagicFloatingMenu position={menuPosition} isVisible={isMenuVisible} />
 
-        {/* Editor */}
         <div className="bg-white rounded-xl shadow-lg border border-slate-200/60 overflow-hidden mb-6">
-          {/* Barra de formato */}
            <div className="border-b border-slate-200 px-4 py-2 flex items-center gap-1 bg-slate-50/80 flex-wrap">
              <Select onValueChange={(value) => handleFormatAction('fontSize', value)}>
                 <SelectTrigger className="w-[80px] h-8 text-xs font-semibold">
@@ -413,7 +440,6 @@ export default function MagicEditorPage() {
             />
           </div>
 
-          {/* Footer Bandeja de Herramientas */}
           <div className="border-t border-slate-200 px-6 py-3 flex items-center justify-between bg-slate-50/80 flex-wrap gap-4">
             <div className="flex items-center gap-4 text-xs text-slate-600 flex-wrap">
               <div className="flex items-center gap-1.5">
@@ -454,8 +480,7 @@ export default function MagicEditorPage() {
           </div>
         </div>
 
-        {/* Herramientas Inteligentes */}
-        <div className="space-y-5">
+        <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-indigo-500" />
             <h3 className="text-base font-bold text-slate-800 uppercase tracking-wide">
@@ -464,7 +489,7 @@ export default function MagicEditorPage() {
           </div>
           
           <div className="grid grid-cols-1 gap-4">
-            <ActionCard
+             <ActionCard
               icon={Languages}
               title="Traducir Texto"
               description="Traduce instantáneamente a cualquier idioma."
@@ -479,6 +504,9 @@ export default function MagicEditorPage() {
               title="Cambiar Tono"
               description="Adapta el texto a un tono más informal o creativo."
               color="bg-gradient-to-br from-orange-500 to-orange-600"
+              hasSelector
+              selectorOptions={toneOptions}
+              selectorPlaceholder="Elige un tono"
             />
             
             <ActionCard
@@ -486,6 +514,9 @@ export default function MagicEditorPage() {
               title="Generar Resumen"
               description="Crea resúmenes personalizados del contenido."
               color="bg-gradient-to-br from-purple-500 to-purple-600"
+              hasSelector
+              selectorOptions={summaryOptions}
+              selectorPlaceholder="Tipo de resumen"
             />
 
             <ActionCard
@@ -493,6 +524,9 @@ export default function MagicEditorPage() {
               title="Continuar Escritura"
               description="La IA continúa el texto donde lo dejaste."
               color="bg-gradient-to-br from-green-500 to-green-600"
+              hasSelector
+              selectorOptions={continuationOptions}
+              selectorPlaceholder="Longitud"
             />
 
             <ActionCard
@@ -500,6 +534,9 @@ export default function MagicEditorPage() {
               title="Simplificar Texto"
               description="Reescribe el texto para que sea más fácil de entender."
               color="bg-gradient-to-br from-teal-500 to-teal-600"
+              hasSelector
+              selectorOptions={simplificationOptions}
+              selectorPlaceholder="Nivel de simpleza"
             />
 
             <ActionCard
@@ -514,3 +551,5 @@ export default function MagicEditorPage() {
     </div>
   );
 }
+
+
