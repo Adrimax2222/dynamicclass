@@ -73,14 +73,15 @@ export async function processEditorAction(input: EditorActionInput): Promise<{ p
   const { text, actionType, option } = validation.data;
 
   try {
-    // 2. Validar la API Key en tiempo de ejecución
+    // 2. Inicialización y validación de la API Key en tiempo de ejecución
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
     if (!apiKey) {
       throw new Error('La variable de entorno GEMINI_API_KEY no está configurada en el servidor.');
     }
 
-    // 3. Inicializar el cliente de IA dentro de la función
     const genAI = new GoogleGenerativeAI(apiKey);
+    
+    // 3. Usar el nombre de modelo correcto y estable
     const model = genAI.getGenerativeModel({ 
       model: "gemini-1.5-flash" 
     });
@@ -101,8 +102,10 @@ export async function processEditorAction(input: EditorActionInput): Promise<{ p
     return { processedText: processedText.trim() };
 
   } catch (error: any) {
-    // 6. Lanzar el error para que el cliente lo capture
-    console.error("[Editor Action Error]:", error);
+    // 6. Depuración detallada del error en el servidor
+    console.dir(error, { depth: null });
+    
+    // 7. Lanzar el error para que el cliente lo capture
     throw new Error(error.message || "Error desconocido al procesar la solicitud de IA.");
   }
 }
