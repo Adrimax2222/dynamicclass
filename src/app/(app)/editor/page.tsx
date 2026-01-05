@@ -9,7 +9,8 @@ import {
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, Quote, Heading1, Heading2, Code, Link,
   Smile, ImageIcon, Table, Star, Globe, FileDown,
-  Text, Pilcrow, Type, Brain, Bug, TextCursorInput
+  Text, Pilcrow, Type, Brain, Bug, TextCursorInput,
+  Loader2, ChevronsUpDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -23,6 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { WipDialog } from '@/components/layout/wip-dialog';
+import { processEditorAction, type EditorActionInput } from './actions';
+import { Input } from '@/components/ui/input';
 
 
 const MagicFloatingMenu = ({ 
@@ -75,6 +78,8 @@ const ActionCard = ({
   description,
   color,
   onClick,
+  action,
+  isProcessing,
   hasSelector,
   selectorOptions,
   selectorPlaceholder,
@@ -83,7 +88,9 @@ const ActionCard = ({
   title: string;
   description: string;
   color: string;
-  onClick?: (value?: string) => void;
+  onClick: (actionType: EditorActionInput['actionType'], option?: string) => void;
+  action: EditorActionInput['actionType'];
+  isProcessing: boolean;
   hasSelector?: boolean;
   selectorOptions?: { value: string; label: string }[];
   selectorPlaceholder?: string;
@@ -91,28 +98,24 @@ const ActionCard = ({
   const [selectedValue, setSelectedValue] = useState("");
 
   const cardContent = (
-    <div className="group bg-white p-4 rounded-2xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 w-full flex items-center gap-4">
-      {/* Columna Izquierda (Texto) */}
-      <div className="w-[70%] flex flex-col items-start gap-2">
-        <div className="flex items-center gap-3">
-            <div className={cn("p-3 rounded-xl flex-shrink-0 shadow-md", color)}>
-                <Icon className="h-5 w-5 text-white" />
-            </div>
-            <div>
-                <h4 className="font-bold text-slate-900 text-base">{title}</h4>
-            </div>
+    <div className="group bg-white p-4 rounded-2xl border border-slate-200 hover:border-primary/20 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 w-full flex items-center justify-between gap-4">
+      <div className="flex items-center gap-4">
+        <div className={cn("p-3 rounded-xl flex-shrink-0 shadow-md", color)}>
+            <Icon className="h-5 w-5 text-white" />
         </div>
-        <p className="text-sm text-slate-500 leading-relaxed pl-1">
-          {description}
-        </p>
+        <div className="flex flex-col gap-1">
+            <h4 className="font-bold text-slate-900 text-base">{title}</h4>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              {description}
+            </p>
+        </div>
       </div>
-
-      {/* Columna Derecha (Controles) */}
-      <div className="w-[30%] flex flex-col justify-center items-center gap-2">
+      
+      <div className="flex-shrink-0">
         {hasSelector && selectorOptions ? (
-          <>
+          <div className="flex items-center gap-2">
             <Select value={selectedValue} onValueChange={setSelectedValue}>
-              <SelectTrigger className="h-9 text-sm w-full">
+              <SelectTrigger className="h-9 text-sm w-40">
                 <SelectValue placeholder={selectorPlaceholder} />
               </SelectTrigger>
               <SelectContent>
@@ -125,50 +128,61 @@ const ActionCard = ({
             </Select>
             <Button
               size="sm"
-              className="h-9 px-4 w-full"
-              onClick={() => onClick?.(selectedValue)}
-              disabled={!selectedValue}
+              className="h-9 px-4"
+              onClick={() => onClick(action, selectedValue)}
+              disabled={isProcessing || !selectedValue}
             >
-              Aplicar
+              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Aplicar'}
             </Button>
-          </>
+          </div>
         ) : (
-          <Button size="sm" className="h-9 px-4 w-full" onClick={() => onClick?.()}>
-            Aplicar
+          <Button size="sm" className="h-9 px-4" onClick={() => onClick(action)} disabled={isProcessing}>
+             {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Aplicar'}
           </Button>
         )}
       </div>
     </div>
   );
 
-  return onClick ? cardContent : <WipDialog>{cardContent}</WipDialog>;
+  return cardContent;
 };
 
 
 export default function MagicEditorPage() {
   const [title, setTitle] = useState('');
-  const [text, setText] = useState('');
+  const [editorContent, setEditorContent] = useState('');
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
   const [readingTime, setReadingTime] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [fontSize, setFontSize] = useState('16');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const { toast } = useToast();
+  const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const plainText = text.replace(/<[^>]*>?/gm, '');
+    // Cuando editorContent cambia, actualizamos el div editable
+    if (editorRef.current && editorRef.current.innerHTML !== editorContent) {
+        editorRef.current.innerHTML = editorContent;
+    }
+}, [editorContent]);
+
+
+  useEffect(() => {
+    const plainText = editorContent.replace(/<[^>]*>?/gm, '');
     const words = plainText.trim().split(/\s+/).filter(Boolean);
     const wordCountValue = words.length === 1 && words[0] === '' ? 0 : words.length;
     
     setWordCount(wordCountValue);
     setCharCount(plainText.length);
     setReadingTime(Math.ceil(wordCountValue / 200));
-  }, [text]);
+  }, [editorContent]);
 
   const handleCopy = () => {
-    const plainText = text.replace(/<[^>]*>?/gm, '');
+    const plainText = editorContent.replace(/<[^>]*>?/gm, '');
     navigator.clipboard.writeText(plainText);
     setIsCopied(true);
     toast({ title: '✓ Copiado', description: 'Texto copiado al portapapeles.' });
@@ -185,7 +199,7 @@ export default function MagicEditorPage() {
       doc.setFont('helvetica', 'bold');
       doc.text(title || 'Documento sin título', margin, margin);
       
-      doc.html(text, {
+      doc.html(editorContent, {
         x: margin,
         y: margin + 15,
         width: pageWidth - (margin * 2),
@@ -201,7 +215,7 @@ export default function MagicEditorPage() {
   };
 
   const handleShare = () => {
-    const plainText = text.replace(/<[^>]*>?/gm, '');
+    const plainText = editorContent.replace(/<[^>]*>?/gm, '');
     if (navigator.share && plainText) {
       navigator.share({ title: title || 'Mi documento', text: plainText }).catch(() => handleCopy());
     } else {
@@ -225,8 +239,7 @@ export default function MagicEditorPage() {
   };
 
   const handleFormatAction = (action: string, value?: string) => {
-    const editor = document.getElementById('main-editor');
-    if (editor) editor.focus();
+    if (editorRef.current) editorRef.current.focus();
 
     switch(action) {
         case 'bold': document.execCommand('bold', false); break;
@@ -239,20 +252,17 @@ export default function MagicEditorPage() {
             if (value) document.execCommand('formatBlock', false, `<${value}>`);
             break;
         case 'fontSize':
-            if (value) {
-                document.execCommand('fontSize', false, value);
+            if (value) document.execCommand('fontSize', false, "1"); // Use a dummy value
                 const fontElements = document.getElementById('main-editor')?.getElementsByTagName('font');
                 if (fontElements) {
                     for (let i = 0; i < fontElements.length; i++) {
                         const element = fontElements[i];
                         if (element.size) {
-                            const newSize = (parseInt(element.size) * 4) + 'px';
-                            element.style.fontSize = newSize;
+                            element.style.fontSize = value + 'px';
                             element.removeAttribute('size');
                         }
                     }
                 }
-            }
             break;
         case 'fontName':
             if (value) document.execCommand('fontName', false, value);
@@ -279,6 +289,27 @@ export default function MagicEditorPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMenuVisible]);
 
+  const handleAiAction = async (actionType: EditorActionInput['actionType'], option?: string) => {
+    if (!editorContent.trim() || isProcessing) return;
+
+    setIsProcessing(true);
+    toast({ title: 'Procesando con IA...', description: 'Tu texto está siendo mejorado.' });
+
+    try {
+        const result = await processEditorAction({
+            text: editorContent,
+            actionType,
+            option,
+        });
+        setEditorContent(result.processedText);
+    } catch (error) {
+        console.error('AI Action Failed:', error);
+        toast({ title: 'Error de IA', description: 'No se pudo procesar la solicitud.', variant: 'destructive' });
+    } finally {
+        setIsProcessing(false);
+    }
+};
+
   const languages = [
     { value: 'es', label: '🇪🇸 Español' },
     { value: 'en', label: '🇬🇧 Inglés' },
@@ -299,13 +330,13 @@ export default function MagicEditorPage() {
     { value: '"Trebuchet MS", sans-serif', label: 'Trebuchet MS' }
   ];
   
-  const fontSizeOptions = [
-    { value: '1', label: '12' },
-    { value: '2', label: '14' },
-    { value: '3', label: '16' },
-    { value: '4', label: '18' },
-    { value: '5', label: '24' },
-    { value: '6', label: '36' },
+ const fontSizeOptions = [
+    { value: '12', label: '12' },
+    { value: '14', label: '14' },
+    { value: '16', label: '16' },
+    { value: '18', label: '18' },
+    { value: '24', label: '24' },
+    { value: '36', label: '36' },
   ];
 
   const toneOptions = [
@@ -383,16 +414,32 @@ export default function MagicEditorPage() {
 
         <div className="bg-white rounded-xl shadow-lg border border-slate-200/60 overflow-hidden mb-6">
            <div className="border-b border-slate-200 px-4 py-2 flex items-center gap-1 bg-slate-50/80 flex-wrap">
-             <Select onValueChange={(value) => handleFormatAction('fontSize', value)}>
-                <SelectTrigger className="w-[80px] h-8 text-xs font-semibold">
-                    <SelectValue placeholder="Tamaño" />
-                </SelectTrigger>
-                <SelectContent>
-                    {fontSizeOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+             <div className="flex items-center border border-slate-300 rounded-md">
+                <Input
+                    type="number"
+                    value={fontSize}
+                    onChange={(e) => {
+                        setFontSize(e.target.value);
+                        handleFormatAction('fontSize', e.target.value);
+                    }}
+                    className="w-16 h-8 text-xs font-semibold border-0 rounded-r-none focus-visible:ring-0"
+                    min="8"
+                    max="72"
+                />
+                <Select onValueChange={(value) => {
+                    setFontSize(value);
+                    handleFormatAction('fontSize', value);
+                }}>
+                    <SelectTrigger className="w-[40px] h-8 text-xs font-semibold border-0 border-l rounded-l-none pl-1.5">
+                        <ChevronsUpDown className="h-3 w-3" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {fontSizeOptions.map(option => (
+                            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
 
             <Select onValueChange={(value) => handleFormatAction('fontName', value)}>
                 <SelectTrigger className="w-[140px] h-8 text-xs font-semibold">
@@ -431,10 +478,11 @@ export default function MagicEditorPage() {
 
           <div className="p-8">
             <div 
+              ref={editorRef}
               id="main-editor"
               contentEditable
               className="w-full min-h-[30vh] max-h-[70vh] p-0 border-none focus:outline-none text-base text-slate-800 leading-relaxed font-serif overflow-y-auto focus-visible:ring-0 focus-visible:ring-offset-0"
-              onInput={(e) => setText(e.currentTarget.innerHTML)}
+              onInput={(e) => setEditorContent(e.currentTarget.innerHTML)}
               onMouseUp={handleTextSelection}
             />
           </div>
@@ -496,6 +544,9 @@ export default function MagicEditorPage() {
               hasSelector
               selectorOptions={languages}
               selectorPlaceholder="Selecciona idioma"
+              onClick={handleAiAction}
+              action="translate"
+              isProcessing={isProcessing}
             />
             
             <ActionCard
@@ -506,6 +557,9 @@ export default function MagicEditorPage() {
               hasSelector
               selectorOptions={toneOptions}
               selectorPlaceholder="Elige un tono"
+              onClick={handleAiAction}
+              action="tone"
+              isProcessing={isProcessing}
             />
             
             <ActionCard
@@ -516,6 +570,9 @@ export default function MagicEditorPage() {
               hasSelector
               selectorOptions={summaryOptions}
               selectorPlaceholder="Tipo de resumen"
+              onClick={handleAiAction}
+              action="summarize"
+              isProcessing={isProcessing}
             />
 
             <ActionCard
@@ -526,6 +583,9 @@ export default function MagicEditorPage() {
               hasSelector
               selectorOptions={continuationOptions}
               selectorPlaceholder="Longitud"
+              onClick={handleAiAction}
+              action="continue"
+              isProcessing={isProcessing}
             />
 
             <ActionCard
@@ -536,6 +596,9 @@ export default function MagicEditorPage() {
               hasSelector
               selectorOptions={simplificationOptions}
               selectorPlaceholder="Nivel de simpleza"
+              onClick={handleAiAction}
+              action="simplify"
+              isProcessing={isProcessing}
             />
 
             <ActionCard
@@ -543,6 +606,9 @@ export default function MagicEditorPage() {
               title="Buscar Errores"
               description="Revisa la gramática y ortografía de tu documento."
               color="bg-gradient-to-br from-red-500 to-red-600"
+              onClick={handleAiAction}
+              action="fix"
+              isProcessing={isProcessing}
             />
           </div>
         </div>
@@ -550,7 +616,3 @@ export default function MagicEditorPage() {
     </div>
   );
 }
-
-
-
-
