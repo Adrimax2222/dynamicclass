@@ -69,7 +69,13 @@ const editorActionPrompt = ai.definePrompt({
     output: { schema: EditorActionOutputSchema },
     prompt: (input) => getPrompt(input.actionType, input.option),
     config: {
-        temperature: 0.7,
+        temperature: 0.5,
+        safetySettings: [
+            {
+                category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+                threshold: 'BLOCK_ONLY_HIGH',
+            },
+        ],
     },
 });
 
