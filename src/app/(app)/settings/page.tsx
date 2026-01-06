@@ -380,7 +380,7 @@ function ChangePasswordDialog() {
   const auth = useAuth();
 
   const form = useForm<PasswordChangeSchema>({
-    resolver: zodResolver(passwordChangeChangeSchema),
+    resolver: zodResolver(passwordChangeSchema),
     defaultValues: {
       currentPassword: "",
       newPassword: "",
