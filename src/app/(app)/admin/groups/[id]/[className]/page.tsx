@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, Loader2, Crown, User, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Search, Loader2, Crown, User, ShieldCheck, Users } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -107,8 +107,8 @@ export default function ManageClassMembersPage() {
                         </div>
                     ) : (
                         <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-                            {filteredMembers.map((member) => (
-                                <div key={member.uid} className={cn("flex items-center gap-4 p-2 rounded-lg border", member.uid === currentUser.uid && "bg-primary/10")}>
+                            {filteredMembers.map((member, index) => (
+                                <div key={member.uid || index} className={cn("flex items-center gap-4 p-2 rounded-lg border", currentUser && member.uid === currentUser.uid && "bg-primary/10")}>
                                     <Avatar>
                                         <AvatarImage src={member.avatar} />
                                         <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
@@ -121,7 +121,7 @@ export default function ManageClassMembersPage() {
                                        <Badge variant={member.role === 'admin' ? 'destructive' : member.role === classAdminRole ? 'default' : 'secondary'}>
                                            {member.role === 'admin' ? "Admin Global" : member.role === classAdminRole ? "Admin Clase" : "Estudiante"}
                                        </Badge>
-                                       {canManage && member.uid !== currentUser.uid && member.role !== 'admin' && (
+                                       {canManage && currentUser && member.uid !== currentUser.uid && member.role !== 'admin' && (
                                            <AlertDialog>
                                                <AlertDialogTrigger asChild>
                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
