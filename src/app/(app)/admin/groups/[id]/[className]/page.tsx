@@ -1,11 +1,10 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useApp } from "@/lib/hooks/use-app";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { doc, getDoc, updateDoc, collection, query, where } from "firebase/firestore";
+import { doc, updateDoc, collection, query, where } from "firebase/firestore";
 import type { Center, User as CenterUser, ClassDefinition, Schedule } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +16,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+
 import { cn } from "@/lib/utils";
 
 export default function ManageClassMembersPage() {
@@ -29,6 +30,7 @@ export default function ManageClassMembersPage() {
     const { toast } = useToast();
     
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedMember, setSelectedMember] = useState<CenterUser | null>(null);
     
     // Derived state from className
     const [course, classLetter] = className.split('-');
@@ -50,10 +52,10 @@ export default function ManageClassMembersPage() {
         (member.email && member.email.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    const handleRoleChange = async (member: CenterUser, newRole: string) => {
+    const handleRoleChange = async (member: CenterUser | null, newRole: string) => {
          console.log("Datos del miembro recibidos:", member);
-         if (!firestore) return;
-         if (!member || !member.uid) {
+         if (!firestore || !member) return;
+         if (!member.uid) {
             console.error("Error: el miembro no tiene un UID válido.", member);
             toast({ title: "Error", description: "No se puede actualizar el rol de un usuario sin identificador.", variant: "destructive" });
             return;
@@ -62,6 +64,7 @@ export default function ManageClassMembersPage() {
             const userDocRef = doc(firestore, 'users', member.uid);
             await updateDoc(userDocRef, { role: newRole });
             toast({ title: "Rol actualizado", description: `${member.name} es ahora ${newRole}.` });
+            setSelectedMember(null); // Close dialog on success
          } catch (error) {
              console.error("Error updating role:", error);
              toast({ title: "Error", description: "No se pudo actualizar el rol.", variant: "destructive" });
@@ -80,13 +83,18 @@ export default function ManageClassMembersPage() {
     }
     
     if (!canManage) {
-        // You can show an unauthorized message or redirect
          return (
              <div className="container mx-auto p-6">
                  <p>No tienes permiso para ver esta página.</p>
              </div>
          );
     }
+
+    const RoleIcon = ({ role }: { role: string }) => {
+        if (role === 'admin') return <ShieldCheck className="h-5 w-5 text-destructive" />;
+        if (role === classAdminRole) return <Crown className="h-5 w-5 text-amber-500" />;
+        return <User className="h-5 w-5 text-muted-foreground" />;
+    };
 
 
     return (
@@ -127,52 +135,63 @@ export default function ManageClassMembersPage() {
                         </div>
                     ) : (
                         <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-                            {filteredMembers.map((member, index) => (
-                                <div key={member.uid || index} className={cn("flex items-center gap-4 p-2 rounded-lg border", currentUser && member.uid === currentUser.uid && "bg-primary/10")}>
-                                    <Avatar>
-                                        <AvatarImage src={member.avatar} />
-                                        <AvatarFallback>{member.name?.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1">
-                                        <p className="font-semibold">{member.name}</p>
-                                        <p className="text-xs text-muted-foreground">{member.email}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                       <Badge variant={member.role === 'admin' ? 'destructive' : member.role === classAdminRole ? 'default' : 'secondary'}>
-                                           {member.role === 'admin' ? "Admin Global" : member.role === classAdminRole ? "Admin Clase" : "Estudiante"}
-                                       </Badge>
-                                       {isGlobalAdmin && member.role !== 'admin' && (
-                                           <AlertDialog>
-                                               <AlertDialogTrigger asChild>
-                                                   <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                       {member.role === classAdminRole ? <User className="h-4 w-4 text-red-500" /> : <Crown className="h-4 w-4 text-amber-500" />}
-                                                   </Button>
-                                               </AlertDialogTrigger>
-                                               <AlertDialogContent>
-                                                   <AlertDialogHeader>
-                                                       <AlertDialogTitle>Gestionar Rol</AlertDialogTitle>
-                                                       <AlertDialogDescription>
-                                                            ¿Qué quieres hacer con {member.name}?
-                                                       </AlertDialogDescription>
-                                                   </AlertDialogHeader>
-                                                   <AlertDialogFooter>
-                                                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                       {member.role === classAdminRole ? (
-                                                            <AlertDialogAction onClick={() => handleRoleChange(member, 'student')}>
-                                                                Quitar Admin de Clase
-                                                            </AlertDialogAction>
-                                                       ) : (
-                                                            <AlertDialogAction onClick={() => handleRoleChange(member, classAdminRole)}>
-                                                                Hacer Admin de Clase
-                                                            </AlertDialogAction>
-                                                       )}
-                                                   </AlertDialogFooter>
-                                               </AlertDialogContent>
-                                           </AlertDialog>
-                                       )}
-                                    </div>
-                                </div>
-                            ))}
+                             <Dialog>
+                                {filteredMembers.map((member, index) => (
+                                    <DialogTrigger asChild key={member.uid || index}>
+                                        <button
+                                          className={cn(
+                                            "flex w-full items-center gap-4 p-3 text-left rounded-lg border transition-colors hover:bg-muted/50",
+                                            currentUser && member.uid === currentUser.uid && "bg-primary/10"
+                                          )}
+                                          onClick={() => setSelectedMember(member)}
+                                        >
+                                            <Avatar>
+                                                <AvatarImage src={member.avatar} />
+                                                <AvatarFallback>{member.name?.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1">
+                                                <p className="font-semibold">{member.name}</p>
+                                                <p className="text-xs text-muted-foreground">{member.email}</p>
+                                            </div>
+                                            <RoleIcon role={member.role} />
+                                        </button>
+                                    </DialogTrigger>
+                                ))}
+
+                                <DialogContent>
+                                    {selectedMember && (
+                                        <>
+                                            <DialogHeader className="items-center text-center">
+                                                <Avatar className="h-20 w-20 mb-4 ring-4 ring-primary/20">
+                                                    <AvatarImage src={selectedMember.avatar} />
+                                                    <AvatarFallback className="text-2xl">{selectedMember.name?.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <DialogTitle>{selectedMember.name}</DialogTitle>
+                                                <DialogDescription>{selectedMember.email}</DialogDescription>
+                                                 <Badge variant={selectedMember.role === 'admin' ? 'destructive' : selectedMember.role === classAdminRole ? 'default' : 'secondary'} className="w-fit">
+                                                    {selectedMember.role === 'admin' ? "Admin Global" : selectedMember.role === classAdminRole ? "Admin Clase" : "Estudiante"}
+                                                </Badge>
+                                            </DialogHeader>
+                                            <DialogFooter className="flex-col gap-2 pt-4">
+                                               {isGlobalAdmin && selectedMember.role !== 'admin' && (
+                                                     selectedMember.role === classAdminRole ? (
+                                                        <Button variant="destructive" onClick={() => handleRoleChange(selectedMember, 'student')}>
+                                                            Quitar Admin de Clase
+                                                        </Button>
+                                                   ) : (
+                                                        <Button onClick={() => handleRoleChange(selectedMember, classAdminRole)}>
+                                                            Hacer Admin de Clase
+                                                        </Button>
+                                                   )
+                                               )}
+                                                <DialogClose asChild>
+                                                    <Button variant="outline">Cerrar</Button>
+                                                </DialogClose>
+                                            </DialogFooter>
+                                        </>
+                                    )}
+                                </DialogContent>
+                            </Dialog>
                         </div>
                     )}
                 </CardContent>
