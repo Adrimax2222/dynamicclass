@@ -32,8 +32,7 @@ export default function AdminPage() {
         if (user) {
             if (user.role?.startsWith('admin-')) {
                 // It's a class admin, redirect them to their specific class management page
-                const [course, className] = user.course.split('-');
-                if (user.center && user.course && user.className) {
+                if (user.organizationId && user.course && user.className) {
                      router.replace(`/admin/groups/${user.organizationId}/${encodeURIComponent(user.course + '-' + user.className)}`);
                 } else {
                      router.replace('/home');

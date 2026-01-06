@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -81,17 +81,21 @@ export default function ManageClassMembersPage() {
          }
     };
 
-    const handleBanUser = async (member: CenterUser | null) => {
+    const handleKickFromClass = async (member: CenterUser | null) => {
         if (!firestore || !member || !member.uid) return;
         setIsProcessing(true);
         try {
             const userDocRef = doc(firestore, 'users', member.uid);
-            await updateDoc(userDocRef, { isBanned: true });
-            toast({ title: "Usuario Expulsado", description: `${member.name} ha sido expulsado y no podrá acceder a la aplicación.`, variant: "destructive"});
-            setSelectedMember(null);
+            // This effectively moves them to a "no class" state within the center
+            await updateDoc(userDocRef, {
+                course: "default",
+                className: "default"
+            });
+            toast({ title: "Usuario Expulsado de la Clase", description: `${member.name} ha sido movido a un estado 'sin clase'.`, variant: "destructive"});
+            setSelectedMember(null); // Close dialog and trigger re-fetch
         } catch (error) {
-             console.error("Error banning user:", error);
-             toast({ title: "Error", description: "No se pudo expulsar al usuario.", variant: "destructive" });
+             console.error("Error kicking user from class:", error);
+             toast({ title: "Error", description: "No se pudo expulsar al usuario de la clase.", variant: "destructive" });
         } finally {
             setIsProcessing(false);
         }
@@ -213,19 +217,19 @@ export default function ManageClassMembersPage() {
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
                                                         <Button variant="destructive" className="w-full" disabled={isProcessing}>
-                                                            <UserX className="mr-2 h-4 w-4" /> Expulsar
+                                                            <UserX className="mr-2 h-4 w-4" /> Expulsar de la Clase
                                                         </Button>
                                                     </AlertDialogTrigger>
                                                     <AlertDialogContent>
                                                         <AlertDialogHeader>
-                                                            <AlertDialogTitle>¿Expulsar a {selectedMember.name}?</AlertDialogTitle>
+                                                            <AlertDialogTitle>¿Expulsar a {selectedMember.name} de esta clase?</AlertDialogTitle>
                                                             <AlertDialogDescription>
-                                                                Esta acción marcará al usuario como baneado y no podrá volver a iniciar sesión. Esta acción es reversible por un admin global desde el panel principal.
+                                                                Esta acción moverá al usuario a un estado "sin clase" dentro del centro. Podrá volver a ser asignado a una clase más tarde por un administrador. No se le expulsará de la aplicación.
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleBanUser(selectedMember)} className="bg-destructive hover:bg-destructive/90">Sí, expulsar</AlertDialogAction>
+                                                            <AlertDialogAction onClick={() => handleKickFromClass(selectedMember)} className="bg-destructive hover:bg-destructive/90">Sí, expulsar</AlertDialogAction>
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
                                                 </AlertDialog>

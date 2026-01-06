@@ -78,7 +78,7 @@ export default function ManageGroupPage() {
                         <ClassesTab center={center} />
                     </TabsContent>
                     <TabsContent value="all-members">
-                        <MembersTab centerCode={center.code} />
+                        <MembersTab centerId={center.id} />
                     </TabsContent>
                 </div>
             </Tabs>
@@ -100,14 +100,14 @@ function CopyButton({ text }: { text: string }) {
     )
 }
 
-function MembersTab({ centerCode }: { centerCode: string }) {
+function MembersTab({ centerId }: { centerId: string }) {
     const firestore = useFirestore();
     const [searchTerm, setSearchTerm] = useState("");
 
     const membersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'users'), where('center', '==', centerCode));
-    }, [firestore, centerCode]);
+        return query(collection(firestore, 'users'), where('organizationId', '==', centerId));
+    }, [firestore, centerId]);
 
     const { data: members, isLoading } = useCollection<CenterUser>(membersQuery);
 
@@ -147,7 +147,7 @@ function MembersTab({ centerCode }: { centerCode: string }) {
                     <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                         {filteredMembers.map((member, i) => (
                             <div key={member.uid || i} className="flex items-center gap-4 p-2 rounded-lg border">
-                                <AvatarDisplay user={member} className="h-10 w-10" />
+                                <AvatarDisplay user={member} className="h-10 w-10" showHat={false} />
                                 <div className="flex-1">
                                     <p className="font-semibold">{member.name}</p>
                                     <p className="text-xs text-muted-foreground">{member.email}</p>
