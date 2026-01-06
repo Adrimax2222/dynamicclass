@@ -374,7 +374,8 @@ type PasswordChangeSchema = z.infer<typeof passwordChangeSchema>;
 function ChangePasswordDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showCurrentPassword, setShowNewPassword, setShowNewPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
 
@@ -694,6 +695,10 @@ function PrivacyPolicyDialog() {
         </Dialog>
     );
 }
+
+    
+
+    
 
     
 
