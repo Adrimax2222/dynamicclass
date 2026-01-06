@@ -13,7 +13,7 @@
         "ageRange": { "type": "string" },
         "course": { "type": "string" },
         "className": { "type": "string" },
-        "role": { "type": "string", "enum": ["student", "teacher", "admin"] },
+        "role": { "type": "string", "description": "Can be 'student', 'teacher', 'admin', or a dynamic role like 'admin-4ESO-B'." },
         "avatar": { "type": "string", "format": "uri" },
         "trophies": { "type": "number" },
         "tasks": { "type": "number" },
@@ -25,7 +25,7 @@
         "studyMinutes": { "type": "number" },
         "streak": { "type": "number" },
         "lastStudyDay": { "type": "string", "format": "date" },
-        "ownedAvatars": { "type": "array", "items": { "type": "string", "format": "uri" } }
+        "ownedAvatars": { "type": "array", "items": { "type": "string" } }
       },
       "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange", "isNewUser"]
     },

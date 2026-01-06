@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen } from "lucide-react";
+import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -67,18 +67,18 @@ export default function ManageGroupPage() {
                 </div>
             </header>
 
-            <Tabs defaultValue="members" className="w-full">
+            <Tabs defaultValue="classes" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="members"><Users className="mr-2 h-4 w-4"/>Miembros</TabsTrigger>
                     <TabsTrigger value="classes"><GraduationCap className="mr-2 h-4 w-4"/>Clases</TabsTrigger>
+                    <TabsTrigger value="all-members"><Users className="mr-2 h-4 w-4"/>Todos los Miembros</TabsTrigger>
                 </TabsList>
 
                 <div className="py-6">
-                    <TabsContent value="members">
-                        <MembersTab centerCode={center.code} />
-                    </TabsContent>
                     <TabsContent value="classes">
                         <ClassesTab center={center} />
+                    </TabsContent>
+                    <TabsContent value="all-members">
+                        <MembersTab centerCode={center.code} />
                     </TabsContent>
                 </div>
             </Tabs>
@@ -120,7 +120,7 @@ function MembersTab({ centerCode }: { centerCode: string }) {
         <Card>
             <CardHeader>
                 <CardTitle>Miembros del Centro</CardTitle>
-                <CardDescription>Usuarios que se han unido a este grupo con el código.</CardDescription>
+                <CardDescription>Todos los usuarios que se han unido a este grupo con el código.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="relative">
@@ -155,7 +155,7 @@ function MembersTab({ centerCode }: { centerCode: string }) {
                                     <p className="font-semibold">{member.name}</p>
                                     <p className="text-xs text-muted-foreground">{member.email}</p>
                                 </div>
-                                <Badge variant={member.role === 'admin' ? 'destructive' : 'secondary'}>{member.role}</Badge>
+                                <Badge variant={member.role === 'admin' ? 'destructive' : member.role?.startsWith('admin-') ? 'secondary' : 'outline'}>{member.role}</Badge>
                             </div>
                         ))}
                     </div>
@@ -215,7 +215,7 @@ function ClassesTab({ center }: { center: Center }) {
         <Card>
             <CardHeader>
                 <CardTitle>Clases del Centro</CardTitle>
-                <CardDescription>Gestiona las clases y sus calendarios predefinidos.</CardDescription>
+                <CardDescription>Gestiona las clases, sus calendarios y sus miembros.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -263,14 +263,20 @@ function ClassesTab({ center }: { center: Center }) {
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-2">
+                    <div className="space-y-3">
                         {center.classes.map((classObj, index) => (
                            <div 
                              key={`class-${index}-${classObj.name}`} 
                              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg border bg-muted/50"
                            >
                              <p className="font-semibold text-base whitespace-nowrap">{classObj.name || "Clase sin nombre"}</p>
-                             <div className="flex items-center gap-2 w-full sm:w-auto">
+                             <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap justify-end">
+                               <Button asChild variant="secondary" size="sm" className="flex-1 sm:flex-initial">
+                                  <Link href={`/admin/groups/${center.id}/${encodeURIComponent(classObj.name)}`}>
+                                   <UserCog className="h-4 w-4 mr-2" />
+                                   Miembros
+                                 </Link>
+                               </Button>
                                <Button asChild variant="secondary" size="sm" className="flex-1 sm:flex-initial">
                                   <Link href={`/admin/schedule/editor/${center.id}/${encodeURIComponent(classObj.name)}`}>
                                    <BookOpen className="h-4 w-4 mr-2" />
@@ -311,5 +317,3 @@ function ClassesTab({ center }: { center: Center }) {
         </Card>
     );
 }
-
-    

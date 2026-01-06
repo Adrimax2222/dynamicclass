@@ -11,7 +11,7 @@ export type User = {
   ageRange: string;
   course: string;
   className: string;
-  role: 'student' | 'teacher' | 'admin';
+  role: 'student' | 'teacher' | 'admin' | string; // Allow dynamic admin roles like 'admin-4ESO-B'
   avatar: string;
   trophies: number;
   tasks: number;
@@ -28,7 +28,8 @@ export type User = {
 };
 
 // Simplified user type for center management
-export type CenterUser = Pick<User, 'uid' | 'name' | 'email' | 'avatar' | 'role'>;
+export type CenterUser = Pick<User, 'uid' | 'name' | 'email' | 'avatar' | 'role' | 'course' | 'className'>;
+
 
 export type ClassDefinition = {
   name: string;

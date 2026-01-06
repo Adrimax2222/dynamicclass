@@ -28,10 +28,19 @@ export default function AdminPage() {
     const { user } = useApp();
     const router = useRouter();
 
-    // Secure this page to admins
     useEffect(() => {
-        if (user && user.role !== 'admin') {
-            router.replace('/home');
+        if (user) {
+            if (user.role?.startsWith('admin-')) {
+                // It's a class admin, redirect them to their specific class management page
+                const [course, className] = user.course.split('-');
+                if (user.center && user.course && user.className) {
+                     router.replace(`/admin/groups/${user.organizationId}/${encodeURIComponent(user.course + '-' + user.className)}`);
+                } else {
+                     router.replace('/home');
+                }
+            } else if (user.role !== 'admin') {
+                router.replace('/home');
+            }
         }
     }, [user, router]);
 
@@ -192,7 +201,7 @@ function UsersTab() {
                                             <p className="font-semibold">{u.name}</p>
                                             <p className="text-xs text-muted-foreground">{u.email}</p>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <Badge variant={u.role === 'admin' ? 'destructive' : 'secondary'}>{u.role}</Badge>
+                                                <Badge variant={u.role === 'admin' ? 'destructive' : u.role?.startsWith('admin-') ? 'secondary' : 'outline'}>{u.role}</Badge>
                                                 {u.isBanned && <Badge variant="destructive" className="bg-orange-500">Baneado</Badge>}
                                             </div>
                                         </div>
@@ -385,6 +394,8 @@ function GroupsTab() {
             const querySnapshot = await getDocs(defaultCenterQuery);
             
             let centerDoc;
+            let centerData;
+
             if (querySnapshot.empty) {
                  try {
                     const defaultCenterData = {
@@ -398,17 +409,18 @@ function GroupsTab() {
                         createdAt: serverTimestamp(),
                     };
                     const newDocRef = await addDoc(collection(firestore, "centers"), defaultCenterData);
-                    centerDoc = { ref: newDocRef, data: () => defaultCenterData };
+                    centerDoc = { ref: newDocRef };
+                    centerData = defaultCenterData;
                     toast({ title: "Sistema actualizado", description: "El centro por defecto ha sido creado con el horario de 4º ESO B." });
                 } catch (e) {
                      console.error("Failed to create default center:", e);
                      return;
                 }
             } else {
-                centerDoc = querySnapshot.docs[0];
+                centerDoc = { ref: querySnapshot.docs[0].ref };
+                centerData = querySnapshot.docs[0].data() as Center;
             }
             
-            const centerData = centerDoc.data() as Center;
             const class4B = centerData.classes.find(c => c.name === '4ESO-B');
             
             let needsUpdate = false;
@@ -438,6 +450,18 @@ function GroupsTab() {
                     console.error("Failed to migrate schedule:", e);
                 }
             }
+            
+            // Assign organizationId to all users in this center
+            const usersQuery = query(collection(firestore, "users"), where("center", "==", SCHOOL_VERIFICATION_CODE));
+            const usersSnapshot = await getDocs(usersQuery);
+            const batch = writeBatch(firestore);
+            usersSnapshot.forEach(userDoc => {
+                if (!userDoc.data().organizationId) {
+                    batch.update(userDoc.ref, { organizationId: querySnapshot.docs[0].id });
+                }
+            });
+            await batch.commit();
+
             setMigrationDone(true);
         };
         
@@ -559,16 +583,4 @@ function GroupsTab() {
             </CardContent>
         </Card>
     );
-}
-
-function WipPlaceholder() {
-  return (
-    <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
-        <Wrench className="h-12 w-12 text-muted-foreground/50 mb-4" />
-        <p className="font-semibold">Función en Desarrollo</p>
-        <p className="text-sm text-muted-foreground">
-            Estamos trabajando en esta sección. ¡Vuelve pronto!
-        </p>
-    </div>
-  );
 }
