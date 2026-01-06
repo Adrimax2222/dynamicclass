@@ -52,6 +52,11 @@ export default function ManageClassMembersPage() {
 
     const handleRoleChange = async (member: CenterUser, newRole: string) => {
          if (!firestore) return;
+         if (!member || !member.uid) {
+            console.error("Error: el miembro no tiene un UID válido.", member);
+            toast({ title: "Error", description: "No se puede actualizar el rol de un usuario sin identificador.", variant: "destructive" });
+            return;
+        }
          try {
             const userDocRef = doc(firestore, 'users', member.uid);
             await updateDoc(userDocRef, { role: newRole });
