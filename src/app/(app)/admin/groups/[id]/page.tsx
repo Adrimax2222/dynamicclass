@@ -78,7 +78,7 @@ export default function ManageGroupPage() {
                         <ClassesTab center={center} />
                     </TabsContent>
                     <TabsContent value="all-members">
-                        <MembersTab centerId={center.id} />
+                        <MembersTab centerId={center.uid} />
                     </TabsContent>
                 </div>
             </Tabs>
@@ -170,12 +170,12 @@ function ClassesTab({ center }: { center: Center }) {
     const { toast } = useToast();
 
     const handleAddClass = async () => {
-        if (!firestore || !center.id || !newCourse || !newClassName) return;
+        if (!firestore || !center.uid || !newCourse || !newClassName) return;
 
         const combinedClassName = `${newCourse.replace('eso','ESO')}-${newClassName}`;
 
         setIsProcessing(true);
-        const centerDocRef = doc(firestore, 'centers', center.id);
+        const centerDocRef = doc(firestore, 'centers', center.uid);
         const newClass: ClassDefinition = { name: combinedClassName, icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } };
 
         try {
@@ -193,9 +193,9 @@ function ClassesTab({ center }: { center: Center }) {
     };
 
     const handleRemoveClass = async (classObj: ClassDefinition) => {
-        if (!firestore || !center.id) return;
+        if (!firestore || !center.uid) return;
         setIsProcessing(true);
-        const centerDocRef = doc(firestore, 'centers', center.id);
+        const centerDocRef = doc(firestore, 'centers', center.uid);
         try {
             await updateDoc(centerDocRef, {
                 classes: arrayRemove(classObj)
@@ -269,19 +269,19 @@ function ClassesTab({ center }: { center: Center }) {
                              <p className="font-semibold text-base whitespace-nowrap">{classObj.name || "Clase sin nombre"}</p>
                              <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap justify-end">
                                <Button asChild variant="secondary" size="sm" className="flex-1 sm:flex-initial">
-                                  <Link href={`/admin/groups/${center.id}/${encodeURIComponent(classObj.name)}`}>
+                                  <Link href={`/admin/groups/${center.uid}/${encodeURIComponent(classObj.name)}`}>
                                    <UserCog className="h-4 w-4 mr-2" />
                                    Miembros
                                  </Link>
                                </Button>
                                <Button asChild variant="secondary" size="sm" className="flex-1 sm:flex-initial">
-                                  <Link href={`/admin/schedule/editor/${center.id}/${encodeURIComponent(classObj.name)}`}>
+                                  <Link href={`/admin/schedule/editor/${center.uid}/${encodeURIComponent(classObj.name)}`}>
                                    <BookOpen className="h-4 w-4 mr-2" />
                                    Horario
                                  </Link>
                                </Button>
                                <Button asChild variant="secondary" size="sm" className="flex-1 sm:flex-initial">
-                                 <Link href={`/admin/schedule/${center.id}/${encodeURIComponent(classObj.name)}`}>
+                                 <Link href={`/admin/schedule/${center.uid}/${encodeURIComponent(classObj.name)}`}>
                                    <CalendarCog className="h-4 w-4 mr-2" />
                                    Calendario
                                  </Link>
@@ -314,3 +314,5 @@ function ClassesTab({ center }: { center: Center }) {
         </Card>
     );
 }
+
+    

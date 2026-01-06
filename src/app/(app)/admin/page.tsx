@@ -192,7 +192,7 @@ function UsersTab() {
                             <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                                 {users.map(u => (
                                     <div key={u.uid} className="flex items-center gap-4 p-2 rounded-lg border">
-                                        <AvatarDisplay user={u} className="h-10 w-10" />
+                                        <AvatarDisplay user={u} className="h-10 w-10" showHat={false} />
                                         <div className="flex-1">
                                             <p className="font-semibold">{u.name}</p>
                                             <p className="text-xs text-muted-foreground">{u.email}</p>
@@ -315,7 +315,7 @@ function TrophiesTab() {
                             <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                                 {users.map(u => (
                                      <div key={u.uid} className="flex items-center gap-4 p-2 rounded-lg border">
-                                        <AvatarDisplay user={u} className="h-10 w-10" />
+                                        <AvatarDisplay user={u} className="h-10 w-10" showHat={false} />
                                         <div className="flex-1">
                                             <p className="font-semibold">{u.name}</p>
                                             <div className="flex items-center gap-1.5 text-sm">
@@ -552,7 +552,7 @@ function GroupsTab() {
                 ) : (
                     <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                         {centers.map(center => (
-                            <div key={center.id} className="flex items-center gap-4 p-3 rounded-lg border">
+                            <div key={center.uid} className="flex items-center gap-4 p-3 rounded-lg border">
                                 <div className="p-2 bg-muted rounded-md">
                                     <Group className="h-6 w-6 text-muted-foreground" />
                                 </div>
@@ -567,7 +567,7 @@ function GroupsTab() {
                                     </div>
                                 </div>
                                 <Button asChild variant="secondary" size="sm">
-                                    <Link href={`/admin/groups/${center.id}`}>Gestionar</Link>
+                                    <Link href={`/admin/groups/${center.uid}`}>Gestionar</Link>
                                 </Button>
                             </div>
                         ))}
@@ -577,3 +577,5 @@ function GroupsTab() {
         </Card>
     );
 }
+
+    
