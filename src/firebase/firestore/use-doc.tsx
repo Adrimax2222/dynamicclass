@@ -41,7 +41,7 @@ export const useDoc = <T>(
       docRef,
       (snapshot) => {
         if (snapshot.exists()) {
-          setData({ id: snapshot.id, ...snapshot.data() } as T);
+          setData({ uid: snapshot.id, ...snapshot.data() } as T);
         } else {
           setData(null);
         }

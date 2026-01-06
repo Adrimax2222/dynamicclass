@@ -38,7 +38,7 @@ export type ClassDefinition = {
 }
 
 export type Center = {
-    id: string;
+    uid: string;
     name: string;
     code: string;
     classes: ClassDefinition[];
