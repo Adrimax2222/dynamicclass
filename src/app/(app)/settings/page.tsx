@@ -265,7 +265,7 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent>
                     <Button asChild className="w-full bg-green-600 hover:bg-green-700">
-                        <Link href={`/admin/groups/${user.organizationId}/${encodeURIComponent(user.course + '-' + user.className)}`}>
+                        <Link href={`/admin/groups/${user.organizationId}`}>
                             <Shield className="mr-2 h-4 w-4" />
                             Gestionar mi Clase
                         </Link>
@@ -380,7 +380,7 @@ function ChangePasswordDialog() {
   const auth = useAuth();
 
   const form = useForm<PasswordChangeSchema>({
-    resolver: zodResolver(passwordChangeSchema),
+    resolver: zodResolver(passwordChangeChangeSchema),
     defaultValues: {
       currentPassword: "",
       newPassword: "",
