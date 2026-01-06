@@ -8,17 +8,16 @@ import { doc, updateDoc, collection, query, where } from "firebase/firestore";
 import type { Center, User as CenterUser, ClassDefinition, Schedule } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, Loader2, Crown, User, ShieldCheck, Users } from "lucide-react";
+import { ChevronLeft, Search, Loader2, Crown, User, ShieldCheck, Users, Replace } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
-
+import { WipDialog } from "@/components/layout/wip-dialog";
 import { cn } from "@/lib/utils";
+import { AvatarDisplay } from "@/components/profile/avatar-creator";
 
 export default function ManageClassMembersPage() {
     const { user: currentUser } = useApp();
@@ -53,7 +52,6 @@ export default function ManageClassMembersPage() {
     );
 
     const handleRoleChange = async (member: CenterUser | null, newRole: string) => {
-         console.log("Datos del miembro recibidos:", member);
          if (!firestore || !member) return;
          if (!member.uid) {
             console.error("Error: el miembro no tiene un UID válido.", member);
@@ -64,7 +62,7 @@ export default function ManageClassMembersPage() {
             const userDocRef = doc(firestore, 'users', member.uid);
             await updateDoc(userDocRef, { role: newRole });
             toast({ title: "Rol actualizado", description: `${member.name} es ahora ${newRole}.` });
-            setSelectedMember(null); // Close dialog on success
+            setSelectedMember(prev => prev ? { ...prev, role: newRole } : null); // Update local state
          } catch (error) {
              console.error("Error updating role:", error);
              toast({ title: "Error", description: "No se pudo actualizar el rol.", variant: "destructive" });
@@ -135,7 +133,7 @@ export default function ManageClassMembersPage() {
                         </div>
                     ) : (
                         <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-                             <Dialog>
+                             <Dialog onOpenChange={(isOpen) => !isOpen && setSelectedMember(null)}>
                                 {filteredMembers.map((member, index) => (
                                     <DialogTrigger asChild key={member.uid || index}>
                                         <button
@@ -145,10 +143,7 @@ export default function ManageClassMembersPage() {
                                           )}
                                           onClick={() => setSelectedMember(member)}
                                         >
-                                            <Avatar>
-                                                <AvatarImage src={member.avatar} />
-                                                <AvatarFallback>{member.name?.charAt(0)}</AvatarFallback>
-                                            </Avatar>
+                                            <AvatarDisplay user={member} className="h-10 w-10 shrink-0" />
                                             <div className="flex-1">
                                                 <p className="font-semibold">{member.name}</p>
                                                 <p className="text-xs text-muted-foreground">{member.email}</p>
@@ -162,30 +157,34 @@ export default function ManageClassMembersPage() {
                                     {selectedMember && (
                                         <>
                                             <DialogHeader className="items-center text-center">
-                                                <Avatar className="h-20 w-20 mb-4 ring-4 ring-primary/20">
-                                                    <AvatarImage src={selectedMember.avatar} />
-                                                    <AvatarFallback className="text-2xl">{selectedMember.name?.charAt(0)}</AvatarFallback>
-                                                </Avatar>
+                                                <AvatarDisplay user={selectedMember} className="h-24 w-24 mb-4" showHat={true} />
                                                 <DialogTitle>{selectedMember.name}</DialogTitle>
                                                 <DialogDescription>{selectedMember.email}</DialogDescription>
                                                  <Badge variant={selectedMember.role === 'admin' ? 'destructive' : selectedMember.role === classAdminRole ? 'default' : 'secondary'} className="w-fit">
                                                     {selectedMember.role === 'admin' ? "Admin Global" : selectedMember.role === classAdminRole ? "Admin Clase" : "Estudiante"}
                                                 </Badge>
                                             </DialogHeader>
-                                            <DialogFooter className="flex-col gap-2 pt-4">
-                                               {isGlobalAdmin && selectedMember.role !== 'admin' && (
+                                            <div className="pt-4 space-y-2">
+                                                {isGlobalAdmin && selectedMember.role !== 'admin' && (
                                                      selectedMember.role === classAdminRole ? (
-                                                        <Button variant="destructive" onClick={() => handleRoleChange(selectedMember, 'student')}>
-                                                            Quitar Admin de Clase
+                                                        <Button variant="destructive" onClick={() => handleRoleChange(selectedMember, 'student')} className="w-full">
+                                                            <Crown className="mr-2 h-4 w-4" /> Quitar Admin de Clase
                                                         </Button>
                                                    ) : (
-                                                        <Button onClick={() => handleRoleChange(selectedMember, classAdminRole)}>
-                                                            Hacer Admin de Clase
+                                                        <Button onClick={() => handleRoleChange(selectedMember, classAdminRole)} className="w-full">
+                                                            <Crown className="mr-2 h-4 w-4" /> Hacer Admin de Clase
                                                         </Button>
                                                    )
                                                )}
+                                               <WipDialog>
+                                                    <Button variant="outline" className="w-full" disabled>
+                                                        <Replace className="mr-2 h-4 w-4" /> Mover de Clase (Próximamente)
+                                                    </Button>
+                                               </WipDialog>
+                                            </div>
+                                            <DialogFooter className="pt-2">
                                                 <DialogClose asChild>
-                                                    <Button variant="outline">Cerrar</Button>
+                                                    <Button variant="outline" className="w-full">Cerrar</Button>
                                                 </DialogClose>
                                             </DialogFooter>
                                         </>

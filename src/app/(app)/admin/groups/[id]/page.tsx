@@ -10,7 +10,6 @@ import type { Center, User as CenterUser, ClassDefinition, Schedule } from "@/li
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
@@ -21,6 +20,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { AvatarDisplay } from "@/components/profile/avatar-creator";
 
 export default function ManageGroupPage() {
     const { user } = useApp();
@@ -112,8 +112,8 @@ function MembersTab({ centerCode }: { centerCode: string }) {
     const { data: members, isLoading } = useCollection<CenterUser>(membersQuery);
 
     const filteredMembers = (members || []).filter(member =>
-        member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (member.name && member.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (member.email && member.email.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     return (
@@ -147,10 +147,7 @@ function MembersTab({ centerCode }: { centerCode: string }) {
                     <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                         {filteredMembers.map((member, i) => (
                             <div key={member.uid || i} className="flex items-center gap-4 p-2 rounded-lg border">
-                                <Avatar>
-                                    <AvatarImage src={member.avatar} />
-                                    <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
+                                <AvatarDisplay user={member} className="h-10 w-10" />
                                 <div className="flex-1">
                                     <p className="font-semibold">{member.name}</p>
                                     <p className="text-xs text-muted-foreground">{member.email}</p>

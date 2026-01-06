@@ -10,7 +10,6 @@ import type { User, Center } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Users, Group, Trophy, ChevronLeft, Search, UserX, Trash2, CheckCircle, Ban, Loader2, Wrench, PlusCircle, MinusCircle, Copy, Check } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
@@ -23,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { fullSchedule } from "@/lib/data";
+import { AvatarDisplay } from "@/components/profile/avatar-creator";
 
 export default function AdminPage() {
     const { user } = useApp();
@@ -112,8 +112,8 @@ function UsersList({ children, onUsersLoaded }: { children: (users: User[], isLo
     }, [firestore, toast, onUsersLoaded]);
 
     const filteredUsers = users.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     return children(filteredUsers, isLoading, searchTerm, setSearchTerm);
@@ -193,10 +193,7 @@ function UsersTab() {
                             <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                                 {users.map(u => (
                                     <div key={u.uid} className="flex items-center gap-4 p-2 rounded-lg border">
-                                        <Avatar>
-                                            <AvatarImage src={u.avatar} />
-                                            <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
+                                        <AvatarDisplay user={u} className="h-10 w-10" />
                                         <div className="flex-1">
                                             <p className="font-semibold">{u.name}</p>
                                             <p className="text-xs text-muted-foreground">{u.email}</p>
@@ -319,10 +316,7 @@ function TrophiesTab() {
                             <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                                 {users.map(u => (
                                      <div key={u.uid} className="flex items-center gap-4 p-2 rounded-lg border">
-                                        <Avatar>
-                                            <AvatarImage src={u.avatar} />
-                                            <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
+                                        <AvatarDisplay user={u} className="h-10 w-10" />
                                         <div className="flex-1">
                                             <p className="font-semibold">{u.name}</p>
                                             <div className="flex items-center gap-1.5 text-sm">
