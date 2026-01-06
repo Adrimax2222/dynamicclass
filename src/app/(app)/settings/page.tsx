@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore } from "@/firebase";
@@ -256,6 +256,23 @@ export default function SettingsPage() {
                 </CardContent>
             </Card>
         )}
+        
+        {user?.role?.startsWith('admin-') && user.role !== 'admin' && user.organizationId && (
+            <Card className="border-green-500/50">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-green-600"><GraduationCap />Panel de Gestión de Clase</CardTitle>
+                    <CardDescription>Gestiona los miembros, horarios y calendario de tu clase.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button asChild className="w-full bg-green-600 hover:bg-green-700">
+                        <Link href={`/admin/groups/${user.organizationId}/${encodeURIComponent(user.course + '-' + user.className)}`}>
+                            <Shield className="mr-2 h-4 w-4" />
+                            Gestionar mi Clase
+                        </Link>
+                    </Button>
+                </CardContent>
+            </Card>
+        )}
 
         <Card className="border-destructive/50">
             <CardHeader>
@@ -357,8 +374,7 @@ type PasswordChangeSchema = z.infer<typeof passwordChangeSchema>;
 function ChangePasswordDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showCurrentPassword, setShowNewPassword, setShowNewPassword] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
 
@@ -678,5 +694,7 @@ function PrivacyPolicyDialog() {
         </Dialog>
     );
 }
+
+    
 
     
