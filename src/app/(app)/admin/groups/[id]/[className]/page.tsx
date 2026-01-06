@@ -61,7 +61,7 @@ export default function ManageClassMembersPage() {
         (member.email && member.email.toLowerCase().includes(searchTerm.toLowerCase()))
     );
     
-    const classAdminRole = `admin-${className}`;
+    const classAdminRole = `admin-${course.toUpperCase()}-${classLetter}`;
 
     const handleRoleChange = async (member: CenterUser | null, newRole: string) => {
          if (!firestore || !member) return;
@@ -112,8 +112,9 @@ export default function ManageClassMembersPage() {
     
     if (!canManage) {
          return (
-             <div className="container mx-auto p-6">
-                 <p>No tienes permiso para ver esta página.</p>
+             <div className="container mx-auto p-6 text-center">
+                 <p className="font-bold text-lg">No tienes permiso para ver esta página.</p>
+                 <p className="text-muted-foreground text-sm">Tu rol actual es '{currentUser?.role}' pero se necesita '{classAdminRole}' o 'admin'.</p>
              </div>
          );
     }
@@ -133,7 +134,7 @@ export default function ManageClassMembersPage() {
                 </Button>
                 <div>
                     <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-                        Gestionar Clase: {className}
+                        Gestionar Clase: {className.toUpperCase()}
                     </h1>
                      <p className="text-sm text-muted-foreground">Administra los miembros y roles de esta clase.</p>
                 </div>
