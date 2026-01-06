@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -124,13 +125,6 @@ service cloud.firestore {
       allow read, write: if isAdmin();
       // Authenticated users can read the list of centers
       allow list, get: if request.auth != null;
-    }
-    
-    // ============= DEFAULT DENY =============
-    
-    // Deny all other access by default
-    match /{document=**} {
-      allow read, write: if false;
     }
   }
 }

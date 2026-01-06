@@ -57,17 +57,31 @@ export default function ManageClassMembersPage() {
             await updateDoc(userDocRef, { role: newRole });
             toast({ title: "Rol actualizado", description: `${member.name} es ahora ${newRole}.` });
          } catch (error) {
+             console.error("Error updating role:", error);
              toast({ title: "Error", description: "No se pudo actualizar el rol.", variant: "destructive" });
          }
     };
     
     const classAdminRole = `admin-${className}`;
 
-    const canManage = currentUser?.role === 'admin' || currentUser?.role === classAdminRole;
+    const isGlobalAdmin = currentUser?.role === 'admin';
+    const isClassAdmin = currentUser?.role === classAdminRole;
+    
+    const canManage = isGlobalAdmin || isClassAdmin;
 
-    if (!canManage || isLoading) {
+    if (isLoading) {
         return <LoadingScreen />;
     }
+    
+    if (!canManage) {
+        // You can show an unauthorized message or redirect
+         return (
+             <div className="container mx-auto p-6">
+                 <p>No tienes permiso para ver esta página.</p>
+             </div>
+         );
+    }
+
 
     return (
         <div className="container mx-auto max-w-4xl p-4 sm:p-6">
@@ -121,7 +135,7 @@ export default function ManageClassMembersPage() {
                                        <Badge variant={member.role === 'admin' ? 'destructive' : member.role === classAdminRole ? 'default' : 'secondary'}>
                                            {member.role === 'admin' ? "Admin Global" : member.role === classAdminRole ? "Admin Clase" : "Estudiante"}
                                        </Badge>
-                                       {canManage && currentUser && member.uid !== currentUser.uid && member.role !== 'admin' && (
+                                       {isGlobalAdmin && member.role !== 'admin' && (
                                            <AlertDialog>
                                                <AlertDialogTrigger asChild>
                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
