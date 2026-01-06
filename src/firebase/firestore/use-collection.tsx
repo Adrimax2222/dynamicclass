@@ -27,11 +27,12 @@ export const useCollection = <T>(
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setIsLoading(true);
     if (!firestore || !pathOrQuery) {
       setIsLoading(false);
       return;
     }
+    
+    setIsLoading(true);
 
     const isPathString = typeof pathOrQuery === "string";
     const queryToExecute = isPathString
@@ -48,7 +49,7 @@ export const useCollection = <T>(
       queryToExecute,
       (snapshot) => {
         const docs = snapshot.docs.map((doc) => ({
-          id: doc.id,
+          uid: doc.id,
           ...doc.data(),
         })) as T[];
         setData(docs);
@@ -62,6 +63,7 @@ export const useCollection = <T>(
     );
 
     return () => unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firestore, pathOrQuery, options.listen]);
 
   return { data, isLoading, error };

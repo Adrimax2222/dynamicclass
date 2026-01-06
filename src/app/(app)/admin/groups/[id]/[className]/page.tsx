@@ -51,6 +51,7 @@ export default function ManageClassMembersPage() {
     );
 
     const handleRoleChange = async (member: CenterUser, newRole: string) => {
+         console.log("Datos del miembro recibidos:", member);
          if (!firestore) return;
          if (!member || !member.uid) {
             console.error("Error: el miembro no tiene un UID válido.", member);
