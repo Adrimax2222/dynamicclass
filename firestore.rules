@@ -50,10 +50,18 @@ service cloud.firestore {
     // ============= USERS COLLECTION =============
 
     match /users/{userId} {
-      allow get, update: if isOwner(userId) || isAdmin();
+      allow get: if isOwner(userId) || isAdmin();
       allow list: if request.auth != null;
       allow create: if request.auth != null;
-      allow delete: if isOwner(userId) || isAdmin(); // Allow users to delete their own account and admins to delete any
+      allow delete: if isOwner(userId) || isAdmin();
+
+      // Allow admin to update any field, including 'role' and 'isBanned'
+      allow update: if isAdmin();
+      // Allow user to update their own profile, but not their role or banned status
+      allow update: if isOwner(userId) && 
+                      request.resource.data.role == resource.data.role &&
+                      (!('isBanned' in request.resource.data) || request.resource.data.isBanned == resource.data.isBanned);
+
 
       // Notes subcollection
       match /notes/{noteId} {
