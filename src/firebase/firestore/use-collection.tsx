@@ -1,3 +1,4 @@
+
 // src/firebase/firestore/use-collection.tsx
 "use client";
 import {
@@ -26,6 +27,7 @@ export const useCollection = <T>(
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    setIsLoading(true);
     if (!firestore || !pathOrQuery) {
       setIsLoading(false);
       return;
@@ -38,6 +40,7 @@ export const useCollection = <T>(
 
     if (!options.listen) {
       // Not yet implemented for getDocs
+      setIsLoading(false);
       return;
     }
 
