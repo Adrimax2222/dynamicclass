@@ -69,7 +69,6 @@ export type ScheduleEntry = {
   teacher: string;
   room: string;
   details?: string;
-  notes?: string; // from UpcomingClass
 };
 
 export type Schedule = {

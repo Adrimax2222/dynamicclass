@@ -55,7 +55,7 @@ export default function ManageSchedulePage() {
         );
 
         try {
-            await updateDoc(centerDocRef, { classes: updatedClasses });
+            await updateDoc(centerDocRef!, { classes: updatedClasses });
             toast({
                 title: "Calendario actualizado",
                 description: `Se ha guardado la URL del calendario para la clase ${className}.`,

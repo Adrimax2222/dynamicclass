@@ -86,7 +86,7 @@ export default function EditSchedulePage() {
         );
 
         try {
-            await updateDoc(centerDocRef, { classes: updatedClasses });
+            await updateDoc(centerDocRef!, { classes: updatedClasses });
             toast({
                 title: "Horario actualizado",
                 description: `Se ha guardado el horario para la clase ${className}.`,
@@ -189,7 +189,7 @@ export default function EditSchedulePage() {
                                             </div>
                                             <div className="space-y-1">
                                                 <Label htmlFor={`${day}-${index}-details`}>Detalles (Opcional)</Label>
-                                                <Input id={`${day}-${index}-details`} value={entry.details} onChange={e => handleScheduleChange(day, index, 'details', e.target.value)} />
+                                                <Input id={`${day}-${index}-details`} value={entry.details || ''} onChange={e => handleScheduleChange(day, index, 'details', e.target.value)} />
                                             </div>
                                         </div>
                                      ))}
