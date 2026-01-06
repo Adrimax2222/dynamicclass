@@ -46,8 +46,8 @@ export default function ManageClassMembersPage() {
     const { data: members, isLoading, error } = useCollection<CenterUser>(membersQuery);
     
     const filteredMembers = (members || []).filter(member =>
-        member.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        (member.name && member.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (member.email && member.email.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const handleRoleChange = async (member: CenterUser, newRole: string) => {
