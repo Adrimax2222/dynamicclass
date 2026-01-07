@@ -372,7 +372,7 @@ export default function ChatbotPage() {
               <p className="mb-6">Pregúntame sobre cualquier tema...</p>
               <Alert variant="destructive" className="max-w-sm text-xs">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>Beta: Las respuestas pueden variar en precisión.</AlertDescription>
+                <AlertDescription>Advertencia: El sistema de IA ha sido desactivado temporalmente por motivos de desarrollo.</AlertDescription>
               </Alert>
             </div>
           ) : isMessagesLoading ? (
