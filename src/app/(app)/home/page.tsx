@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent, Announcement, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity, Flame, ShoppingCart, TreePine, Gift, Snowflake } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity, Flame, ShoppingCart, TreePine, Gift } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
@@ -538,8 +538,6 @@ export default function HomePage() {
           updateUser={updateUser}
         >
           <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer relative overflow-hidden">
-              <Snowflake className="absolute -top-3 -left-3 h-12 w-12 text-red-500/10" />
-              <Snowflake className="absolute -bottom-4 -right-4 h-16 w-16 text-red-500/10" />
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Tareas</CardTitle>
                   <NotebookText className="h-5 w-5 text-muted-foreground text-blue-500" />
@@ -560,8 +558,6 @@ export default function HomePage() {
           updateUser={updateUser}
         >
           <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer relative overflow-hidden">
-              <Snowflake className="absolute top-0 -right-2 h-12 w-12 text-red-500/10" />
-              <Snowflake className="absolute bottom-0 -left-2 h-8 w-8 text-red-500/10" />
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Exámenes</CardTitle>
                   <FileCheck2 className="h-5 w-5 text-muted-foreground text-red-500" />
@@ -582,8 +578,6 @@ export default function HomePage() {
           updateUser={updateUser}
         >
           <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer relative overflow-hidden">
-              <Snowflake className="absolute -bottom-5 left-5 h-20 w-20 text-red-500/10" />
-              <Snowflake className="absolute -top-2 right-5 h-8 w-8 text-red-500/10" />
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
                   <Clock className="h-5 w-5 text-muted-foreground text-yellow-500" />
@@ -596,8 +590,6 @@ export default function HomePage() {
 
         <div onClick={handleAnnouncementsClick} className="cursor-pointer">
           <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg relative overflow-hidden">
-              <Snowflake className="absolute -top-4 -right-4 h-16 w-16 text-red-500/10" />
-              <Snowflake className="absolute bottom-1 left-1 h-6 w-6 text-red-500/10" />
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Anuncios</CardTitle>
                   <MessageSquare className="h-5 w-5 text-muted-foreground text-green-500" />
@@ -608,28 +600,10 @@ export default function HomePage() {
           </Card>
         </div>
       </div>
-      
-      <section className="mb-10">
-        <div className="relative rounded-lg p-6 bg-gradient-to-br from-red-500 to-rose-600 text-white overflow-hidden shadow-lg">
-            <div className="absolute -right-4 -top-4">
-                <Snowflake className="h-20 w-20 text-white/10" />
-            </div>
-            <div className="absolute -left-6 bottom-0">
-                <Gift className="h-24 w-24 text-white/10" />
-            </div>
-            <div className="relative z-10 text-center">
-              <h3 className="text-2xl font-bold font-headline">¡Felices Fiestas!</h3>
-              <p className="opacity-80 text-sm mt-1">El equipo de Dynamic Class te desea lo mejor.</p>
-            </div>
-        </div>
-      </section>
 
        <section className="mb-10">
         <Link href="/study" className="block">
           <div className="relative rounded-lg p-6 bg-gradient-to-br from-primary to-accent text-primary-foreground cursor-pointer transition-transform hover:scale-[1.02] shadow-lg hover:shadow-xl overflow-hidden">
-                <Snowflake className="absolute -top-4 -left-2 h-16 w-16 text-white/20" />
-                <Snowflake className="absolute -bottom-5 right-10 h-20 w-20 text-white/20" />
-                <Snowflake className="absolute top-8 -right-3 h-12 w-12 text-white/20" />
                 <div className="relative z-10">
                     <div className="absolute top-0 right-0 bg-white/20 text-white text-xs font-bold py-1 px-2 rounded-full">
                         BETA

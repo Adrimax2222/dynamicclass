@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit, Snowflake } from "lucide-react";
+import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -267,7 +267,7 @@ export default function CalendarPage() {
                 <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
                     Dynamic Calendar
                 </h1>
-                <Snowflake className="h-6 w-6 text-primary" />
+                <CalendarIcon className="h-6 w-6 text-primary" />
             </div>
             <p className="text-muted-foreground">Gestiona tus eventos personales y de clase.</p>
         </div>
@@ -418,9 +418,6 @@ export default function CalendarPage() {
         <section className="mt-8">
           <Link href="/study" className="block">
             <div className="relative rounded-lg p-6 bg-gradient-to-br from-primary to-accent text-primary-foreground cursor-pointer transition-transform hover:scale-[1.02] shadow-lg hover:shadow-xl overflow-hidden">
-                  <Snowflake className="absolute -top-4 -left-2 h-16 w-16 text-white/20" />
-                  <Snowflake className="absolute -bottom-5 right-10 h-20 w-20 text-white/20" />
-                  <Snowflake className="absolute top-8 -right-3 h-12 w-12 text-white/20" />
                 <div className="relative z-10">
                     <div className="absolute top-0 right-0 bg-white/20 text-white text-xs font-bold py-1 px-2 rounded-full">
                         BETA
