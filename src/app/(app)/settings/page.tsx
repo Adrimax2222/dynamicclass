@@ -537,43 +537,6 @@ function ChangePasswordDialog() {
 }
 
 function PrivacyPolicyDialog() {
-    const { user, updateUser } = useApp();
-    const firestore = useFirestore();
-    const { toast } = useToast();
-    const [isClaimed, setIsClaimed] = useState(false);
-
-    const EASTER_EGG_KEY = 'easter-egg-claimed';
-
-    useEffect(() => {
-        const claimed = localStorage.getItem(EASTER_EGG_KEY);
-        if (claimed === 'true') {
-            setIsClaimed(true);
-        }
-    }, []);
-
-    const handleEasterEggClick = async () => {
-        if (isClaimed || !user || !firestore) return;
-
-        try {
-            const userDocRef = doc(firestore, 'users', user.uid);
-            await updateDoc(userDocRef, {
-                trophies: increment(50)
-            });
-
-            updateUser({ trophies: (user.trophies || 0) + 50 });
-            localStorage.setItem(EASTER_EGG_KEY, 'true');
-            setIsClaimed(true);
-
-            toast({
-                title: "Secreto Encontrado ✨",
-                description: "¡Has ganado 50 trofeos por tu curiosidad!",
-            });
-
-        } catch (error) {
-            console.error("Easter egg error:", error);
-        }
-    };
-    
     return (
         <Dialog>
             <DialogTrigger asChild>
@@ -672,17 +635,7 @@ function PrivacyPolicyDialog() {
                         
                         <section>
                             <h3 className="font-bold text-foreground text-base mb-2">8. Contacto</h3>
-                            <p>Si tienes alguna pregunta sobre esta política de privacidad, no dudes en contactarnos a través del <span className="font-semibold text-foreground">Formulario de Asistencia</span> disponible en la sección de Soporte.
-                                {!isClaimed && (
-                                    <span
-                                        className="inline-block ml-1 opacity-20 hover:opacity-100 transition-opacity cursor-pointer"
-                                        onClick={handleEasterEggClick}
-                                        aria-label="Secreto"
-                                    >
-                                        <Cat className="h-3 w-3" />
-                                    </span>
-                                )}
-                            </p>
+                            <p>Si tienes alguna pregunta sobre esta política de privacidad, no dudes en contactarnos a través del <span className="font-semibold text-foreground">Formulario de Asistencia</span> disponible en la sección de Soporte.</p>
                         </section>
                     </div>
                 </ScrollArea>
@@ -703,3 +656,4 @@ function PrivacyPolicyDialog() {
     
 
     
+

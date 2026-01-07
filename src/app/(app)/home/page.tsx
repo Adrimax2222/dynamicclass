@@ -743,41 +743,6 @@ interface DetailsDialogProps {
 }
 
 function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete, cardData, user, updateUser }: DetailsDialogProps) {
-    const firestore = useFirestore();
-    const { toast } = useToast();
-    const [isClockEasterEggClaimed, setIsClockEasterEggClaimed] = useState(false);
-    const CLOCK_EASTER_EGG_KEY = 'easter-egg-pendientes-claimed';
-
-    useEffect(() => {
-        const claimed = localStorage.getItem(CLOCK_EASTER_EGG_KEY);
-        if (claimed === 'true') {
-            setIsClockEasterEggClaimed(true);
-        }
-    }, []);
-
-    const handleClockIconClick = async () => {
-        if (isClockEasterEggClaimed || title !== 'Pendientes' || !user || !firestore) return;
-
-        try {
-            const userDocRef = doc(firestore, 'users', user.uid);
-            await updateDoc(userDocRef, {
-                trophies: increment(75)
-            });
-
-            updateUser({ trophies: (user.trophies || 0) + 75 });
-            localStorage.setItem(CLOCK_EASTER_EGG_KEY, 'true');
-            setIsClockEasterEggClaimed(true);
-
-            toast({
-                title: "Recompensa Secreta ✨",
-                description: "¡Has ganado 75 trofeos por tu atención al detalle!",
-            });
-
-        } catch (error) {
-            console.error("Clock easter egg error:", error);
-        }
-    };
-    
     const groupedEvents = (events as ParsedEvent[]).reduce((acc, event) => {
         const dateStr = format(event.date, 'yyyy-MM-dd');
         if (!acc[dateStr]) {
@@ -805,20 +770,12 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete, c
         "text-green-500": "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
     };
     
-    const isPendientesDialog = title === 'Pendientes';
-
     return (
         <Dialog>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="max-w-md w-[95vw] p-0">
                 <DialogHeader className={cn("p-6 text-left flex-row items-center gap-4", headerColorClasses[cardData.color as keyof typeof headerColorClasses])}>
-                    <div 
-                        className={cn(
-                            "rounded-lg p-2 bg-background/50",
-                            isPendientesDialog && !isClockEasterEggClaimed && "cursor-pointer hover:scale-110 transition-transform"
-                        )}
-                        onClick={handleClockIconClick}
-                    >
+                    <div className="rounded-lg p-2 bg-background/50">
                         <HeaderIcon className={cn("h-6 w-6", cardData.color)} />
                     </div>
                     <div>
