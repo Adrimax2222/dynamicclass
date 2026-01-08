@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap, Pin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore } from "@/firebase";
@@ -81,6 +81,10 @@ export default function SettingsPage() {
         setIsDeleting(false);
       }
   };
+  
+  const isUserAdmin = user?.role === 'admin';
+  const isUserClassAdmin = user?.role?.startsWith('admin-') && user.role !== 'admin' && user.organizationId;
+
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
@@ -240,7 +244,7 @@ export default function SettingsPage() {
             </CardContent>
         </Card>
 
-        {user?.role === 'admin' && (
+        {isUserAdmin ? (
              <Card className="border-blue-500/50">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-blue-500"><ShieldCheck />Panel de Administrador</CardTitle>
@@ -255,9 +259,7 @@ export default function SettingsPage() {
                     </Button>
                 </CardContent>
             </Card>
-        )}
-        
-        {user?.role?.startsWith('admin-') && user.role !== 'admin' && user.organizationId && (
+        ) : isUserClassAdmin ? (
             <Card className="border-green-500/50">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-green-600"><GraduationCap />Panel de Gestión de Clase</CardTitle>
@@ -272,7 +274,12 @@ export default function SettingsPage() {
                     </Button>
                 </CardContent>
             </Card>
+        ) : (
+             <DeveloperPortalDialog />
         )}
+        
+        { (isUserAdmin || isUserClassAdmin) && <DeveloperPortalDialog /> }
+
 
         <Card className="border-destructive/50">
             <CardHeader>
@@ -649,11 +656,48 @@ function PrivacyPolicyDialog() {
     );
 }
 
-    
+function DeveloperPortalDialog() {
+  const [pin, setPin] = useState('');
 
-    
+  // No logic for now, just UI
+  const handleConfirm = () => {
+    // Future logic will go here
+  };
 
-    
-
-    
-
+  return (
+    <Dialog>
+        <DialogTrigger asChild>
+            <Card className="border-purple-400/30 bg-purple-500/5 cursor-pointer hover:bg-purple-500/10 transition-colors">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-purple-600 dark:text-purple-400"><FlaskConical />Portal de Desarrolladores</CardTitle>
+                    <CardDescription className="text-purple-600/80 dark:text-purple-400/80">Acceso a funciones experimentales y de depuración.</CardDescription>
+                </CardHeader>
+            </Card>
+        </DialogTrigger>
+        <DialogContent className="max-w-sm">
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2"><Pin className="h-5 w-5"/>Acceso para Desarrolladores</DialogTitle>
+                <DialogDescription>Introduce el PIN de administrador para acceder a las funciones avanzadas.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                <Label htmlFor="pin-input" className="sr-only">PIN</Label>
+                <Input 
+                    id="pin-input"
+                    type="password"
+                    placeholder="••••"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    className="text-center text-2xl tracking-[0.5em]"
+                    maxLength={4}
+                />
+            </div>
+            <DialogFooter>
+                <DialogClose asChild>
+                    <Button variant="outline">Cancelar</Button>
+                </DialogClose>
+                <Button onClick={handleConfirm}>Confirmar</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+  )
+}
