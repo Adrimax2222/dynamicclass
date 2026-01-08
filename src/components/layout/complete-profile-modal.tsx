@@ -151,7 +151,7 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     
     const formatAndSetCenterCode = (value: string) => {
         const digitsOnly = value.replace(/[^0-9]/g, '');
-        let formatted = digitsOnly.slice(0, 6);
+        let formatted = digitsOnly;
         if (digitsOnly.length > 3) {
             formatted = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 6)}`;
         }
