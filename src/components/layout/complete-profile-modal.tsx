@@ -1,11 +1,13 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import type { User } from "@/lib/types";
+import type { User, Center } from "@/lib/types";
+import { useFirestore, useCollection } from "@/firebase";
+import { collection } from "firebase/firestore";
 
 import {
     Dialog,
@@ -34,7 +36,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, UserCheck, User as UserIcon } from "lucide-react";
-import { SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
@@ -44,15 +45,13 @@ const profileSchema = z.object({
   course: z.string(),
   className: z.string(),
 }).refine(data => {
-    // If center is 'personal', then course and className must also be 'personal'.
-    // Otherwise, center, course, and className must be non-empty.
     if (data.center === 'personal') {
         return data.course === 'personal' && data.className === 'personal';
     }
     return data.center.trim() !== '' && data.course.trim() !== '' && data.className.trim() !== '';
 }, {
-    message: "Debes rellenar todos los campos del centro o seleccionar 'Uso Personal'.",
-    path: ['center'], // you can point to a specific field
+    message: "Rellena los detalles del centro o selecciona 'Uso Personal'.",
+    path: ['center'],
 });
 
 
@@ -63,9 +62,23 @@ interface CompleteProfileModalProps {
   onSave: (updatedData: Partial<User>) => void;
 }
 
+const courseOptions = [
+    { value: '1eso', label: '1º ESO' },
+    { value: '2eso', label: '2º ESO' },
+    { value: '3eso', label: '3º ESO' },
+    { value: '4eso', label: '4º ESO' },
+    { value: '1bach', label: '1º Bachillerato' },
+    { value: '2bach', label: '2º Bachillerato' },
+];
+
+const classOptions = ['A', 'B', 'C', 'D', 'E'];
+
 export default function CompleteProfileModal({ user, onSave }: CompleteProfileModalProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [usePersonal, setUsePersonal] = useState(false);
+    
+    const firestore = useFirestore();
+    const { data: allCenters = [] } = useCollection<Center>(firestore ? collection(firestore, 'centers') : null);
 
     const form = useForm<ProfileSchema>({
         resolver: zodResolver(profileSchema),
@@ -76,6 +89,32 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
             className: "",
         },
     });
+    
+    const watchedCenterCode = form.watch('center');
+
+    const availableClasses = useMemo(() => {
+        const center = allCenters.find(c => c.code === watchedCenterCode);
+        if (!center || !center.classes) return { courses: [], classNames: [] };
+
+        const courses = new Set<string>();
+        const classNames = new Set<string>();
+
+        center.classes.forEach(c => {
+            const [course, className] = c.name.split('-');
+            if (course) {
+                const courseValue = course.toLowerCase().replace('º', '');
+                courses.add(courseValue);
+            }
+            if (className) {
+                classNames.add(className);
+            }
+        });
+
+        return {
+            courses: Array.from(courses),
+            classNames: Array.from(classNames)
+        };
+    }, [watchedCenterCode, allCenters]);
 
     useEffect(() => {
       if (usePersonal) {
@@ -102,6 +141,15 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
         } else {
             onSave(values);
         }
+    };
+    
+    const formatAndSetCenterCode = (value: string) => {
+        const digitsOnly = value.replace(/[^0-9]/g, '');
+        let formatted = digitsOnly;
+        if (digitsOnly.length > 3) {
+            formatted = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 6)}`;
+        }
+        form.setValue('center', formatted);
     };
 
   return (
@@ -133,7 +181,13 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                         <FormItem>
                             <FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Código de Centro Educativo</FormLabel>
                             <FormControl>
-                                <Input placeholder="Ej: 123-456" {...field} disabled={usePersonal}/>
+                                <Input 
+                                    placeholder="Ej: 123-456" 
+                                    {...field}
+                                    onChange={(e) => formatAndSetCenterCode(e.target.value)}
+                                    disabled={usePersonal}
+                                    maxLength={7}
+                                />
                             </FormControl>
                             <FormDescription>
                                 Únete al grupo de tu centro. Si no tienes uno, selecciona la opción de uso personal.
@@ -170,17 +224,16 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Curso</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={usePersonal}>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || availableClasses.courses.length === 0}>
                                 <FormControl>
                                     <SelectTrigger><SelectValue placeholder="Curso" /></SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value="1eso">1º ESO</SelectItem>
-                                    <SelectItem value="2eso">2º ESO</SelectItem>
-                                    <SelectItem value="3eso">3º ESO</SelectItem>
-                                    <SelectItem value="4eso">4º ESO</SelectItem>
-                                    <SelectItem value="1bach">1º Bachillerato</SelectItem>
-                                    <SelectItem value="2bach">2º Bachillerato</SelectItem>
+                                    {courseOptions.map(option => (
+                                        <SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -193,16 +246,16 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Clase</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={usePersonal}>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || availableClasses.classNames.length === 0}>
                                 <FormControl>
                                     <SelectTrigger><SelectValue placeholder="Clase" /></SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value="A">A</SelectItem>
-                                    <SelectItem value="B">B</SelectItem>
-                                    <SelectItem value="C">C</SelectItem>
-                                    <SelectItem value="D">D</SelectItem>
-                                    <SelectItem value="E">E</SelectItem>
+                                    {classOptions.map(option => (
+                                        <SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>
+                                            {option}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                                 </Select>
                                 <FormMessage />

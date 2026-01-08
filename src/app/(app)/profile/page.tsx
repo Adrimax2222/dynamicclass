@@ -103,8 +103,8 @@ export default function ProfilePage() {
   }
   
   const userCenter = centers.find(c => c.code === user.center);
-  const isCenterCodeValid = !!userCenter;
-  const displayCenter = user.center === 'personal' ? 'Uso Personal' : (isCenterCodeValid ? userCenter.name : 'Código de centro obsoleto');
+  const isCenterCodeValid = !!userCenter || user.course === 'default'; // valid if a center is found or if user is unassigned
+  const displayCenter = user.center === 'personal' ? 'Uso Personal' : (isCenterCodeValid ? userCenter?.name : 'Código de centro obsoleto');
 
 
   const achievements = [
@@ -289,20 +289,7 @@ function AvatarDisplayPreview({ avatar }: { avatar: EditableAvatar }) {
 
     return (
         <div className="relative inline-block">
-            <Avatar className="h-24 w-24 ring-4 ring-primary ring-offset-2">
-                <div 
-                  className="w-full h-full flex items-center justify-center" 
-                  style={{ backgroundColor: `#${avatar.color}` }}
-                >
-                   {letter ? (
-                        <span className="font-bold text-4xl text-white">{letter}</span>
-                    ) : Icon ? (
-                        <Icon className="h-12 w-12 text-white" />
-                    ) : (
-                       <AvatarFallback>?</AvatarFallback>
-                    )}
-                </div>
-            </Avatar>
+            <div className="h-24 w-24 rounded-full ring-4 ring-primary ring-offset-2 bg-transparent"/>
         </div>
     );
 }
@@ -450,6 +437,15 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
   if (!user) return null;
 
   const userCenterIsValid = allCenters.some(c => c.code === user.center);
+
+  const formatAndSetCenterCode = (value: string) => {
+    const digitsOnly = value.replace(/[^0-9]/g, '');
+    let formatted = digitsOnly;
+    if (digitsOnly.length > 3) {
+      formatted = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 6)}`;
+    }
+    setCenter(formatted);
+  };
   
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
@@ -648,10 +644,10 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
             
             <div className="space-y-4 pt-6 border-t">
                  <Label>Editor de Perfil</Label>
-                 {!userCenterIsValid && user.center !== 'personal' && (
+                 {!userCenterIsValid && user.center !== 'personal' && user.course !== 'default' && (
                     <div className="p-3 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive text-sm flex items-start gap-2">
                         <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                        <span>Tu código de centro anterior ya no es válido. Por favor, introduce el nuevo código o selecciona 'Uso Personal'.</span>
+                        <span>Tu código de centro anterior ya no es válido o has sido movido de clase. Por favor, introduce el nuevo código o selecciona 'Uso Personal'.</span>
                     </div>
                  )}
                  <div className="flex items-center space-x-2 rounded-lg border p-3">
@@ -668,7 +664,14 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="center" className={cn(usePersonal && "text-muted-foreground/50")}>Código de Centro Educativo</Label>
-                    <Input id="center" value={center} onChange={(e) => setCenter(e.target.value)} placeholder="Ej: 123-456" disabled={usePersonal} />
+                    <Input 
+                      id="center" 
+                      value={center} 
+                      onChange={(e) => formatAndSetCenterCode(e.target.value)} 
+                      placeholder="Ej: 123-456" 
+                      disabled={usePersonal}
+                      maxLength={7}
+                    />
                      <p className="text-xs text-muted-foreground">
                         Introduce el código proporcionado por tu centro para unirte a su grupo.
                     </p>
