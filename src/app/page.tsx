@@ -55,6 +55,7 @@ import type { User, Center } from "@/lib/types";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const createRegistrationSchema = (isCenterValidated: boolean) => z.object({
   fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
@@ -228,7 +229,7 @@ export default function AuthPage() {
 
   function goToPreviousStep() {
     setAnimationDirection('backward');
-    setCurrentStep(prev => prev - 1);
+    setCurrentStep(prev => prev + 1);
   }
 
   async function onRegisterSubmit(values: RegistrationSchemaType) {
@@ -453,7 +454,7 @@ export default function AuthPage() {
     }
     form.setValue('center', formatted, { shouldValidate: true });
     
-    if (formatted.length !== 7) {
+    if (isCenterValidated && formatted !== validatedCenter?.code) {
         setIsCenterValidated(false);
         setValidatedCenter(null);
     }
@@ -461,33 +462,33 @@ export default function AuthPage() {
 
 
   const handleValidateCenter = async () => {
-    if (!firestore) return;
-    setIsLoading(true);
+      if (!firestore) return;
+      setIsLoading(true);
 
-    const centerCode = form.getValues('center');
-    const q = query(collection(firestore, 'centers'), where('code', '==', centerCode));
-    
-    try {
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const centerDoc = querySnapshot.docs[0];
-            const centerData = { uid: centerDoc.id, ...centerDoc.data() } as Center;
-            setValidatedCenter(centerData);
-            setIsCenterValidated(true);
-            toast({ title: "Centro validado", description: `Te has unido a ${centerData.name}.` });
-        } else {
-            setValidatedCenter(null);
-            setIsCenterValidated(false);
-            toast({ title: "Código no válido", description: "No se encontró ningún centro con ese código.", variant: "destructive" });
-        }
-    } catch (error) {
-       console.error("Error validating center:", error);
-       setIsCenterValidated(false);
-       setValidatedCenter(null);
-       toast({ title: "Error de validación", description: "No se pudo comprobar el código del centro.", variant: "destructive" });
-    } finally {
-        setIsLoading(false);
-    }
+      const centerCode = form.getValues('center');
+      const q = query(collection(firestore, 'centers'), where('code', '==', centerCode));
+      
+      try {
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+              const centerDoc = querySnapshot.docs[0];
+              const centerData = { uid: centerDoc.id, ...centerDoc.data() } as Center;
+              setValidatedCenter(centerData);
+              setIsCenterValidated(true);
+              toast({ title: "Centro validado", description: `Te has unido a ${centerData.name}.` });
+          } else {
+              setValidatedCenter(null);
+              setIsCenterValidated(false);
+              toast({ title: "Código no válido", description: "No se encontró ningún centro con ese código.", variant: "destructive" });
+          }
+      } catch (error) {
+          console.error("Error validating center:", error);
+          setIsCenterValidated(false);
+          setValidatedCenter(null);
+          toast({ title: "Error de validación", description: "No se pudo comprobar el código del centro.", variant: "destructive" });
+      } finally {
+          setIsLoading(false);
+      }
   };
 
   if (user) {
@@ -572,80 +573,82 @@ export default function AuthPage() {
                             </div>
                           )}
                           {index === 1 && (
-                            <div className="space-y-4">
-                                <div className="flex items-center space-x-2 rounded-lg border p-3">
-                                    <Switch id="personal-use-switch" checked={usePersonal} onCheckedChange={setUsePersonal} />
-                                    <Label htmlFor="personal-use-switch" className="flex flex-col gap-1">
-                                        <span className="font-semibold flex items-center gap-2"><UserIcon className="h-4 w-4" />Prefiero el uso personal</span>
-                                    </Label>
-                                </div>
+                            <ScrollArea className="h-[450px] pr-4">
+                              <div className="space-y-4">
+                                  <div className="flex items-center space-x-2 rounded-lg border p-3">
+                                      <Switch id="personal-use-switch" checked={usePersonal} onCheckedChange={setUsePersonal} />
+                                      <Label htmlFor="personal-use-switch" className="flex flex-col gap-1">
+                                          <span className="font-semibold flex items-center gap-2"><UserIcon className="h-4 w-4" />Prefiero el uso personal</span>
+                                      </Label>
+                                  </div>
 
-                                <FormField 
-                                  control={form.control} 
-                                  name="center" 
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Código de Centro Educativo</FormLabel>
-                                      <div className="flex items-center gap-2">
-                                        <FormControl>
-                                            <Input 
-                                            placeholder="123-456" 
-                                            {...field}
-                                            onChange={(e) => formatAndSetCenterCode(e.target.value)}
-                                            disabled={usePersonal || isCenterValidated}
-                                            />
-                                        </FormControl>
-                                        <Button 
-                                            type="button" 
-                                            onClick={handleValidateCenter} 
-                                            disabled={usePersonal || field.value.length !== 7 || isLoading || isCenterValidated}
-                                            variant={isCenterValidated ? "secondary" : "default"}
-                                            className="whitespace-nowrap"
-                                        >
-                                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterValidated ? <CheckCircle className="h-4 w-4"/> : "Validar"}
-                                        </Button>
-                                      </div>
-                                      <FormDescription>
-                                        Únete al grupo de tu centro. Si no tienes uno, selecciona la opción de uso personal.
-                                      </FormDescription>
-                                      {!usePersonal && validatedCenter && isCenterValidated && (
-                                        <FormDescription className="text-green-600 font-semibold flex items-center gap-2">
-                                            <CheckCircle className="h-4 w-4" />
-                                            {validatedCenter.name}
+                                  <FormField 
+                                    control={form.control} 
+                                    name="center" 
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Código de Centro Educativo</FormLabel>
+                                        <div className="flex items-center gap-2">
+                                          <FormControl>
+                                              <Input 
+                                              placeholder="123-456" 
+                                              {...field}
+                                              onChange={(e) => formatAndSetCenterCode(e.target.value)}
+                                              disabled={usePersonal || isCenterValidated}
+                                              />
+                                          </FormControl>
+                                          <Button 
+                                              type="button" 
+                                              onClick={handleValidateCenter} 
+                                              disabled={usePersonal || field.value.length !== 7 || isLoading || isCenterValidated}
+                                              variant={isCenterValidated ? "secondary" : "default"}
+                                              className="whitespace-nowrap"
+                                          >
+                                              {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterValidated ? <CheckCircle className="h-4 w-4"/> : "Validar"}
+                                          </Button>
+                                        </div>
+                                        <FormDescription>
+                                          Únete al grupo de tu centro. Si no tienes uno, selecciona la opción de uso personal.
                                         </FormDescription>
-                                      )}
-                                      <FormMessage />
-                                    </FormItem>
-                                  )} 
-                                />
-                                <FormField control={form.control} name="ageRange" render={({ field }) => (<FormItem><FormLabel>Rango de Edad</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger></FormControl><SelectContent><SelectItem value="12-15">12-15 años</SelectItem><SelectItem value="16-18">16-18 años</SelectItem><SelectItem value="19-22">19-22 años</SelectItem><SelectItem value="23+">23+ años</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                                <div className="grid grid-cols-2 gap-4">
-                                  <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                  <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                </div>
-                                <FormField control={form.control} name="role" render={({ field }) => (
-                                    <FormItem className="space-y-3">
-                                        <FormLabel>Tu Rol</FormLabel>
-                                        <FormControl>
-                                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-3 gap-4">
-                                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                                    <FormControl><RadioGroupItem value="student" /></FormControl>
-                                                    <FormLabel className="font-normal">Estudiante</FormLabel>
-                                                </FormItem>
-                                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                                    <FormControl><RadioGroupItem value="teacher" disabled /></FormControl>
-                                                    <FormLabel className="font-normal opacity-50">Profesor</FormLabel>
-                                                </FormItem>
-                                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                                    <FormControl><RadioGroupItem value="admin" disabled /></FormControl>
-                                                    <FormLabel className="font-normal opacity-50">Admin</FormLabel>
-                                                </FormItem>
-                                            </RadioGroup>
-                                        </FormControl>
+                                        {!usePersonal && validatedCenter && isCenterValidated && (
+                                          <FormDescription className="text-green-600 font-semibold flex items-center gap-2">
+                                              <CheckCircle className="h-4 w-4" />
+                                              {validatedCenter.name}
+                                          </FormDescription>
+                                        )}
                                         <FormMessage />
-                                    </FormItem>
-                                )} />
-                            </div>
+                                      </FormItem>
+                                    )} 
+                                  />
+                                  <FormField control={form.control} name="ageRange" render={({ field }) => (<FormItem><FormLabel>Rango de Edad</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger></FormControl><SelectContent><SelectItem value="12-15">12-15 años</SelectItem><SelectItem value="16-18">16-18 años</SelectItem><SelectItem value="19-22">19-22 años</SelectItem><SelectItem value="23+">23+ años</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                  </div>
+                                  <FormField control={form.control} name="role" render={({ field }) => (
+                                      <FormItem className="space-y-3">
+                                          <FormLabel>Tu Rol</FormLabel>
+                                          <FormControl>
+                                              <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-3 gap-4">
+                                                  <FormItem className="flex items-center space-x-2 space-y-0">
+                                                      <FormControl><RadioGroupItem value="student" /></FormControl>
+                                                      <FormLabel className="font-normal">Estudiante</FormLabel>
+                                                  </FormItem>
+                                                  <FormItem className="flex items-center space-x-2 space-y-0">
+                                                      <FormControl><RadioGroupItem value="teacher" disabled /></FormControl>
+                                                      <FormLabel className="font-normal opacity-50">Profesor</FormLabel>
+                                                  </FormItem>
+                                                  <FormItem className="flex items-center space-x-2 space-y-0">
+                                                      <FormControl><RadioGroupItem value="admin" disabled /></FormControl>
+                                                      <FormLabel className="font-normal opacity-50">Admin</FormLabel>
+                                                  </FormItem>
+                                              </RadioGroup>
+                                          </FormControl>
+                                          <FormMessage />
+                                      </FormItem>
+                                  )} />
+                              </div>
+                            </ScrollArea>
                           )}
                         </div>
                       ))}
