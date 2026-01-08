@@ -567,9 +567,28 @@ function EditCenterDialog({ center, children }: { center: Center, children: Reac
         setIsUpdatingCode(true);
         try {
             const newCode = generateCode();
+            const oldCode = center.code;
             const centerDocRef = doc(firestore, 'centers', center.uid);
-            await updateDoc(centerDocRef, { code: newCode });
-            toast({ title: "Código Actualizado", description: `El nuevo código es ${newCode}.` });
+            
+            // 1. Find all users with the old code
+            const usersQuery = query(collection(firestore, 'users'), where('center', '==', oldCode));
+            const usersSnapshot = await getDocs(usersQuery);
+
+            // 2. Create a batch write
+            const batch = writeBatch(firestore);
+
+            // 3. Update the center's code
+            batch.update(centerDocRef, { code: newCode });
+            
+            // 4. Update each user's center code
+            usersSnapshot.forEach(userDoc => {
+                batch.update(userDoc.ref, { center: newCode });
+            });
+            
+            // 5. Commit the batch
+            await batch.commit();
+
+            toast({ title: "Código Actualizado", description: `El nuevo código es ${newCode} y se ha actualizado para todos los miembros.` });
         } catch (error) {
             toast({ title: "Error", description: "No se pudo actualizar el código.", variant: "destructive" });
         } finally {
@@ -623,7 +642,7 @@ function EditCenterDialog({ center, children }: { center: Center, children: Reac
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>¿Actualizar el código?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                       Esta acción generará un nuevo código de acceso. El código antiguo dejará de ser válido para nuevos registros. Los usuarios existentes no se verán afectados.
+                                       Esta acción generará un nuevo código y actualizará automáticamente a todos los miembros actuales del centro. El código antiguo dejará de ser válido.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

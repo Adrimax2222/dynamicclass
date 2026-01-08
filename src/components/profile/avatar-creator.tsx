@@ -22,10 +22,9 @@ const shopAvatarMap = new Map(SHOP_AVATARS.map(item => [item.id, item]));
 interface AvatarDisplayProps {
     user: Partial<User>;
     className?: string;
-    showHat?: boolean;
 }
 
-export function AvatarDisplay({ user, className, showHat = false }: AvatarDisplayProps) {
+export function AvatarDisplay({ user, className }: AvatarDisplayProps) {
     const avatarUrl = user.avatar;
     const name = user.name || '';
     

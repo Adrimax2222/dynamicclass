@@ -156,7 +156,7 @@ export default function ProfilePage() {
       <Card className="mb-8 overflow-hidden shadow-lg">
         <div className="bg-muted/40 h-24" />
         <CardContent className="p-4 text-center -mt-16">
-          <AvatarDisplay user={user} className="mx-auto h-24 w-24 ring-4 ring-background" showHat={false} />
+          <AvatarDisplay user={user} className="mx-auto h-24 w-24 ring-4 ring-background" />
           <h2 className="mt-4 text-2xl font-bold">{user.name}</h2>
           {user.role === 'admin' && (
             <Badge variant="destructive" className="mt-2">Admin</Badge>

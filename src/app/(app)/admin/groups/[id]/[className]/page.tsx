@@ -174,7 +174,7 @@ export default function ManageClassMembersPage() {
                                           )}
                                           onClick={() => setSelectedMember(member)}
                                         >
-                                            <AvatarDisplay user={member} className="h-10 w-10 shrink-0" showHat={false}/>
+                                            <AvatarDisplay user={member} className="h-10 w-10 shrink-0" />
                                             <div className="flex-1">
                                                 <p className="font-semibold">{member.name}</p>
                                                 <p className="text-xs text-muted-foreground">{member.email}</p>
@@ -188,7 +188,7 @@ export default function ManageClassMembersPage() {
                                     {selectedMember && (
                                         <>
                                             <DialogHeader className="items-center text-center">
-                                                <AvatarDisplay user={selectedMember} className="h-24 w-24 mb-4" showHat={true} />
+                                                <AvatarDisplay user={selectedMember} className="h-24 w-24 mb-4" />
                                                 <DialogTitle>{selectedMember.name}</DialogTitle>
                                                 <DialogDescription>{selectedMember.email}</DialogDescription>
                                                  <Badge variant={selectedMember.role === 'admin' ? 'destructive' : selectedMember.role.startsWith('admin-') ? 'default' : 'secondary'} className="w-fit">
