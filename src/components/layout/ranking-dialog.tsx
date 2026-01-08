@@ -11,7 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useFirestore } from "@/firebase";
+import { useFirestore, useCollection } from "@/firebase";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import type { User } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
