@@ -47,7 +47,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useApp } from "@/lib/hooks/use-app";
 import { Logo } from "@/components/icons";
 import { useState, useEffect, useMemo } from "react";
-import { useAuth, useFirestore } from "@/firebase";
+import { useAuth, useFirestore, useCollection } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -142,7 +142,9 @@ export default function AuthPage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [allCenters, setAllCenters] = useState<Center[]>([]);
+  
+  const { data: allCenters = [] } = useCollection<Center>(firestore ? collection(firestore, 'centers') : null);
+
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -151,22 +153,6 @@ export default function AuthPage() {
     }
   }, [user, router]);
   
-  // Fetch centers on mount
-    useEffect(() => {
-        const fetchCenters = async () => {
-            if (!firestore) return;
-            try {
-                const centersCollection = collection(firestore, 'centers');
-                const centersSnapshot = await getDocs(centersCollection);
-                const centersList = centersSnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as Center));
-                setAllCenters(centersList);
-            } catch (error) {
-                console.error("Failed to fetch centers:", error);
-            }
-        };
-        fetchCenters();
-    }, [firestore]);
-
   const registrationSchema = useMemo(() => createRegistrationSchema(isCenterValidated || usePersonal), [isCenterValidated, usePersonal]);
 
   const form = useForm<RegistrationSchemaType>({
@@ -742,7 +728,5 @@ export default function AuthPage() {
     </main>
   );
 }
-
-    
 
     
