@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ArrowLeft, Eye, EyeOff, MailCheck, User as UserIcon } from "lucide-react";
+import { Loader2, ArrowLeft, Eye, EyeOff, MailCheck, User as UserIcon, CheckCircle } from "lucide-react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -67,14 +67,12 @@ const createRegistrationSchema = (allCenters: Center[]) => z.object({
   role: z.enum(["student", "teacher", "admin"], { required_error: "Debes seleccionar un rol." }),
 }).refine(data => {
     if (data.center === 'personal') {
-        return true; // Always valid if personal use is selected
+        return true; 
     }
     const centerExists = allCenters.some(c => c.code === data.center);
-    if (!centerExists) return false;
-
-    return data.course.trim() !== '' && data.className.trim() !== '';
+    return centerExists ? (data.course !== '' && data.className !== '') : false;
 }, {
-    message: "Rellena los detalles del centro o selecciona 'Uso Personal'.",
+    message: "Código no válido, o falta seleccionar curso/clase.",
     path: ["center"],
 });
 
@@ -175,6 +173,7 @@ export default function AuthPage() {
 
   const form = useForm<RegistrationSchemaType>({
     resolver: zodResolver(registrationSchema),
+    mode: "onChange",
     defaultValues: {
       fullName: "",
       email: "",
@@ -188,15 +187,18 @@ export default function AuthPage() {
   });
 
   const watchedCenterCode = form.watch('center');
+  const foundCenter = useMemo(() => {
+    if (usePersonal) return null;
+    return allCenters.find(c => c.code === watchedCenterCode);
+  }, [watchedCenterCode, allCenters, usePersonal]);
 
   const availableClasses = useMemo(() => {
-    const center = allCenters.find(c => c.code === watchedCenterCode);
-    if (!center || !center.classes) return { courses: [], classNames: [] };
+    if (!foundCenter || !foundCenter.classes) return { courses: [], classNames: [] };
 
     const courses = new Set<string>();
     const classNames = new Set<string>();
 
-    center.classes.forEach(c => {
+    foundCenter.classes.forEach(c => {
         const [course, className] = c.name.split('-');
         if (course) {
             const courseValue = course.toLowerCase().replace('º', '');
@@ -211,18 +213,18 @@ export default function AuthPage() {
         courses: Array.from(courses),
         classNames: Array.from(classNames)
     };
-  }, [watchedCenterCode, allCenters]);
+  }, [foundCenter]);
 
 
   useEffect(() => {
     if (usePersonal) {
-        form.setValue('center', 'personal');
-        form.setValue('course', 'personal');
-        form.setValue('className', 'personal');
+        form.setValue('center', 'personal', { shouldValidate: true });
+        form.setValue('course', 'personal', { shouldValidate: true });
+        form.setValue('className', 'personal', { shouldValidate: true });
     } else {
-        form.setValue('center', '');
-        form.setValue('course', '');
-        form.setValue('className', '');
+        form.setValue('center', '', { shouldValidate: true });
+        form.setValue('course', '', { shouldValidate: true });
+        form.setValue('className', '', { shouldValidate: true });
     }
   }, [usePersonal, form]);
   
@@ -466,7 +468,7 @@ export default function AuthPage() {
     if (digitsOnly.length > 3) {
       formatted = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 6)}`;
     }
-    form.setValue('center', formatted);
+    form.setValue('center', formatted, { shouldValidate: true });
   };
 
   if (user) {
@@ -574,15 +576,20 @@ export default function AuthPage() {
                                           maxLength={7}
                                         />
                                       </FormControl>
-                                      <FormDescription>Introduce el código proporcionado por tu centro.</FormDescription>
+                                      {!usePersonal && foundCenter && (
+                                        <FormDescription className="text-green-600 font-semibold flex items-center gap-2">
+                                            <CheckCircle className="h-4 w-4" />
+                                            {foundCenter.name}
+                                        </FormDescription>
+                                      )}
                                       <FormMessage />
                                     </FormItem>
                                   )} 
                                 />
                                 <FormField control={form.control} name="ageRange" render={({ field }) => (<FormItem><FormLabel>Rango de Edad</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger></FormControl><SelectContent><SelectItem value="12-15">12-15 años</SelectItem><SelectItem value="16-18">16-18 años</SelectItem><SelectItem value="19-22">19-22 años</SelectItem><SelectItem value="23+">23+ años</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                 <div className="grid grid-cols-2 gap-4">
-                                  <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || availableClasses.courses.length === 0}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                  <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || availableClasses.classNames.length === 0}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                  <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel className={cn((usePersonal || !foundCenter) && 'text-muted-foreground/50')}>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !foundCenter}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                  <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel className={cn((usePersonal || !foundCenter) && 'text-muted-foreground/50')}>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !foundCenter}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                                 </div>
                                 <FormField control={form.control} name="role" render={({ field }) => (
                                     <FormItem className="space-y-3">
@@ -711,5 +718,7 @@ export default function AuthPage() {
     </main>
   );
 }
+
+    
 
     
