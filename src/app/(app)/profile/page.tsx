@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -581,9 +580,9 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
-                                                    <AlertDialogDescription>
+                                                    <AlertDialogDescriptionComponent>
                                                         ¿Quieres comprar este avatar por {avatar.price} trofeos? Tus trofeos actuales son {user.trophies}.
-                                                    </AlertDialogDescription>
+                                                    </AlertDialogDescriptionComponent>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -866,3 +865,5 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
+
+    
