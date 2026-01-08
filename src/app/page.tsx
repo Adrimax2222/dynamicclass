@@ -447,13 +447,12 @@ export default function AuthPage() {
 
   const formatAndSetCenterCode = (value: string) => {
     const digitsOnly = value.replace(/[^0-9]/g, '');
-    let formatted = digitsOnly.slice(0, 6); // Max 6 digits
+    let formatted = digitsOnly.slice(0, 6);
     if (formatted.length > 3) {
       formatted = `${formatted.slice(0, 3)}-${formatted.slice(3)}`;
     }
     form.setValue('center', formatted, { shouldValidate: true });
     
-    // If the user clears the input or it's incomplete, reset validation
     if (formatted.length !== 7) {
         setIsCenterValidated(false);
         setValidatedCenter(null);
@@ -475,7 +474,6 @@ export default function AuthPage() {
     
     try {
         const querySnapshot = await getDocs(q);
-
         if (!querySnapshot.empty) {
             const centerDoc = querySnapshot.docs[0];
             const centerData = { uid: centerDoc.id, ...centerDoc.data() } as Center;
@@ -485,7 +483,6 @@ export default function AuthPage() {
         } else {
             setValidatedCenter(null);
             setIsCenterValidated(false);
-            form.setValue('center', form.getValues('center'), { shouldValidate: true }); // Keep value but trigger re-render
             toast({ title: "Código no válido", description: "No se encontró ningún centro con ese código.", variant: "destructive" });
         }
     } catch (error) {
