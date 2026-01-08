@@ -567,14 +567,14 @@ function GroupsTab() {
                                         </Button>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-col items-end gap-2">
                                     <EditCenterDialog center={center}>
-                                        <Button variant="outline" size="sm" className="bg-blue-500/10 border-blue-500/20 text-blue-600 hover:bg-blue-500/20 hover:text-blue-700">
+                                        <Button variant="outline" size="sm" className="bg-blue-500/10 border-blue-500/20 text-blue-600 hover:bg-blue-500/20 hover:text-blue-700 w-full">
                                             <Edit className="mr-2 h-4 w-4" />
                                             Editar
                                         </Button>
                                     </EditCenterDialog>
-                                    <Button asChild variant="secondary" size="sm">
+                                    <Button asChild variant="secondary" size="sm" className="w-full">
                                         <Link href={`/admin/groups/${center.uid}`}>Gestionar</Link>
                                     </Button>
                                 </div>
