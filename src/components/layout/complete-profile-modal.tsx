@@ -6,8 +6,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import type { User, Center } from "@/lib/types";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { useFirestore } from "@/firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
 import {
     Dialog,
@@ -78,14 +78,10 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     const [isLoading, setIsLoading] = useState(false);
     const [usePersonal, setUsePersonal] = useState(false);
     const [isCenterValidated, setIsCenterValidated] = useState(false);
+    const [validatedCenter, setValidatedCenter] = useState<Center | null>(null);
     const { toast } = useToast();
     
     const firestore = useFirestore();
-    const centersCollection = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return collection(firestore, 'centers');
-    }, [firestore]);
-    const { data: allCenters = [] } = useCollection<Center>(centersCollection);
 
     const profileSchema = useMemo(() => createProfileSchema(isCenterValidated || usePersonal), [isCenterValidated, usePersonal]);
 
@@ -99,19 +95,13 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
         },
     });
     
-    const watchedCenterCode = form.watch('center');
-    const foundCenter = useMemo(() => {
-        if (usePersonal) return null;
-        return allCenters.find(c => c.code === watchedCenterCode);
-    }, [watchedCenterCode, allCenters, usePersonal]);
-
     const availableClasses = useMemo(() => {
-        if (!foundCenter || !foundCenter.classes) return { courses: [], classNames: [] };
+        if (!validatedCenter || !validatedCenter.classes) return { courses: [], classNames: [] };
 
         const courses = new Set<string>();
         const classNames = new Set<string>();
 
-        foundCenter.classes.forEach(c => {
+        validatedCenter.classes.forEach(c => {
             const [course, className] = c.name.split('-');
             if (course) {
                 const courseValue = course.toLowerCase().replace('º', '');
@@ -126,7 +116,7 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
             courses: Array.from(courses),
             classNames: Array.from(classNames)
         };
-    }, [foundCenter]);
+    }, [validatedCenter]);
 
     useEffect(() => {
       if (usePersonal) {
@@ -134,11 +124,13 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
         form.setValue('course', 'personal');
         form.setValue('className', 'personal');
         setIsCenterValidated(false);
+        setValidatedCenter(null);
       } else {
         form.setValue('center', '');
         form.setValue('course', '');
         form.setValue('className', '');
         setIsCenterValidated(false);
+        setValidatedCenter(null);
       }
     }, [usePersonal, form]);
 
@@ -165,20 +157,39 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
         }
         form.setValue('center', formatted, { shouldValidate: true });
         setIsCenterValidated(false);
+        setValidatedCenter(null);
     };
     
-    const handleValidateCenter = (checked: boolean) => {
-        if (checked) {
-            if (foundCenter) {
+    const handleValidateCenter = async (checked: boolean) => {
+        if (!checked) {
+            setIsCenterValidated(false);
+            setValidatedCenter(null);
+            return;
+        }
+
+        if (!firestore) return;
+
+        const centerCode = form.getValues('center');
+        const q = query(collection(firestore, 'centers'), where('code', '==', centerCode));
+        
+        try {
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const centerDoc = querySnapshot.docs[0];
+                const centerData = { uid: centerDoc.id, ...centerDoc.data() } as Center;
+                setValidatedCenter(centerData);
                 setIsCenterValidated(true);
-                toast({ title: "Centro validado", description: `Te has unido a ${foundCenter.name}.` });
+                toast({ title: "Centro validado", description: `Te has unido a ${centerData.name}.` });
             } else {
+                setValidatedCenter(null);
                 setIsCenterValidated(false);
-                form.setValue('center', form.getValues('center'));
                 toast({ title: "Código no válido", description: "No se encontró ningún centro con ese código.", variant: "destructive" });
             }
-        } else {
+        } catch (error) {
+            console.error("Error validating center:", error);
             setIsCenterValidated(false);
+            setValidatedCenter(null);
+            toast({ title: "Error de validación", description: "No se pudo comprobar el código del centro.", variant: "destructive" });
         }
     };
 
@@ -229,10 +240,10 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                             <FormDescription>
                                 Únete al grupo de tu centro. Si no tienes uno, selecciona la opción de uso personal.
                             </FormDescription>
-                            {!usePersonal && foundCenter && isCenterValidated && (
+                            {!usePersonal && validatedCenter && isCenterValidated && (
                                 <FormDescription className="text-green-600 font-semibold flex items-center gap-2">
                                     <CheckCircle className="h-4 w-4" />
-                                    {foundCenter.name}
+                                    {validatedCenter.name}
                                 </FormDescription>
                             )}
                             <FormMessage />
@@ -318,5 +329,3 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     </Dialog>
   );
 }
-
-    

@@ -16,7 +16,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, collection, getDocs } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -139,17 +139,11 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [usePersonal, setUsePersonal] = useState(false);
   const [isCenterValidated, setIsCenterValidated] = useState(false);
+  const [validatedCenter, setValidatedCenter] = useState<Center | null>(null);
+
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
-  
-  const centersCollection = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'centers');
-  }, [firestore]);
-
-  const { data: allCenters = [] } = useCollection<Center>(centersCollection);
-
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -175,19 +169,13 @@ export default function AuthPage() {
     },
   });
 
-  const watchedCenterCode = form.watch('center');
-  const foundCenter = useMemo(() => {
-    if (usePersonal) return null;
-    return allCenters.find(c => c.code === watchedCenterCode);
-  }, [watchedCenterCode, allCenters, usePersonal]);
-
   const availableClasses = useMemo(() => {
-    if (!foundCenter || !foundCenter.classes) return { courses: [], classNames: [] };
+    if (!validatedCenter || !validatedCenter.classes) return { courses: [], classNames: [] };
 
     const courses = new Set<string>();
     const classNames = new Set<string>();
 
-    foundCenter.classes.forEach(c => {
+    validatedCenter.classes.forEach(c => {
         const [course, className] = c.name.split('-');
         if (course) {
             const courseValue = course.toLowerCase().replace('º', '');
@@ -202,7 +190,7 @@ export default function AuthPage() {
         courses: Array.from(courses),
         classNames: Array.from(classNames)
     };
-  }, [foundCenter]);
+  }, [validatedCenter]);
 
 
   useEffect(() => {
@@ -211,11 +199,13 @@ export default function AuthPage() {
         form.setValue('course', 'personal', { shouldValidate: true });
         form.setValue('className', 'personal', { shouldValidate: true });
         setIsCenterValidated(false);
+        setValidatedCenter(null);
     } else {
         form.setValue('center', '', { shouldValidate: true });
         form.setValue('course', '', { shouldValidate: true });
         form.setValue('className', '', { shouldValidate: true });
         setIsCenterValidated(false);
+        setValidatedCenter(null);
     }
   }, [usePersonal, form]);
   
@@ -319,7 +309,7 @@ export default function AuthPage() {
       return;
     }
   
-    const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat'];
+    const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
     const isAdmin = ADMIN_EMAILS.includes(values.email);
 
     try {
@@ -452,6 +442,7 @@ export default function AuthPage() {
     setIsLoading(false);
     setUsePersonal(false);
     setIsCenterValidated(false);
+    setValidatedCenter(null);
   }
 
   const formatAndSetCenterCode = (value: string) => {
@@ -461,21 +452,35 @@ export default function AuthPage() {
       formatted = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 6)}`;
     }
     form.setValue('center', formatted, { shouldValidate: true });
-    setIsCenterValidated(false); // Reset validation on change
+    setIsCenterValidated(false);
+    setValidatedCenter(null);
   };
 
-  const handleValidateCenter = (checked: boolean) => {
-    if (checked) {
-        if (foundCenter) {
-            setIsCenterValidated(true);
-            toast({ title: "Centro validado", description: `Te has unido a ${foundCenter.name}.` });
-        } else {
-            setIsCenterValidated(false);
-            form.setValue('center', form.getValues('center')); // Trigger re-render to show error
-            toast({ title: "Código no válido", description: "No se encontró ningún centro con ese código.", variant: "destructive" });
-        }
+  const handleValidateCenter = async (checked: boolean) => {
+    if (!checked) {
+      setIsCenterValidated(false);
+      setValidatedCenter(null);
+      return;
+    }
+    
+    if (!firestore) return;
+
+    const centerCode = form.getValues('center');
+    const q = query(collection(firestore, 'centers'), where('code', '==', centerCode));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+        const centerDoc = querySnapshot.docs[0];
+        const centerData = { uid: centerDoc.id, ...centerDoc.data() } as Center;
+        setValidatedCenter(centerData);
+        setIsCenterValidated(true);
+        toast({ title: "Centro validado", description: `Te has unido a ${centerData.name}.` });
     } else {
+        setValidatedCenter(null);
         setIsCenterValidated(false);
+        // Toggle switch back off
+        form.setValue('center', form.getValues('center')); 
+        toast({ title: "Código no válido", description: "No se encontró ningún centro con ese código.", variant: "destructive" });
     }
   };
 
@@ -591,10 +596,10 @@ export default function AuthPage() {
                                             disabled={usePersonal || field.value.length !== 7}
                                         />
                                       </div>
-                                      {!usePersonal && foundCenter && isCenterValidated && (
+                                      {!usePersonal && validatedCenter && isCenterValidated && (
                                         <FormDescription className="text-green-600 font-semibold flex items-center gap-2">
                                             <CheckCircle className="h-4 w-4" />
-                                            {foundCenter.name}
+                                            {validatedCenter.name}
                                         </FormDescription>
                                       )}
                                       <FormMessage />
