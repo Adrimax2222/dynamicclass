@@ -151,13 +151,16 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     
     const formatAndSetCenterCode = (value: string) => {
         const digitsOnly = value.replace(/[^0-9]/g, '');
-        let formatted = digitsOnly;
-        if (digitsOnly.length > 3) {
-            formatted = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 6)}`;
+        let formatted = digitsOnly.slice(0, 6);
+        if (formatted.length > 3) {
+            formatted = `${formatted.slice(0, 3)}-${formatted.slice(3)}`;
         }
         form.setValue('center', formatted, { shouldValidate: true });
-        setIsCenterValidated(false);
-        setValidatedCenter(null);
+
+        if (formatted.length !== 7) {
+            setIsCenterValidated(false);
+            setValidatedCenter(null);
+        }
     };
     
     const handleValidateCenter = async (checked: boolean) => {
@@ -228,13 +231,12 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                                         {...field}
                                         onChange={(e) => formatAndSetCenterCode(e.target.value)}
                                         disabled={usePersonal}
-                                        maxLength={7}
                                     />
                                 </FormControl>
                                 <Switch
                                     checked={isCenterValidated}
                                     onCheckedChange={handleValidateCenter}
-                                    disabled={usePersonal || field.value.length !== 7}
+                                    disabled={usePersonal || (field.value.length !== 7 && !isCenterValidated)}
                                 />
                             </div>
                             <FormDescription>

@@ -228,7 +228,7 @@ export default function AuthPage() {
 
   function goToPreviousStep() {
     setAnimationDirection('backward');
-    setCurrentStep(prev => prev - 1);
+    setCurrentStep(prev => prev + 1);
   }
 
   async function onRegisterSubmit(values: RegistrationSchemaType) {
@@ -447,14 +447,19 @@ export default function AuthPage() {
 
   const formatAndSetCenterCode = (value: string) => {
     const digitsOnly = value.replace(/[^0-9]/g, '');
-    let formatted = digitsOnly;
-    if (digitsOnly.length > 3) {
-      formatted = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 6)}`;
+    let formatted = digitsOnly.slice(0, 6); // Max 6 digits
+    if (formatted.length > 3) {
+      formatted = `${formatted.slice(0, 3)}-${formatted.slice(3)}`;
     }
     form.setValue('center', formatted, { shouldValidate: true });
-    setIsCenterValidated(false);
-    setValidatedCenter(null);
+    
+    // If the user clears the input or it's incomplete, reset validation
+    if (formatted.length !== 7) {
+        setIsCenterValidated(false);
+        setValidatedCenter(null);
+    }
   };
+
 
   const handleValidateCenter = async (checked: boolean) => {
     if (!checked) {
@@ -467,20 +472,27 @@ export default function AuthPage() {
 
     const centerCode = form.getValues('center');
     const q = query(collection(firestore, 'centers'), where('code', '==', centerCode));
-    const querySnapshot = await getDocs(q);
+    
+    try {
+        const querySnapshot = await getDocs(q);
 
-    if (!querySnapshot.empty) {
-        const centerDoc = querySnapshot.docs[0];
-        const centerData = { uid: centerDoc.id, ...centerDoc.data() } as Center;
-        setValidatedCenter(centerData);
-        setIsCenterValidated(true);
-        toast({ title: "Centro validado", description: `Te has unido a ${centerData.name}.` });
-    } else {
-        setValidatedCenter(null);
-        setIsCenterValidated(false);
-        // Toggle switch back off
-        form.setValue('center', form.getValues('center')); 
-        toast({ title: "Código no válido", description: "No se encontró ningún centro con ese código.", variant: "destructive" });
+        if (!querySnapshot.empty) {
+            const centerDoc = querySnapshot.docs[0];
+            const centerData = { uid: centerDoc.id, ...centerDoc.data() } as Center;
+            setValidatedCenter(centerData);
+            setIsCenterValidated(true);
+            toast({ title: "Centro validado", description: `Te has unido a ${centerData.name}.` });
+        } else {
+            setValidatedCenter(null);
+            setIsCenterValidated(false);
+            form.setValue('center', form.getValues('center'), { shouldValidate: true }); // Keep value but trigger re-render
+            toast({ title: "Código no válido", description: "No se encontró ningún centro con ese código.", variant: "destructive" });
+        }
+    } catch (error) {
+       console.error("Error validating center:", error);
+       setIsCenterValidated(false);
+       setValidatedCenter(null);
+       toast({ title: "Error de validación", description: "No se pudo comprobar el código del centro.", variant: "destructive" });
     }
   };
 
@@ -587,13 +599,12 @@ export default function AuthPage() {
                                             {...field}
                                             onChange={(e) => formatAndSetCenterCode(e.target.value)}
                                             disabled={usePersonal}
-                                            maxLength={7}
                                             />
                                         </FormControl>
                                         <Switch
                                             checked={isCenterValidated}
                                             onCheckedChange={handleValidateCenter}
-                                            disabled={usePersonal || field.value.length !== 7}
+                                            disabled={usePersonal || (field.value.length !== 7 && !isCenterValidated)}
                                         />
                                       </div>
                                       {!usePersonal && validatedCenter && isCenterValidated && (
