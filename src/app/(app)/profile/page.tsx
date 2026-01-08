@@ -34,7 +34,7 @@ import { doc, updateDoc, arrayUnion, increment, collection, query, orderBy, getD
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
 import { GradeCalculatorDialog } from "@/components/layout/grade-calculator-dialog";
@@ -50,18 +50,9 @@ const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau
 
 export default function ProfilePage() {
   const { user } = useApp();
-  const [centers, setCenters] = useState<Center[]>([]);
   const firestore = useFirestore();
-
-  useEffect(() => {
-    if (!firestore) return;
-    const fetchCenters = async () => {
-        const centersCollection = collection(firestore, 'centers');
-        const centersSnapshot = await getDocs(centersCollection);
-        setCenters(centersSnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as Center)));
-    };
-    fetchCenters();
-  }, [firestore]);
+  const centersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'centers') : null, [firestore]);
+  const { data: centers = [] } = useCollection<Center>(centersCollection);
 
 
   if (!user) {
@@ -282,18 +273,6 @@ interface EditableAvatar {
     color: string;
 }
 
-function AvatarDisplayPreview({ avatar }: { avatar: EditableAvatar }) {
-    const isLetter = avatar.id.startsWith('letter');
-    const Icon = !isLetter ? shopAvatarMap.get(avatar.id)?.icon : null;
-    const letter = isLetter ? avatar.id.split('_')[1] : null;
-
-    return (
-        <div className="relative inline-block">
-            <div className="h-24 w-24 rounded-full ring-4 ring-primary ring-offset-2 bg-transparent"/>
-        </div>
-    );
-}
-
 const courseOptions = [
     { value: '1eso', label: '1º ESO' },
     { value: '2eso', label: '2º ESO' },
@@ -440,9 +419,9 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
 
   const formatAndSetCenterCode = (value: string) => {
     const digitsOnly = value.replace(/[^0-9]/g, '');
-    let formatted = digitsOnly;
-    if (digitsOnly.length > 3) {
-      formatted = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 6)}`;
+    let formatted = digitsOnly.slice(0, 6);
+    if (formatted.length > 3) {
+      formatted = `${formatted.slice(0, 3)}-${formatted.slice(3)}`;
     }
     setCenter(formatted);
   };
@@ -533,7 +512,10 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
         <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto px-1 pr-4">
             
             <div className="flex justify-center py-4">
-               <AvatarDisplayPreview avatar={editableAvatar} />
+                <AvatarDisplay 
+                    user={{ avatar: `${editableAvatar.id}_${editableAvatar.color}`, name: user.name }}
+                    className="h-24 w-24 ring-4 ring-primary ring-offset-2" 
+                />
             </div>
 
             <div className="space-y-4 pt-4 border-t">
@@ -576,9 +558,9 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
-                                                    <AlertDialogDescriptionComponent>
+                                                    <AlertDialogDescription>
                                                         ¿Quieres comprar este avatar por {avatar.price} trofeos? Tus trofeos actuales son {user.trophies}.
-                                                    </AlertDialogDescriptionComponent>
+                                                    </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -693,8 +675,8 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label htmlFor="course" className={cn(usePersonal && "text-muted-foreground/50")}>Curso</Label>
-                        <Select onValueChange={setCourse} value={course} disabled={usePersonal || availableClasses.courses.length === 0}>
+                        <Label htmlFor="course" className={cn((usePersonal || !allCenters.some(c => c.code === center)) && 'text-muted-foreground/50')}>Curso</Label>
+                        <Select onValueChange={setCourse} value={course} disabled={usePersonal || !allCenters.some(c => c.code === center)}>
                             <SelectTrigger id="course"><SelectValue placeholder="Curso..." /></SelectTrigger>
                             <SelectContent>
                                 {courseOptions.map(option => (
@@ -706,8 +688,8 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="className" className={cn(usePersonal && "text-muted-foreground/50")}>Clase</Label>
-                        <Select onValueChange={setClassName} value={className} disabled={usePersonal || availableClasses.classNames.length === 0}>
+                        <Label htmlFor="className" className={cn((usePersonal || !allCenters.some(c => c.code === center)) && 'text-muted-foreground/50')}>Clase</Label>
+                        <Select onValueChange={setClassName} value={className} disabled={usePersonal || !allCenters.some(c => c.code === center)}>
                             <SelectTrigger id="className"><SelectValue placeholder="Clase..." /></SelectTrigger>
                             <SelectContent>
                                 {classOptions.map(option => (
@@ -868,5 +850,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
+
+    
 
     
