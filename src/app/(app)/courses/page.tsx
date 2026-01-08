@@ -52,7 +52,7 @@ import {
   orderBy,
   query,
   where,
-  getDocs
+  getDoc
 } from "firebase/firestore";
 import type { Note, Announcement, AnnouncementScope, Schedule, Center } from "@/lib/types";
 import {
@@ -247,13 +247,14 @@ function AnnouncementsTab() {
       )}
 
       {filteredAnnouncements.map((announcement) => (
-        <AnnouncementItem
-            key={announcement.id}
-            announcement={announcement}
-            isAuthor={user?.uid === announcement.authorId}
-            onUpdate={handleUpdateAnnouncement}
-            onDelete={handleDeleteAnnouncement}
-        />
+        <div key={announcement.id}>
+            <AnnouncementItem
+                announcement={announcement}
+                isAuthor={user?.uid === announcement.authorId}
+                onUpdate={handleUpdateAnnouncement}
+                onDelete={handleDeleteAnnouncement}
+            />
+        </div>
       ))}
     </div>
   );
