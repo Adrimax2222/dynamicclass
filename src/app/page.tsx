@@ -47,7 +47,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useApp } from "@/lib/hooks/use-app";
 import { Logo } from "@/components/icons";
 import { useState, useEffect, useMemo } from "react";
-import { useAuth, useFirestore, useCollection } from "@/firebase";
+import { useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -143,7 +143,12 @@ export default function AuthPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   
-  const { data: allCenters = [] } = useCollection<Center>(firestore ? collection(firestore, 'centers') : null);
+  const centersCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'centers');
+  }, [firestore]);
+
+  const { data: allCenters = [] } = useCollection<Center>(centersCollection);
 
 
   // Redirect if user is already logged in

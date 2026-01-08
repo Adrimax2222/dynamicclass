@@ -1,6 +1,5 @@
-// src/firebase/hooks.ts
-"use client";
-import { useMemo } from "react";
+'use client';
+import {useMemo} from 'react';
 
 /**
  * A hook to memoize a Firestore query or document reference.
@@ -11,7 +10,10 @@ import { useMemo } from "react";
  * @param deps The dependency array for the useMemo hook.
  * @returns The memoized query or reference.
  */
-export function useMemoFirebase<T>(factory: () => T, deps: React.DependencyList): T {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    return useMemo(factory, deps);
+export function useMemoFirebase<T>(
+  factory: () => T,
+  deps: React.DependencyList
+): T {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(factory, deps);
 }

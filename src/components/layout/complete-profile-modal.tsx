@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import type { User, Center } from "@/lib/types";
-import { useFirestore, useCollection } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 
 import {
@@ -81,7 +81,11 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     const { toast } = useToast();
     
     const firestore = useFirestore();
-    const { data: allCenters = [] } = useCollection<Center>(firestore ? collection(firestore, 'centers') : null);
+    const centersCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'centers');
+    }, [firestore]);
+    const { data: allCenters = [] } = useCollection<Center>(centersCollection);
 
     const profileSchema = useMemo(() => createProfileSchema(isCenterValidated || usePersonal), [isCenterValidated, usePersonal]);
 
