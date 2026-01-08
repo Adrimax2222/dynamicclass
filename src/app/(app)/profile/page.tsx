@@ -832,7 +832,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
     return (
         <div className="space-y-3">
             {items.map(item => (
-                <div key={item.id} className="flex items-center gap-4 rounded-lg border p-3 bg-muted/50">
+                <div key={`${item.id}-${item.completedAt.seconds}`} className="flex items-center gap-4 rounded-lg border p-3 bg-muted/50">
                     <div className={cn("p-2 rounded-full", type === 'task' ? 'bg-blue-100 dark:bg-blue-900/50' : 'bg-green-100 dark:bg-green-900/50')}>
                        {type === 'task' ? 
                          <NotebookText className="h-5 w-5 text-blue-500" /> : 
@@ -850,6 +850,8 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
+
+    
 
     
 
