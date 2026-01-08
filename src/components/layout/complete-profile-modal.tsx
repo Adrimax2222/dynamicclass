@@ -35,27 +35,28 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, UserCheck, User as UserIcon } from "lucide-react";
+import { Loader2, UserCheck, User as UserIcon, CheckCircle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { Label } from "../ui/label";
+import { useToast } from "@/hooks/use-toast";
 
-const profileSchema = z.object({
+
+const createProfileSchema = (isCenterValidated: boolean) => z.object({
   center: z.string(),
   ageRange: z.string().min(1, { message: "Por favor, selecciona un rango de edad." }),
   course: z.string(),
   className: z.string(),
 }).refine(data => {
-    if (data.center === 'personal') {
-        return data.course === 'personal' && data.className === 'personal';
-    }
-    return data.center.trim() !== '' && data.course.trim() !== '' && data.className.trim() !== '';
+    if (data.center === 'personal') return true;
+    return isCenterValidated ? (data.course !== '' && data.className !== '') : false;
 }, {
-    message: "Rellena los detalles del centro o selecciona 'Uso Personal'.",
+    message: "Valida el código o selecciona curso/clase.",
     path: ['center'],
 });
 
 
-type ProfileSchema = z.infer<typeof profileSchema>;
+type ProfileSchema = z.infer<ReturnType<typeof createProfileSchema>>;
 
 interface CompleteProfileModalProps {
   user: User;
@@ -76,9 +77,13 @@ const classOptions = ['A', 'B', 'C', 'D', 'E'];
 export default function CompleteProfileModal({ user, onSave }: CompleteProfileModalProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [usePersonal, setUsePersonal] = useState(false);
+    const [isCenterValidated, setIsCenterValidated] = useState(false);
+    const { toast } = useToast();
     
     const firestore = useFirestore();
     const { data: allCenters = [] } = useCollection<Center>(firestore ? collection(firestore, 'centers') : null);
+
+    const profileSchema = useMemo(() => createProfileSchema(isCenterValidated || usePersonal), [isCenterValidated, usePersonal]);
 
     const form = useForm<ProfileSchema>({
         resolver: zodResolver(profileSchema),
@@ -91,15 +96,18 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     });
     
     const watchedCenterCode = form.watch('center');
+    const foundCenter = useMemo(() => {
+        if (usePersonal) return null;
+        return allCenters.find(c => c.code === watchedCenterCode);
+    }, [watchedCenterCode, allCenters, usePersonal]);
 
     const availableClasses = useMemo(() => {
-        const center = allCenters.find(c => c.code === watchedCenterCode);
-        if (!center || !center.classes) return { courses: [], classNames: [] };
+        if (!foundCenter || !foundCenter.classes) return { courses: [], classNames: [] };
 
         const courses = new Set<string>();
         const classNames = new Set<string>();
 
-        center.classes.forEach(c => {
+        foundCenter.classes.forEach(c => {
             const [course, className] = c.name.split('-');
             if (course) {
                 const courseValue = course.toLowerCase().replace('º', '');
@@ -114,17 +122,19 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
             courses: Array.from(courses),
             classNames: Array.from(classNames)
         };
-    }, [watchedCenterCode, allCenters]);
+    }, [foundCenter]);
 
     useEffect(() => {
       if (usePersonal) {
         form.setValue('center', 'personal');
         form.setValue('course', 'personal');
         form.setValue('className', 'personal');
+        setIsCenterValidated(false);
       } else {
         form.setValue('center', '');
         form.setValue('course', '');
         form.setValue('className', '');
+        setIsCenterValidated(false);
       }
     }, [usePersonal, form]);
 
@@ -145,11 +155,27 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     
     const formatAndSetCenterCode = (value: string) => {
         const digitsOnly = value.replace(/[^0-9]/g, '');
-        let formatted = digitsOnly;
+        let formatted = digitsOnly.slice(0, 6);
         if (digitsOnly.length > 3) {
             formatted = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 6)}`;
         }
-        form.setValue('center', formatted);
+        form.setValue('center', formatted, { shouldValidate: true });
+        setIsCenterValidated(false);
+    };
+    
+    const handleValidateCenter = (checked: boolean) => {
+        if (checked) {
+            if (foundCenter) {
+                setIsCenterValidated(true);
+                toast({ title: "Centro validado", description: `Te has unido a ${foundCenter.name}.` });
+            } else {
+                setIsCenterValidated(false);
+                form.setValue('center', form.getValues('center'));
+                toast({ title: "Código no válido", description: "No se encontró ningún centro con ese código.", variant: "destructive" });
+            }
+        } else {
+            setIsCenterValidated(false);
+        }
     };
 
   return (
@@ -180,18 +206,31 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Código de Centro Educativo</FormLabel>
-                            <FormControl>
-                                <Input 
-                                    placeholder="Ej: 123-456" 
-                                    {...field}
-                                    onChange={(e) => formatAndSetCenterCode(e.target.value)}
-                                    disabled={usePersonal}
-                                    maxLength={7}
+                            <div className="flex items-center gap-2">
+                                <FormControl>
+                                    <Input 
+                                        placeholder="123-456" 
+                                        {...field}
+                                        onChange={(e) => formatAndSetCenterCode(e.target.value)}
+                                        disabled={usePersonal}
+                                        maxLength={7}
+                                    />
+                                </FormControl>
+                                <Switch
+                                    checked={isCenterValidated}
+                                    onCheckedChange={handleValidateCenter}
+                                    disabled={usePersonal || field.value.length !== 7}
                                 />
-                            </FormControl>
+                            </div>
                             <FormDescription>
                                 Únete al grupo de tu centro. Si no tienes uno, selecciona la opción de uso personal.
                             </FormDescription>
+                            {!usePersonal && foundCenter && isCenterValidated && (
+                                <FormDescription className="text-green-600 font-semibold flex items-center gap-2">
+                                    <CheckCircle className="h-4 w-4" />
+                                    {foundCenter.name}
+                                </FormDescription>
+                            )}
                             <FormMessage />
                         </FormItem>
                     )}
@@ -223,8 +262,8 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                         name="course"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Curso</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || availableClasses.courses.length === 0}>
+                                <FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Curso</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}>
                                 <FormControl>
                                     <SelectTrigger><SelectValue placeholder="Curso" /></SelectTrigger>
                                 </FormControl>
@@ -245,8 +284,8 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                         name="className"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Clase</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || availableClasses.classNames.length === 0}>
+                                <FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Clase</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}>
                                 <FormControl>
                                     <SelectTrigger><SelectValue placeholder="Clase" /></SelectTrigger>
                                 </FormControl>

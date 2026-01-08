@@ -56,7 +56,7 @@ import LoadingScreen from "@/components/layout/loading-screen";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
-const createRegistrationSchema = (allCenters: Center[]) => z.object({
+const createRegistrationSchema = (isCenterValidated: boolean) => z.object({
   fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
   email: z.string().email({ message: "Por favor, introduce una dirección de correo electrónico válida." }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
@@ -66,13 +66,10 @@ const createRegistrationSchema = (allCenters: Center[]) => z.object({
   className: z.string(),
   role: z.enum(["student", "teacher", "admin"], { required_error: "Debes seleccionar un rol." }),
 }).refine(data => {
-    if (data.center === 'personal') {
-        return true; 
-    }
-    const centerExists = allCenters.some(c => c.code === data.center);
-    return centerExists ? (data.course !== '' && data.className !== '') : false;
+    if (data.center === 'personal') return true;
+    return isCenterValidated ? (data.course !== '' && data.className !== '') : false;
 }, {
-    message: "Código no válido, o falta seleccionar curso/clase.",
+    message: "Valida el código o selecciona curso/clase.",
     path: ["center"],
 });
 
@@ -141,6 +138,7 @@ export default function AuthPage() {
   const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward'>('forward');
   const [showPassword, setShowPassword] = useState(false);
   const [usePersonal, setUsePersonal] = useState(false);
+  const [isCenterValidated, setIsCenterValidated] = useState(false);
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -169,7 +167,7 @@ export default function AuthPage() {
         fetchCenters();
     }, [firestore]);
 
-  const registrationSchema = useMemo(() => createRegistrationSchema(allCenters), [allCenters]);
+  const registrationSchema = useMemo(() => createRegistrationSchema(isCenterValidated || usePersonal), [isCenterValidated, usePersonal]);
 
   const form = useForm<RegistrationSchemaType>({
     resolver: zodResolver(registrationSchema),
@@ -221,10 +219,12 @@ export default function AuthPage() {
         form.setValue('center', 'personal', { shouldValidate: true });
         form.setValue('course', 'personal', { shouldValidate: true });
         form.setValue('className', 'personal', { shouldValidate: true });
+        setIsCenterValidated(false);
     } else {
         form.setValue('center', '', { shouldValidate: true });
         form.setValue('course', '', { shouldValidate: true });
         form.setValue('className', '', { shouldValidate: true });
+        setIsCenterValidated(false);
     }
   }, [usePersonal, form]);
   
@@ -436,7 +436,7 @@ export default function AuthPage() {
 
   const progress = ((currentStep + 1) / steps.length) * 100;
   const isFirstStep = currentStep === 0;
-  const isLastStep = currentStep === steps.length - 1;
+  const isLastStep = currentStep === 1;
 
   const getAnimationClass = (stepIndex: number) => {
     if (stepIndex !== currentStep) return 'hidden';
@@ -460,15 +460,32 @@ export default function AuthPage() {
     setCurrentStep(0);
     setIsLoading(false);
     setUsePersonal(false);
+    setIsCenterValidated(false);
   }
 
   const formatAndSetCenterCode = (value: string) => {
     const digitsOnly = value.replace(/[^0-9]/g, '');
-    let formatted = digitsOnly;
+    let formatted = digitsOnly.slice(0, 6);
     if (digitsOnly.length > 3) {
       formatted = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 6)}`;
     }
     form.setValue('center', formatted, { shouldValidate: true });
+    setIsCenterValidated(false); // Reset validation on change
+  };
+
+  const handleValidateCenter = (checked: boolean) => {
+    if (checked) {
+        if (foundCenter) {
+            setIsCenterValidated(true);
+            toast({ title: "Centro validado", description: `Te has unido a ${foundCenter.name}.` });
+        } else {
+            setIsCenterValidated(false);
+            form.setValue('center', form.getValues('center')); // Trigger re-render to show error
+            toast({ title: "Código no válido", description: "No se encontró ningún centro con ese código.", variant: "destructive" });
+        }
+    } else {
+        setIsCenterValidated(false);
+    }
   };
 
   if (user) {
@@ -567,16 +584,23 @@ export default function AuthPage() {
                                   render={({ field }) => (
                                     <FormItem>
                                       <FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Código de Centro Educativo</FormLabel>
-                                      <FormControl>
-                                        <Input 
-                                          placeholder="Ej: 123-456" 
-                                          {...field}
-                                          onChange={(e) => formatAndSetCenterCode(e.target.value)}
-                                          disabled={usePersonal}
-                                          maxLength={7}
+                                      <div className="flex items-center gap-2">
+                                        <FormControl>
+                                            <Input 
+                                            placeholder="123-456" 
+                                            {...field}
+                                            onChange={(e) => formatAndSetCenterCode(e.target.value)}
+                                            disabled={usePersonal}
+                                            maxLength={7}
+                                            />
+                                        </FormControl>
+                                        <Switch
+                                            checked={isCenterValidated}
+                                            onCheckedChange={handleValidateCenter}
+                                            disabled={usePersonal || field.value.length !== 7}
                                         />
-                                      </FormControl>
-                                      {!usePersonal && foundCenter && (
+                                      </div>
+                                      {!usePersonal && foundCenter && isCenterValidated && (
                                         <FormDescription className="text-green-600 font-semibold flex items-center gap-2">
                                             <CheckCircle className="h-4 w-4" />
                                             {foundCenter.name}
@@ -588,8 +612,8 @@ export default function AuthPage() {
                                 />
                                 <FormField control={form.control} name="ageRange" render={({ field }) => (<FormItem><FormLabel>Rango de Edad</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger></FormControl><SelectContent><SelectItem value="12-15">12-15 años</SelectItem><SelectItem value="16-18">16-18 años</SelectItem><SelectItem value="19-22">19-22 años</SelectItem><SelectItem value="23+">23+ años</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                 <div className="grid grid-cols-2 gap-4">
-                                  <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel className={cn((usePersonal || !foundCenter) && 'text-muted-foreground/50')}>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !foundCenter}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                  <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel className={cn((usePersonal || !foundCenter) && 'text-muted-foreground/50')}>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !foundCenter}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                  <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                  <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                                 </div>
                                 <FormField control={form.control} name="role" render={({ field }) => (
                                     <FormItem className="space-y-3">
