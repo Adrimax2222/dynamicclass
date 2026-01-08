@@ -56,7 +56,7 @@ import LoadingScreen from "@/components/layout/loading-screen";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
-const registrationSchema = z.object({
+const createRegistrationSchema = (allCenters: Center[]) => z.object({
   fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
   email: z.string().email({ message: "Por favor, introduce una dirección de correo electrónico válida." }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
@@ -67,20 +67,24 @@ const registrationSchema = z.object({
   role: z.enum(["student", "teacher", "admin"], { required_error: "Debes seleccionar un rol." }),
 }).refine(data => {
     if (data.center === 'personal') {
-        return data.course === 'personal' && data.className === 'personal';
+        return true; // Always valid if personal use is selected
     }
-    return data.center.trim() !== '' && data.course.trim() !== '' && data.className.trim() !== '';
+    const centerExists = allCenters.some(c => c.code === data.center);
+    if (!centerExists) return false;
+
+    return data.course.trim() !== '' && data.className.trim() !== '';
 }, {
     message: "Rellena los detalles del centro o selecciona 'Uso Personal'.",
     path: ["center"],
 });
+
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce una dirección de correo electrónico válida." }),
   password: z.string().min(6, { message: "La contraseña es necesaria." }),
 });
 
-type RegistrationSchemaType = z.infer<typeof registrationSchema>;
+type RegistrationSchemaType = z.infer<ReturnType<typeof createRegistrationSchema>>;
 type LoginSchemaType = z.infer<typeof loginSchema>;
 
 const steps = [
@@ -167,6 +171,7 @@ export default function AuthPage() {
         fetchCenters();
     }, [firestore]);
 
+  const registrationSchema = useMemo(() => createRegistrationSchema(allCenters), [allCenters]);
 
   const form = useForm<RegistrationSchemaType>({
     resolver: zodResolver(registrationSchema),
@@ -706,3 +711,5 @@ export default function AuthPage() {
     </main>
   );
 }
+
+    
