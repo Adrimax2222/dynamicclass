@@ -47,7 +47,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useApp } from "@/lib/hooks/use-app";
 import { Logo } from "@/components/icons";
 import { useState, useEffect, useMemo } from "react";
-import { useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useAuth, useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -67,9 +67,9 @@ const createRegistrationSchema = (isCenterValidated: boolean) => z.object({
   role: z.enum(["student", "teacher", "admin"], { required_error: "Debes seleccionar un rol." }),
 }).refine(data => {
     if (data.center === 'personal') return true;
-    return isCenterValidated ? (data.course !== '' && data.className !== '') : false;
+    return isCenterValidated;
 }, {
-    message: "Valida el código o selecciona curso/clase.",
+    message: "Debes validar tu código de centro.",
     path: ["center"],
 });
 
@@ -228,7 +228,7 @@ export default function AuthPage() {
 
   function goToPreviousStep() {
     setAnimationDirection('backward');
-    setCurrentStep(prev => prev + 1);
+    setCurrentStep(prev => prev - 1);
   }
 
   async function onRegisterSubmit(values: RegistrationSchemaType) {
@@ -460,14 +460,9 @@ export default function AuthPage() {
   };
 
 
-  const handleValidateCenter = async (checked: boolean) => {
-    if (!checked) {
-      setIsCenterValidated(false);
-      setValidatedCenter(null);
-      return;
-    }
-    
+  const handleValidateCenter = async () => {
     if (!firestore) return;
+    setIsLoading(true);
 
     const centerCode = form.getValues('center');
     const q = query(collection(firestore, 'centers'), where('code', '==', centerCode));
@@ -490,6 +485,8 @@ export default function AuthPage() {
        setIsCenterValidated(false);
        setValidatedCenter(null);
        toast({ title: "Error de validación", description: "No se pudo comprobar el código del centro.", variant: "destructive" });
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -595,15 +592,22 @@ export default function AuthPage() {
                                             placeholder="123-456" 
                                             {...field}
                                             onChange={(e) => formatAndSetCenterCode(e.target.value)}
-                                            disabled={usePersonal}
+                                            disabled={usePersonal || isCenterValidated}
                                             />
                                         </FormControl>
-                                        <Switch
-                                            checked={isCenterValidated}
-                                            onCheckedChange={handleValidateCenter}
-                                            disabled={usePersonal || (field.value.length !== 7 && !isCenterValidated)}
-                                        />
+                                        <Button 
+                                            type="button" 
+                                            onClick={handleValidateCenter} 
+                                            disabled={usePersonal || field.value.length !== 7 || isLoading || isCenterValidated}
+                                            variant={isCenterValidated ? "secondary" : "default"}
+                                            className="whitespace-nowrap"
+                                        >
+                                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterValidated ? <CheckCircle className="h-4 w-4"/> : "Validar"}
+                                        </Button>
                                       </div>
+                                      <FormDescription>
+                                        Únete al grupo de tu centro. Si no tienes uno, selecciona la opción de uso personal.
+                                      </FormDescription>
                                       {!usePersonal && validatedCenter && isCenterValidated && (
                                         <FormDescription className="text-green-600 font-semibold flex items-center gap-2">
                                             <CheckCircle className="h-4 w-4" />
