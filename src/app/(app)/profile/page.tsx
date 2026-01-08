@@ -26,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData, User, CompletedItem, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon } from "lucide-react";
+import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -59,7 +59,7 @@ export default function ProfilePage() {
     const fetchCenters = async () => {
         const centersCollection = collection(firestore, 'centers');
         const centersSnapshot = await getDocs(centersCollection);
-        setCenters(centersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Center)));
+        setCenters(centersSnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as Center)));
     };
     fetchCenters();
   }, [firestore]);
@@ -104,7 +104,9 @@ export default function ProfilePage() {
   }
   
   const userCenter = centers.find(c => c.code === user.center);
-  const displayCenter = user.center === 'personal' ? 'Uso Personal' : (userCenter ? userCenter.name : 'Centro no encontrado');
+  const isCenterCodeValid = !!userCenter;
+  const displayCenter = user.center === 'personal' ? 'Uso Personal' : (isCenterCodeValid ? userCenter.name : 'Código de centro obsoleto');
+
 
   const achievements = [
     { title: 'Tareas Completadas', value: user.tasks, icon: NotebookText, color: 'text-blue-400' },
@@ -160,7 +162,7 @@ export default function ProfilePage() {
           {user.role === 'admin' && (
             <Badge variant="destructive" className="mt-2">Admin</Badge>
           )}
-          <p className="text-muted-foreground mt-2">{displayCenter}</p>
+          <p className={cn("text-muted-foreground mt-2", !isCenterCodeValid && user.center !== 'personal' && "text-red-500 font-bold")}>{displayCenter}</p>
           <EditProfileDialog allCenters={centers} />
         </CardContent>
       </Card>
@@ -447,13 +449,18 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
   }
   
   if (!user) return null;
+
+  const userCenterIsValid = allCenters.some(c => c.code === user.center);
   
   const handleSaveChanges = async () => {
     if (!firestore || !user) return;
 
-    if (!usePersonal && !center.trim()) {
-        toast({ title: "Falta el código de centro", description: "Debes introducir un código de centro o seleccionar 'Uso Personal'.", variant: "destructive" });
-        return;
+    if (!usePersonal) {
+        const centerExists = allCenters.some(c => c.code === center);
+        if (!center.trim() || !centerExists) {
+            toast({ title: "Código de centro no válido", description: "El código que has introducido no corresponde a ningún centro existente.", variant: "destructive" });
+            return;
+        }
     }
     
     const finalAvatarString = editableAvatar.id.startsWith('letter') 
@@ -574,9 +581,9 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
-                                                    <AlertDialogDescriptionComponent>
+                                                    <AlertDialogDescription>
                                                         ¿Quieres comprar este avatar por {avatar.price} trofeos? Tus trofeos actuales son {user.trophies}.
-                                                    </AlertDialogDescriptionComponent>
+                                                    </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -642,6 +649,12 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
             
             <div className="space-y-4 pt-6 border-t">
                  <Label>Editor de Perfil</Label>
+                 {!userCenterIsValid && user.center !== 'personal' && (
+                    <div className="p-3 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive text-sm flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                        <span>Tu código de centro anterior ya no es válido. Por favor, introduce el nuevo código o selecciona 'Uso Personal'.</span>
+                    </div>
+                 )}
                  <div className="flex items-center space-x-2 rounded-lg border p-3">
                     <Switch id="personal-use-switch" checked={usePersonal} onCheckedChange={setUsePersonal} />
                     <Label htmlFor="personal-use-switch" className="flex flex-col gap-1">

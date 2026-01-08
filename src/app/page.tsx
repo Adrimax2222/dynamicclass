@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -159,7 +158,7 @@ export default function AuthPage() {
             try {
                 const centersCollection = collection(firestore, 'centers');
                 const centersSnapshot = await getDocs(centersCollection);
-                const centersList = centersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Center));
+                const centersList = centersSnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as Center));
                 setAllCenters(centersList);
             } catch (error) {
                 console.error("Failed to fetch centers:", error);
@@ -549,8 +548,8 @@ export default function AuthPage() {
                                 <FormField control={form.control} name="center" render={({ field }) => (<FormItem><FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Código de Centro Educativo</FormLabel><FormControl><Input placeholder="Ej: 123-456" {...field} disabled={usePersonal} /></FormControl><FormDescription>Introduce el código proporcionado por tu centro.</FormDescription><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="ageRange" render={({ field }) => (<FormItem><FormLabel>Rango de Edad</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger></FormControl><SelectContent><SelectItem value="12-15">12-15 años</SelectItem><SelectItem value="16-18">16-18 años</SelectItem><SelectItem value="19-22">19-22 años</SelectItem><SelectItem value="23+">23+ años</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                 <div className="grid grid-cols-2 gap-4">
-                                  <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Curso</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={usePersonal || availableClasses.courses.length === 0}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                  <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Clase</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={usePersonal || availableClasses.classNames.length === 0}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                  <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || availableClasses.courses.length === 0}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                  <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || availableClasses.classNames.length === 0}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                                 </div>
                                 <FormField control={form.control} name="role" render={({ field }) => (
                                     <FormItem className="space-y-3">
