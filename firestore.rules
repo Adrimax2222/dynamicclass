@@ -130,9 +130,9 @@ service cloud.firestore {
 
     match /centers/{centerId} {
       // Admins can do anything
-      allow read, write: if isAdmin();
-      // Authenticated users can read the list of centers
-      allow list, get: if request.auth != null;
+      allow write: if isAdmin();
+      // Allow ANYONE (authenticated or not) to read the list of centers to validate the code on registration
+      allow list, get: if true;
     }
   }
 }
