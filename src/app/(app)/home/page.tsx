@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent, Announcement, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity, Flame, ShoppingCart, TreePine, Gift } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity, Flame, ShoppingCart, TreePine, Gift, Lightbulb } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
@@ -42,7 +42,7 @@ import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Logo } from "@/components/icons";
 import WelcomeModal from "@/components/layout/welcome-modal";
 import { doc, updateDoc, increment, collection, query, orderBy, getDocs, addDoc, serverTimestamp, arrayRemove, arrayUnion } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { FullScheduleView } from "@/components/layout/full-schedule-view";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
 import CompleteProfileModal from "@/components/layout/complete-profile-modal";
@@ -52,7 +52,7 @@ import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { TeacherInfoDialog } from "@/components/layout/teacher-info-dialog";
 import { useToast } from "@/hooks/use-toast";
-import UpdateNotificationModal from "@/components/layout/update-notification-modal";
+import { WhatsNewDialog } from "@/components/layout/whats-new-dialog";
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Anuncios";
 const SCHOOL_ICAL_URL = "https://calendar.google.com/calendar/ical/iestorredelpalau.cat_9vm0113gitbs90a9l7p4c3olh4%40group.calendar.google.com/public/basic.ics";
@@ -68,7 +68,6 @@ const keywords = {
 };
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
-const UPDATE_V3_NOTIFICATION_KEY = 'update-notification-seen-v3';
 
 export default function HomePage() {
   const { user, updateUser } = useApp();
@@ -76,7 +75,6 @@ export default function HomePage() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showWelcomeAfterCompletion, setShowWelcomeAfterCompletion] = useState(false);
-  const [showUpdateNotification, setShowUpdateNotification] = useState(false);
   const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
   const [upcomingClassesDay, setUpcomingClassesDay] = useState<string>("Próximas Clases");
   const [userSchedule, setUserSchedule] = useState<Schedule | null>(null);
@@ -98,11 +96,6 @@ export default function HomePage() {
     const storedReadAnnouncementIds = localStorage.getItem('readAnnouncementIds');
     if (storedReadAnnouncementIds) {
       setReadAnnouncementIds(JSON.parse(storedReadAnnouncementIds));
-    }
-
-    const hasSeenUpdate = localStorage.getItem(UPDATE_V3_NOTIFICATION_KEY);
-    if (!hasSeenUpdate) {
-        setShowUpdateNotification(true);
     }
   }, []);
     
@@ -235,6 +228,12 @@ export default function HomePage() {
         return events;
     };
 
+    const announcementsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, "announcements"), orderBy("createdAt", "desc"));
+    }, [firestore]);
+    const { data: announcementsData } = useCollection<Announcement>(announcementsQuery);
+
   useEffect(() => {
     // Only show the modal if the user is new and the state is not already open
     if (user?.isNewUser && !isModalOpen) {
@@ -286,31 +285,23 @@ export default function HomePage() {
             setAllEvents([]);
         }
 
-        // Fetch announcements
-        try {
-            const announcementsRef = collection(firestore, "announcements");
-            const q = query(announcementsRef, orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
-            const announcementsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Announcement));
-            
-            const filteredAnnouncements = announcementsList.filter(ann => {
-              if (!userCenter) { // If user is not in any center
-                return ann.scope === 'general';
-              }
-              // If user is in a center, show general announcements AND announcements for their center
-              return ann.scope === 'general' || (userCenter && ann.scope === 'center' && userCenter.code === SCHOOL_VERIFICATION_CODE);
+        // Filter announcements
+        if (announcementsData) {
+            const filteredAnnouncements = announcementsData.filter(ann => {
+                if (!userCenter) { // If user is not in any center
+                    return ann.scope === 'general';
+                }
+                // If user is in a center, show general announcements AND announcements for their center
+                return ann.scope === 'general' || (userCenter && ann.scope === 'center' && userCenter.code === SCHOOL_VERIFICATION_CODE);
             });
             setAllAnnouncements(filteredAnnouncements);
-        } catch (error) {
-            console.error("Error fetching announcements:", error);
-            setAllAnnouncements([]);
         }
         
         setIsLoadingVariables(false);
     };
     
     fetchAndCalculateVars();
-  }, [user, firestore]);
+  }, [user, firestore, announcementsData]);
 
 
   useEffect(() => {
@@ -409,11 +400,6 @@ export default function HomePage() {
     setShowWelcomeAfterCompletion(false);
   }
 
-  const handleUpdateNotificationClose = () => {
-    setShowUpdateNotification(false);
-    localStorage.setItem(UPDATE_V3_NOTIFICATION_KEY, 'true');
-  };
-
   const handleAnnouncementsClick = () => {
     const announcementIds = getCategorizedEvents('Anuncios').map(ann => ann.id);
     const newReadIds = Array.from(new Set([...readAnnouncementIds, ...announcementIds]));
@@ -478,8 +464,6 @@ export default function HomePage() {
         <CompleteProfileModal user={user} onSave={handleProfileCompletionSave} />
       ) : showWelcomeAfterCompletion ? (
         <WelcomeModal onClose={handleWelcomeModalClose} />
-      ) : showUpdateNotification ? (
-        <UpdateNotificationModal onClose={handleUpdateNotificationClose} />
       ) : null}
 
       <header className="mb-8 flex items-center justify-between">
@@ -681,7 +665,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mb-4">
+      <section className="mb-4 space-y-4">
         <RankingDialog user={user} openTo="shop">
           <Card className="bg-muted/50 cursor-pointer hover:bg-muted/80 transition-colors">
               <CardHeader className="flex-row items-center justify-between space-y-0">
@@ -704,9 +688,29 @@ export default function HomePage() {
               </CardHeader>
           </Card>
         </RankingDialog>
-      </section>
 
-      <section>
+        <WhatsNewDialog>
+          <Card className="bg-muted/50 cursor-pointer hover:bg-muted/80 transition-colors">
+              <CardHeader className="flex-row items-center justify-between space-y-0">
+                  <div className="space-y-1">
+                      <CardTitle className="text-base flex items-center gap-2">
+                          <Lightbulb className="h-5 w-5 text-primary" />
+                          Novedades y Futuro
+                      </CardTitle>
+                      <CardDescription className="text-xs pl-7">
+                          Descubre las últimas mejoras y lo que está por venir.
+                      </CardDescription>
+                  </div>
+                  <Button asChild size="sm" variant="outline">
+                      <span className="flex items-center">
+                        Ver
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </span>
+                  </Button>
+              </CardHeader>
+          </Card>
+        </WhatsNewDialog>
+
         <Card className="bg-muted/50">
             <CardHeader className="flex-row items-center justify-between space-y-0">
                 <div className="space-y-1">
@@ -882,5 +886,7 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
+    
 
     
