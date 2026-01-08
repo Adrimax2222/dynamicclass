@@ -247,7 +247,7 @@ function AnnouncementsTab() {
       )}
 
       {filteredAnnouncements.map((announcement) => (
-        <div key={announcement.id}>
+        <div key={`${announcement.id}-${announcement.createdAt.seconds}`}>
             <AnnouncementItem
                 announcement={announcement}
                 isAuthor={user?.uid === announcement.authorId}
