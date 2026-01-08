@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Notebook,
   Building,
@@ -15,7 +15,8 @@ import {
   MessageSquare,
   Globe,
   Filter,
-  BookX
+  BookX,
+  Users,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -66,7 +67,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { Logo } from "@/components/icons";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -118,7 +118,7 @@ export default function InfoPage() {
   );
 }
 
-type AnnouncementFilter = "all" | AnnouncementScope;
+type AnnouncementFilter = "all" | AnnouncementScope | "my-class";
 
 function AnnouncementsTab() {
   const { user } = useApp();
@@ -132,17 +132,27 @@ function AnnouncementsTab() {
 
   const { data: announcements = [], isLoading } = useCollection<Announcement>(announcementsCollection);
 
-  const handleAddAnnouncement = async (text: string, scope: AnnouncementScope) => {
+  const handleAddAnnouncement = async (text: string, scope: AnnouncementScope, centerId?: string, className?: string) => {
     if (!firestore || !user) return;
     const announcementsCollectionRef = collection(firestore, "announcements");
-    await addDoc(announcementsCollectionRef, {
+    
+    let newAnnouncement: Partial<Announcement> = {
         text,
         scope,
         authorId: user.uid,
         authorName: user.name,
         authorAvatar: user.avatar,
         createdAt: serverTimestamp()
-    });
+    };
+    
+    if (scope === 'center' && centerId) {
+        newAnnouncement.centerId = centerId;
+    } else if (scope === 'class' && centerId && className) {
+        newAnnouncement.centerId = centerId;
+        newAnnouncement.className = className;
+    }
+    
+    await addDoc(announcementsCollectionRef, newAnnouncement);
   }
 
   const handleUpdateAnnouncement = async (id: string, text: string) => {
@@ -157,49 +167,70 @@ function AnnouncementsTab() {
       await deleteDoc(announcementDocRef);
   }
 
-  const userIsInCenter = user?.center === SCHOOL_VERIFICATION_CODE;
+  const userIsInCenter = user?.center && user.center !== 'personal';
+  const userClassName = useMemo(() => user ? `${user.course.replace('eso','ESO')}-${user.className}` : null, [user]);
 
   const filteredAnnouncements = announcements.filter(ann => {
-    // Show only 'general' announcements to users not in the center
-    if (!userIsInCenter) {
-      return ann.scope === 'general';
-    }
+    if (!user) return false;
 
-    // For users in the center, filter based on their selection
-    if (filter === 'all') return true;
-    return ann.scope === filter;
+    if (filter === 'all') {
+      // General announcements are for everyone.
+      if (ann.scope === 'general') return true;
+      // Center announcements are for users in that center.
+      if (ann.scope === 'center' && user.organizationId === ann.centerId) return true;
+      // Class announcements are for users in that specific class.
+      if (ann.scope === 'class' && user.organizationId === ann.centerId && userClassName === ann.className) return true;
+      return false;
+    }
+    
+    if (filter === 'general') return ann.scope === 'general';
+    if (filter === 'center') return ann.scope === 'center' && user.organizationId === ann.centerId;
+    if (filter === 'my-class') return ann.scope === 'class' && user.organizationId === ann.centerId && userClassName === ann.className;
+    
+    return false;
   });
+  
+  const canPost = user?.role === 'admin' || (user?.role && user.role.startsWith('admin-'));
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h2 className="text-lg font-semibold">Últimos Anuncios</h2>
           <div className="w-full sm:w-auto">
-            <Select onValueChange={(v: AnnouncementFilter) => setFilter(v)} defaultValue={userIsInCenter ? "all" : "general"}>
-                <SelectTrigger className="w-full sm:w-[200px]">
+            <Select onValueChange={(v: AnnouncementFilter) => setFilter(v)} defaultValue="all">
+                <SelectTrigger className="w-full sm:w-[220px]">
                     <div className="flex items-center gap-2">
                         <Filter className="h-4 w-4" />
                         <SelectValue placeholder="Filtrar anuncios..." />
                     </div>
                 </SelectTrigger>
                 <SelectContent>
-                    {userIsInCenter && <SelectItem value="all">Todos los Anuncios</SelectItem>}
+                    <SelectItem value="all">Todos los Anuncios</SelectItem>
                     <SelectItem value="general">
                         <div className="flex items-center gap-2">
                            <Globe className="h-4 w-4" /> General
                         </div>
                     </SelectItem>
-                     <SelectItem value="center" disabled={!userIsInCenter}>
-                        <div className="flex items-center gap-2">
-                           <Building className="h-4 w-4" /> {SCHOOL_NAME}
-                        </div>
-                    </SelectItem>
+                    {userIsInCenter && (
+                        <>
+                            <SelectItem value="center">
+                                <div className="flex items-center gap-2">
+                                <Building className="h-4 w-4" /> Centro
+                                </div>
+                            </SelectItem>
+                             <SelectItem value="my-class">
+                                <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4" /> {userClassName}
+                                </div>
+                            </SelectItem>
+                        </>
+                    )}
                 </SelectContent>
             </Select>
           </div>
       </div>
 
-      {user?.role === 'admin' && (
+      {canPost && (
         <NewAnnouncementCard onSend={handleAddAnnouncement} />
       )}
 
@@ -228,17 +259,32 @@ function AnnouncementsTab() {
   );
 }
 
-function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: AnnouncementScope) => Promise<void> }) {
+function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: AnnouncementScope, centerId?: string, className?: string) => Promise<void> }) {
   const [text, setText] = useState("");
   const [scope, setScope] = useState<AnnouncementScope>("general");
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useApp();
+  
+  const isGlobalAdmin = user?.role === 'admin';
+  const isClassAdmin = user?.role && user.role.startsWith('admin-');
+  const adminClassName = isClassAdmin ? user.role.split('admin-')[1] : null;
 
   const handleSend = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !user) return;
     setIsLoading(true);
+    
     try {
-        await onSend(text, scope);
+        let centerId: string | undefined = undefined;
+        let className: string | undefined = undefined;
+
+        if (scope === 'center' || scope === 'class') {
+          centerId = user.organizationId;
+        }
+        if (scope === 'class' && adminClassName) {
+          className = adminClassName;
+        }
+        
+        await onSend(text, scope, centerId, className);
         setText("");
     } catch (error) {
         console.error("Failed to send announcement", error);
@@ -268,17 +314,26 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: Announc
                 />
             </div>
             <div className="flex flex-col sm:flex-row justify-end items-stretch gap-2">
-                <Select onValueChange={(v: AnnouncementScope) => setScope(v)} defaultValue="general">
+                <Select onValueChange={(v: AnnouncementScope) => setScope(v)} defaultValue={isGlobalAdmin ? "general" : "class"}>
                     <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue/>
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="general">
-                           <div className="flex items-center gap-2"><Globe className="h-4 w-4" /> General</div>
-                        </SelectItem>
-                        <SelectItem value="center">
-                           <div className="flex items-center gap-2"><Building className="h-4 w-4" /> Centro</div>
-                        </SelectItem>
+                        {isGlobalAdmin && (
+                            <SelectItem value="general">
+                               <div className="flex items-center gap-2"><Globe className="h-4 w-4" /> General</div>
+                            </SelectItem>
+                        )}
+                        {isGlobalAdmin && (
+                            <SelectItem value="center">
+                               <div className="flex items-center gap-2"><Building className="h-4 w-4" /> Centro</div>
+                            </SelectItem>
+                        )}
+                         {(isGlobalAdmin || isClassAdmin) && user?.organizationId && (
+                           <SelectItem value="class">
+                               <div className="flex items-center gap-2"><Users className="h-4 w-4" /> {adminClassName || 'Clase'}</div>
+                           </SelectItem>
+                        )}
                     </SelectContent>
                 </Select>
                 <Button onClick={handleSend} disabled={isLoading || !text.trim()} className="w-full sm:w-auto">
@@ -307,6 +362,19 @@ function AnnouncementItem({ announcement, isAuthor, onUpdate, onDelete }: { anno
     setIsEditing(false);
   }
 
+  const getBadge = () => {
+      switch(announcement.scope) {
+          case 'general':
+              return <Badge variant="outline" className="border-primary/20"><Globe className="h-3 w-3 mr-1"/>General</Badge>;
+          case 'center':
+              return <Badge variant="secondary"><Building className="h-3 w-3 mr-1"/>Centro</Badge>;
+          case 'class':
+               return <Badge><Users className="h-3 w-3 mr-1"/>{announcement.className || 'Clase'}</Badge>;
+          default:
+              return null;
+      }
+  }
+
   return (
     <div className="flex items-start gap-3">
       <Avatar className="h-9 w-9 border-2 border-primary/50">
@@ -317,10 +385,7 @@ function AnnouncementItem({ announcement, isAuthor, onUpdate, onDelete }: { anno
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <p className="font-bold text-sm">{announcement.authorName}</p>
           <p className="text-xs text-muted-foreground">{formatTimestamp(announcement.createdAt)}</p>
-          <Badge variant={announcement.scope === 'center' ? 'secondary' : 'outline'} className="border-primary/20">
-              {announcement.scope === 'center' ? <Building className="h-3 w-3 mr-1"/> : <Globe className="h-3 w-3 mr-1"/>}
-              {announcement.scope === 'center' ? 'Centro' : 'General'}
-          </Badge>
+          {getBadge()}
         </div>
         <div className="rounded-lg px-4 py-3 bg-muted mt-1">
             {isEditing ? (
@@ -354,17 +419,16 @@ function MyClassesTab() {
 
   useEffect(() => {
     const fetchSchedule = async () => {
-      if (!firestore || !user || !user.center || user.center === 'personal') {
+      if (!firestore || !user || !user.center || user.center === 'personal' || !user.organizationId) {
         setIsLoading(false);
         return;
       }
       setIsLoading(true);
 
-      const centersQuery = query(collection(firestore, 'centers'), where('code', '==', user.center));
-      const centerSnapshot = await getDocs(centersQuery);
-
-      if (!centerSnapshot.empty) {
-        const centerDoc = centerSnapshot.docs[0];
+      const centerDocRef = doc(firestore, 'centers', user.organizationId);
+      const centerDoc = await getDoc(centerDocRef);
+      
+      if (centerDoc.exists()) {
         const centerData = centerDoc.data() as Center;
         const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
         const userClassDef = centerData.classes.find(c => c.name === userClassName);

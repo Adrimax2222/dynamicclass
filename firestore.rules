@@ -10,7 +10,7 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
-    function isAdmin() {
+    function isGlobalAdmin() {
       // Production admins defined in rules
       let hardcodedAdmins = request.auth != null && request.auth.token.email in [
         'anavarrod@iestorredelpalau.cat',
@@ -22,13 +22,13 @@ service cloud.firestore {
       
       return hardcodedAdmins || roleBasedAdmin;
     }
-    
-    function getUserCenter() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.center;
+
+    function isClassAdmin(className) {
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin-' + className;
     }
     
-    function getCenterFromDoc(centerId) {
-      return get(/databases/$(database)/documents/centers/$(centerId)).data;
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     function isValidMessage() {
@@ -46,17 +46,24 @@ service cloud.firestore {
              request.resource.data.title.size() > 0 &&
              request.resource.data.title.size() <= 200;
     }
+    
+    function isValidAnnouncement() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['text', 'authorId', 'authorName', 'authorAvatar', 'createdAt', 'scope']) &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 1000 &&
+             data.scope in ['general', 'center', 'class'];
+    }
 
     // ============= USERS COLLECTION =============
 
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
+      allow get: if isOwner(userId) || isGlobalAdmin();
       allow list: if request.auth != null;
       allow create: if request.auth != null;
-      allow delete: if isOwner(userId) || isAdmin();
+      allow delete: if isOwner(userId) || isGlobalAdmin();
 
       // Allow admin to update any field, including 'role' and 'isBanned'
-      allow update: if isAdmin();
+      allow update: if isGlobalAdmin();
       // Allow user to update their own profile, but not their role or banned status
       allow update: if isOwner(userId) && 
                       request.resource.data.role == resource.data.role &&
@@ -121,16 +128,22 @@ service cloud.firestore {
 
     match /announcements/{announcementId} {
       allow list: if request.auth != null;
-      // Allow get only if the announcement is general or if the user belongs to the center.
-      allow get: if request.auth != null && (resource.data.scope == 'general' || (resource.data.scope == 'center' && getUserCenter() == getCenterFromDoc(resource.data.centerId).code));
-      allow create, update, delete: if isAdmin();
+      allow get: if request.auth != null; // Further filtering on client-side
+
+      // Create: Global admins can create any. Class admins can ONLY create for their class.
+      allow create: if isValidAnnouncement() && (isGlobalAdmin() || 
+                    (isClassAdmin(request.resource.data.className) && request.resource.data.scope == 'class'));
+      
+      // Update/Delete: Global admins can manage any. Class admins can ONLY manage their own class announcements.
+      allow update, delete: if isGlobalAdmin() || 
+                              (isClassAdmin(resource.data.className) && resource.data.scope == 'class');
     }
 
     // ============= CENTERS =============
 
     match /centers/{centerId} {
       // Admins can do anything
-      allow write: if isAdmin();
+      allow write: if isGlobalAdmin();
       // Allow ANYONE (authenticated or not) to read the list of centers to validate the code on registration
       allow list, get: if true;
     }

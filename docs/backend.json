@@ -62,7 +62,9 @@
         "authorName": { "type": "string" },
         "authorAvatar": { "type": "string", "format": "uri" },
         "createdAt": { "type": "string", "format": "date-time" },
-        "scope": { "type": "string", "enum": ["general", "center"] }
+        "scope": { "type": "string", "enum": ["general", "center", "class"] },
+        "centerId": { "type": "string" },
+        "className": { "type": "string" }
       },
       "required": ["text", "authorId", "authorName", "authorAvatar", "createdAt", "scope"]
     },

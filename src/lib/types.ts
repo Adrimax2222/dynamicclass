@@ -113,7 +113,7 @@ export type Note = {
     createdAt: { seconds: number, nanoseconds: number };
 };
 
-export type AnnouncementScope = 'general' | 'center';
+export type AnnouncementScope = 'general' | 'center' | 'class';
 
 export type Announcement = {
   id: string;
@@ -123,6 +123,8 @@ export type Announcement = {
   authorAvatar: string;
   createdAt: { seconds: number, nanoseconds: number };
   scope: AnnouncementScope;
+  centerId?: string; // ID of the center if scope is 'center' or 'class'
+  className?: string; // Name of the class if scope is 'class', e.g. "4ESO-B"
   likedBy?: string[];
   likes?: number;
 };
