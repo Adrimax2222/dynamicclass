@@ -22,6 +22,7 @@ import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
+import { useMemoFirebase } from "@/firebase/hooks";
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
 
@@ -140,48 +141,36 @@ function RankingTab({ user, isOpen }: { user: User; isOpen: boolean }) {
 
     const isPersonalUser = user.center === 'personal';
 
-    useEffect(() => {
-        if (!isOpen || !firestore || isPersonalUser) {
-            if (isPersonalUser) setIsLoading(false);
-            return;
+    const rankingQuery = useMemoFirebase(() => {
+        if (!firestore || isPersonalUser || !isOpen) return null;
+        if (scope === 'class') {
+            return query(
+                collection(firestore, "users"),
+                where("center", "==", user.center),
+                where("course", "==", user.course),
+                where("className", "==", user.className),
+                orderBy("trophies", "desc"),
+                limit(50)
+            );
+        } else { // scope === 'center'
+            return query(
+                collection(firestore, "users"),
+                where("center", "==", user.center),
+                orderBy("trophies", "desc"),
+                limit(50)
+            );
         }
-
-        const fetchRanking = async () => {
-            setIsLoading(true);
-            
-            let usersQuery;
-            if (scope === 'class') {
-                usersQuery = query(
-                    collection(firestore, "users"),
-                    where("center", "==", user.center),
-                    where("course", "==", user.course),
-                    where("className", "==", user.className),
-                    orderBy("trophies", "desc"),
-                    limit(50)
-                );
-            } else { // scope === 'center'
-                usersQuery = query(
-                    collection(firestore, "users"),
-                    where("center", "==", user.center),
-                    orderBy("trophies", "desc"),
-                    limit(50)
-                );
-            }
-
-            try {
-                const querySnapshot = await getDocs(usersQuery);
-                const usersList = querySnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
-                const filteredList = usersList.filter(u => u.role !== 'admin');
-                setRanking(filteredList);
-            } catch (error) {
-                console.error("Error fetching ranking:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchRanking();
     }, [firestore, user, scope, isOpen, isPersonalUser]);
+
+    const { data: rankingData, isLoading: isRankingLoading } = useCollection<User>(rankingQuery);
+
+    useEffect(() => {
+        setIsLoading(isRankingLoading);
+        if (rankingData) {
+            const filteredList = rankingData.filter(u => u.role !== 'admin');
+            setRanking(filteredList);
+        }
+    }, [rankingData, isRankingLoading]);
     
     if (isPersonalUser) {
          return (
