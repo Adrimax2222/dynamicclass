@@ -12,49 +12,48 @@ import {
     DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { PartyPopper, Lightbulb, Rocket, Bot, Wand2, ScanSearch, CheckCircle, Bug, History } from "lucide-react";
-import { Badge } from "../ui/badge";
+import { PartyPopper, Lightbulb, Rocket, Bot, Wand2, CheckCircle, BrainCircuit, Globe, ShieldCheck } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { ScrollArea } from "../ui/scroll-area";
 
 const recentUpdates = [
     { 
-        icon: CheckCircle, 
-        text: "Mejora en la validación de códigos de centro para una experiencia de registro más fluida y sin errores.",
-        color: "text-green-500"
-    },
-    { 
-        icon: Bug, 
-        text: "Solucionado un error interno de Firestore que causaba bloqueos intermitentes en la aplicación.",
+        icon: ShieldCheck, 
+        text: "Nuevo sistema de administradores para que los delegados puedan gestionar sus clases directamente desde la app.",
         color: "text-blue-500"
     },
     { 
-        icon: History, 
-        text: "¡Nuevo modo historial! Ahora puedes ver un registro de todas las tareas y exámenes completados desde tu perfil.",
-        color: "text-purple-500"
+        icon: Globe, 
+        text: "Ampliación de la infraestructura para dar soporte a múltiples centros educativos y escalabilidad a nivel mundial.",
+        color: "text-indigo-500"
+    },
+    { 
+        icon: BrainCircuit, 
+        text: "Mejoras fundamentales en el Modo Estudio, incluyendo música de Spotify, sonidos ambientales y una interfaz renovada.",
+        color: "text-teal-500"
+    },
+    { 
+        icon: CheckCircle, 
+        text: "Mejora en la validación de códigos de centro y corrección de errores internos para una experiencia más fluida.",
+        color: "text-green-500"
     },
 ];
 
 const futureFeatures = [
     { 
-        icon: Rocket, 
-        text: "Generador de Exámenes con IA: Crea exámenes personalizados a partir de tus apuntes con un solo clic.",
-        color: "text-red-500"
-    },
-    { 
         icon: Bot, 
-        text: "ADRIMAX AI v2.0: Una versión mejorada de nuestro asistente de IA, con más memoria, más rápido y capaz de entender imágenes.",
+        text: "ADRIMAX AI v2.0: Una IA más rápida y potente capaz de generar esquemas, flashcards y cuestionarios a partir de tus apuntes e imágenes.",
         color: "text-primary"
     },
     { 
-        icon: ScanSearch, 
-        text: "Digitalización Avanzada: Escanea documentos y obtén resúmenes, puntos clave y tarjetas de estudio generadas por IA al instante.",
-        color: "text-orange-500"
+        icon: Wand2, 
+        text: "Editor de Texto Mágico: Una nueva herramienta en el Modo Estudio para transformar y mejorar tus textos con inteligencia artificial.",
+        color: "text-pink-500"
     },
     { 
-        icon: Wand2, 
-        text: "Personalización Extrema: Más avatares, temas de colores para la app y nuevos easter eggs con recompensas.",
-        color: "text-pink-500"
+        icon: Rocket, 
+        text: "Personalización Extrema: Más avatares, temas de colores para la app y nuevos easter eggs con recompensas exclusivas.",
+        color: "text-red-500"
     },
 ];
 
@@ -121,5 +120,3 @@ export function WhatsNewDialog({ children }: { children: React.ReactNode }) {
     </Dialog>
   );
 }
-
-    
