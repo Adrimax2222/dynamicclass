@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Users, Group, Trophy, ChevronLeft, Search, UserX, Trash2, CheckCircle, Ban, Loader2, Wrench, PlusCircle, MinusCircle, Copy, Check, Edit, Pin, Image, RefreshCw } from "lucide-react";
+import { Shield, Users, Group, Trophy, ChevronLeft, Search, UserX, Trash2, CheckCircle, Ban, Loader2, Wrench, PlusCircle, MinusCircle, Copy, Check, Edit, Pin, Image as ImageIcon, RefreshCw } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -371,98 +371,23 @@ function GroupsTab() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [centerName, setCenterName] = useState("");
     const [isCreating, setIsCreating] = useState(false);
-    const [migrationDone, setMigrationDone] = useState(false);
-
+    
     const centersCollection = useMemoFirebase(() => {
         if (!firestore) return null;
+        // Use a stable query, sorting will be done on the client
         return query(collection(firestore, "centers"), orderBy("createdAt", "desc"));
     }, [firestore]);
 
-    const { data: centers = [], isLoading } = useCollection<Center>(centersCollection);
+    const { data: centersData = [], isLoading } = useCollection<Center>(centersCollection);
     
-    useEffect(() => {
-        const setupDefaultCenter = async () => {
-            if (isLoading || !firestore || migrationDone) return;
-    
-            const defaultCenterQuery = query(collection(firestore, "centers"), where("code", "==", SCHOOL_VERIFICATION_CODE));
-            const querySnapshot = await getDocs(defaultCenterQuery);
-            
-            let centerDoc;
-            let centerData;
-
-            if (querySnapshot.empty) {
-                 try {
-                    const defaultCenterData = {
-                        name: SCHOOL_NAME,
-                        code: SCHOOL_VERIFICATION_CODE,
-                        classes: [{
-                            name: '4ESO-B',
-                            icalUrl: '',
-                            schedule: fullSchedule,
-                        }],
-                        createdAt: serverTimestamp(),
-                    };
-                    const newDocRef = await addDoc(collection(firestore, "centers"), defaultCenterData);
-                    centerDoc = { ref: newDocRef };
-                    centerData = defaultCenterData;
-                    toast({ title: "Sistema actualizado", description: "El centro por defecto ha sido creado con el horario de 4º ESO B." });
-                } catch (e) {
-                     console.error("Failed to create default center:", e);
-                     return;
-                }
-            } else {
-                centerDoc = { ref: querySnapshot.docs[0].ref };
-                centerData = querySnapshot.docs[0].data() as Center;
-            }
-            
-            const class4B = centerData.classes.find(c => c.name === '4ESO-B');
-            
-            let needsUpdate = false;
-            let updatedClasses = [...centerData.classes];
-
-            if (class4B) {
-                if (!class4B.schedule || Object.keys(class4B.schedule).length === 0) {
-                    updatedClasses = updatedClasses.map(c => 
-                        c.name === '4ESO-B' ? { ...c, schedule: fullSchedule } : c
-                    );
-                    needsUpdate = true;
-                }
-            } else {
-                 updatedClasses.push({
-                    name: '4ESO-B',
-                    icalUrl: '',
-                    schedule: fullSchedule,
-                });
-                needsUpdate = true;
-            }
-
-            if (needsUpdate) {
-                try {
-                    await updateDoc(centerDoc.ref, { classes: updatedClasses });
-                    toast({ title: "Migración de Horario", description: "El horario de 4º ESO B se ha movido al nuevo sistema." });
-                } catch (e) {
-                    console.error("Failed to migrate schedule:", e);
-                }
-            }
-            
-            // Assign organizationId to all users in this center
-            const usersQuery = query(collection(firestore, "users"), where("center", "==", SCHOOL_VERIFICATION_CODE));
-            const usersSnapshot = await getDocs(usersQuery);
-            const batch = writeBatch(firestore);
-            usersSnapshot.forEach(userDoc => {
-                if (!userDoc.data().organizationId) {
-                    batch.update(userDoc.ref, { organizationId: querySnapshot.docs[0].id });
-                }
-            });
-            await batch.commit();
-
-            setMigrationDone(true);
-        };
-        
-        setupDefaultCenter();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isLoading, centers, firestore, toast]);
-
+    // Client-side sorting for pinned status
+    const centers = centersData.sort((a, b) => {
+        const aPinned = a.isPinned ?? false;
+        const bPinned = b.isPinned ?? false;
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+        return 0; // Keep original order for items with same pinned status
+    });
 
     const generateCode = () => {
         const part1 = Math.floor(100 + Math.random() * 900);
@@ -479,6 +404,8 @@ function GroupsTab() {
                 code: generateCode(),
                 classes: [],
                 createdAt: serverTimestamp(),
+                isPinned: false,
+                imageUrl: "",
             };
             await addDoc(collection(firestore, "centers"), newCenter);
             toast({ title: "Centro Creado", description: `El centro "${newCenter.name}" se ha añadido con el código ${newCenter.code}.` });
@@ -554,8 +481,13 @@ function GroupsTab() {
                     <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                         {centers.map(center => (
                             <div key={center.uid} className="flex items-center gap-4 p-3 rounded-lg border">
-                                <div className="p-2 bg-muted rounded-md">
-                                    <Group className="h-6 w-6 text-muted-foreground" />
+                                <div className="p-2 bg-muted rounded-md relative">
+                                    {center.imageUrl ? (
+                                        <img src={center.imageUrl} alt={center.name} className="h-8 w-8 object-cover rounded-sm" />
+                                    ) : (
+                                        <Group className="h-8 w-8 text-muted-foreground" />
+                                    )}
+                                    {center.isPinned && <Pin className="h-4 w-4 text-white bg-primary rounded-full p-0.5 absolute -top-1 -right-1" />}
                                 </div>
                                 <div className="flex-1">
                                     <p className="font-semibold">{center.name}</p>
@@ -589,6 +521,76 @@ function GroupsTab() {
 
 function EditCenterDialog({ center, children }: { center: Center, children: React.ReactNode }) {
     const [name, setName] = useState(center.name);
+    const [imageUrl, setImageUrl] = useState(center.imageUrl || "");
+    const [isSaving, setIsSaving] = useState(false);
+    const [isUpdatingCode, setIsUpdatingCode] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const firestore = useFirestore();
+    const { toast } = useToast();
+
+    const generateCode = () => {
+        const part1 = Math.floor(100 + Math.random() * 900);
+        const part2 = Math.floor(100 + Math.random() * 900);
+        return `${part1}-${part2}`;
+    };
+
+    const handleSaveChanges = async () => {
+        if (!firestore) return;
+        setIsSaving(true);
+        try {
+            const centerDocRef = doc(firestore, 'centers', center.uid);
+            await updateDoc(centerDocRef, { 
+                name: name,
+                imageUrl: imageUrl 
+            });
+            toast({ title: "Cambios Guardados", description: "El nombre y la imagen del centro se han actualizado." });
+        } catch (error) {
+            toast({ title: "Error", description: "No se pudieron guardar los cambios.", variant: "destructive" });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+    
+    const handleTogglePin = async () => {
+        if (!firestore) return;
+        try {
+            const centerDocRef = doc(firestore, 'centers', center.uid);
+            await updateDoc(centerDocRef, { isPinned: !center.isPinned });
+            toast({ title: center.isPinned ? "Centro Desanclado" : "Centro Anclado" });
+        } catch (error) {
+            toast({ title: "Error", description: "No se pudo cambiar el estado de anclaje.", variant: "destructive" });
+        }
+    };
+    
+    const handleUpdateCode = async () => {
+        if (!firestore) return;
+        setIsUpdatingCode(true);
+        try {
+            const newCode = generateCode();
+            const centerDocRef = doc(firestore, 'centers', center.uid);
+            await updateDoc(centerDocRef, { code: newCode });
+            toast({ title: "Código Actualizado", description: `El nuevo código es ${newCode}.` });
+        } catch (error) {
+            toast({ title: "Error", description: "No se pudo actualizar el código.", variant: "destructive" });
+        } finally {
+            setIsUpdatingCode(false);
+        }
+    };
+    
+    const handleDeleteCenter = async () => {
+        if (!firestore) return;
+        setIsDeleting(true);
+        try {
+            const centerDocRef = doc(firestore, 'centers', center.uid);
+            await deleteDoc(centerDocRef);
+            toast({ title: "Centro Eliminado", description: `El centro "${center.name}" ha sido eliminado.`, variant: "destructive" });
+        } catch (error) {
+             toast({ title: "Error", description: "No se pudo eliminar el centro.", variant: "destructive" });
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
 
     return (
         <Dialog>
@@ -603,16 +605,36 @@ function EditCenterDialog({ center, children }: { center: Center, children: Reac
                         <Label htmlFor="edit-center-name">Nombre del Centro</Label>
                         <Input id="edit-center-name" value={name} onChange={(e) => setName(e.target.value)} />
                     </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="edit-center-image">URL de la Imagen del Centro</Label>
+                        <Input id="edit-center-image" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://ejemplo.com/logo.png" />
+                    </div>
                     <div className="space-y-4">
-                         <Button variant="outline" className="w-full justify-start gap-2">
-                            <Pin className="h-4 w-4"/> Anclar Centro
+                         <Button variant="outline" className="w-full justify-start gap-2" onClick={handleTogglePin}>
+                            <Pin className="h-4 w-4"/> {center.isPinned ? 'Desanclar Centro' : 'Anclar Centro'}
                         </Button>
-                        <Button variant="outline" className="w-full justify-start gap-2">
-                            <Image className="h-4 w-4"/> Cambiar Imagen de Grupo
-                        </Button>
-                         <Button variant="outline" className="w-full justify-start gap-2">
-                            <RefreshCw className="h-4 w-4"/> Actualizar Código
-                        </Button>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="outline" className="w-full justify-start gap-2 text-amber-600 border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 hover:text-amber-700">
+                                    <RefreshCw className="h-4 w-4"/> Actualizar Código de Acceso
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Actualizar el código?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                       Esta acción generará un nuevo código de acceso. El código antiguo dejará de ser válido para nuevos registros. Los usuarios existentes no se verán afectados.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel disabled={isUpdatingCode}>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleUpdateCode} disabled={isUpdatingCode}>
+                                        {isUpdatingCode && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                        Sí, actualizar
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                          <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="destructive" className="w-full justify-start gap-2">
@@ -627,8 +649,11 @@ function EditCenterDialog({ center, children }: { center: Center, children: Reac
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90">Sí, eliminar</AlertDialogAction>
+                                    <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDeleteCenter} className="bg-destructive hover:bg-destructive/90" disabled={isDeleting}>
+                                        {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                        Sí, eliminar
+                                    </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
@@ -636,9 +661,12 @@ function EditCenterDialog({ center, children }: { center: Center, children: Reac
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>
-                        <Button variant="outline">Cancelar</Button>
+                        <Button variant="outline" disabled={isSaving}>Cancelar</Button>
                     </DialogClose>
-                    <Button>Guardar Cambios</Button>
+                    <Button onClick={handleSaveChanges} disabled={isSaving}>
+                         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                         Guardar Cambios
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

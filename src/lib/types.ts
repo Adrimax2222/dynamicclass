@@ -43,6 +43,8 @@ export type Center = {
     code: string;
     classes: ClassDefinition[];
     createdAt: Timestamp;
+    imageUrl?: string;
+    isPinned?: boolean;
 };
 
 export type SummaryCardData = {
