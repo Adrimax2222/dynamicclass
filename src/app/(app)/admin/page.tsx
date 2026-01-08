@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Users, Group, Trophy, ChevronLeft, Search, UserX, Trash2, CheckCircle, Ban, Loader2, Wrench, PlusCircle, MinusCircle, Copy, Check } from "lucide-react";
+import { Shield, Users, Group, Trophy, ChevronLeft, Search, UserX, Trash2, CheckCircle, Ban, Loader2, Wrench, PlusCircle, MinusCircle, Copy, Check, Edit, Pin, Image, RefreshCw } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -31,9 +31,9 @@ export default function AdminPage() {
     useEffect(() => {
         if (user) {
             if (user.role?.startsWith('admin-')) {
-                // It's a class admin, redirect them to their specific class management page
-                if (user.organizationId && user.course && user.className) {
-                     router.replace(`/admin/groups/${user.organizationId}/${encodeURIComponent(user.course + '-' + user.className)}`);
+                // It's a class admin, redirect them to their specific group management page
+                if (user.organizationId) {
+                     router.replace(`/admin/groups/${user.organizationId}`);
                 } else {
                      // Fallback if class details are missing, though they should exist for a class admin
                      router.replace('/home');
@@ -567,9 +567,17 @@ function GroupsTab() {
                                         </Button>
                                     </div>
                                 </div>
-                                <Button asChild variant="secondary" size="sm">
-                                    <Link href={`/admin/groups/${center.uid}`}>Gestionar</Link>
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <EditCenterDialog center={center}>
+                                        <Button variant="outline" size="sm" className="bg-blue-500/10 border-blue-500/20 text-blue-600 hover:bg-blue-500/20 hover:text-blue-700">
+                                            <Edit className="mr-2 h-4 w-4" />
+                                            Editar
+                                        </Button>
+                                    </EditCenterDialog>
+                                    <Button asChild variant="secondary" size="sm">
+                                        <Link href={`/admin/groups/${center.uid}`}>Gestionar</Link>
+                                    </Button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -578,5 +586,64 @@ function GroupsTab() {
         </Card>
     );
 }
+
+function EditCenterDialog({ center, children }: { center: Center, children: React.ReactNode }) {
+    const [name, setName] = useState(center.name);
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Editar Centro: {center.name}</DialogTitle>
+                    <DialogDescription>Gestiona los detalles de este centro educativo.</DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="edit-center-name">Nombre del Centro</Label>
+                        <Input id="edit-center-name" value={name} onChange={(e) => setName(e.target.value)} />
+                    </div>
+                    <div className="space-y-4">
+                         <Button variant="outline" className="w-full justify-start gap-2">
+                            <Pin className="h-4 w-4"/> Anclar Centro
+                        </Button>
+                        <Button variant="outline" className="w-full justify-start gap-2">
+                            <Image className="h-4 w-4"/> Cambiar Imagen de Grupo
+                        </Button>
+                         <Button variant="outline" className="w-full justify-start gap-2">
+                            <RefreshCw className="h-4 w-4"/> Actualizar Código
+                        </Button>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" className="w-full justify-start gap-2">
+                                    <Trash2 className="h-4 w-4"/> Eliminar Centro
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Eliminar este centro?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                       Esta acción es permanente. Se eliminará el centro y todas sus clases. Los usuarios que pertenezcan a este centro perderán el acceso al contenido específico del mismo.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90">Sí, eliminar</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline">Cancelar</Button>
+                    </DialogClose>
+                    <Button>Guardar Cambios</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+    
 
     
