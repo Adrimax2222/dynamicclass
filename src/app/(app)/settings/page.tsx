@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap, Pin, Mail, Copy, Check } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap, Pin, Mail, Copy, Check, Gift } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore } from "@/firebase";
@@ -599,7 +599,7 @@ function PrivacyPolicyDialog() {
                                     <strong>Contenido Privado del Usuario:</strong>
                                     <ul className="list-circle list-inside space-y-2 pl-6 mt-2">
                                         <li><strong>Chats con la IA:</strong> Tus conversaciones son privadas y se usan para que herramientas como la generación de flashcards puedan crear material de estudio personalizado para ti.</li>
-                                        <li><strong>Anotaciones y Escaneos:</strong> Tus notas personales y los documentos que escaneas (si activas el historial) se almacenan de forma segura y solo tú puedes acceder a ellos. El historial de escaneos se guarda en tu dispositivo.</li>
+                                        <li><strong>Anotaciones y Escaneos:</strong> Tus notas personales son privadas. Los documentos que escaneas se guardan en el historial de tu dispositivo (puedes desactivarlo) y no se suben a nuestros servidores.</li>
                                     </ul>
                                 </li>
                                 <li>
@@ -623,14 +623,25 @@ function PrivacyPolicyDialog() {
                         <section>
                             <h3 className="font-bold text-foreground text-base mb-2">4. Seguridad de los Datos y RGPD</h3>
                              <p>La seguridad de tus datos es nuestra máxima prioridad. La aplicación está construida sobre <span className="font-semibold text-foreground">Google Cloud</span> y <span className="font-semibold text-foreground">Firebase</span>, garantizando encriptación y autenticación robustas. Implementamos estrictas reglas de acceso para que solo tú puedas ver y modificar tu información privada.</p>
-                             <div className="mt-4 space-y-2 border-l-4 border-yellow-400 pl-4 py-2 bg-yellow-500/5">
+                             <div className="mt-4 space-y-2">
                                  <h4 className="font-semibold text-foreground">Aviso sobre Datos del Profesorado:</h4>
                                  <p>Dynamic Class es un desarrollo independiente. El administrador de cada clase es el **único responsable** de introducir y gestionar los datos de su grupo, incluyendo la información del profesorado necesaria para el horario. Es su responsabilidad garantizar el cumplimiento del RGPD en su entorno.</p>
                              </div>
                         </section>
 
+                        <section>
+                            <h3 className="font-bold text-foreground text-base mb-2">5. Uso de Nombres de Marcas en la Tienda</h3>
+                             <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+                                <Gift className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                                <div>
+                                    <h4 className="font-semibold text-foreground mb-1">Recompensas y Marcas</h4>
+                                    <p>Las marcas que aparecen en la sección de "Tienda" (ej. Amazon, Spotify, etc.) no están afiliadas ni patrocinan Dynamic Class. Sus nombres se utilizan únicamente con fines representativos para identificar el tipo de tarjeta regalo que se entregará al usuario como recompensa. El canjeo de trofeos se traduce en la entrega de un producto real de dicha marca, gestionado por nuestro equipo.</p>
+                                </div>
+                            </div>
+                        </section>
+
                          <section>
-                            <h3 className="font-bold text-foreground text-base mb-2">5. Tus Derechos y Control</h3>
+                            <h3 className="font-bold text-foreground text-base mb-2">6. Tus Derechos y Control</h3>
                             <p>Tienes control total sobre tus datos:</p>
                              <ul className="list-disc list-inside space-y-1 pl-4 mt-2">
                                 <li><strong>Acceso y Modificación:</strong> Puedes ver y editar tu información de perfil en cualquier momento.</li>
@@ -640,7 +651,7 @@ function PrivacyPolicyDialog() {
                         </section>
                         
                         <section>
-                            <h3 className="font-bold text-foreground text-base mb-2">6. Contacto</h3>
+                            <h3 className="font-bold text-foreground text-base mb-2">7. Contacto</h3>
                             <p>Si tienes alguna pregunta, no dudes en contactarnos a través del <span className="font-semibold text-foreground">Formulario de Asistencia</span> disponible en la sección de Soporte.</p>
                         </section>
                     </div>
