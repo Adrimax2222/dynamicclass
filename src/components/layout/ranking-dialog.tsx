@@ -17,7 +17,7 @@ import { collection, query, where, getDocs, orderBy, limit } from "firebase/fire
 import type { User } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart, Users, GraduationCap, PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart, CaseUpper, Gift, X, Clapperboard, Shirt, ShoppingBag, BookMarked, Info } from "lucide-react";
+import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart, Users, GraduationCap, PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart, CaseUpper, Gift, X, Clapperboard, Shirt, ShoppingBag, BookMarked, Info, Music, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -25,6 +25,7 @@ import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { useMemoFirebase } from "@/firebase/hooks";
 import { Alert, AlertDescription } from "../ui/alert";
+import { AvatarDisplay } from "../profile/avatar-creator";
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
 
@@ -41,57 +42,6 @@ const SHOP_AVATARS = [
 
 const shopAvatarMap = new Map(SHOP_AVATARS.map(item => [item.id, item]));
 
-function RankingAvatarDisplay({ user, className }: { user: User, className?: string }) {
-    const { avatar: avatarUrl, name } = user;
-    
-    if (!avatarUrl || typeof avatarUrl !== 'string') {
-        return (
-            <Avatar className={className}>
-                <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
-            </Avatar>
-        );
-    }
-    
-    const parts = avatarUrl.split('_');
-    const id = parts[0];
-    let letter, color;
-    
-    if (id === 'letter') {
-        letter = parts[1];
-        color = parts[2];
-    } else {
-        color = parts[1];
-    }
-
-    const Icon = shopAvatarMap.get(id)?.icon;
-
-    if (Icon || letter) {
-        return (
-            <div className={cn("relative inline-block", className)}>
-                <Avatar className="w-full h-full">
-                    <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: color ? `#${color}` : '#737373' }}>
-                        {letter ? (
-                            <span className="font-bold text-4xl text-white">{letter}</span>
-                        ) : Icon ? (
-                            <Icon className="h-[60%] w-[60%] text-white" />
-                        ) : (
-                            <AvatarFallback>{name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                        )}
-                    </div>
-                </Avatar>
-            </div>
-        );
-    }
-    
-    return (
-        <div className={cn("relative inline-block", className)}>
-            <Avatar className="w-full h-full">
-                <AvatarImage src={avatarUrl} alt={name} />
-                <AvatarFallback>{name.substring(0, 2).toUpperCase()}</AvatarFallback>
-            </Avatar>
-        </div>
-    );
-}
 
 export function RankingDialog({ children, user, openTo = "ranking" }: { children: React.ReactNode; user: User, openTo?: "ranking" | "shop" }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -362,7 +312,7 @@ function PodiumPlace({ user, place, scope }: { user?: User; place: 1 | 2 | 3; sc
     return (
         <div className="flex flex-col items-center justify-end h-full w-full">
              <div className="relative">
-                <RankingAvatarDisplay user={user} className={cn(style.avatarSize, "ring-4 ring-offset-2 ring-offset-background dark:ring-offset-slate-900 rounded-full", style.ring)} />
+                <AvatarDisplay user={user} className={cn(style.avatarSize, "ring-4 ring-offset-2 ring-offset-background dark:ring-offset-slate-900 rounded-full", style.ring)} />
                 <div className="absolute -bottom-2 -right-2 rounded-full bg-background/80 p-1.5 shadow-lg">
                      <Icon className={cn("h-5 w-5", style.color)} />
                 </div>
@@ -405,7 +355,7 @@ function RankingItem({ user, rank, isCurrentUser, scope }: { user: User; rank: n
             >
                 {rank}
             </div>
-            <RankingAvatarDisplay user={user} className="h-10 w-10" />
+            <AvatarDisplay user={user} className="h-10 w-10" />
             <p className="flex-1 font-medium truncate">{user.name}</p>
             <div className="flex items-center gap-1.5 font-bold">
                 <Trophy className="h-4 w-4 text-yellow-500" />
@@ -419,14 +369,18 @@ function RankingItem({ user, rank, isCurrentUser, scope }: { user: User; rank: n
 
 const shopItems = [
     { id: 'amazon', name: 'Amazon', icon: ShoppingBag, color: '#FF9900', values: [5, 10] },
-    { id: 'game', name: 'GAME', icon: Gamepad2, color: '#000000', values: [5, 10] },
-    { id: 'shein', name: 'Shein', icon: Shirt, color: '#000000', values: [5, 10, 15] },
+    { id: 'game', name: 'GAME', icon: Gamepad2, color: '#D8000C', values: [5, 10] },
+    { id: 'shein', name: 'Shein', icon: Shirt, color: '#25D366', values: [5, 10, 15] },
     { id: 'druni', name: 'Druni', icon: Gem, color: '#EC008C', values: [5, 10, 15] },
-    { id: 'inditex', name: 'Inditex', icon: ShoppingBag, color: '#000000', values: [5, 10, 15, 20, 25] },
+    { id: 'inditex', name: 'Inditex', icon: ShoppingBag, color: '#1E3A8A', values: [5, 10, 15, 20, 25] },
     { id: 'abacus', name: 'Abacus', icon: BookMarked, color: '#E30613', values: [5, 10, 15, 20] },
     { id: 'bureau-vallee', name: 'Bureau Vallée', icon: BookMarked, color: '#004B8D', values: [5, 10, 15, 20] },
     { id: 'cinesa', name: 'Cinesa', icon: Clapperboard, color: '#00A1E0', values: [5, 10, 15, 20] },
+    { id: 'sephora', name: 'Sephora', icon: Gift, color: '#000000', values: [5, 10, 15, 20] },
+    { id: 'google-play', name: 'Google Play', icon: Play, color: '#4285F4', values: [5, 10, 15, 25] },
+    { id: 'spotify', name: 'Spotify', icon: Music, color: '#1DB954', values: [10, 30] },
 ];
     
 
     
+
