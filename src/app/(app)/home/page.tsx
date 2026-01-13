@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent, Announcement, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity, Flame, ShoppingCart, TreePine, Gift, Lightbulb } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity, Flame, ShoppingCart, TreePine, Gift, Lightbulb, Monitor } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
@@ -735,6 +735,15 @@ export default function HomePage() {
             </CardHeader>
         </Card>
       </section>
+
+       <section className="text-center text-muted-foreground text-xs p-4 my-4 rounded-lg bg-muted/40">
+        <div className="flex items-center justify-center gap-2">
+            <Monitor className="h-4 w-4" />
+            <p>
+                ¡Estamos trabajando en una versión de escritorio! Próximamente una nueva interfaz para pantallas horizontales.
+            </p>
+        </div>
+      </section>
     </div>
   );
 }
@@ -896,3 +905,4 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
     
 
     
+
