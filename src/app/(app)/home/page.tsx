@@ -691,21 +691,19 @@ export default function HomePage() {
 
         <WhatsNewDialog>
           <Card className="bg-muted/50 cursor-pointer hover:bg-muted/80 transition-colors relative">
+              <span className="absolute top-2 right-2 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+              </span>
               <CardHeader className="flex-row items-center justify-between space-y-0">
                   <div className="space-y-1">
-                    <div className="relative">
-                      <CardTitle className="text-base flex items-center gap-2">
-                          <Lightbulb className="h-5 w-5 text-primary" />
-                          Novedades y Futuro
-                      </CardTitle>
-                      <span className="absolute -top-1.5 -right-3 flex h-3 w-3">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-                      </span>
-                    </div>
-                      <CardDescription className="text-xs pl-7">
-                          Descubre las últimas mejoras y lo que está por venir.
-                      </CardDescription>
+                    <CardTitle className="text-base flex items-center gap-2">
+                        <Lightbulb className="h-5 w-5 text-primary" />
+                        Novedades y Futuro
+                    </CardTitle>
+                    <CardDescription className="text-xs pl-7">
+                        Descubre las últimas mejoras y lo que está por venir.
+                    </CardDescription>
                   </div>
                   <Button asChild size="sm" variant="outline">
                       <span className="flex items-center">
