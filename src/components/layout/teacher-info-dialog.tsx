@@ -29,22 +29,15 @@ export function TeacherInfoDialog() {
           <AlertDialogTitle>ℹ️ Aviso Importante: Datos del Profesorado</AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-3 pt-2 text-left">
-              <p>
-                Esta aplicación es un desarrollo independiente y <strong>no oficial</strong> del
-                centro.
-              </p>
-              <p>
-                Las abreviaturas de los nombres de los docentes que aparecen en
-                este calendario se han incluido de forma temporal únicamente con
-                fines de testeo interno de la funcionalidad del horario.
-              </p>
-              <p>
-                Antes de la publicación oficial en Google Play, este sistema será
-                modificado para garantizar el <strong>total anonimato</strong> y el cumplimiento
-                estricto del Reglamento General de Protección de Datos (RGPD). El
-                sistema final utilizará nombres genéricos o permitirá la
-                personalización local por parte del usuario.
-              </p>
+                <p>
+                    Dynamic Class es un desarrollo independiente donde el administrador de cada clase actúa como responsable único de la introducción y gestión de los datos de su grupo.
+                </p>
+                <p>
+                    La plataforma no contiene datos precargados; toda la información sobre profesorado es gestionada de forma autónoma para el funcionamiento del horario y calendario.
+                </p>
+                <p>
+                    Estos registros pueden ser modificados en cualquier momento desde el panel de control, siendo responsabilidad del administrador garantizar el estricto cumplimiento del Reglament General de Protecció de Dades (RGPD) en su entorno local.
+                </p>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
