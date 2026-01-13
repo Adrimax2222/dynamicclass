@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData, User, CompletedItem, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle } from "lucide-react";
+import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle, GraduationCap } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -183,6 +183,19 @@ export default function ProfilePage() {
                 <p className="font-bold break-words">{user.email}</p>
             </div>
         </CardContent>
+      </Card>
+
+      <Card className="mb-8 bg-blue-500/5 border-blue-500/20">
+          <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                  <GraduationCap className="h-6 w-6 text-blue-500" />
+                  <span>Modo Profesor</span>
+                  <Badge variant="outline">Próximamente</Badge>
+              </CardTitle>
+              <CardDescription>
+                  Estamos desarrollando herramientas exclusivas para que los educadores gestionen sus clases y se comuniquen con los estudiantes de manera más eficaz.
+              </CardDescription>
+          </CardHeader>
       </Card>
       
       <section>
@@ -850,9 +863,5 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
-
-    
-
-    
 
     
