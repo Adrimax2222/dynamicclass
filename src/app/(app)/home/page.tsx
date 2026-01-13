@@ -55,7 +55,6 @@ import { useToast } from "@/hooks/use-toast";
 import { WhatsNewDialog } from "@/components/layout/whats-new-dialog";
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Anuncios";
-const SCHOOL_ICAL_URL = "https://calendar.google.com/calendar/ical/iestorredelpalau.cat_9vm0113gitbs90a9l7p4c3olh4%40group.calendar.google.com/public/basic.ics";
 
 interface ParsedEvent extends CalendarEvent {
     // an extension of the base type to ensure date is a Date object during processing
@@ -905,4 +904,5 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
     
 
     
+
 
