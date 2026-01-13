@@ -12,13 +12,12 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useFirestore } from "@/firebase";
-import { useCollection } from "@/firebase/firestore/use-collection";
+import { useFirestore, useCollection } from "@/firebase";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import type { User } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart, Users, GraduationCap, PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart, CaseUpper, Gift } from "lucide-react";
+import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart, Users, GraduationCap, PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart, CaseUpper, Gift, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -102,22 +101,24 @@ export function RankingDialog({ children, user, openTo = "ranking" }: { children
             <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col h-[80vh]">
                  <div className="absolute inset-0 bg-trophy-pattern opacity-5" style={{ backgroundSize: '100px 100px' }} />
                  <Tabs defaultValue={openTo} className="w-full h-full flex flex-col">
-                    <DialogHeader className="p-6 pb-0 flex-shrink-0 z-10 bg-background/80 backdrop-blur-sm rounded-t-lg">
-                        <div className="flex items-center gap-3">
-                            <DialogTitle className="flex items-center gap-2">
-                                <Trophy className="text-yellow-400" />
-                                Trofeos y Recompensas
-                            </DialogTitle>
-                            <Badge variant="secondary">Beta</Badge>
-                        </div>
-                        <DialogDescription>
-                            Consulta tu posición en el ranking y canjea tus trofeos.
-                        </DialogDescription>
+                    <div className="p-6 pb-0 flex-shrink-0 z-10 bg-background/80 backdrop-blur-sm rounded-t-lg">
+                        <DialogHeader>
+                            <div className="flex items-center gap-3">
+                                <DialogTitle className="flex items-center gap-2">
+                                    <Trophy className="text-yellow-400" />
+                                    Trofeos y Recompensas
+                                </DialogTitle>
+                                <Badge variant="secondary">Beta</Badge>
+                            </div>
+                            <DialogDescription>
+                                Consulta tu posición en el ranking y canjea tus trofeos.
+                            </DialogDescription>
+                        </DialogHeader>
                          <TabsList className="grid w-full grid-cols-2 mt-4">
                             <TabsTrigger value="ranking">Ranking</TabsTrigger>
                             <TabsTrigger value="shop">Tienda</TabsTrigger>
                         </TabsList>
-                    </DialogHeader>
+                    </div>
                    
                     <div className="flex-1 overflow-y-auto min-h-0">
                         <TabsContent value="ranking" className="mt-0">
@@ -129,7 +130,7 @@ export function RankingDialog({ children, user, openTo = "ranking" }: { children
                     </div>
                 </Tabs>
                  <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-20">
-                    <Trophy className="h-4 w-4" />
+                    <X className="h-4 w-4" />
                     <span className="sr-only">Close</span>
                 </DialogClose>
             </DialogContent>
