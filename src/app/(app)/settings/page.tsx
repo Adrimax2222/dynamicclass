@@ -586,83 +586,62 @@ function PrivacyPolicyDialog() {
                     <div className="px-6 py-4 space-y-6 text-sm text-muted-foreground">
                         <section>
                             <h3 className="font-bold text-foreground text-base mb-2">1. Quiénes Somos</h3>
-                            <p>Dynamic Class es una aplicación desarrollada por <span className="font-semibold text-foreground">Adrià Navarro</span> y <span className="font-semibold text-foreground">Luc Rota</span>, como parte de la iniciativa <span className="font-semibold text-foreground">Proyecto Adrimax</span>. Nuestro objetivo es proporcionar herramientas educativas innovadoras y seguras para estudiantes.</p>
+                            <p>Dynamic Class es una aplicación desarrollada por <span className="font-semibold text-foreground">Adrià Navarro</span> y <span className="font-semibold text-foreground">Luc Rota</span>, como parte de la iniciativa <span className="font-semibold text-foreground">Proyecto Adrimax</span>. Nuestro objetivo es proporcionar herramientas educativas innovadoras y seguras para estudiantes y educadores.</p>
                         </section>
 
                         <section>
-                            <h3 className="font-bold text-foreground text-base mb-2">2. Información que Recopilamos</h3>
-                            <p>Para ofrecer una experiencia personalizada y funcional, recopilamos los siguientes datos:</p>
-                            <ul className="list-disc list-inside space-y-3 pl-4 mt-2">
-                                <li><strong>Información de Perfil:</strong> Nombre completo, correo electrónico, rango de edad, curso, clase y código de centro educativo.</li>
-                                <li><strong>Datos de Autenticación:</strong> Tu correo y una contraseña encriptada. Este proceso está gestionado por Firebase Authentication, un servicio de Google, por lo que nunca tenemos acceso a tu contraseña.</li>
-                                <li><strong>Contenido Generado por el Usuario:</strong>
+                            <h3 className="font-bold text-foreground text-base mb-2">2. Información que Recopilamos y Cómo la Usamos</h3>
+                            <ul className="list-disc list-inside space-y-4 pl-4 mt-2">
+                                <li>
+                                    <strong>Información de Perfil:</strong> Recopilamos tu nombre, correo, rango de edad y avatar para personalizar tu experiencia. Si te unes a un centro, también tu curso y clase para mostrarte contenido relevante como anuncios y horarios.
+                                </li>
+                                <li>
+                                    <strong>Contenido Privado del Usuario:</strong>
                                     <ul className="list-circle list-inside space-y-2 pl-6 mt-2">
-                                        <li><strong>Datos Privados:</strong> Las anotaciones personales y el historial de conversaciones con el chatbot se guardan en una sub-colección dentro de tu documento de usuario y solo tú puedes acceder a ellos.</li>
-                                        <li><strong>URL de Calendario Personal:</strong> Si decides sincronizar un calendario iCal, la URL se guarda **exclusivamente de forma local en tu dispositivo** (en `localStorage`). No se sube a nuestros servidores, garantizando que solo tú tienes acceso a ella.</li>
-                                        <li><strong>Datos Compartidos:</strong> Si eres administrador, los anuncios que creas son visibles para otros usuarios según el ámbito (general o de centro) que elijas.</li>
+                                        <li><strong>Chats con la IA:</strong> Tus conversaciones son privadas y se usan para que herramientas como la generación de flashcards puedan crear material de estudio personalizado para ti.</li>
+                                        <li><strong>Anotaciones y Escaneos:</strong> Tus notas personales y los documentos que escaneas (si activas el historial) se almacenan de forma segura y solo tú puedes acceder a ellos. El historial de escaneos se guarda en tu dispositivo.</li>
                                     </ul>
                                 </li>
-                                <li><strong>Datos de Progreso y Uso (Gamificación):</strong>
-                                    <ul className="list-circle list-inside space-y-2 pl-6 mt-2">
-                                        <li>Recopilamos trofeos, tareas completadas, tiempo de estudio y rachas.</li>
-                                        <li>Para fomentar una competición sana, tu **nombre de perfil, avatar y total de trofeos** son visibles para otros usuarios de tu mismo centro educativo en las tablas de clasificación (rankings). El resto de tus datos de progreso no son públicos.</li>
-                                    </ul>
+                                <li>
+                                    <strong>Gamificación y Rankings:</strong> Para fomentar una competición sana, tu nombre, avatar y trofeos son visibles para otros usuarios de **tu mismo centro educativo**. El resto de tus datos de progreso son privados.
                                 </li>
-                            </ul>
-                        </section>
-
-                        <section>
-                            <h3 className="font-bold text-foreground text-base mb-2">3. Cómo Usamos tu Información</h3>
-                            <p>Utilizamos tus datos para:</p>
-                             <ul className="list-disc list-inside space-y-1 pl-4 mt-2">
-                                <li>Personalizar tu experiencia (ej. mostrar tu horario, filtrar anuncios del centro).</li>
-                                <li>Proporcionar las funcionalidades principales de la aplicación (anotaciones, calendario, IA).</li>
-                                <li>Gamificar la experiencia de aprendizaje a través de trofeos y rankings.</li>
-                                <li>Comunicarnos contigo sobre actualizaciones importantes o notificaciones push (si las activas).</li>
-                                <li>Mejorar la seguridad y la estabilidad de la aplicación.</li>
+                                <li>
+                                    <strong>Datos de Administradores:</strong> Si tienes un rol de administrador, el contenido que creas (como anuncios o horarios) será visible para los usuarios del ámbito que elijas (tu clase, tu centro o todos).
+                                </li>
                             </ul>
                         </section>
                         
                         <section>
-                            <h3 className="font-bold text-foreground text-base mb-2">4. Seguridad de los Datos</h3>
-                            <p>La seguridad de tus datos es nuestra máxima prioridad. La aplicación está construida sobre la infraestructura de <span className="font-semibold text-foreground">Google Cloud</span> y <span className="font-semibold text-foreground">Firebase</span>, lo que garantiza:</p>
-                            <ul className="list-disc list-inside space-y-1 pl-4 mt-2">
-                                <li><strong>Encriptación:</strong> Toda la información se almacena de forma encriptada en los servidores seguros de Google. Nosotros no tenemos acceso a tus contraseñas en texto plano.</li>
-                                <li><strong>Autenticación Segura:</strong> El inicio de sesión (correo/contraseña y Google Sign-In) y la verificación de correo están gestionados por Firebase Authentication, un sistema robusto y probado.</li>
-                                <li><strong>Reglas de Acceso (Security Rules):</strong> Implementamos estrictas reglas de seguridad en nuestra base de datos (Firestore) para asegurar que solo tú puedas acceder y modificar tu información personal privada (notas, chats, perfil, etc.). Los demás usuarios no pueden, bajo ninguna circunstancia, acceder a estos datos.</li>
-                            </ul>
-                        </section>
-                        
-                        <section>
-                            <h3 className="font-bold text-foreground text-base mb-2">5. Uso de Modelos de Inteligencia Artificial</h3>
-                            <p>La funcionalidad de chatbot utiliza modelos de IA avanzados como <span className="font-semibold text-foreground">Gemini de Google</span>. Cuando interactúas con el chatbot:</p>
-                             <ul className="list-disc list-inside space-y-1 pl-4 mt-2">
-                                <li>Tus consultas (prompts) son procesadas por estos modelos para generar una respuesta.</li>
-                                <li>Tu historial de chat se guarda de forma privada en tu cuenta para tu conveniencia y está protegido por las mismas medidas de seguridad que el resto de tus datos personales.</li>
-                                <li><strong>No utilizamos tus conversaciones para re-entrenar modelos de IA</strong> sin tu consentimiento explícito.</li>
+                            <h3 className="font-bold text-foreground text-base mb-2">3. Gestión de Centros y Roles de Administrador</h3>
+                            <p>Dynamic Class implementa un sistema de roles para la gestión de contenido:</p>
+                            <ul className="list-disc list-inside space-y-2 pl-4 mt-2">
+                                <li><strong>Administradores Globales:</strong> Tienen control total sobre la plataforma, incluyendo la creación de centros, la gestión de todos los usuarios y la publicación de anuncios globales.</li>
+                                <li><strong>Administradores de Clase:</strong> Son usuarios (generalmente delegados o profesores) a los que un Administrador Global otorga permisos para gestionar un grupo específico. Pueden administrar los miembros, el horario, el calendario y los anuncios de **su propia clase únicamente**.</li>
                             </ul>
                         </section>
 
-                         <section>
-                            <h3 className="font-bold text-foreground text-base mb-2">6. Aviso sobre Datos del Profesorado</h3>
-                             <div className="space-y-2 border-l-4 border-yellow-400 pl-4 py-2 bg-yellow-500/5">
-                                 <p>Esta aplicación es un desarrollo independiente y <strong>no oficial</strong> del centro educativo.</p>
-                                 <p>Las abreviaturas de los nombres de los docentes que aparecen en el calendario se han incluido de forma temporal únicamente con fines de testeo. Antes de la publicación oficial, este sistema será modificado para garantizar el <strong>total anonimato</strong> y el cumplimiento del RGPD, usando identificadores genéricos.</p>
+                        <section>
+                            <h3 className="font-bold text-foreground text-base mb-2">4. Seguridad de los Datos y RGPD</h3>
+                             <p>La seguridad de tus datos es nuestra máxima prioridad. La aplicación está construida sobre <span className="font-semibold text-foreground">Google Cloud</span> y <span className="font-semibold text-foreground">Firebase</span>, garantizando encriptación y autenticación robustas. Implementamos estrictas reglas de acceso para que solo tú puedas ver y modificar tu información privada.</p>
+                             <div className="mt-4 space-y-2 border-l-4 border-yellow-400 pl-4 py-2 bg-yellow-500/5">
+                                 <h4 className="font-semibold text-foreground">Aviso sobre Datos del Profesorado:</h4>
+                                 <p>Dynamic Class es un desarrollo independiente. El administrador de cada clase es el **único responsable** de introducir y gestionar los datos de su grupo, incluyendo la información del profesorado necesaria para el horario. Es su responsabilidad garantizar el cumplimiento del RGPD en su entorno.</p>
                              </div>
                         </section>
 
-                        <section>
-                             <h3 className="font-bold text-foreground text-base mb-2">7. Tus Derechos y Control</h3>
+                         <section>
+                            <h3 className="font-bold text-foreground text-base mb-2">5. Tus Derechos y Control</h3>
                             <p>Tienes control total sobre tus datos:</p>
                              <ul className="list-disc list-inside space-y-1 pl-4 mt-2">
-                                <li><strong>Acceso y Modificación:</strong> Puedes ver y editar tu información de perfil en cualquier momento desde la sección "Perfil".</li>
-                                <li><strong>Eliminación:</strong> Puedes eliminar tus anotaciones, chats y, en última instancia, tu cuenta completa desde "Ajustes". La eliminación de la cuenta es un proceso permanente e irreversible que borra todos tus datos de nuestros sistemas.</li>
+                                <li><strong>Acceso y Modificación:</strong> Puedes ver y editar tu información de perfil en cualquier momento.</li>
+                                <li><strong>Desactivar Funciones:</strong> Puedes desactivar el guardado del historial de documentos escaneados desde los Ajustes.</li>
+                                <li><strong>Eliminación:</strong> Puedes eliminar tu cuenta y todos tus datos de forma permanente e irreversible desde la sección "Zona Peligrosa" en Ajustes.</li>
                             </ul>
                         </section>
                         
                         <section>
-                            <h3 className="font-bold text-foreground text-base mb-2">8. Contacto</h3>
-                            <p>Si tienes alguna pregunta sobre esta política de privacidad, no dudes en contactarnos a través del <span className="font-semibold text-foreground">Formulario de Asistencia</span> disponible en la sección de Soporte.</p>
+                            <h3 className="font-bold text-foreground text-base mb-2">6. Contacto</h3>
+                            <p>Si tienes alguna pregunta, no dudes en contactarnos a través del <span className="font-semibold text-foreground">Formulario de Asistencia</span> disponible en la sección de Soporte.</p>
                         </section>
                     </div>
                 </ScrollArea>
@@ -721,5 +700,3 @@ function DeveloperPortalDialog() {
     </Dialog>
   )
 }
-
-    
