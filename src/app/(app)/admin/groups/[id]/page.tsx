@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog } from "lucide-react";
+import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,7 @@ import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
+import { TeacherInfoDialog } from "@/components/layout/teacher-info-dialog";
 
 export default function ManageGroupPage() {
     const { user: currentUser } = useApp();
@@ -296,7 +297,10 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
                              key={`class-${index}-${classObj.name}`} 
                              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg border bg-muted/50"
                            >
-                             <p className="font-semibold text-base whitespace-nowrap">{classObj.name || "Clase sin nombre"}</p>
+                             <div className="flex items-center gap-2">
+                                <p className="font-semibold text-base whitespace-nowrap">{classObj.name || "Clase sin nombre"}</p>
+                                <TeacherInfoDialog />
+                             </div>
                              <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap justify-end">
                                <Button asChild variant="secondary" size="sm" className="flex-1 sm:flex-initial">
                                   <Link href={`/admin/groups/${center.uid}/${encodeURIComponent(classObj.name)}`}>
