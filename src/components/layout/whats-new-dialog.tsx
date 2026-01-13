@@ -12,7 +12,7 @@ import {
     DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { PartyPopper, Lightbulb, Rocket, Bot, Wand2, CheckCircle, BrainCircuit, Globe, ShieldCheck } from "lucide-react";
+import { PartyPopper, Lightbulb, Rocket, GraduationCap, Monitor, MailCheck, CheckCircle, BrainCircuit, Globe, ShieldCheck } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { ScrollArea } from "../ui/scroll-area";
 
@@ -33,26 +33,26 @@ const recentUpdates = [
         color: "text-teal-500"
     },
     { 
-        icon: CheckCircle, 
-        text: "Mejora en la validación de códigos de centro y corrección de errores internos para una experiencia más fluida.",
+        icon: ShieldCheck, 
+        text: "Actualización de la política de privacidad (RGPD) para mayor transparencia.",
         color: "text-green-500"
     },
 ];
 
 const futureFeatures = [
     { 
-        icon: Bot, 
-        text: "ADRIMAX AI v2.0: Una IA más rápida y potente capaz de generar esquemas, flashcards y cuestionarios a partir de tus apuntes e imágenes.",
+        icon: GraduationCap, 
+        text: "Modo Profesorado: Herramientas exclusivas para que los educadores gestionen sus clases de manera más eficaz.",
         color: "text-primary"
     },
     { 
-        icon: Wand2, 
-        text: "Editor de Texto Mágico: Una nueva herramienta en el Modo Estudio para transformar y mejorar tus textos con inteligencia artificial.",
+        icon: Monitor, 
+        text: "Dynamic Class para Escritorio: Una nueva interfaz completamente adaptada para ordenadores y pantallas horizontales.",
         color: "text-pink-500"
     },
     { 
-        icon: Rocket, 
-        text: "Personalización Extrema: Más avatares, temas de colores para la app y nuevos easter eggs con recompensas exclusivas.",
+        icon: MailCheck, 
+        text: "Resúmenes Semanales: Recibe en tu correo un informe de tu rendimiento y las tareas de la próxima semana.",
         color: "text-red-500"
     },
 ];
