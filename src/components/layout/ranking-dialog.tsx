@@ -17,13 +17,14 @@ import { collection, query, where, getDocs, orderBy, limit } from "firebase/fire
 import type { User } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart, Users, GraduationCap, PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart, CaseUpper, Gift, X, Clapperboard, Shirt, ShoppingBag, BookMarked } from "lucide-react";
+import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart, Users, GraduationCap, PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart, CaseUpper, Gift, X, Clapperboard, Shirt, ShoppingBag, BookMarked, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { useMemoFirebase } from "@/firebase/hooks";
+import { Alert, AlertDescription } from "../ui/alert";
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
 
@@ -272,6 +273,14 @@ function ShopTab({ user }: { user: User }) {
                     </div>
                 </div>
             </Card>
+
+            <Alert variant="default" className="border-blue-500/20 bg-blue-500/5 text-blue-700 dark:text-blue-300">
+                <Info className="h-4 w-4 !text-blue-500" />
+                <AlertDescription className="text-xs">
+                    Las recompensas mostradas son representativas. El canjeo se gestionará fuera de la aplicación.
+                </AlertDescription>
+            </Alert>
+            
              <div className="grid grid-cols-3 gap-2">
                  {shopItems.map(item => (
                     <ShopItemCard 
@@ -416,4 +425,6 @@ const shopItems = [
     { id: 'bureau-vallee', name: 'Bureau Vallée', icon: BookMarked, color: '#004B8D', values: [5, 10, 15, 20] },
     { id: 'cinesa', name: 'Cinesa', icon: Clapperboard, color: '#00A1E0', values: [5, 10, 15, 20] },
 ];
+    
+
     
