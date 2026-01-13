@@ -9,7 +9,7 @@ import {
   List, ListOrdered, Quote, Heading1, Heading2, Code, Link,
   Smile, ImageIcon, Table, Star, Globe, FileDown,
   Text, Pilcrow, Type, Brain, Bug, TextCursorInput,
-  Loader2, ChevronsUpDown, AlertTriangle
+  Loader2, ChevronsUpDown, AlertTriangle, FlaskConical
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -308,19 +308,19 @@ export default function MagicEditorPage() {
 
       <main className="max-w-4xl mx-auto px-6 py-6">
         
-        <div className="mb-6 p-6 bg-gradient-to-r from-yellow-500/95 to-orange-600/95 rounded-2xl shadow-lg text-white relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-50"></div>
-          <div className="relative flex items-start gap-4">
-            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm flex-shrink-0">
-              <AlertTriangle className="h-6 w-6 text-white" />
+        <div className="mb-6 p-6 bg-slate-800 border border-slate-700 rounded-2xl shadow-lg text-slate-100 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgMjAgMTAgTSAxMCAwIEwgMTAgMjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-50"></div>
+            <div className="relative flex items-start gap-4">
+                <div className="p-3 bg-purple-500/20 border border-purple-400/30 rounded-xl backdrop-blur-sm flex-shrink-0">
+                    <FlaskConical className="h-6 w-6 text-purple-300" />
+                </div>
+                <div className="flex-1">
+                    <h2 className="text-lg font-bold mb-1 text-slate-50">Función en Desarrollo</h2>
+                    <p className="text-sm text-slate-300 leading-relaxed">
+                        El Editor Mágico no está operativo y su uso puede causar errores. Esta función se encuentra en una fase de desarrollo activa.
+                    </p>
+                </div>
             </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-bold mb-1 font-serif">Función Desactivada por Desarrollo</h2>
-              <p className="text-sm text-white/90 leading-relaxed">
-                El Editor Mágico está en fase de desarrollo y no se encuentra operativo. Su uso actual puede causar errores.
-              </p>
-            </div>
-          </div>
         </div>
         
         <div className="bg-white rounded-xl shadow-lg border border-slate-200/60 overflow-hidden mb-6">
