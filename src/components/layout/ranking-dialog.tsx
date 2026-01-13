@@ -229,7 +229,7 @@ function ShopTab({ user }: { user: User }) {
             <Alert variant="default" className="border-blue-500/20 bg-blue-500/5 text-blue-700 dark:text-blue-300">
                 <Info className="h-4 w-4 !text-blue-500" />
                 <AlertDescription className="text-xs">
-                    Las marcas mostradas no están afiliadas a Dynamic Class. Son representativas del producto final que se canjeará (ej. una tarjeta regalo de la marca seleccionada).
+                   Las marcas mostradas no están afiliadas a Dynamic Class. Son representativas del producto que se canjeará (ej. una tarjeta regalo de la marca solicitada por el usuario).
                 </AlertDescription>
             </Alert>
             
@@ -282,7 +282,7 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
                     </div>
                 </div>
                 <Button size="sm" className="w-full mt-2 h-7 text-xs" disabled>
-                    No Disponible
+                    Próximamente
                 </Button>
             </div>
         </Card>
@@ -369,18 +369,19 @@ function RankingItem({ user, rank, isCurrentUser, scope }: { user: User; rank: n
 
 const shopItems = [
     { id: 'amazon', name: 'Amazon', icon: ShoppingBag, color: '#FF9900', values: [5, 10] },
-    { id: 'game', name: 'GAME', icon: Gamepad2, color: '#D8000C', values: [5, 10] },
-    { id: 'shein', name: 'Shein', icon: Shirt, color: '#25D366', values: [5, 10, 15] },
+    { id: 'game', name: 'GAME', icon: Gamepad2, color: '#00AEEF', values: [5, 10] },
+    { id: 'shein', name: 'Shein', icon: Shirt, color: '#54C79D', values: [5, 10, 15] },
     { id: 'druni', name: 'Druni', icon: Gem, color: '#EC008C', values: [5, 10, 15] },
-    { id: 'inditex', name: 'Inditex', icon: ShoppingBag, color: '#1E3A8A', values: [5, 10, 15, 20, 25] },
+    { id: 'inditex', name: 'Inditex', icon: ShoppingBag, color: '#0A4B8D', values: [5, 10, 15, 20, 25] },
     { id: 'abacus', name: 'Abacus', icon: BookMarked, color: '#E30613', values: [5, 10, 15, 20] },
     { id: 'bureau-vallee', name: 'Bureau Vallée', icon: BookMarked, color: '#004B8D', values: [5, 10, 15, 20] },
     { id: 'cinesa', name: 'Cinesa', icon: Clapperboard, color: '#00A1E0', values: [5, 10, 15, 20] },
-    { id: 'sephora', name: 'Sephora', icon: Gift, color: '#000000', values: [5, 10, 15, 20] },
-    { id: 'google-play', name: 'Google Play', icon: Play, color: '#4285F4', values: [5, 10, 15, 25] },
+    { id: 'sephora', name: 'Sephora', icon: Gift, color: '#E53988', values: [5, 10, 15, 20] },
+    { id: 'google-play', name: 'Google Play', icon: Play, color: '#4CAF50', values: [5, 10, 15, 25] },
     { id: 'spotify', name: 'Spotify', icon: Music, color: '#1DB954', values: [10, 30] },
 ];
     
 
     
+
 
