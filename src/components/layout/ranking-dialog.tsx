@@ -17,7 +17,7 @@ import { collection, query, where, getDocs, orderBy, limit } from "firebase/fire
 import type { User } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart, Users, GraduationCap, PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart, CaseUpper, Gift, X } from "lucide-react";
+import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart, Users, GraduationCap, PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart, CaseUpper, Gift, X, Clapperboard, Shirt, ShoppingBag, BookMarked } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -262,15 +262,17 @@ function ShopTab({ user }: { user: User }) {
     const isAdmin = ADMIN_EMAILS.includes(user.email);
 
     return (
-         <div className="p-6 pt-2 space-y-6">
-            <Card className="text-center sticky top-0 bg-background/95 backdrop-blur-sm py-4 z-10 shadow-sm">
-                 <p className="text-sm text-muted-foreground">Tus trofeos</p>
-                 <div className="flex items-center justify-center gap-2">
-                     <Trophy className="h-6 w-6 text-yellow-400"/>
-                     <p className="text-2xl font-bold">{isAdmin ? '∞' : user.trophies}</p>
-                 </div>
+        <div className="p-6 pt-2 space-y-6">
+            <Card className="sticky top-0 z-10 p-3 bg-background/90 backdrop-blur-sm shadow-sm">
+                <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold">Tus Trofeos</p>
+                    <div className="flex items-center gap-2">
+                        <Trophy className="h-5 w-5 text-yellow-400"/>
+                        <p className="text-lg font-bold">{isAdmin ? '∞' : user.trophies}</p>
+                    </div>
+                </div>
             </Card>
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+             <div className="grid grid-cols-3 gap-2">
                  {shopItems.map(item => (
                     <ShopItemCard 
                         key={item.id} 
@@ -281,28 +283,29 @@ function ShopTab({ user }: { user: User }) {
                  ))}
              </div>
              <p className="text-xs text-muted-foreground text-center pt-2">
-                Las recompensas son gestionadas externamente. El equipo se pondrá en contacto contigo tras el canjeo.
+                Dynamic Class no está afiliada ni patrocinada por las marcas mencionadas. Los nombres se utilizan únicamente con fines identificativos.
              </p>
         </div>
-    )
+    );
 }
 
 function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof shopItems[0], trophiesPerEuro: number, userTrophies: number }) {
     const [selectedValue, setSelectedValue] = useState(item.values[0].toString());
     const cost = parseInt(selectedValue) * trophiesPerEuro;
     const canAfford = userTrophies >= cost;
+    const Icon = item.icon;
 
     return (
         <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
-            <div className="aspect-video relative flex-shrink-0 bg-gradient-to-br from-muted/30 to-background p-4 flex items-center justify-center shadow-inner rounded-t-lg">
-                 <img src={item.imageUrl} alt={item.name} className="max-w-full max-h-24 object-contain" />
+            <div className="aspect-square relative flex-shrink-0 p-4 flex items-center justify-center shadow-inner rounded-t-lg" style={{ backgroundColor: item.color }}>
+                 <Icon className="h-8 w-8 text-white" />
             </div>
-            <div className="flex-1 p-3 flex flex-col justify-between bg-card">
+            <div className="flex-1 p-2 flex flex-col justify-between bg-card">
                 <div className="space-y-2">
-                    <h4 className="font-bold text-sm truncate">{`Tarjeta ${item.name}`}</h4>
-                    <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-xs text-center truncate">{item.name}</h4>
+                    <div className="flex items-center gap-1">
                          <Select onValueChange={setSelectedValue} defaultValue={selectedValue}>
-                            <SelectTrigger className="flex-1 h-8 text-xs">
+                            <SelectTrigger className="flex-1 h-7 text-xs rounded-md">
                                 <SelectValue placeholder="Valor" />
                             </SelectTrigger>
                             <SelectContent>
@@ -311,13 +314,13 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
                                 ))}
                             </SelectContent>
                         </Select>
-                        <div className="flex items-center gap-1 font-bold text-sm text-yellow-500">
-                            <Trophy className="h-4 w-4" />
+                        <div className="flex items-center gap-1 font-bold text-xs text-yellow-500 bg-amber-500/10 px-1.5 py-1 rounded-md">
+                            <Trophy className="h-3 w-3" />
                             <span>{cost}</span>
                         </div>
                     </div>
                 </div>
-                <Button size="sm" className="w-full mt-3 h-8" disabled>
+                <Button size="sm" className="w-full mt-2 h-7 text-xs" disabled>
                     No Disponible
                 </Button>
             </div>
@@ -404,14 +407,13 @@ function RankingItem({ user, rank, isCurrentUser, scope }: { user: User; rank: n
 }
 
 const shopItems = [
-    { id: 'amazon', name: 'Amazon', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg', values: [5, 10] },
-    { id: 'game', name: 'GAME', imageUrl: 'https://www.cclasrosas.es/wp-content/uploads/2017/12/logo-game.jpg', values: [5, 10] },
-    { id: 'shein', name: 'Shein', imageUrl: 'https://e01-elmundo.uecdn.es/assets/multimedia/imagenes/2023/11/28/17011685734882.png', values: [5, 10, 15] },
-    { id: 'druni', name: 'Druni', imageUrl: 'https://sevilla.secompraonline.com/wp-content/uploads/sites/5/2023/06/354068035_638603531636870_8081465420058888362_n.png', values: [5, 10, 15] },
-    { id: 'inditex', name: 'Inditex', imageUrl: 'https://www.inditex.com/itxcomweb/api/media/bfc0fb15-b15c-47bf-b467-8ec4aea4169f/inditex.png?t=1657543184830', values: [5, 10, 15, 20, 25] },
-    { id: 'abacus', name: 'Abacus', imageUrl: 'https://www.baricentro.es/wp-content/uploads/sites/8//Abacus-logo.png', values: [5, 10, 15, 20] },
-    { id: 'bureau-vallee', name: 'Bureau Vallée', imageUrl: 'https://www.uvimark.com/wp-content/uploads/2024/10/Logo-bureau-vallee-2021.png', values: [5, 10, 15, 20] },
-    { id: 'cinesa', name: 'Cinesa', imageUrl: 'https://www.cclasrosas.es/wp-content/uploads/2017/12/logo-cinesa.jpg', values: [5, 10, 15, 20] },
+    { id: 'amazon', name: 'Amazon', icon: ShoppingBag, color: '#FF9900', values: [5, 10] },
+    { id: 'game', name: 'GAME', icon: Gamepad2, color: '#000000', values: [5, 10] },
+    { id: 'shein', name: 'Shein', icon: Shirt, color: '#000000', values: [5, 10, 15] },
+    { id: 'druni', name: 'Druni', icon: Gem, color: '#EC008C', values: [5, 10, 15] },
+    { id: 'inditex', name: 'Inditex', icon: ShoppingBag, color: '#000000', values: [5, 10, 15, 20, 25] },
+    { id: 'abacus', name: 'Abacus', icon: BookMarked, color: '#E30613', values: [5, 10, 15, 20] },
+    { id: 'bureau-vallee', name: 'Bureau Vallée', icon: BookMarked, color: '#004B8D', values: [5, 10, 15, 20] },
+    { id: 'cinesa', name: 'Cinesa', icon: Clapperboard, color: '#00A1E0', values: [5, 10, 15, 20] },
 ];
-
     
