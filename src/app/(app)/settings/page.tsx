@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap, Pin } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap, Pin, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore } from "@/firebase";
@@ -230,6 +230,13 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3">
                         <FileText className="h-5 w-5 text-primary" />
                         <span className="font-medium">Formulario de Asistencia</span>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                </a>
+                <a href="mailto:info.dynamicclass@gmail.com" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
+                    <div className="flex items-center gap-3">
+                        <Mail className="h-5 w-5 text-primary" />
+                        <span className="font-medium">Contacto y Soporte</span>
                     </div>
                     <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </a>
@@ -701,3 +708,5 @@ function DeveloperPortalDialog() {
     </Dialog>
   )
 }
+
+    

@@ -193,7 +193,7 @@ function UsersTab() {
                             <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                                 {users.map(u => (
                                     <div key={u.uid} className="flex items-center gap-4 p-2 rounded-lg border">
-                                        <AvatarDisplay user={u} className="h-10 w-10" showHat={false} />
+                                        <AvatarDisplay user={u} className="h-10 w-10" />
                                         <div className="flex-1">
                                             <p className="font-semibold">{u.name}</p>
                                             <p className="text-xs text-muted-foreground">{u.email}</p>
@@ -316,7 +316,7 @@ function TrophiesTab() {
                             <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                                 {users.map(u => (
                                      <div key={u.uid} className="flex items-center gap-4 p-2 rounded-lg border">
-                                        <AvatarDisplay user={u} className="h-10 w-10" showHat={false} />
+                                        <AvatarDisplay user={u} className="h-10 w-10" />
                                         <div className="flex-1">
                                             <p className="font-semibold">{u.name}</p>
                                             <div className="flex items-center gap-1.5 text-sm">
@@ -501,12 +501,12 @@ function GroupsTab() {
                                 </div>
                                 <div className="flex flex-col items-end gap-2">
                                     <EditCenterDialog center={center}>
-                                        <Button variant="outline" size="sm" className="bg-blue-500/10 border-blue-500/20 text-blue-600 hover:bg-blue-500/20 hover:text-blue-700 w-full">
+                                        <Button variant="outline" size="sm" className="bg-blue-500/10 border-blue-500/20 text-blue-600 hover:bg-blue-500/20 hover:text-blue-700 w-full sm:w-auto">
                                             <Edit className="mr-2 h-4 w-4" />
                                             Editar
                                         </Button>
                                     </EditCenterDialog>
-                                    <Button asChild variant="secondary" size="sm" className="w-full">
+                                    <Button asChild variant="secondary" size="sm" className="w-full sm:w-auto">
                                         <Link href={`/admin/groups/${center.uid}`}>Gestionar</Link>
                                     </Button>
                                 </div>
@@ -691,6 +691,8 @@ function EditCenterDialog({ center, children }: { center: Center, children: Reac
         </Dialog>
     )
 }
+    
+
     
 
     
