@@ -622,12 +622,12 @@ function PrivacyPolicyDialog() {
 
                         <section>
                             <h3 className="font-bold text-foreground text-base mb-2">4. Seguridad de los Datos y RGPD</h3>
-                             <p>La seguridad de tus datos es nuestra máxima prioridad. La aplicación está construida sobre <span className="font-semibold text-foreground">Google Cloud</span> y <span className="font-semibold text-foreground">Firebase</span>, garantizando encriptación y autenticación robustas. Implementamos estrictas reglas de acceso para que solo tú puedas ver y modificar tu información privada.</p>
-                             <div className="mt-4 space-y-2">
+                            <p>La seguridad de tus datos es nuestra máxima prioridad. La aplicación está construida sobre <span className="font-semibold text-foreground">Google Cloud</span> y <span className="font-semibold text-foreground">Firebase</span>, garantizando encriptación y autenticación robustas. Implementamos estrictas reglas de acceso para que solo tú puedas ver y modificar tu información privada.</p>
+                            <div className="mt-4 space-y-2">
                                 <p>Dynamic Class es un desarrollo independiente. El administrador de cada clase es el **único responsable** de introducir y gestionar los datos de su grupo, incluyendo la información del profesorado necesaria para el horario. Es su responsabilidad garantizar el cumplimiento del RGPD en su entorno.</p>
-                             </div>
+                            </div>
                         </section>
-
+                        
                         <section>
                             <h3 className="font-bold text-foreground text-base mb-2">5. Uso de Nombres de Marcas en la Tienda</h3>
                              <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
@@ -651,7 +651,14 @@ function PrivacyPolicyDialog() {
                         
                         <section>
                             <h3 className="font-bold text-foreground text-base mb-2">7. Contacto</h3>
-                            <p>Si tienes alguna pregunta, no dudes en contactarnos a través del <span className="font-semibold text-foreground">Formulario de Asistencia</span> disponible en la sección de Soporte.</p>
+                            <p>
+                                Si tienes alguna pregunta sobre estas políticas o necesitas soporte, puedes contactarnos a través de los siguientes canales disponibles en la sección de "Soporte y Legal" de los Ajustes:
+                            </p>
+                            <ul className="list-disc list-inside space-y-1 pl-4 mt-2">
+                                <li><strong>Correo Electrónico:</strong> info.dynamicclass@gmail.com</li>
+                                <li><strong>Formulario de Asistencia:</strong> Disponible para dudas y problemas técnicos.</li>
+                                <li><strong>Página Web Oficial:</strong> Para más información sobre el Proyecto Adrimax.</li>
+                            </ul>
                         </section>
                     </div>
                 </ScrollArea>
