@@ -605,8 +605,8 @@ function PrivacyPolicyDialog() {
                                 <li>
                                     <strong>Gamificación y Rankings:</strong> Para fomentar una competición sana, tu nombre, avatar y trofeos son visibles para otros usuarios de **tu mismo centro educativo**. El resto de tus datos de progreso son privados.
                                 </li>
-                                <li>
-                                    <strong>Datos de Administradores:</strong> Si tienes un rol de administrador, el contenido que creas (como anuncios o horarios) será visible para los usuarios del ámbito que elijas (tu clase, tu centro o todos).
+                                 <li>
+                                    <strong>Resúmenes Semanales (Opcional):</strong> Si activas esta función, usaremos los datos de tu calendario de clase y tu historial de uso privado para generar un correo electrónico semanal. Este correo, enviado desde nuestra cuenta oficial, te ofrecerá un resumen de tu rendimiento y las tareas pendientes para la semana siguiente. Puedes activar o desactivar esta opción en cualquier momento desde los ajustes.
                                 </li>
                             </ul>
                         </section>
@@ -624,8 +624,7 @@ function PrivacyPolicyDialog() {
                             <h3 className="font-bold text-foreground text-base mb-2">4. Seguridad de los Datos y RGPD</h3>
                              <p>La seguridad de tus datos es nuestra máxima prioridad. La aplicación está construida sobre <span className="font-semibold text-foreground">Google Cloud</span> y <span className="font-semibold text-foreground">Firebase</span>, garantizando encriptación y autenticación robustas. Implementamos estrictas reglas de acceso para que solo tú puedas ver y modificar tu información privada.</p>
                              <div className="mt-4 space-y-2">
-                                 <h4 className="font-semibold text-foreground">Aviso sobre Datos del Profesorado:</h4>
-                                 <p>Dynamic Class es un desarrollo independiente. El administrador de cada clase es el **único responsable** de introducir y gestionar los datos de su grupo, incluyendo la información del profesorado necesaria para el horario. Es su responsabilidad garantizar el cumplimiento del RGPD en su entorno.</p>
+                                <p>Dynamic Class es un desarrollo independiente. El administrador de cada clase es el **único responsable** de introducir y gestionar los datos de su grupo, incluyendo la información del profesorado necesaria para el horario. Es su responsabilidad garantizar el cumplimiento del RGPD en su entorno.</p>
                              </div>
                         </section>
 
