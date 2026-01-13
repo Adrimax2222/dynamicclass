@@ -9,9 +9,11 @@ import {
   DialogTitle,
   DialogDescription,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useFirestore, useCollection } from "@/firebase";
+import { useFirestore } from "@/firebase";
+import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import type { User } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -99,8 +101,8 @@ export function RankingDialog({ children, user, openTo = "ranking" }: { children
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col h-[80vh]">
                  <div className="absolute inset-0 bg-trophy-pattern opacity-5" style={{ backgroundSize: '100px 100px' }} />
-                 <Tabs defaultValue={openTo} className="w-full h-full flex flex-col z-10">
-                    <DialogHeader className="p-6 pb-0 flex-shrink-0">
+                 <Tabs defaultValue={openTo} className="w-full h-full flex flex-col">
+                    <DialogHeader className="p-6 pb-0 flex-shrink-0 z-10 bg-background/80 backdrop-blur-sm rounded-t-lg">
                         <div className="flex items-center gap-3">
                             <DialogTitle className="flex items-center gap-2">
                                 <Trophy className="text-yellow-400" />
@@ -126,6 +128,10 @@ export function RankingDialog({ children, user, openTo = "ranking" }: { children
                         </TabsContent>
                     </div>
                 </Tabs>
+                 <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-20">
+                    <Trophy className="h-4 w-4" />
+                    <span className="sr-only">Close</span>
+                </DialogClose>
             </DialogContent>
         </Dialog>
     );
@@ -406,3 +412,5 @@ const shopItems = [
     { id: 'bureau-vallee', name: 'Bureau Vallée', imageUrl: 'https://www.uvimark.com/wp-content/uploads/2024/10/Logo-bureau-vallee-2021.png', values: [5, 10, 15, 20] },
     { id: 'cinesa', name: 'Cinesa', imageUrl: 'https://www.cclasrosas.es/wp-content/uploads/2017/12/logo-cinesa.jpg', values: [5, 10, 15, 20] },
 ];
+
+    
