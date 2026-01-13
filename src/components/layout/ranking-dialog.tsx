@@ -130,9 +130,11 @@ export function RankingDialog({ children, user, openTo = "ranking" }: { children
                         </TabsContent>
                     </div>
                 </Tabs>
-                 <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-20">
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Close</span>
+                 <DialogClose asChild>
+                    <button className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-20">
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Close</span>
+                    </button>
                 </DialogClose>
             </DialogContent>
         </Dialog>
@@ -277,7 +279,7 @@ function ShopTab({ user }: { user: User }) {
             <Alert variant="default" className="border-blue-500/20 bg-blue-500/5 text-blue-700 dark:text-blue-300">
                 <Info className="h-4 w-4 !text-blue-500" />
                 <AlertDescription className="text-xs">
-                    Las recompensas mostradas son representativas. El canjeo se gestionará fuera de la aplicación.
+                    Las marcas mostradas no están afiliadas a Dynamic Class. Son representativas del producto final que se canjeará (ej. una tarjeta regalo de la marca seleccionada).
                 </AlertDescription>
             </Alert>
             
