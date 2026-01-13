@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap, Pin, Mail, Copy, Check, Gift } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap, Pin, Mail, Copy, Check, Gift, MailCheck, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore } from "@/firebase";
@@ -154,6 +154,24 @@ export default function SettingsPage() {
                     checked={saveScannedDocs}
                     onCheckedChange={setSaveScannedDocs}
                 />
+            </div>
+            <Separator />
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <MailCheck className="h-5 w-5" />
+                    <Label htmlFor="weekly-summary-switch" className="flex flex-col">
+                        <span>Resúmenes Semanales</span>
+                        <span className="text-xs text-muted-foreground">Próximamente...</span>
+                    </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                    <WeeklySummaryInfoDialog />
+                    <Switch
+                        id="weekly-summary-switch"
+                        checked={false}
+                        disabled={true}
+                    />
+                </div>
             </div>
           </CardContent>
         </Card>
@@ -624,7 +642,7 @@ function PrivacyPolicyDialog() {
                             <h3 className="font-bold text-foreground text-base mb-2">4. Seguridad de los Datos y RGPD</h3>
                             <p>La seguridad de tus datos es nuestra máxima prioridad. La aplicación está construida sobre <span className="font-semibold text-foreground">Google Cloud</span> y <span className="font-semibold text-foreground">Firebase</span>, garantizando encriptación y autenticación robustas. Implementamos estrictas reglas de acceso para que solo tú puedas ver y modificar tu información privada.</p>
                             <div className="mt-4 space-y-2">
-                                <p>Dynamic Class es un desarrollo independiente. El administrador de cada clase es el **único responsable** de introducir y gestionar los datos de su grupo, incluyendo la información del profesorado necesaria para el horario. Es su responsabilidad garantizar el cumplimiento del RGPD en su entorno.</p>
+                                <p>Dynamic Class es un desarrollo independiente. El administrador de cada clase es el **único responsable** de introducir y gestionar los datos de su grupo, incluyendo la información del profesorado necesaria para el horario. Es su responsabilidad garantizar el estricto cumplimiento del RGPD en su entorno.</p>
                             </div>
                         </section>
                         
@@ -717,3 +735,47 @@ function DeveloperPortalDialog() {
     </Dialog>
   )
 }
+
+function WeeklySummaryInfoDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button className="text-muted-foreground hover:text-primary transition-colors">
+          <Info className="h-4 w-4" />
+          <span className="sr-only">Información sobre resúmenes semanales</span>
+        </button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <MailCheck className="h-5 w-5 text-primary" />
+            Resúmenes Semanales
+          </DialogTitle>
+          <DialogDescription>
+            Todo lo que necesitas saber sobre esta futura función.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-3 text-sm">
+          <p>
+            Al activar esta opción, recibirás cada viernes un correo electrónico personalizado
+            enviado desde nuestra cuenta oficial.
+          </p>
+          <p className="font-semibold text-foreground">Este resumen incluirá:</p>
+          <ul className="list-disc list-inside space-y-1 pl-4 text-muted-foreground">
+            <li>Tu rendimiento general en Dynamic Class (notas, tareas completadas, etc.).</li>
+            <li>Un listado de las tareas y exámenes de la próxima semana, extraído directamente de tu calendario de clase.</li>
+          </ul>
+          <p>
+            Utilizamos tu historial de uso (que es privado) y el calendario de tu clase para generar este informe. Podrás activar o desactivar esta función en cualquier momento desde esta misma pantalla.
+          </p>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button>Entendido</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
