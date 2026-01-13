@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap, Pin, Mail } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap, Pin, Mail, Copy, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore } from "@/firebase";
@@ -52,6 +52,7 @@ export default function SettingsPage() {
   const auth = useAuth();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   const handleLogout = async () => {
     if (auth) {
@@ -80,6 +81,13 @@ export default function SettingsPage() {
       } finally {
         setIsDeleting(false);
       }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText("info.dynamicclass@gmail.com");
+    setIsCopied(true);
+    toast({ title: '✓ Copiado', description: 'Correo de soporte copiado al portapapeles.' });
+    setTimeout(() => setIsCopied(false), 2000);
   };
   
   const isUserAdmin = user?.role === 'admin';
@@ -233,13 +241,18 @@ export default function SettingsPage() {
                     </div>
                     <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </a>
-                <a href="mailto:info.dynamicclass@gmail.com" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
+                <div className="flex items-center justify-between rounded-md border p-4">
                     <div className="flex items-center gap-3">
                         <Mail className="h-5 w-5 text-primary" />
-                        <span className="font-medium">Contacto y Soporte</span>
+                        <div className="flex flex-col">
+                            <span className="font-medium">Contacto y Soporte</span>
+                            <span className="text-sm text-muted-foreground">info.dynamicclass@gmail.com</span>
+                        </div>
                     </div>
-                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                </a>
+                    <Button variant="ghost" size="icon" onClick={handleCopy} className="h-8 w-8">
+                        {isCopied ? <Check className="h-4 w-4 text-green-500"/> : <Copy className="h-4 w-4 text-muted-foreground" />}
+                    </Button>
+                </div>
                 <a href="https://docs.google.com/forms/d/e/1FAIpQLSdVdZ5H7L4Je1-NbX-3TTmvZX6kRVyHhagokwaBNYwZQOUlfw/viewform?usp=sharing&ouid=117084013399350850231" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border-accent/50 bg-accent/10 p-4 transition-colors hover:bg-accent/20">
                     <div className="flex items-center gap-3">
                         <FlaskConical className="h-5 w-5 text-accent" />
