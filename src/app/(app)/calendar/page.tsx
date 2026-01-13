@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit } from "lucide-react";
+import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit, MailCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -15,6 +15,16 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogClose,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import type { CalendarEvent as AppCalendarEvent, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -414,6 +424,23 @@ export default function CalendarPage() {
                 )}
                 </CardContent>
             </Card>
+             <Card className="mt-8 bg-gradient-to-tr from-blue-50 to-indigo-100 dark:from-blue-950/80 dark:to-indigo-950/80 border-blue-200 dark:border-blue-800">
+                <CardHeader className="flex-row items-start gap-4">
+                    <div className="p-2 bg-white rounded-lg border shadow-sm">
+                        <MailCheck className="h-6 w-6 text-blue-500" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-lg">Resúmenes Semanales</h3>
+                        <p className="text-sm text-muted-foreground">Recibe cada viernes un resumen de tu rendimiento y tus próximas tareas directamente en tu correo.</p>
+                    </div>
+                </CardHeader>
+                <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-2">
+                    <WeeklySummaryInfoDialog />
+                    <Button disabled className="w-full sm:w-auto">
+                        Activar Próximamente
+                    </Button>
+                </CardContent>
+            </Card>
         </div>
         <section className="mt-8">
           <Link href="/study" className="block">
@@ -432,5 +459,49 @@ export default function CalendarPage() {
         </div>
       )}
     </div>
+  );
+}
+
+
+function WeeklySummaryInfoDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="link" className="text-blue-600 dark:text-blue-400 p-0 h-auto">
+          <Info className="h-4 w-4 mr-1" />
+          Saber más
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <MailCheck className="h-5 w-5 text-primary" />
+            Resúmenes Semanales
+          </DialogTitle>
+          <DialogDescription>
+            Todo lo que necesitas saber sobre esta futura función.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-3 text-sm">
+          <p>
+            Al activar esta opción, recibirás cada viernes un correo electrónico personalizado
+            enviado desde nuestra cuenta oficial.
+          </p>
+          <p className="font-semibold text-foreground">Este resumen incluirá:</p>
+          <ul className="list-disc list-inside space-y-1 pl-4 text-muted-foreground">
+            <li>Tu rendimiento general en Dynamic Class (notas, tareas completadas, etc.).</li>
+            <li>Un listado de las tareas y exámenes de la próxima semana, extraído directamente de tu calendario de clase.</li>
+          </ul>
+          <p>
+            Utilizamos tu historial de uso (que es privado) y el calendario de tu clase para generar este informe. Podrás activar o desactivar esta función en cualquier momento.
+          </p>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button>Entendido</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
