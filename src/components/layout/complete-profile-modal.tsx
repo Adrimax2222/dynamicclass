@@ -273,52 +273,55 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                         </FormItem>
                     )}
                 />
-                 <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="course"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Curso</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}>
-                                <FormControl>
-                                    <SelectTrigger><SelectValue placeholder="Curso" /></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {courseOptions.map(option => (
-                                        <SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>
-                                            {option.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="className"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Clase</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}>
-                                <FormControl>
-                                    <SelectTrigger><SelectValue placeholder="Clase" /></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {classOptions.map(option => (
-                                        <SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>
-                                            {option}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
+                
+                {!usePersonal && isCenterValidated && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="course"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Curso</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}>
+                                    <FormControl>
+                                        <SelectTrigger><SelectValue placeholder="Curso" /></SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {courseOptions.map(option => (
+                                            <SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="className"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Clase</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}>
+                                    <FormControl>
+                                        <SelectTrigger><SelectValue placeholder="Clase" /></SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {classOptions.map(option => (
+                                            <SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>
+                                                {option}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                )}
                  <DialogFooter className="pt-6">
                     <Button type="submit" className="w-full" disabled={isLoading}>
                          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
