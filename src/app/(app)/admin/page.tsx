@@ -368,19 +368,17 @@ function GroupsTab() {
     
     const centersCollection = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Use a stable query, sorting will be done on the client
         return query(collection(firestore, "centers"), orderBy("createdAt", "desc"));
     }, [firestore]);
 
     const { data: centersData = [], isLoading } = useCollection<Center>(centersCollection);
     
-    // Client-side sorting for pinned status
     const centers = centersData.sort((a, b) => {
         const aPinned = a.isPinned ?? false;
         const bPinned = b.isPinned ?? false;
         if (aPinned && !bPinned) return -1;
         if (!aPinned && bPinned) return 1;
-        return 0; // Keep original order for items with same pinned status
+        return 0;
     });
 
     const generateCode = () => {
@@ -494,12 +492,12 @@ function GroupsTab() {
                                     </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-2">
-                                    <EditCenterDialog center={center}>
-                                        <Button variant="outline" size="sm" className="bg-blue-500/10 border-blue-500/20 text-blue-600 hover:bg-blue-500/20 hover:text-blue-700 w-full sm:w-auto">
+                                     <Button asChild variant="outline" size="sm" className="bg-blue-500/10 border-blue-500/20 text-blue-600 hover:bg-blue-500/20 hover:text-blue-700 w-full sm:w-auto">
+                                        <Link href={`/admin/centers/${center.uid}/edit`}>
                                             <Edit className="mr-2 h-4 w-4" />
                                             Editar
-                                        </Button>
-                                    </EditCenterDialog>
+                                        </Link>
+                                    </Button>
                                     <Button asChild variant="secondary" size="sm" className="w-full sm:w-auto">
                                         <Link href={`/admin/groups/${center.uid}`}>Gestionar</Link>
                                     </Button>
@@ -511,177 +509,4 @@ function GroupsTab() {
             </CardContent>
         </Card>
     );
-}
-
-function EditCenterDialog({ center, children }: { center: Center, children: React.ReactNode }) {
-    const [name, setName] = useState(center.name);
-    const [imageUrl, setImageUrl] = useState(center.imageUrl || "");
-    const [isSaving, setIsSaving] = useState(false);
-    const [isUpdatingCode, setIsUpdatingCode] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const firestore = useFirestore();
-    const { toast } = useToast();
-
-    const generateCode = () => {
-        const part1 = Math.floor(100 + Math.random() * 900);
-        const part2 = Math.floor(100 + Math.random() * 900);
-        return `${part1}-${part2}`;
-    };
-
-    const handleSaveChanges = async () => {
-        if (!firestore) return;
-        setIsSaving(true);
-        try {
-            const centerDocRef = doc(firestore, 'centers', center.uid);
-            await updateDoc(centerDocRef, { 
-                name: name,
-                imageUrl: imageUrl 
-            });
-            toast({ title: "Cambios Guardados", description: "El nombre y la imagen del centro se han actualizado." });
-        } catch (error) {
-            toast({ title: "Error", description: "No se pudieron guardar los cambios.", variant: "destructive" });
-        } finally {
-            setIsSaving(false);
-        }
-    };
-    
-    const handleTogglePin = async () => {
-        if (!firestore) return;
-        try {
-            const centerDocRef = doc(firestore, 'centers', center.uid);
-            await updateDoc(centerDocRef, { isPinned: !center.isPinned });
-            toast({ title: center.isPinned ? "Centro Desanclado" : "Centro Anclado" });
-        } catch (error) {
-            toast({ title: "Error", description: "No se pudo cambiar el estado de anclaje.", variant: "destructive" });
-        }
-    };
-    
-    const handleUpdateCode = async () => {
-        if (!firestore) return;
-        setIsUpdatingCode(true);
-        try {
-            const newCode = generateCode();
-            const oldCode = center.code;
-            const centerDocRef = doc(firestore, 'centers', center.uid);
-            
-            // 1. Find all users with the old code
-            const usersQuery = query(collection(firestore, 'users'), where('center', '==', oldCode));
-            const usersSnapshot = await getDocs(usersQuery);
-
-            // 2. Create a batch write
-            const batch = writeBatch(firestore);
-
-            // 3. Update the center's code
-            batch.update(centerDocRef, { code: newCode });
-            
-            // 4. Update each user's center code
-            usersSnapshot.forEach(userDoc => {
-                batch.update(userDoc.ref, { center: newCode });
-            });
-            
-            // 5. Commit the batch
-            await batch.commit();
-
-            toast({ title: "Código Actualizado", description: `El nuevo código es ${newCode} y se ha actualizado para todos los miembros.` });
-        } catch (error) {
-            toast({ title: "Error", description: "No se pudo actualizar el código.", variant: "destructive" });
-        } finally {
-            setIsUpdatingCode(false);
-        }
-    };
-    
-    const handleDeleteCenter = async () => {
-        if (!firestore) return;
-        setIsDeleting(true);
-        try {
-            const centerDocRef = doc(firestore, 'centers', center.uid);
-            await deleteDoc(centerDocRef);
-            toast({ title: "Centro Eliminado", description: `El centro "${center.name}" ha sido eliminado.`, variant: "destructive" });
-        } catch (error) {
-             toast({ title: "Error", description: "No se pudo eliminar el centro.", variant: "destructive" });
-        } finally {
-            setIsDeleting(false);
-        }
-    };
-
-
-    return (
-        <Dialog>
-            <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Editar Centro: {center.name}</DialogTitle>
-                    <DialogDescription>Gestiona los detalles de este centro educativo.</DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-center-name">Nombre del Centro</Label>
-                        <Input id="edit-center-name" value={name} onChange={(e) => setName(e.target.value)} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="edit-center-image">URL de la Imagen del Centro</Label>
-                        <Input id="edit-center-image" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://ejemplo.com/logo.png" />
-                    </div>
-                    <div className="space-y-4">
-                         <Button variant="outline" className="w-full justify-start gap-2" onClick={handleTogglePin}>
-                            <Pin className="h-4 w-4"/> {center.isPinned ? 'Desanclar Centro' : 'Anclar Centro'}
-                        </Button>
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="outline" className="w-full justify-start gap-2 text-amber-600 border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 hover:text-amber-700">
-                                    <RefreshCw className="h-4 w-4"/> Actualizar Código de Acceso
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Actualizar el código?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                       Esta acción generará un nuevo código y actualizará automáticamente a todos los miembros actuales del centro. El código antiguo dejará de ser válido.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel disabled={isUpdatingCode}>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleUpdateCode} disabled={isUpdatingCode}>
-                                        {isUpdatingCode && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                                        Sí, actualizar
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="destructive" className="w-full justify-start gap-2">
-                                    <Trash2 className="h-4 w-4"/> Eliminar Centro
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Eliminar este centro?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                       Esta acción es permanente. Se eliminará el centro y todas sus clases. Los usuarios que pertenezcan a este centro perderán el acceso al contenido específico del mismo.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDeleteCenter} className="bg-destructive hover:bg-destructive/90" disabled={isDeleting}>
-                                        {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                                        Sí, eliminar
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="outline" disabled={isSaving}>Cancelar</Button>
-                    </DialogClose>
-                    <Button onClick={handleSaveChanges} disabled={isSaving}>
-                         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                         Guardar Cambios
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
 }
