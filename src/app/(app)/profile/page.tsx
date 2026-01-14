@@ -25,12 +25,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData, User, CompletedItem, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle, GraduationCap } from "lucide-react";
+import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle, GraduationCap, School, PlusCircle, Search, Copy, Check, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useMemo } from "react";
-import { doc, updateDoc, arrayUnion, increment, collection, query, orderBy, getDocs } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, increment, collection, query, orderBy, getDocs, addDoc, serverTimestamp, where } from "firebase/firestore";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Switch } from "@/components/ui/switch";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
 
@@ -294,6 +295,8 @@ interface EditableAvatar {
     color: string;
 }
 
+type RegistrationMode = 'join' | 'personal' | 'create';
+
 const courseOptions = [
     { value: '1eso', label: '1º ESO' },
     { value: '2eso', label: '2º ESO' },
@@ -309,7 +312,6 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
   const { user, updateUser } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [usePersonal, setUsePersonal] = useState(user?.center === 'personal');
   
   const [editableAvatar, setEditableAvatar] = useState<EditableAvatar>({ id: 'letter_A', color: 'A78BFA'});
   
@@ -318,6 +320,15 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
   const [ageRange, setAgeRange] = useState(user?.ageRange || "");
   const [course, setCourse] = useState(user?.course || "");
   const [className, setClassName] = useState(user?.className || "");
+  const [newCenterName, setNewCenterName] = useState('');
+  const [newClassName, setNewClassName] = useState('');
+  
+  const [mode, setMode] = useState<RegistrationMode>(user?.center === 'personal' ? 'personal' : 'join');
+  const [isCenterValidated, setIsCenterValidated] = useState(user?.center !== 'personal' && user?.center !== 'default');
+  const [validatedCenter, setValidatedCenter] = useState<Center | null>(null);
+  const [isCenterNameValidated, setIsCenterNameValidated] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [isCodeCopied, setIsCodeCopied] = useState(false);
   
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -327,7 +338,7 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
   const initializeState = () => {
     if (user) {
         const isPersonal = user.center === 'personal';
-        setUsePersonal(isPersonal);
+        setMode(isPersonal ? 'personal' : 'join');
         setName(user.name);
         setCenter(isPersonal ? '' : user.center || "");
         setAgeRange(isPersonal ? 'personal' : user.ageRange || '');
@@ -350,22 +361,24 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
   useEffect(() => {
     if (isOpen) {
         initializeState();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isOpen]);
-
-  useEffect(() => {
-    if (usePersonal) {
-        setCenter('personal');
-        setCourse('personal');
-        setClassName('personal');
+        if (user?.center && user.center !== 'personal' && user.center !== 'default') {
+            const currentCenter = allCenters.find(c => c.code === user.center);
+            if(currentCenter) {
+                setValidatedCenter(currentCenter);
+                setIsCenterValidated(true);
+            }
+        }
     } else {
-        setCenter(user?.center === 'personal' ? '' : user?.center || '');
-        setCourse(user?.course === 'personal' ? '' : user?.course || '');
-        setClassName(user?.className === 'personal' ? '' : user?.className || '');
+        // Reset local state when dialog closes
+        setMode(user?.center === 'personal' ? 'personal' : 'join');
+        setIsCenterValidated(user?.center !== 'personal' && user?.center !== 'default');
+        setValidatedCenter(null);
+        setIsCenterNameValidated(false);
+        setGeneratedCode(null);
+        setIsCodeCopied(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usePersonal]);
+  }, [user, isOpen, allCenters]);
 
   const availableClasses = useMemo(() => {
     const selectedCenter = allCenters.find(c => c.code === center);
@@ -436,8 +449,6 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
   
   if (!user) return null;
 
-  const userCenterIsValid = allCenters.some(c => c.code === user.center);
-
   const formatAndSetCenterCode = (value: string) => {
     const digitsOnly = value.replace(/[^0-9]/g, '');
     let formatted = digitsOnly.slice(0, 6);
@@ -447,33 +458,117 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
     setCenter(formatted);
   };
   
-  const handleSaveChanges = async () => {
-    if (!firestore || !user) return;
+    const generateNewCode = () => `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
 
-    if (!usePersonal) {
-        const centerExists = allCenters.some(c => c.code === center);
-        if (!center.trim() || !centerExists) {
-            toast({ title: "Código de centro no válido", description: "El código que has introducido no corresponde a ningún centro existente.", variant: "destructive" });
-            return;
-        }
+    const handleGenerateCode = () => {
+      const code = generateNewCode();
+      setGeneratedCode(code);
+    }
+
+    const handleCopyCode = () => {
+        if (!generatedCode) return;
+        navigator.clipboard.writeText(generatedCode);
+        setIsCodeCopied(true);
+        toast({ title: "Código copiado" });
+        setTimeout(() => setIsCodeCopied(false), 2000);
     }
     
+  const handleValidateCenter = async () => {
+    if (!firestore) return;
+    setIsLoading(true);
+    const q = query(collection(firestore, 'centers'), where('code', '==', center));
+    try {
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const centerDoc = querySnapshot.docs[0];
+            const centerData = { uid: centerDoc.id, ...centerDoc.data() } as Center;
+            setValidatedCenter(centerData);
+            setIsCenterValidated(true);
+            toast({ title: "Centro validado", description: `Te has unido a ${centerData.name}.` });
+        } else {
+            setValidatedCenter(null);
+            setIsCenterValidated(false);
+            toast({ title: "Error", description: "No se encontró ningún centro con ese código.", variant: "destructive" });
+        }
+    } catch (error) {
+       console.error("Error validating center:", error);
+       setIsCenterValidated(false);
+       setValidatedCenter(null);
+       toast({ title: "Error", description: "No se pudo comprobar el código del centro.", variant: "destructive" });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const handleCheckCenterName = async () => {
+    if (!allCenters || !newCenterName || newCenterName.length < 3) {
+      toast({ title: "Error", description: "El nombre debe tener al menos 3 caracteres.", variant: "destructive" });
+      return;
+    }
+    setIsLoading(true);
+    const normalize = (str: string) => str.toLowerCase().replace(/^(ies|ins|institut|colegio|escuela|centro)\s+/i, '').trim();
+    const normalizedInput = normalize(newCenterName);
+    const exists = allCenters.some(c => normalize(c.name) === normalizedInput);
+
+    if (exists) {
+        setIsCenterNameValidated(false);
+        toast({ title: "Nombre no disponible", description: "Este centro ya existe. Por favor, únete a él usando su código.", variant: "destructive" });
+    } else {
+        setIsCenterNameValidated(true);
+        toast({ title: "Nombre Disponible", description: "Puedes crear un centro con este nombre." });
+    }
+    setIsLoading(false);
+  };
+  
+  const handleSaveChanges = async () => {
+    if (!firestore || !user) return;
+    setIsLoading(true);
+
     const finalAvatarString = editableAvatar.id.startsWith('letter') 
         ? `${editableAvatar.id}_${editableAvatar.color}`
         : `${editableAvatar.id}_${editableAvatar.color}`;
 
-    setIsLoading(true);
-
+    let updatedData: Partial<User> = {
+        name,
+        avatar: finalAvatarString,
+        ageRange,
+    };
+    
     try {
-        const updatedData: Partial<User> = {
-            name,
-            avatar: finalAvatarString,
-            ageRange,
-            center: usePersonal ? 'personal' : center,
-            course: usePersonal ? 'personal' : course,
-            className: usePersonal ? 'personal' : className,
-        };
-
+        if (mode === 'personal') {
+            updatedData = { ...updatedData, center: 'personal', course: 'personal', className: 'personal', role: 'student', organizationId: '' };
+        } else if (mode === 'join') {
+            if (!isCenterValidated) {
+                toast({ title: "Error", description: "Debes validar el código del centro.", variant: "destructive" });
+                setIsLoading(false);
+                return;
+            }
+            updatedData = { ...updatedData, center, course, className, role: 'student', organizationId: validatedCenter?.uid };
+        } else if (mode === 'create') {
+            if (!isCenterNameValidated || !newClassName || !generatedCode) {
+                toast({ title: "Error", description: "Completa todos los campos para crear el centro.", variant: "destructive" });
+                setIsLoading(false);
+                return;
+            }
+            const newCenterRef = await addDoc(collection(firestore, "centers"), {
+                name: newCenterName,
+                code: generatedCode,
+                classes: [{ name: newClassName, icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } }],
+                createdAt: new Date(),
+            });
+            
+            const [newCourse, newClass] = newClassName.split('-');
+            updatedData = { 
+                ...updatedData, 
+                center: generatedCode, 
+                course: newCourse.toLowerCase().replace('º',''), 
+                className: newClass,
+                role: 'center-admin', 
+                organizationId: newCenterRef.id 
+            };
+            toast({ title: "¡Centro Creado!", description: `"${newCenterName}" se ha creado con el código ${generatedCode}.` });
+        }
+        
         const userDocRef = doc(firestore, 'users', user.uid);
         await updateDoc(userDocRef, updatedData);
       
@@ -517,6 +612,12 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
 
     return false;
   }, [editableAvatar.id, user.ownedAvatars, isLoading]);
+  
+  const registrationModeInfo = {
+    join: { title: "Unirse a un Centro", description: "Introduce el código proporcionado por tu centro educativo." },
+    create: { title: "Crear un Centro", description: "Si tu centro no está, créalo y compártelo." },
+    personal: { title: "Uso Personal", description: "Usa la app de forma individual." },
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -646,40 +747,12 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
             </div>
             
             <div className="space-y-4 pt-6 border-t">
-                 <Label>Editor de Perfil</Label>
-                 {!userCenterIsValid && user.center !== 'personal' && user.course !== 'default' && (
-                    <div className="p-3 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive text-sm flex items-start gap-2">
-                        <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                        <span>Tu código de centro anterior ya no es válido o has sido movido de clase. Por favor, introduce el nuevo código o selecciona 'Uso Personal'.</span>
-                    </div>
-                 )}
-                 <div className="flex items-center space-x-2 rounded-lg border p-3">
-                    <Switch id="personal-use-switch" checked={usePersonal} onCheckedChange={setUsePersonal} />
-                    <Label htmlFor="personal-use-switch" className="flex flex-col gap-1">
-                      <span className="font-semibold flex items-center gap-2"><UserIcon className="h-4 w-4" />Uso Personal</span>
-                      <span className="text-xs text-muted-foreground">Selecciona esta opción si no perteneces a ningún centro.</span>
-                    </Label>
-                </div>
-
+                <Label>Datos Personales</Label>
                 <div className="space-y-2">
                     <Label htmlFor="name">Nombre Completo</Label>
                     <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="center" className={cn(usePersonal && "text-muted-foreground/50")}>Código de Centro Educativo</Label>
-                    <Input 
-                      id="center" 
-                      value={center} 
-                      onChange={(e) => formatAndSetCenterCode(e.target.value)} 
-                      placeholder="Ej: 123-456" 
-                      disabled={usePersonal}
-                      maxLength={7}
-                    />
-                     <p className="text-xs text-muted-foreground">
-                        Introduce el código proporcionado por tu centro para unirte a su grupo.
-                    </p>
-                </div>
-                <div className="space-y-2">
+                 <div className="space-y-2">
                     <Label htmlFor="ageRange">Rango de Edad</Label>
                     <Select onValueChange={setAgeRange} value={ageRange === 'personal' ? '' : ageRange}>
                         <SelectTrigger id="ageRange">
@@ -694,46 +767,116 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="course" className={cn((usePersonal || !allCenters.some(c => c.code === center)) && 'text-muted-foreground/50')}>Curso</Label>
-                        <Select onValueChange={setCourse} value={course} disabled={usePersonal || !allCenters.some(c => c.code === center)}>
-                            <SelectTrigger id="course"><SelectValue placeholder="Curso..." /></SelectTrigger>
-                            <SelectContent>
-                                {courseOptions.map(option => (
-                                    <SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>
-                                        {option.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="className" className={cn((usePersonal || !allCenters.some(c => c.code === center)) && 'text-muted-foreground/50')}>Clase</Label>
-                        <Select onValueChange={setClassName} value={className} disabled={usePersonal || !allCenters.some(c => c.code === center)}>
-                            <SelectTrigger id="className"><SelectValue placeholder="Clase..." /></SelectTrigger>
-                            <SelectContent>
-                                {classOptions.map(option => (
-                                    <SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>
-                                        {option}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+            </div>
+
+             <div className="space-y-4 pt-6 border-t">
+                <Label>Datos del Centro</Label>
+                <RadioGroup value={mode} onValueChange={(v) => setMode(v as RegistrationMode)} className="grid grid-cols-3 gap-2">
+                    {Object.keys(registrationModeInfo).map((key) => {
+                        const item = registrationModeInfo[key as RegistrationMode];
+                        let Icon;
+                        if (key === 'join') Icon = School;
+                        else if (key === 'create') Icon = PlusCircle;
+                        else Icon = UserIcon;
+                        
+                        return (
+                             <Label key={key} className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === key ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
+                                <Icon className="h-5 w-5"/> <span className="text-xs font-semibold">{item.title.split(' ')[0]}</span>
+                                <RadioGroupItem value={key} className="sr-only"/>
+                            </Label>
+                        )
+                    })}
+                </RadioGroup>
+                
+                <div className="p-3 bg-muted/50 rounded-lg text-center">
+                    <h4 className="font-semibold text-sm">{registrationModeInfo[mode].title}</h4>
+                    <p className="text-xs text-muted-foreground">{registrationModeInfo[mode].description}</p>
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="email">Correo Electrónico</Label>
-                    <Input id="email" value={user.email} disabled />
-                    <p className="text-xs text-muted-foreground">El correo electrónico no se puede cambiar.</p>
-                </div>
+
+                {mode === 'join' && (
+                  <div className="space-y-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="center-code">Código de Centro</Label>
+                        <div className="flex items-center gap-2">
+                            <Input id="center-code" value={center} onChange={e => formatAndSetCenterCode(e.target.value)} placeholder="123-456" disabled={isCenterValidated} />
+                             <Button type="button" onClick={handleValidateCenter} disabled={center.length < 7 || isLoading || isCenterValidated} variant={isCenterValidated ? "secondary" : "default"}>
+                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterValidated ? <CheckCircle className="h-4 w-4"/> : "Validar"}
+                            </Button>
+                        </div>
+                        {validatedCenter && <p className="text-sm font-semibold text-green-600 flex items-center gap-2"><CheckCircle className="h-4 w-4"/> {validatedCenter.name}</p>}
+                     </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="course" className={cn(!isCenterValidated && 'text-muted-foreground/50')}>Curso</Label>
+                            <Select onValueChange={setCourse} value={course} disabled={!isCenterValidated}>
+                                <SelectTrigger id="course"><SelectValue placeholder="Curso..." /></SelectTrigger>
+                                <SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="className" className={cn(!isCenterValidated && 'text-muted-foreground/50')}>Clase</Label>
+                            <Select onValueChange={setClassName} value={className} disabled={!isCenterValidated}>
+                                <SelectTrigger id="className"><SelectValue placeholder="Clase..." /></SelectTrigger>
+                                <SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                  </div>
+                )}
+                
+                {mode === 'create' && (
+                    <div className="space-y-4">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild><Button variant="link" className="text-xs p-0 h-auto">¿Estás seguro de que tu centro no existe?</Button></AlertDialogTrigger>
+                        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Comprobación</AlertDialogTitle><AlertDialogDescription>Antes de crear un centro, asegúrate de que no exista ya en la plataforma para evitar duplicados.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction>Entendido</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                      </AlertDialog>
+                      <div className="space-y-2">
+                          <Label>Nombre del Nuevo Centro</Label>
+                          <div className="flex items-center gap-2">
+                            <Input placeholder="Ej: Instituto Adrimax" value={newCenterName} onChange={e => setNewCenterName(e.target.value)} disabled={isCenterNameValidated} />
+                            <Button type="button" onClick={handleCheckCenterName} disabled={!newCenterName || isLoading || isCenterNameValidated} variant={isCenterNameValidated ? "secondary" : "default"}>
+                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterNameValidated ? <CheckCircle className="h-4 w-4"/> : <Search className="h-4 w-4"/>}
+                            </Button>
+                          </div>
+                      </div>
+                      {isCenterNameValidated && (
+                         <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Nombre de la Primera Clase</Label>
+                                <Input placeholder="Ej: 4ESO-B" value={newClassName} onChange={e => setNewClassName(e.target.value)} />
+                                <p className="text-xs text-muted-foreground">Formato: 'CURSO-LETRA' (1eso-A, 2bach-C, etc.)</p>
+                            </div>
+                            <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                                <Label>Código de Acceso del Centro</Label>
+                                <p className="text-xs text-muted-foreground">Este será el código para que otros se unan. Guárdalo bien.</p>
+                                {generatedCode ? (
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="text-base font-bold tracking-widest">{generatedCode}</Badge>
+                                        <Button type="button" variant="ghost" size="icon" onClick={handleCopyCode} className="h-7 w-7">
+                                            {isCodeCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <Button type="button" onClick={handleGenerateCode} className="w-full"><RefreshCw className="mr-2 h-4 w-4"/>Generar Código</Button>
+                                )}
+                            </div>
+                         </div>
+                      )}
+                    </div>
+                )}
+             </div>
+
+            <div className="space-y-2 pt-6 border-t">
+                <Label htmlFor="email">Correo Electrónico</Label>
+                <Input id="email" value={user.email} disabled />
+                <p className="text-xs text-muted-foreground">El correo electrónico no se puede cambiar.</p>
             </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline" disabled={isLoading}>Cancelar</Button>
           </DialogClose>
-          <Button onClick={handleSaveChanges} disabled={isSaveDisabled}>
+          <Button onClick={handleSaveChanges} disabled={isSaveDisabled || isLoading}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Guardar Cambios
           </Button>
@@ -875,3 +1018,4 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
     
 
     
+
