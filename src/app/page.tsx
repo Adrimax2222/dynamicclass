@@ -419,6 +419,7 @@ export default function AuthPage() {
     if (isCenterValidated && formatted !== validatedCenter?.code) {
         setIsCenterValidated(false);
         setValidatedCenter(null);
+        form.trigger('center');
     }
   };
 
@@ -434,16 +435,19 @@ export default function AuthPage() {
               const centerData = { uid: centerDoc.id, ...centerDoc.data() } as Center;
               setValidatedCenter(centerData);
               setIsCenterValidated(true);
+              form.clearErrors('center');
               toast({ title: "Centro validado", description: `Te has unido a ${centerData.name}.` });
           } else {
               setValidatedCenter(null);
               setIsCenterValidated(false);
+              form.setError('center', {type: 'manual', message: 'No se encontró centro con ese código.'});
               toast({ title: "Código no válido", description: "No se encontró centro con ese código.", variant: "destructive" });
           }
       } catch (error) {
           console.error("Error validating center:", error);
           setIsCenterValidated(false);
           setValidatedCenter(null);
+          form.setError('center', {type: 'manual', message: 'No se pudo comprobar el código.'});
           toast({ title: "Error de validación", description: "No se pudo comprobar el código.", variant: "destructive" });
       } finally {
           setIsLoading(false);
@@ -455,9 +459,10 @@ export default function AuthPage() {
             setCenterExistsWarning(false);
             return;
         }
-        const q = query(collection(firestore, 'centers'), where('name', '==', name));
-        const querySnapshot = await getDocs(q);
-        setCenterExistsWarning(!querySnapshot.empty);
+        const centersQuery = query(collection(firestore, 'centers'));
+        const querySnapshot = await getDocs(centersQuery);
+        const exists = querySnapshot.docs.some(doc => doc.data().name.toLowerCase() === name.toLowerCase());
+        setCenterExistsWarning(exists);
     };
 
   const registrationModeInfo = {
@@ -532,13 +537,13 @@ export default function AuthPage() {
                             <ScrollArea className="h-[450px] pr-4">
                               <div className="space-y-4">
                                   <RadioGroup value={registrationMode} onValueChange={(v) => setRegistrationMode(v as RegistrationMode)} className="grid grid-cols-3 gap-2">
-                                      <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50 text-muted-foreground", registrationMode === 'join' && "bg-accent border-primary text-accent-foreground")}>
+                                      <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", registrationMode === 'join' ? "bg-primary/10 border-primary text-primary" : "text-muted-foreground")}>
                                           <School className="h-5 w-5"/> <span className="text-xs font-semibold">Unirse</span>
                                           <RadioGroupItem value="join" className="sr-only"/>
                                       </Label>
                                        <AlertDialog>
                                             <AlertDialogTrigger asChild>
-                                                <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50 text-muted-foreground", registrationMode === 'create' && "bg-accent border-primary text-accent-foreground")}>
+                                                <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", registrationMode === 'create' ? "bg-primary/10 border-primary text-primary" : "text-muted-foreground")}>
                                                     <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">Crear</span>
                                                 </Label>
                                             </AlertDialogTrigger>
@@ -555,7 +560,7 @@ export default function AuthPage() {
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
-                                      <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50 text-muted-foreground", registrationMode === 'personal' && "bg-accent border-primary text-accent-foreground")}>
+                                      <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", registrationMode === 'personal' ? "bg-primary/10 border-primary text-primary" : "text-muted-foreground")}>
                                           <UserIcon className="h-5 w-5"/> <span className="text-xs font-semibold">Personal</span>
                                           <RadioGroupItem value="personal" className="sr-only"/>
                                       </Label>
@@ -567,9 +572,9 @@ export default function AuthPage() {
                                     </div>
 
                                   {registrationMode === 'join' && (
-                                    <FormField control={form.control} name="center" render={({ field }) => (
+                                    <FormField control={form.control} name="center" render={({ field, fieldState }) => (
                                       <FormItem>
-                                        <FormLabel>Código de Centro Educativo</FormLabel>
+                                        <FormLabel className={cn(fieldState.invalid && 'text-destructive')}>Código de Centro Educativo</FormLabel>
                                         <div className="flex items-center gap-2">
                                           <FormControl><Input placeholder="123-456" {...field} onChange={(e) => formatAndSetCenterCode(e.target.value)} disabled={isCenterValidated} /></FormControl>
                                           <Button type="button" onClick={handleValidateCenter} disabled={field.value.length !== 7 || isLoading || isCenterValidated} variant={isCenterValidated ? "secondary" : "default"}>
@@ -649,11 +654,11 @@ export default function AuthPage() {
                                 <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
                             </Button>
                             <Button 
-                                type="button"
-                                onClick={isLastStep ? form.handleSubmit(onRegisterSubmit) : goToNextStep}
+                                type={isLastStep ? "submit" : "button"}
+                                onClick={isLastStep ? undefined : goToNextStep}
                                 className="w-full" 
                                 size="lg" 
-                                disabled={isLoading || isGoogleLoading}>
+                                disabled={isLoading || isGoogleLoading || (registrationMode === 'create' && centerExistsWarning)}>
                                 {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creando...</>) : isLastStep ? ("Crear Cuenta") : ("Siguiente")}
                             </Button>
                         </div>
