@@ -215,7 +215,7 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                     name: values.newCenterName,
                     code: generatedCode,
                     classes: [{ name: values.newClassName, icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } }],
-                    createdAt: serverTimestamp(),
+                    createdAt: new Date(),
                 });
                 
                 const [course, className] = values.newClassName.split('-');
@@ -488,3 +488,5 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     </Dialog>
   );
 }
+
+    

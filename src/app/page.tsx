@@ -210,7 +210,7 @@ export default function AuthPage() {
   const { data: allCenters } = useCollection<Center>(centersCollection, { listen: false });
 
   useEffect(() => {
-    if (user) router.push('/home');
+    // This effect is intentionally left empty. User creation is handled onSubmit.
   }, [user, router]);
   
   const registrationSchema = useMemo(() => createRegistrationSchema(registrationMode, isCenterValidated, isCenterNameValidated, !!generatedCode), [registrationMode, isCenterValidated, isCenterNameValidated, generatedCode]);
@@ -310,7 +310,7 @@ export default function AuthPage() {
             name: values.newCenterName,
             code: generatedCode,
             classes: [{ name: values.newClassName, icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } }],
-            createdAt: serverTimestamp(),
+            createdAt: new Date(),
         });
         const [course, className] = values.newClassName!.split('-');
         
@@ -318,13 +318,12 @@ export default function AuthPage() {
             name: values.fullName, email: values.email, avatar: defaultAvatarUrl,
             center: generatedCode!, ageRange: values.ageRange,
             course: course.toLowerCase().replace('º',''), className: className, 
-            role: 'student', // Create as student first
+            role: 'student',
             organizationId: newCenterRef.id, trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
             isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
         };
         await setDoc(userDocRef, userData);
         
-        // Now update the role to admin
         await updateDoc(userDocRef, { role: `admin-${values.newClassName}` });
 
         toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${generatedCode}.` });
@@ -801,3 +800,5 @@ export default function AuthPage() {
     </main>
   );
 }
+
+    
