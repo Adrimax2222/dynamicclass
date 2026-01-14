@@ -608,47 +608,47 @@ export default function AuthPage() {
                                     )} />
                                   )}
                                   
-                                  {isCenterValidated && registrationMode === 'join' && (
-                                      <div className="grid grid-cols-2 gap-4">
-                                      <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                      <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                    </div>
-                                  )}
-                                  
-                                  <FormField control={form.control} name="ageRange" render={({ field }) => (<FormItem><FormLabel>Rango de Edad</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger></FormControl><SelectContent><SelectItem value="12-15">12-15 años</SelectItem><SelectItem value="16-18">16-18 años</SelectItem><SelectItem value="19-22">19-22 años</SelectItem><SelectItem value="23+">23+ años</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-
                                   {registrationMode === 'create' && (
-                                    <div className="space-y-4 p-3 border-l-4 border-primary bg-primary/5 rounded-r-lg">
-                                        <FormField control={form.control} name="newCenterName" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Nombre del Nuevo Centro</FormLabel>
-                                                <div className="flex items-center gap-2">
+                                    <div className="space-y-4">
+                                      <FormField control={form.control} name="newCenterName" render={({ field, fieldState }) => (
+                                          <FormItem>
+                                              <FormLabel className={cn(fieldState.invalid && !isCenterNameValidated && 'text-destructive')}>Nombre del Nuevo Centro</FormLabel>
+                                              <div className="flex items-center gap-2">
                                                   <FormControl>
-                                                    <Input placeholder="Ej: Instituto Adrimax" {...field} disabled={isCenterNameValidated} />
+                                                      <Input placeholder="Ej: Instituto Adrimax" {...field} disabled={isCenterNameValidated} />
                                                   </FormControl>
-                                                   <Button type="button" onClick={handleCheckCenterName} disabled={isLoading || isCenterNameValidated} variant={isCenterNameValidated ? "secondary" : "default"}>
-                                                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterNameValidated ? <CheckCircle className="h-4 w-4"/> : <Search className="h-4 w-4" />}
-                                                    </Button>
-                                                </div>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        
-                                        {isCenterNameValidated && (
-                                            <FormField control={form.control} name="newClassName" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Nombre de tu Primera Clase</FormLabel>
-                                                    <FormControl><Input placeholder="Ej: 4ESO-B" {...field} /></FormControl>
-                                                    <FormDescription>Usa un formato como 'CURSO-LETRA'.</FormDescription>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
-                                        )}
+                                                  <Button type="button" onClick={handleCheckCenterName} disabled={!field.value || isLoading || isCenterNameValidated} variant={isCenterNameValidated ? "secondary" : "default"}>
+                                                      {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterNameValidated ? <CheckCircle className="h-4 w-4"/> : "Comprobar"}
+                                                  </Button>
+                                              </div>
+                                              <FormMessage />
+                                          </FormItem>
+                                      )} />
+                                      {isCenterNameValidated && (
+                                          <FormField control={form.control} name="newClassName" render={({ field }) => (
+                                              <FormItem>
+                                                  <FormLabel>Nombre de tu Primera Clase</FormLabel>
+                                                  <FormControl><Input placeholder="Ej: 4ESO-B" {...field} /></FormControl>
+                                                  <FormDescription>Usa un formato como 'CURSO-LETRA'.</FormDescription>
+                                                  <FormMessage />
+                                              </FormItem>
+                                          )} />
+                                      )}
                                     </div>
                                   )}
                                   
+                                  <div className={cn("space-y-4", (registrationMode === 'join' && !isCenterValidated) || (registrationMode === 'create' && !isCenterNameValidated) ? "hidden" : "block")}>
+                                      {registrationMode === 'join' && (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                        </div>
+                                      )}
+                                      <FormField control={form.control} name="ageRange" render={({ field }) => (<FormItem><FormLabel>Rango de Edad</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger></FormControl><SelectContent><SelectItem value="12-15">12-15 años</SelectItem><SelectItem value="16-18">16-18 años</SelectItem><SelectItem value="19-22">19-22 años</SelectItem><SelectItem value="23+">23+ años</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                                  </div>
+
                                   <FormField control={form.control} name="role" render={({ field }) => (
-                                      <FormItem className="space-y-3">
+                                      <FormItem className="space-y-3 pt-4">
                                           <FormLabel>Tu Rol</FormLabel>
                                           <FormControl>
                                               <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-3 gap-4">
@@ -678,7 +678,7 @@ export default function AuthPage() {
                                 onClick={isLastStep ? undefined : goToNextStep}
                                 className="w-full" 
                                 size="lg" 
-                                disabled={isLoading || isGoogleLoading || (registrationMode === 'create' && form.formState.errors.newCenterName !== undefined)}>
+                                disabled={isLoading || isGoogleLoading || (isLastStep && !form.formState.isValid)}>
                                 {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creando...</>) : isLastStep ? ("Crear Cuenta") : ("Siguiente")}
                             </Button>
                         </div>
@@ -730,5 +730,3 @@ export default function AuthPage() {
     </main>
   );
 }
-
-    
