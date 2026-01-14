@@ -374,20 +374,36 @@ export default function AuthPage() {
         toast({ title: "¡Centro Creado!", description: `"${''}${values.newCenterName}" se ha creado con el código ${''}${generatedCode}.` });
 
       } else {
-         userData = {
-            name: values.fullName, email: values.email, avatar: defaultAvatarUrl,
-            center: registrationMode === 'personal' ? 'personal' : values.center,
-            ageRange: values.ageRange,
-            course: registrationMode === 'personal' ? 'personal' : values.course,
-            className: registrationMode === 'personal' ? 'personal' : values.className,
-            role: 'student', 
-            organizationId: registrationMode === 'join' ? validatedCenter?.uid : undefined,
-            trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
-            isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
+        const baseData = {
+          name: values.fullName,
+          email: values.email,
+          avatar: defaultAvatarUrl,
+          center: registrationMode === 'personal' ? 'personal' : values.center,
+          ageRange: values.ageRange,
+          course: registrationMode === 'personal' ? 'personal' : values.course,
+          className: registrationMode === 'personal' ? 'personal' : values.className,
+          role: 'student',
+          trophies: 0,
+          tasks: 0,
+          exams: 0,
+          pending: 0,
+          activities: 0,
+          isNewUser: true,
+          studyMinutes: 0,
+          streak: 0,
+          lastStudyDay: '',
+          ownedAvatars: [],
         };
+        
+        if (registrationMode === 'join' && validatedCenter?.uid) {
+          userData = { ...baseData, organizationId: validatedCenter.uid };
+        } else {
+          const { organizationId, ...rest } = baseData;
+          userData = rest as Omit<User, 'uid' | 'organizationId'> & { organizationId?: string };
+        }
       }
       
-      await setDoc(userDocRef, userData);
+      await setDoc(userDocRef, userData as any); // Use 'as any' to bypass strict type checking for this dynamic object
       await sendEmailVerification(firebaseUser);
       setLastRegisteredUser(firebaseUser);
       setRegistrationSuccess(true);
@@ -871,5 +887,3 @@ export default function AuthPage() {
     </main>
   );
 }
-
-    
