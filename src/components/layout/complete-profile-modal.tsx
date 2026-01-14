@@ -46,12 +46,13 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, UserCheck, User as UserIcon, CheckCircle, School, PlusCircle } from "lucide-react";
+import { Loader2, UserCheck, User as UserIcon, CheckCircle, School, PlusCircle, AlertTriangle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Label } from "../ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { Alert, AlertTitle } from "../ui/alert";
 
 type RegistrationMode = 'join' | 'personal' | 'create';
 
@@ -63,11 +64,29 @@ const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean)
   newCenterName: z.string().optional(),
   newClassName: z.string().optional(),
 }).refine(data => {
+    if (mode === 'join') return data.center.trim() !== '';
+    return true;
+}, {
+    message: "El código de centro es obligatorio.",
+    path: ['center'],
+}).refine(data => {
     if (mode === 'join') return isCenterValidated;
     return true;
 }, {
     message: "Debes validar tu código de centro.",
     path: ['center'],
+}).refine(data => {
+    if (mode === 'join' && isCenterValidated) return data.course.trim() !== '';
+    return true;
+}, {
+    message: "Debes seleccionar un curso.",
+    path: ["course"],
+}).refine(data => {
+    if (mode === 'join' && isCenterValidated) return data.className.trim() !== '';
+    return true;
+}, {
+    message: "Debes seleccionar una clase.",
+    path: ["className"],
 }).refine(data => {
     if (mode === 'create') return data.newCenterName && data.newCenterName.trim().length > 2;
     return true;
@@ -75,11 +94,11 @@ const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean)
     message: "El nombre del centro es obligatorio.",
     path: ['newCenterName'],
 }).refine(data => {
-    if (mode === 'create') return data.newClassName && data.newClassName.trim().length > 1;
+    if (mode === 'create') return data.newClassName && data.newClassName.trim().length > 1 && data.newClassName.includes('-');
     return true;
 }, {
-    message: "El nombre de la clase es obligatorio.",
-    path: ['newClassName'],
+    message: "El formato de clase debe ser 'CURSO-LETRA'.",
+    path: ["newClassName"],
 });
 
 type ProfileSchema = z.infer<ReturnType<typeof createProfileSchema>>;
@@ -105,6 +124,7 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     const [mode, setMode] = useState<RegistrationMode>('join');
     const [isCenterValidated, setIsCenterValidated] = useState(false);
     const [validatedCenter, setValidatedCenter] = useState<Center | null>(null);
+    const [centerExistsWarning, setCenterExistsWarning] = useState(false);
     const { toast } = useToast();
     
     const firestore = useFirestore();
@@ -140,12 +160,19 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
         form.reset();
         setIsCenterValidated(false);
         setValidatedCenter(null);
+        setCenterExistsWarning(false);
     }, [mode, form]);
 
     const generateCode = () => `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
 
     const onSubmit = async (values: ProfileSchema) => {
         setIsLoading(true);
+        if (mode === 'create' && centerExistsWarning) {
+          toast({ title: "Centro Duplicado", description: "Este centro ya existe. Por favor, usa el modo 'Unirse' para registrarte.", variant: "destructive" });
+          setIsLoading(false);
+          return;
+        }
+
         if (mode === 'personal') {
             onSave({ center: 'personal', course: 'personal', className: 'personal', ageRange: values.ageRange });
         } else if (mode === 'join' && isCenterValidated) {
@@ -228,6 +255,22 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
             setIsLoading(false);
         }
     };
+    
+    const handleCheckCenterName = async (name: string) => {
+        if (!firestore || name.length < 3) {
+            setCenterExistsWarning(false);
+            return;
+        }
+        const q = query(collection(firestore, 'centers'), where('name', '==', name));
+        const querySnapshot = await getDocs(q);
+        setCenterExistsWarning(!querySnapshot.empty);
+    };
+
+    const registrationModeInfo = {
+      join: { title: "Unirse a un Centro", description: "Introduce el código proporcionado por tu centro educativo para acceder a sus horarios, anuncios y clasificaciones." },
+      create: { title: "Crear un Centro", description: "Si tu centro no está en Dynamic Class, puedes crearlo aquí. Te convertirás en el administrador y recibirás un código para compartir." },
+      personal: { title: "Uso Personal", description: "Utiliza la aplicación de forma individual sin unirte a ningún centro. Ideal para gestionar tus propios horarios y notas." },
+    }
 
   return (
     <Dialog open={true} >
@@ -245,19 +288,40 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                  <RadioGroup value={mode} onValueChange={(v) => setMode(v as RegistrationMode)} className="grid grid-cols-3 gap-2">
-                    <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-accent/50", mode === 'join' && "bg-accent border-primary")}>
+                    <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50 text-muted-foreground", mode === 'join' && "bg-accent border-primary text-accent-foreground")}>
                         <School className="h-5 w-5"/> <span className="text-xs font-semibold">Unirse</span>
                         <RadioGroupItem value="join" className="sr-only"/>
                     </Label>
-                    <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-accent/50", mode === 'create' && "bg-accent border-primary")}>
-                        <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">Crear</span>
-                        <RadioGroupItem value="create" className="sr-only"/>
-                    </Label>
-                    <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-accent/50", mode === 'personal' && "bg-accent border-primary")}>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                             <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50 text-muted-foreground", mode === 'create' && "bg-accent border-primary text-accent-foreground")}>
+                                <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">Crear</span>
+                            </Label>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Crear un nuevo centro?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Asegúrate de que tu centro no exista ya en Dynamic Class para evitar duplicados. Si creas un centro, serás su administrador.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => setMode('create')}>Sí, crear</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                    <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50 text-muted-foreground", mode === 'personal' && "bg-accent border-primary text-accent-foreground")}>
                         <UserIcon className="h-5 w-5"/> <span className="text-xs font-semibold">Personal</span>
                         <RadioGroupItem value="personal" className="sr-only"/>
                     </Label>
                 </RadioGroup>
+                
+                <div className="p-3 bg-muted/50 rounded-lg text-center">
+                    <h4 className="font-semibold text-sm">{registrationModeInfo[mode].title}</h4>
+                    <p className="text-xs text-muted-foreground">{registrationModeInfo[mode].description}</p>
+                </div>
+
 
                 {mode === 'join' && (
                     <FormField control={form.control} name="center" render={({ field }) => (
@@ -269,7 +333,6 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                                     {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterValidated ? <CheckCircle className="h-4 w-4"/> : "Validar"}
                                 </Button>
                             </div>
-                            <FormDescription>Únete al grupo de tu centro.</FormDescription>
                             {validatedCenter && isCenterValidated && (
                                 <FormDescription className="text-green-600 font-semibold flex items-center gap-2">
                                     <CheckCircle className="h-4 w-4" />{validatedCenter.name}
@@ -285,8 +348,14 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                         <FormField control={form.control} name="newCenterName" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Nombre del Nuevo Centro</FormLabel>
-                                <FormControl><Input placeholder="Ej: Instituto Adrimax" {...field} /></FormControl>
-                                <FormDescription>El nombre de tu institución educativa.</FormDescription>
+                                <FormControl><Input placeholder="Ej: Instituto Adrimax" {...field} onChange={(e) => {field.onChange(e); handleCheckCenterName(e.target.value);}} /></FormControl>
+                                {centerExistsWarning && (
+                                    <Alert variant="destructive" className="mt-2">
+                                        <AlertTriangle className="h-4 w-4" />
+                                        <AlertTitle>¡Centro Existente!</AlertTitle>
+                                        <p className="text-xs">Este nombre ya está en uso. Por favor, cambia al modo "Unirse" para acceder a este centro.</p>
+                                    </Alert>
+                                )}
                                 <FormMessage />
                             </FormItem>
                         )} />

@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ArrowLeft, Eye, EyeOff, MailCheck, User as UserIcon, CheckCircle, School, PlusCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Eye, EyeOff, MailCheck, User as UserIcon, CheckCircle, School, PlusCircle, AlertTriangle } from "lucide-react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -66,6 +66,7 @@ import type { User, Center } from "@/lib/types";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertTitle } from "@/components/ui/alert";
 
 type RegistrationMode = 'join' | 'personal' | 'create';
 
@@ -81,11 +82,29 @@ const createRegistrationSchema = (mode: RegistrationMode, isCenterValidated: boo
   newCenterName: z.string().optional(),
   newClassName: z.string().optional(),
 }).refine(data => {
+    if (mode === 'join') return data.center.trim() !== '';
+    return true;
+}, {
+    message: "El código de centro es obligatorio.",
+    path: ["center"],
+}).refine(data => {
     if (mode === 'join') return isCenterValidated;
     return true;
 }, {
     message: "Debes validar tu código de centro.",
     path: ["center"],
+}).refine(data => {
+    if (mode === 'join' && isCenterValidated) return data.course.trim() !== '';
+    return true;
+}, {
+    message: "Debes seleccionar un curso.",
+    path: ["course"],
+}).refine(data => {
+    if (mode === 'join' && isCenterValidated) return data.className.trim() !== '';
+    return true;
+}, {
+    message: "Debes seleccionar una clase.",
+    path: ["className"],
 }).refine(data => {
     if (mode === 'create') return data.newCenterName && data.newCenterName.trim().length > 2;
     return true;
@@ -93,10 +112,10 @@ const createRegistrationSchema = (mode: RegistrationMode, isCenterValidated: boo
     message: "El nombre del centro es obligatorio.",
     path: ["newCenterName"],
 }).refine(data => {
-    if (mode === 'create') return data.newClassName && data.newClassName.trim().length > 1;
+    if (mode === 'create') return data.newClassName && data.newClassName.trim().length > 1 && data.newClassName.includes('-');
     return true;
 }, {
-    message: "El nombre de la clase es obligatorio.",
+    message: "El formato de clase debe ser 'CURSO-LETRA'.",
     path: ["newClassName"],
 });
 
@@ -167,7 +186,8 @@ export default function AuthPage() {
   const [registrationMode, setRegistrationMode] = useState<RegistrationMode>('join');
   const [isCenterValidated, setIsCenterValidated] = useState(false);
   const [validatedCenter, setValidatedCenter] = useState<Center | null>(null);
-
+  const [centerExistsWarning, setCenterExistsWarning] = useState(false);
+  
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -204,6 +224,7 @@ export default function AuthPage() {
     form.reset();
     setIsCenterValidated(false);
     setValidatedCenter(null);
+    setCenterExistsWarning(false);
   }, [registrationMode, form]);
 
   const loginForm = useForm<LoginSchemaType>({
@@ -215,6 +236,14 @@ export default function AuthPage() {
     const fieldsToValidate = steps[currentStep].fields as (keyof RegistrationSchemaType)[];
     const isValid = await form.trigger(fieldsToValidate);
     if (isValid) {
+      if (currentStep === 1 && registrationMode === 'create' && centerExistsWarning) {
+        toast({
+          title: "Centro Duplicado",
+          description: "Este centro ya existe. Por favor, usa el modo 'Unirse' para registrarte.",
+          variant: "destructive"
+        });
+        return;
+      }
       setAnimationDirection('forward');
       setCurrentStep(prev => prev + 1);
     }
@@ -420,6 +449,22 @@ export default function AuthPage() {
           setIsLoading(false);
       }
   };
+  
+    const handleCheckCenterName = async (name: string) => {
+        if (!firestore || name.length < 3) {
+            setCenterExistsWarning(false);
+            return;
+        }
+        const q = query(collection(firestore, 'centers'), where('name', '==', name));
+        const querySnapshot = await getDocs(q);
+        setCenterExistsWarning(!querySnapshot.empty);
+    };
+
+  const registrationModeInfo = {
+    join: { title: "Unirse a un Centro", description: "Introduce el código proporcionado por tu centro educativo para acceder a sus horarios, anuncios y clasificaciones." },
+    create: { title: "Crear un Centro", description: "Si tu centro no está en Dynamic Class, puedes crearlo aquí. Te convertirás en el administrador y recibirás un código para compartir." },
+    personal: { title: "Uso Personal", description: "Utiliza la aplicación de forma individual sin unirte a ningún centro. Ideal para gestionar tus propios horarios y notas." },
+  }
 
   if (user) return <LoadingScreen />;
 
@@ -487,13 +532,13 @@ export default function AuthPage() {
                             <ScrollArea className="h-[450px] pr-4">
                               <div className="space-y-4">
                                   <RadioGroup value={registrationMode} onValueChange={(v) => setRegistrationMode(v as RegistrationMode)} className="grid grid-cols-3 gap-2">
-                                      <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-accent/50", registrationMode === 'join' && "bg-accent border-primary")}>
+                                      <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50 text-muted-foreground", registrationMode === 'join' && "bg-accent border-primary text-accent-foreground")}>
                                           <School className="h-5 w-5"/> <span className="text-xs font-semibold">Unirse</span>
                                           <RadioGroupItem value="join" className="sr-only"/>
                                       </Label>
                                        <AlertDialog>
                                             <AlertDialogTrigger asChild>
-                                                <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-accent/50", registrationMode === 'create' && "bg-accent border-primary")}>
+                                                <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50 text-muted-foreground", registrationMode === 'create' && "bg-accent border-primary text-accent-foreground")}>
                                                     <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">Crear</span>
                                                 </Label>
                                             </AlertDialogTrigger>
@@ -510,12 +555,17 @@ export default function AuthPage() {
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
-                                      <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-accent/50", registrationMode === 'personal' && "bg-accent border-primary")}>
+                                      <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50 text-muted-foreground", registrationMode === 'personal' && "bg-accent border-primary text-accent-foreground")}>
                                           <UserIcon className="h-5 w-5"/> <span className="text-xs font-semibold">Personal</span>
                                           <RadioGroupItem value="personal" className="sr-only"/>
                                       </Label>
                                   </RadioGroup>
-                                  
+
+                                    <div className="p-3 bg-muted/50 rounded-lg text-center">
+                                        <h4 className="font-semibold text-sm">{registrationModeInfo[registrationMode].title}</h4>
+                                        <p className="text-xs text-muted-foreground">{registrationModeInfo[registrationMode].description}</p>
+                                    </div>
+
                                   {registrationMode === 'join' && (
                                     <FormField control={form.control} name="center" render={({ field }) => (
                                       <FormItem>
@@ -526,7 +576,6 @@ export default function AuthPage() {
                                               {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterValidated ? <CheckCircle className="h-4 w-4"/> : "Validar"}
                                           </Button>
                                         </div>
-                                        <FormDescription>Únete al grupo de tu centro.</FormDescription>
                                         {validatedCenter && isCenterValidated && (
                                           <FormDescription className="text-green-600 font-semibold flex items-center gap-2">
                                               <CheckCircle className="h-4 w-4" />{validatedCenter.name}
@@ -542,8 +591,14 @@ export default function AuthPage() {
                                         <FormField control={form.control} name="newCenterName" render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Nombre del Nuevo Centro</FormLabel>
-                                                <FormControl><Input placeholder="Ej: Instituto Adrimax" {...field} /></FormControl>
-                                                <FormDescription>El nombre de tu institución educativa.</FormDescription>
+                                                <FormControl><Input placeholder="Ej: Instituto Adrimax" {...field} onChange={(e) => {field.onChange(e); handleCheckCenterName(e.target.value);}} /></FormControl>
+                                                {centerExistsWarning && (
+                                                    <Alert variant="destructive" className="mt-2">
+                                                        <AlertTriangle className="h-4 w-4" />
+                                                        <AlertTitle>¡Centro Existente!</AlertTitle>
+                                                        <p className="text-xs">Este nombre ya está en uso. Por favor, cambia al modo "Unirse" para acceder a este centro.</p>
+                                                    </Alert>
+                                                )}
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
@@ -551,7 +606,7 @@ export default function AuthPage() {
                                             <FormItem>
                                                 <FormLabel>Nombre de tu Primera Clase</FormLabel>
                                                 <FormControl><Input placeholder="Ej: 4ESO-B" {...field} /></FormControl>
-                                                <FormDescription>Usa un formato como 'CURSO-LETRA'. Serás el admin de esta clase.</FormDescription>
+                                                <FormDescription>Usa un formato como 'CURSO-LETRA'.</FormDescription>
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
@@ -594,8 +649,8 @@ export default function AuthPage() {
                                 <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
                             </Button>
                             <Button 
-                                type={isLastStep ? 'submit' : 'button'}
-                                onClick={!isLastStep ? goToNextStep : undefined} 
+                                type="button"
+                                onClick={isLastStep ? form.handleSubmit(onRegisterSubmit) : goToNextStep}
                                 className="w-full" 
                                 size="lg" 
                                 disabled={isLoading || isGoogleLoading}>
