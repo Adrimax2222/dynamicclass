@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -271,6 +272,8 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
                                         <SelectItem value="C">C</SelectItem>
                                         <SelectItem value="D">D</SelectItem>
                                         <SelectItem value="E">E</SelectItem>
+                                        <SelectItem value="F">F</SelectItem>
+                                        <SelectItem value="G">G</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -352,3 +355,5 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
         </Card>
     );
 }
+
+    
