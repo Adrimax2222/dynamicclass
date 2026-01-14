@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ArrowLeft, Eye, EyeOff, MailCheck, User as UserIcon, CheckCircle, School, PlusCircle, AlertTriangle, Search, Copy, Check } from "lucide-react";
+import { Loader2, ArrowLeft, Eye, EyeOff, MailCheck, User as UserIcon, CheckCircle, School, PlusCircle, AlertTriangle, Search, Copy, Check, RefreshCw } from "lucide-react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -17,6 +17,7 @@ import {
   GoogleAuthProvider,
   EmailAuthProvider,
   reauthenticateWithCredential,
+  type User as FirebaseUser,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, collection, getDocs, query, where, addDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 
@@ -68,7 +69,7 @@ import type { User, Center } from "@/lib/types";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Alert, AlertTitle } from "../ui/alert";
+import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
 type RegistrationMode = 'join' | 'personal' | 'create';
@@ -189,6 +190,30 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     );
 }
 
+function VerificationScreen({ onBackToLogin, onResend, canResend, countdown }: { onBackToLogin: () => void, onResend: () => void, canResend: boolean, countdown: number }) {
+  return (
+    <div className="text-center space-y-4">
+      <MailCheck className="h-16 w-16 text-green-500 mx-auto animate-pulse-slow" />
+      <p className="text-foreground text-lg font-semibold">¡Gracias por registrarte!</p>
+      <p className="text-muted-foreground text-sm">
+        Te hemos enviado un correo. Haz clic en el enlace de verificación para activar tu cuenta.
+      </p>
+      <p className="text-xs text-muted-foreground font-semibold bg-muted p-2 rounded-md">
+        (Si no lo ves, ¡revisa tu carpeta de spam!)
+      </p>
+      <div className="flex items-center justify-center gap-4 pt-4">
+        <Button onClick={onResend} disabled={!canResend}>
+          <RefreshCw className={cn("mr-2 h-4 w-4", !canResend && "animate-spin")} />
+          {canResend ? 'Reenviar correo' : `Reenviar en ${countdown}s`}
+        </Button>
+      </div>
+       <Button onClick={onBackToLogin} variant="link" className="w-full mt-4">
+          Volver a Inicio de Sesión
+      </Button>
+    </div>
+  );
+}
+
 export default function AuthPage() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
@@ -205,6 +230,9 @@ export default function AuthPage() {
   const [isCenterNameValidated, setIsCenterNameValidated] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isCodeCopied, setIsCodeCopied] = useState(false);
+  const [lastRegisteredUser, setLastRegisteredUser] = useState<FirebaseUser | null>(null);
+  const [countdown, setCountdown] = useState(40);
+  const [canResend, setCanResend] = useState(false);
   
   const auth = useAuth();
   const firestore = useFirestore();
@@ -212,6 +240,19 @@ export default function AuthPage() {
   
   const centersCollection = useMemo(() => firestore ? collection(firestore, 'centers') : null, [firestore]);
   const { data: allCenters } = useCollection<Center>(centersCollection, { listen: false });
+
+  // Countdown timer effect
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (registrationSuccess && countdown > 0) {
+      timer = setTimeout(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
+    } else if (registrationSuccess && countdown === 0) {
+      setCanResend(true);
+    }
+    return () => clearTimeout(timer);
+  }, [registrationSuccess, countdown]);
 
   // This effect will redirect the user if they are already logged in.
   useEffect(() => {
@@ -348,6 +389,7 @@ export default function AuthPage() {
       
       await setDoc(userDocRef, userData);
       await sendEmailVerification(firebaseUser);
+      setLastRegisteredUser(firebaseUser);
       setRegistrationSuccess(true);
       
     } catch (error: any) {
@@ -381,8 +423,8 @@ export default function AuthPage() {
       const freshUser = auth.currentUser;
 
       if (freshUser && !freshUser.emailVerified && !isAdmin) {
-        toast({ title: "Verificación Requerida", description: "Verifica tu correo para iniciar sesión.", variant: "destructive" });
-        await signOut(auth);
+        setLastRegisteredUser(freshUser);
+        setRegistrationSuccess(true); // Go to verification screen
         setIsLoading(false);
         return;
       }
@@ -435,6 +477,23 @@ export default function AuthPage() {
     }
   }
 
+  const handleResendVerification = async () => {
+    if (!lastRegisteredUser) {
+        toast({ title: "Error", description: "No se encontró el usuario para reenviar el correo.", variant: "destructive" });
+        return;
+    }
+    try {
+      await sendEmailVerification(lastRegisteredUser);
+      toast({ title: "Correo reenviado", description: "Se ha enviado un nuevo correo de verificación." });
+      setCanResend(false);
+      setCountdown(40);
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      toast({ title: "Error", description: "No se pudo reenviar el correo. Inténtalo de nuevo más tarde.", variant: "destructive" });
+    }
+  };
+
+
   const progress = ((currentStep + 1) / steps.length) * 100;
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === 1;
@@ -454,6 +513,9 @@ export default function AuthPage() {
     setRegistrationMode('join');
     setIsCenterValidated(false);
     setValidatedCenter(null);
+    setLastRegisteredUser(null);
+    setCanResend(false);
+    setCountdown(40);
   }
 
   const formatAndSetCenterCode = (value: string) => {
@@ -582,19 +644,12 @@ export default function AuthPage() {
         </CardHeader>
         <CardContent>
             {registrationSuccess ? (
-                <div className="text-center space-y-4">
-                    <MailCheck className="h-16 w-16 text-green-500 mx-auto animate-pulse-slow" />
-                    <p className="text-foreground">¡Gracias por registrarte!</p>
-                    <p className="text-muted-foreground text-sm">
-                        Te hemos enviado un correo. Haz clic en el enlace de verificación para activar tu cuenta.
-                    </p>
-                    <p className="text-sm font-semibold text-muted-foreground">
-                        (Si no lo ves, ¡revisa tu carpeta de spam!)
-                    </p>
-                    <Button onClick={() => handleAuthModeChange('login')} className="w-full mt-4">
-                        Volver a Inicio de Sesión
-                    </Button>
-                </div>
+                <VerificationScreen 
+                    onBackToLogin={() => handleAuthModeChange('login')}
+                    onResend={handleResendVerification}
+                    canResend={canResend}
+                    countdown={countdown}
+                />
             ) : authMode === 'register' ? (
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onRegisterSubmit)} className="space-y-4">
