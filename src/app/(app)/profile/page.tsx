@@ -633,7 +633,7 @@ const handleSaveChanges = async () => {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="mt-4">
           <Edit className="h-4 w-4 mr-2" />
-          Editar Perfil
+          Configuración de Perfil
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md w-[95vw]">
@@ -1031,5 +1031,3 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
-
-    
