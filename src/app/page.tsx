@@ -116,7 +116,7 @@ const createRegistrationSchema = (mode: RegistrationMode, isCenterValidated: boo
 }).refine(data => {
     if (mode === 'create' && isCenterNameValidated) {
         if (!data.newClassName || data.newClassName.trim().length < 2) return false;
-        const regex = /^[1-4](eso|bach)-[a-e]$/i;
+        const regex = /^[1-4](eso|bach)-[a-g]$/i;
         return regex.test(data.newClassName);
     }
     return true;
@@ -154,7 +154,7 @@ const courseOptions = [
     { value: '2bach', label: '2º Bachillerato' },
 ];
 
-const classOptions = ['A', 'B', 'C', 'D', 'E'];
+const classOptions = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -799,3 +799,5 @@ export default function AuthPage() {
     </main>
   );
 }
+
+    

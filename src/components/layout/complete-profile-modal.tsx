@@ -97,7 +97,7 @@ const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean,
 }).refine(data => {
     if (mode === 'create' && isCenterNameValidated) {
         if (!data.newClassName || data.newClassName.trim().length < 2) return false;
-        const regex = /^[1-4](eso|bach)-[a-e]$/i;
+        const regex = /^[1-4](eso|bach)-[a-g]$/i;
         return regex.test(data.newClassName);
     }
     return true;
@@ -128,7 +128,7 @@ const courseOptions = [
     { value: '2bach', label: '2º Bachillerato' },
 ];
 
-const classOptions = ['A', 'B', 'C', 'D', 'E'];
+const classOptions = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
 export default function CompleteProfileModal({ user, onSave }: CompleteProfileModalProps) {
     const [isLoading, setIsLoading] = useState(false);
@@ -474,3 +474,5 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     </Dialog>
   );
 }
+
+    

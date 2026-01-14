@@ -303,7 +303,7 @@ const courseOptions = [
     { value: '2bach', label: '2º Bachillerato' },
 ];
 
-const classOptions = ['A', 'B', 'C', 'D', 'E'];
+const classOptions = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
 function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
   const { user, updateUser } = useApp();
@@ -871,5 +871,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
+
+    
 
     
