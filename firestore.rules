@@ -73,6 +73,7 @@ service cloud.firestore {
       allow update: if isGlobalAdmin();
       
       // Allow center admin to update roles within their center (but not to 'admin')
+      // Also allows them to demote another center admin back to student
       allow update: if isCenterAdmin(resource.data.organizationId) && 
                       request.resource.data.role != 'admin';
       

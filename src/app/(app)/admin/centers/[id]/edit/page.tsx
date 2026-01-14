@@ -112,15 +112,40 @@ export default function EditCenterPage() {
         }
     };
 
-     const handleDeleteCenter = async () => {
-        if (!firestore || !centerDocRef) return;
+    const handleDeleteCenter = async () => {
+        if (!firestore || !centerDocRef || !centerId) return;
         setIsDeleting(true);
+        
         try {
-            await deleteDoc(centerDocRef);
-            toast({ title: "Centro Eliminado", description: `El centro "${center.name}" ha sido eliminado.`, variant: "destructive" });
+            const batch = writeBatch(firestore);
+
+            // 1. Find all users in the center
+            const usersQuery = query(collection(firestore, 'users'), where('organizationId', '==', centerId));
+            const usersSnapshot = await getDocs(usersQuery);
+
+            // 2. Reset each user's center-related fields
+            usersSnapshot.forEach(userDoc => {
+                batch.update(userDoc.ref, {
+                    organizationId: "",
+                    center: 'default',
+                    course: 'default',
+                    className: 'default',
+                    role: 'student' // Demote center-admin back to student
+                });
+            });
+
+            // 3. Delete the center document
+            batch.delete(centerDocRef);
+
+            // 4. Commit all changes
+            await batch.commit();
+
+            toast({ title: "Centro Eliminado", description: `El centro "${center.name}" y todos sus miembros han sido desvinculados.`, variant: "destructive" });
             router.push('/admin');
+
         } catch (error) {
-             toast({ title: "Error", description: "No se pudo eliminar el centro.", variant: "destructive" });
+             console.error("Error deleting center and updating users:", error);
+             toast({ title: "Error", description: "No se pudo eliminar el centro. Revisa los permisos.", variant: "destructive" });
              setIsDeleting(false);
         }
     };
@@ -218,7 +243,7 @@ export default function EditCenterPage() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>¿Eliminar este centro?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                       Esta acción es permanente. Se eliminará el centro y todas sus clases. Los usuarios que pertenezcan a este centro perderán el acceso al contenido específico del mismo.
+                                       Esta acción es permanente. Se eliminará el centro y se desvinculará a todos sus miembros (incluidos los administradores), quienes pasarán a un estado "sin clase".
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -236,3 +261,4 @@ export default function EditCenterPage() {
         </div>
     );
 }
+    
