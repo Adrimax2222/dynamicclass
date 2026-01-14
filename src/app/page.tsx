@@ -231,7 +231,7 @@ export default function AuthPage() {
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isCodeCopied, setIsCodeCopied] = useState(false);
   const [lastRegisteredUser, setLastRegisteredUser] = useState<FirebaseUser | null>(null);
-  const [countdown, setCountdown] = useState(40);
+  const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
   
   const auth = useAuth();
@@ -352,7 +352,8 @@ export default function AuthPage() {
       await updateProfile(firebaseUser, { displayName: values.fullName, photoURL: defaultAvatarUrl });
       
       const userDocRef = doc(firestore, 'users', firebaseUser.uid);
-      let userData: Omit<User, 'uid'>;
+      let userData: Omit<User, 'uid' | 'organizationId'> & { organizationId?: string };
+
 
       if (registrationMode === 'create' && values.newCenterName && values.newClassName && generatedCode) {
         const newCenterRef = await addDoc(collection(firestore, "centers"), {
@@ -368,13 +369,14 @@ export default function AuthPage() {
             center: generatedCode, ageRange: values.ageRange,
             course: course.toLowerCase().replace('º',''), className: className, 
             role: 'center-admin', // Assign center-admin role
-            organizationId: newCenterRef.id, trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
+            trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
             isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
+            organizationId: newCenterRef.id,
         };
         toast({ title: "¡Centro Creado!", description: `"${''}${values.newCenterName}" se ha creado con el código ${''}${generatedCode}.` });
 
       } else {
-        const baseData = {
+        const baseData: Omit<User, 'uid' | 'organizationId'> & { organizationId?: string } = {
           name: values.fullName,
           email: values.email,
           avatar: defaultAvatarUrl,
@@ -398,12 +400,12 @@ export default function AuthPage() {
         if (registrationMode === 'join' && validatedCenter?.uid) {
           userData = { ...baseData, organizationId: validatedCenter.uid };
         } else {
-          const { organizationId, ...rest } = baseData;
-          userData = rest as Omit<User, 'uid' | 'organizationId'> & { organizationId?: string };
+          delete baseData.organizationId;
+          userData = baseData;
         }
       }
       
-      await setDoc(userDocRef, userData as any); // Use 'as any' to bypass strict type checking for this dynamic object
+      await setDoc(userDocRef, userData);
       await sendEmailVerification(firebaseUser);
       setLastRegisteredUser(firebaseUser);
       setRegistrationSuccess(true);
@@ -502,10 +504,14 @@ export default function AuthPage() {
       await sendEmailVerification(lastRegisteredUser);
       toast({ title: "Correo reenviado", description: "Se ha enviado un nuevo correo de verificación." });
       setCanResend(false);
-      setCountdown(40);
-    } catch (error) {
+      setCountdown(60);
+    } catch (error: any) {
       console.error("Resend verification error:", error);
-      toast({ title: "Error", description: "No se pudo reenviar el correo. Inténtalo de nuevo más tarde.", variant: "destructive" });
+      let description = "No se pudo reenviar el correo. Inténtalo de nuevo más tarde.";
+      if (error.code === 'auth/too-many-requests') {
+        description = "Demasiadas solicitudes. Por favor, espera un momento antes de intentarlo de nuevo.";
+      }
+      toast({ title: "Error", description, variant: "destructive" });
     }
   };
 
@@ -531,7 +537,7 @@ export default function AuthPage() {
     setValidatedCenter(null);
     setLastRegisteredUser(null);
     setCanResend(false);
-    setCountdown(40);
+    setCountdown(60);
   }
 
   const formatAndSetCenterCode = (value: string) => {
