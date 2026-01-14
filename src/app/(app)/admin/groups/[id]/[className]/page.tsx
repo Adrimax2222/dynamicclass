@@ -103,8 +103,10 @@ export default function ManageClassMembersPage() {
     };
     
     const isGlobalAdmin = currentUser?.role === 'admin';
+    const isCenterAdmin = currentUser?.role === 'center-admin' && currentUser.organizationId === centerId;
     const isClassAdmin = currentUser?.role === classAdminRole;
-    const canManage = isGlobalAdmin || isClassAdmin;
+    const canManage = isGlobalAdmin || isCenterAdmin || isClassAdmin;
+    const canPromote = isGlobalAdmin || isCenterAdmin;
 
     if (isMembersLoading || isCenterLoading) {
         return <LoadingScreen />;
@@ -114,13 +116,14 @@ export default function ManageClassMembersPage() {
          return (
              <div className="container mx-auto p-6 text-center">
                  <p className="font-bold text-lg">No tienes permiso para ver esta página.</p>
-                 <p className="text-muted-foreground text-sm">Tu rol actual es '{currentUser?.role}' pero se necesita '{classAdminRole}' o 'admin'.</p>
+                 <p className="text-muted-foreground text-sm">Tu rol actual es '{currentUser?.role}' pero se necesita '{classAdminRole}' o superior.</p>
              </div>
          );
     }
 
     const RoleIcon = ({ role }: { role: string }) => {
         if (role === 'admin') return <ShieldCheck className="h-5 w-5 text-destructive" />;
+        if (role === 'center-admin') return <ShieldCheck className="h-5 w-5 text-purple-500" />;
         if (role.startsWith('admin-')) return <Crown className="h-5 w-5 text-amber-500" />;
         return <User className="h-5 w-5 text-muted-foreground" />;
     };
@@ -191,12 +194,12 @@ export default function ManageClassMembersPage() {
                                                 <AvatarDisplay user={selectedMember} className="h-24 w-24 mb-4" />
                                                 <DialogTitle>{selectedMember.name}</DialogTitle>
                                                 <DialogDescription>{selectedMember.email}</DialogDescription>
-                                                 <Badge variant={selectedMember.role === 'admin' ? 'destructive' : selectedMember.role.startsWith('admin-') ? 'default' : 'secondary'} className="w-fit">
-                                                    {selectedMember.role === 'admin' ? "Admin Global" : selectedMember.role.startsWith('admin-') ? "Admin Clase" : "Estudiante"}
+                                                 <Badge variant={selectedMember.role === 'admin' ? 'destructive' : selectedMember.role === 'center-admin' ? 'secondary' : selectedMember.role.startsWith('admin-') ? 'default' : 'secondary'} className={cn(selectedMember.role === 'center-admin' && 'bg-purple-100 text-purple-800')}>
+                                                    {selectedMember.role === 'admin' ? "Admin Global" : selectedMember.role === 'center-admin' ? "Admin Centro" : selectedMember.role.startsWith('admin-') ? "Admin Clase" : "Estudiante"}
                                                 </Badge>
                                             </DialogHeader>
                                             <div className="pt-4 space-y-2">
-                                                {isGlobalAdmin && selectedMember.role !== 'admin' && (
+                                                {canPromote && selectedMember.role !== 'admin' && selectedMember.role !== 'center-admin' && (
                                                     selectedMember.role.startsWith('admin-') ? (
                                                         <Button variant="outline" onClick={() => handleRoleChange(selectedMember, 'student')} className="w-full">
                                                             <Crown className="mr-2 h-4 w-4" /> Quitar Admin de Clase
@@ -345,5 +348,7 @@ function MoveUserDialog({ member, center, children, onMove }: { member: CenterUs
         </Dialog>
     );
 }
+
+    
 
     
