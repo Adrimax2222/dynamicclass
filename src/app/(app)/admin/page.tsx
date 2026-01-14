@@ -22,6 +22,7 @@ import Link from "next/link";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { fullSchedule } from "@/lib/data";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
+import { cn } from "@/lib/utils";
 
 export default function AdminPage() {
     const { user } = useApp();
