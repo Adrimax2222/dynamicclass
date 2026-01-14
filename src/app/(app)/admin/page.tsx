@@ -29,16 +29,16 @@ export default function AdminPage() {
 
     useEffect(() => {
         if (user) {
-            // Redirect class or center admins to their specific group management page
-            if ((user.role?.startsWith('admin-') || user.role === 'center-admin') && user.organizationId) {
+            // Redirect class admins to their specific group management page
+            if (user.role?.startsWith('admin-') && user.role !== 'admin' && user.role !== 'center-admin' && user.organizationId) {
                  router.replace(`/admin/groups/${user.organizationId}`);
-            } else if (user.role !== 'admin') {
+            } else if (user.role !== 'admin' && user.role !== 'center-admin') {
                 router.replace('/home');
             }
         }
     }, [user, router]);
 
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'center-admin')) {
         return <LoadingScreen />;
     }
 
@@ -56,21 +56,25 @@ export default function AdminPage() {
             </header>
 
             <Tabs defaultValue="users" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="users"><Users className="h-4 w-4 mr-2" />Usuarios</TabsTrigger>
-                    <TabsTrigger value="trophies"><Trophy className="h-4 w-4 mr-2" />Trofeos</TabsTrigger>
+                <TabsList className={cn("grid w-full", user.role === 'center-admin' ? 'grid-cols-1' : 'grid-cols-3')}>
+                    {user.role === 'admin' && <TabsTrigger value="users"><Users className="h-4 w-4 mr-2" />Usuarios</TabsTrigger>}
+                    {user.role === 'admin' && <TabsTrigger value="trophies"><Trophy className="h-4 w-4 mr-2" />Trofeos</TabsTrigger>}
                     <TabsTrigger value="groups"><Group className="h-4 w-4 mr-2" />Grupos</TabsTrigger>
                 </TabsList>
 
                 <div className="py-6">
-                    <TabsContent value="users">
-                        <UsersTab />
-                    </TabsContent>
-                    <TabsContent value="trophies">
-                        <TrophiesTab />
-                    </TabsContent>
+                    {user.role === 'admin' && (
+                        <>
+                            <TabsContent value="users">
+                                <UsersTab />
+                            </TabsContent>
+                            <TabsContent value="trophies">
+                                <TrophiesTab />
+                            </TabsContent>
+                        </>
+                    )}
                     <TabsContent value="groups">
-                        <GroupsTab />
+                        <GroupsTab user={user} />
                     </TabsContent>
                 </div>
             </Tabs>
@@ -359,7 +363,7 @@ function TrophiesTab() {
     );
 }
 
-function GroupsTab() {
+function GroupsTab({ user }: { user: User }) {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -368,8 +372,14 @@ function GroupsTab() {
     
     const centersCollection = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, "centers"), orderBy("createdAt", "desc"));
-    }, [firestore]);
+        
+        let q = query(collection(firestore, "centers"), orderBy("createdAt", "desc"));
+        if (user.role === 'center-admin' && user.organizationId) {
+            q = query(q, where('__name__', '==', user.organizationId));
+        }
+        return q;
+
+    }, [firestore, user]);
 
     const { data: centersData = [], isLoading } = useCollection<Center>(centersCollection);
     
@@ -425,37 +435,39 @@ function GroupsTab() {
                     <CardTitle>Gestión de Grupos</CardTitle>
                     <CardDescription>Añade y gestiona los centros educativos y sus clases.</CardDescription>
                 </div>
-                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button><PlusCircle className="mr-2 h-4 w-4"/>Añadir Centro</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Nuevo Centro Educativo</DialogTitle>
-                            <DialogDescription>
-                                Crea un nuevo centro y genera un código de acceso único para los usuarios.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="py-4 space-y-2">
-                            <Label htmlFor="center-name">Nombre del Centro</Label>
-                            <Input 
-                                id="center-name"
-                                placeholder="Ej: IES Torre del Palau"
-                                value={centerName}
-                                onChange={(e) => setCenterName(e.target.value)}
-                            />
-                        </div>
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button variant="outline" disabled={isCreating}>Cancelar</Button>
-                            </DialogClose>
-                            <Button onClick={handleAddCenter} disabled={isCreating || !centerName.trim()}>
-                                {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                                Crear Centro
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {user.role === 'admin' && (
+                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button><PlusCircle className="mr-2 h-4 w-4"/>Añadir Centro</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Nuevo Centro Educativo</DialogTitle>
+                                <DialogDescription>
+                                    Crea un nuevo centro y genera un código de acceso único para los usuarios.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="py-4 space-y-2">
+                                <Label htmlFor="center-name">Nombre del Centro</Label>
+                                <Input 
+                                    id="center-name"
+                                    placeholder="Ej: IES Torre del Palau"
+                                    value={centerName}
+                                    onChange={(e) => setCenterName(e.target.value)}
+                                />
+                            </div>
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                    <Button variant="outline" disabled={isCreating}>Cancelar</Button>
+                                </DialogClose>
+                                <Button onClick={handleAddCenter} disabled={isCreating || !centerName.trim()}>
+                                    {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                    Crear Centro
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                )}
             </CardHeader>
             <CardContent className="space-y-4">
                 <Separator />
@@ -464,9 +476,9 @@ function GroupsTab() {
                 ) : centers.length === 0 ? (
                     <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
                         <Group className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                        <p className="font-semibold">No hay centros educativos</p>
+                        <p className="font-semibold">{user.role === 'center-admin' ? 'No se encontró tu centro' : 'No hay centros educativos'}</p>
                         <p className="text-sm text-muted-foreground">
-                            Crea el primer centro para empezar a organizar los grupos.
+                            {user.role === 'center-admin' ? 'Contacta con un administrador.' : 'Crea el primer centro para empezar a organizar los grupos.'}
                         </p>
                     </div>
                 ) : (
