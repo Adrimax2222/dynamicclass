@@ -94,13 +94,23 @@ const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean,
     message: "Debes comprobar la disponibilidad del nombre del centro.",
     path: ['newCenterName'],
 }).refine(data => {
-    if (mode !== 'create') return true;
-    if (!data.newClassName || data.newClassName.trim().length < 2) return false;
-    const regex = /^[1-4](eso|bach)-[A-E]$/i;
-    return regex.test(data.newClassName);
+    if (mode === 'create' && isCenterNameValidated) {
+        if (!data.newClassName || data.newClassName.trim().length < 2) return false;
+        const regex = /^[1-4](eso|bach)-[A-E]$/i;
+        return regex.test(data.newClassName);
+    }
+    return true;
 }, {
     message: "El formato debe ser 'CURSO-LETRA' (ej: 4eso-B, 1bach-A).",
     path: ["newClassName"],
+}).refine(data => {
+    if (mode === 'create' && isCenterNameValidated) {
+        return !!data.course;
+    }
+    return true;
+}, {
+    message: "Error interno del curso.",
+    path: ["course"],
 });
 
 type ProfileSchema = z.infer<ReturnType<typeof createProfileSchema>>;
@@ -291,6 +301,14 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
         setIsLoading(false);
     };
 
+    const handleNewClassNameChange = (value: string) => {
+        form.setValue('newClassName', value, { shouldValidate: true });
+        const match = value.match(/^([1-4](?:eso|bach))/i);
+        if (match) {
+            form.setValue('course', match[1].toLowerCase().replace('º',''), { shouldValidate: true });
+        }
+    };
+
     const registrationModeInfo = {
       join: { title: "Unirse a un Centro", description: "Introduce el código proporcionado por tu centro educativo para acceder a sus horarios, anuncios y clasificaciones." },
       create: { title: "Crear un Centro", description: "Si tu centro no está en Dynamic Class, puedes crearlo aquí. Te convertirás en el administrador y recibirás un código para compartir." },
@@ -389,7 +407,7 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                           <FormField control={form.control} name="newClassName" render={({ field }) => (
                               <FormItem>
                                   <FormLabel>Nombre de tu Primera Clase</FormLabel>
-                                  <FormControl><Input placeholder="Ej: 4ESO-B" {...field} /></FormControl>
+                                  <FormControl><Input placeholder="Ej: 4ESO-B" {...field} onChange={(e) => handleNewClassNameChange(e.target.value)} /></FormControl>
                                   <FormDescription>Usa un formato como 'CURSO-LETRA'.</FormDescription>
                                   <FormMessage />
                               </FormItem>
@@ -420,3 +438,5 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     </Dialog>
   );
 }
+
+    
