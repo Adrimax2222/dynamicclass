@@ -371,7 +371,7 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
         initializeState();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, [isOpen, user, allCenters]);
 
   const availableClasses = useMemo(() => {
     if (!validatedCenter || !validatedCenter.classes) return { courses: [], classNames: [] };
@@ -512,7 +512,7 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
     setIsLoading(false);
   };
   
-  const handleSaveChanges = async () => {
+const handleSaveChanges = async () => {
     if (!firestore || !user) return;
     setIsLoading(true);
 
