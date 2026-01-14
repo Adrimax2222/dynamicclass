@@ -97,7 +97,7 @@ const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean,
 }).refine(data => {
     if (mode === 'create' && isCenterNameValidated) {
         if (!data.newClassName || data.newClassName.trim().length < 2) return false;
-        const regex = /^[1-4](eso|ESO|bach|BACH)-[A-E]$/i;
+        const regex = /^[1-4](eso|bach)-[a-e]$/i;
         return regex.test(data.newClassName);
     }
     return true;
@@ -478,7 +478,3 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     </Dialog>
   );
 }
-
-    
-
-    
