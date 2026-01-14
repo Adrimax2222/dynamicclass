@@ -30,7 +30,7 @@ export default function AdminPage() {
 
     useEffect(() => {
         if (user) {
-            // Redirect class admins to their specific group management page
+            // Redirect ONLY class admins to their specific group management page
             if (user.role?.startsWith('admin-') && user.role !== 'admin' && user.role !== 'center-admin' && user.organizationId) {
                  router.replace(`/admin/groups/${user.organizationId}`);
             } else if (user.role !== 'admin' && user.role !== 'center-admin') {
@@ -56,7 +56,7 @@ export default function AdminPage() {
                 </div>
             </header>
 
-            <Tabs defaultValue="users" className="w-full">
+            <Tabs defaultValue="groups" className="w-full">
                 <TabsList className={cn("grid w-full", user.role === 'center-admin' ? 'grid-cols-1' : 'grid-cols-3')}>
                     {user.role === 'admin' && <TabsTrigger value="users"><Users className="h-4 w-4 mr-2" />Usuarios</TabsTrigger>}
                     {user.role === 'admin' && <TabsTrigger value="trophies"><Trophy className="h-4 w-4 mr-2" />Trofeos</TabsTrigger>}
@@ -373,23 +373,23 @@ function GroupsTab({ user }: { user: User }) {
     
     const centersCollection = useMemoFirebase(() => {
         if (!firestore) return null;
-        
+        // Global admins see all centers. Center admins only see their own.
         let q = query(collection(firestore, "centers"), orderBy("createdAt", "desc"));
         if (user.role === 'center-admin' && user.organizationId) {
             q = query(q, where('__name__', '==', user.organizationId));
         }
         return q;
-
     }, [firestore, user]);
 
     const { data: centersData = [], isLoading } = useCollection<Center>(centersCollection);
     
+    // Sort pinned centers to the top
     const centers = centersData.sort((a, b) => {
         const aPinned = a.isPinned ?? false;
         const bPinned = b.isPinned ?? false;
         if (aPinned && !bPinned) return -1;
         if (!aPinned && bPinned) return 1;
-        return 0;
+        return 0; // Or other sorting logic if needed
     });
 
     const generateCode = () => {
