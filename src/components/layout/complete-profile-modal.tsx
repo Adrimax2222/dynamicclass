@@ -252,27 +252,6 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                         </FormItem>
                     )}
                 />
-                 <FormField
-                    control={form.control}
-                    name="ageRange"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Rango de Edad</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="12-15">12-15 años</SelectItem>
-                                    <SelectItem value="16-18">16-18 años</SelectItem>
-                                    <SelectItem value="19-22">19-22 años</SelectItem>
-                                    <SelectItem value="23+">23+ años</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
                 
                 {!usePersonal && isCenterValidated && (
                     <div className="grid grid-cols-2 gap-4">
@@ -322,6 +301,27 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                         />
                     </div>
                 )}
+                 <FormField
+                    control={form.control}
+                    name="ageRange"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Rango de Edad</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="12-15">12-15 años</SelectItem>
+                                    <SelectItem value="16-18">16-18 años</SelectItem>
+                                    <SelectItem value="19-22">19-22 años</SelectItem>
+                                    <SelectItem value="23+">23+ años</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
                  <DialogFooter className="pt-6">
                     <Button type="submit" className="w-full" disabled={isLoading}>
                          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
