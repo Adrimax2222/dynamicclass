@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import type { User, Center } from "@/lib/types";
-import { useFirestore } from "@/firebase";
+import { useFirestore, useCollection } from "@/firebase";
 import { collection, getDocs, query, where, addDoc, serverTimestamp } from "firebase/firestore";
 
 import {
@@ -128,6 +128,8 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     const { toast } = useToast();
     
     const firestore = useFirestore();
+    const centersCollection = useMemo(() => firestore ? collection(firestore, 'centers') : null, [firestore]);
+    const { data: allCenters } = useCollection<Center>(centersCollection, { listen: false });
 
     const profileSchema = useMemo(() => createProfileSchema(mode, isCenterValidated), [mode, isCenterValidated]);
 
@@ -261,14 +263,17 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     };
     
     const handleCheckCenterName = async (name: string) => {
-        if (!firestore || name.length < 3) {
+        if (!allCenters || name.length < 3) {
             setCenterExistsWarning(false);
             return;
         }
-        const centersQuery = query(collection(firestore, 'centers'));
-        const querySnapshot = await getDocs(centersQuery);
-        const exists = querySnapshot.docs.some(doc => doc.data().name.toLowerCase() === name.toLowerCase());
+        const exists = allCenters.some(center => center.name.toLowerCase() === name.toLowerCase());
         setCenterExistsWarning(exists);
+        if (exists) {
+            form.setError('newCenterName', { type: 'manual', message: 'Este centro ya existe. Por favor, únete a él.' });
+        } else {
+            form.clearErrors('newCenterName');
+        }
     };
 
     const registrationModeInfo = {
@@ -354,13 +359,6 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                             <FormItem>
                                 <FormLabel>Nombre del Nuevo Centro</FormLabel>
                                 <FormControl><Input placeholder="Ej: Instituto Adrimax" {...field} onChange={(e) => {field.onChange(e); handleCheckCenterName(e.target.value);}} /></FormControl>
-                                {centerExistsWarning && (
-                                    <Alert variant="destructive" className="mt-2">
-                                        <AlertTriangle className="h-4 w-4" />
-                                        <AlertTitle>¡Centro Existente!</AlertTitle>
-                                        <p className="text-xs">Este nombre ya está en uso. Por favor, cambia al modo "Unirse" para acceder a este centro.</p>
-                                    </Alert>
-                                )}
                                 <FormMessage />
                             </FormItem>
                         )} />
@@ -375,12 +373,12 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                     </div>
                 )}
                 
-                {mode === 'join' && isCenterValidated && (
+                {mode === 'join' && isCenterValidated ? (
                      <div className="grid grid-cols-2 gap-4">
                         <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
-                )}
+                ) : null}
 
                  <FormField control={form.control} name="ageRange" render={({ field }) => (
                     <FormItem>
@@ -410,3 +408,5 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     </Dialog>
   );
 }
+
+    

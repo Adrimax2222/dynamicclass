@@ -58,7 +58,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useApp } from "@/lib/hooks/use-app";
 import { Logo } from "@/components/icons";
 import { useState, useEffect, useMemo } from "react";
-import { useAuth, useFirestore } from "@/firebase";
+import { useAuth, useFirestore, useCollection } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -191,6 +191,9 @@ export default function AuthPage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
+  
+  const centersCollection = useMemo(() => firestore ? collection(firestore, 'centers') : null, [firestore]);
+  const { data: allCenters } = useCollection<Center>(centersCollection, { listen: false });
 
   useEffect(() => {
     if (user) router.push('/home');
@@ -455,14 +458,17 @@ export default function AuthPage() {
   };
   
     const handleCheckCenterName = async (name: string) => {
-        if (!firestore || name.length < 3) {
+        if (!allCenters || name.length < 3) {
             setCenterExistsWarning(false);
             return;
         }
-        const centersQuery = query(collection(firestore, 'centers'));
-        const querySnapshot = await getDocs(centersQuery);
-        const exists = querySnapshot.docs.some(doc => doc.data().name.toLowerCase() === name.toLowerCase());
+        const exists = allCenters.some(center => center.name.toLowerCase() === name.toLowerCase());
         setCenterExistsWarning(exists);
+        if (exists) {
+            form.setError('newCenterName', { type: 'manual', message: 'Este centro ya existe. Por favor, únete a él.' });
+        } else {
+            form.clearErrors('newCenterName');
+        }
     };
 
   const registrationModeInfo = {
@@ -574,7 +580,7 @@ export default function AuthPage() {
                                   {registrationMode === 'join' && (
                                     <FormField control={form.control} name="center" render={({ field, fieldState }) => (
                                       <FormItem>
-                                        <FormLabel className={cn(fieldState.invalid && 'text-destructive')}>Código de Centro Educativo</FormLabel>
+                                        <FormLabel className={cn(fieldState.invalid && !isCenterValidated && 'text-destructive')}>Código de Centro Educativo</FormLabel>
                                         <div className="flex items-center gap-2">
                                           <FormControl><Input placeholder="123-456" {...field} onChange={(e) => formatAndSetCenterCode(e.target.value)} disabled={isCenterValidated} /></FormControl>
                                           <Button type="button" onClick={handleValidateCenter} disabled={field.value.length !== 7 || isLoading || isCenterValidated} variant={isCenterValidated ? "secondary" : "default"}>
@@ -597,13 +603,6 @@ export default function AuthPage() {
                                             <FormItem>
                                                 <FormLabel>Nombre del Nuevo Centro</FormLabel>
                                                 <FormControl><Input placeholder="Ej: Instituto Adrimax" {...field} onChange={(e) => {field.onChange(e); handleCheckCenterName(e.target.value);}} /></FormControl>
-                                                {centerExistsWarning && (
-                                                    <Alert variant="destructive" className="mt-2">
-                                                        <AlertTriangle className="h-4 w-4" />
-                                                        <AlertTitle>¡Centro Existente!</AlertTitle>
-                                                        <p className="text-xs">Este nombre ya está en uso. Por favor, cambia al modo "Unirse" para acceder a este centro.</p>
-                                                    </Alert>
-                                                )}
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
@@ -618,7 +617,7 @@ export default function AuthPage() {
                                     </div>
                                   )}
 
-                                  {registrationMode === 'join' && isCenterValidated && (
+                                  {isCenterValidated && registrationMode === 'join' && (
                                     <div className="grid grid-cols-2 gap-4">
                                       <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                                       <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
@@ -710,3 +709,5 @@ export default function AuthPage() {
     </main>
   );
 }
+
+    
