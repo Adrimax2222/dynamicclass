@@ -114,21 +114,14 @@ const createRegistrationSchema = (mode: RegistrationMode, isCenterValidated: boo
 }).refine(data => {
     if (mode === 'create' && isCenterNameValidated) {
         if (!data.newClassName || data.newClassName.trim().length < 2) return false;
-        const regex = /^[1-4](eso|bach)-[A-E]$/i;
+        // Updated regex to be more flexible with course names
+        const regex = /^[1-4](eso|ESO|bach|BACH)-[A-E]$/i;
         return regex.test(data.newClassName);
     }
     return true;
 }, {
     message: "El formato debe ser 'CURSO-LETRA' (ej: 4eso-B, 1bach-A).",
     path: ["newClassName"],
-}).refine(data => {
-    if (mode === 'create' && isCenterNameValidated) {
-        return !!data.course;
-    }
-    return true;
-}, {
-    message: "Error interno del curso.",
-    path: ["course"],
 });
 
 
@@ -236,7 +229,18 @@ export default function AuthPage() {
   }, [validatedCenter]);
 
   useEffect(() => {
-    form.reset();
+    form.reset({
+      fullName: form.getValues('fullName'),
+      email: form.getValues('email'),
+      password: form.getValues('password'),
+      role: 'student',
+      ageRange: '',
+      center: '',
+      course: '',
+      className: '',
+      newCenterName: '',
+      newClassName: ''
+    });
     setIsCenterValidated(false);
     setValidatedCenter(null);
     setIsCenterNameValidated(false);
@@ -291,7 +295,7 @@ export default function AuthPage() {
         const newCenterRef = await addDoc(collection(firestore, "centers"), {
             name: values.newCenterName,
             code: newCode,
-            classes: [{ name: values.newClassName, schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } }],
+            classes: [{ name: values.newClassName, icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } }],
             createdAt: serverTimestamp(),
         });
         const [course, className] = values.newClassName!.split('-');
@@ -495,9 +499,12 @@ export default function AuthPage() {
   
   const handleNewClassNameChange = (value: string) => {
     form.setValue('newClassName', value, { shouldValidate: true });
+    // This regex now supports variations like '1eso', '1ESO', '1bach', '1BACH'
     const match = value.match(/^([1-4](?:eso|bach))/i);
     if (match) {
         form.setValue('course', match[1].toLowerCase().replace('º',''), { shouldValidate: true });
+    } else {
+        form.setValue('course', '', { shouldValidate: true });
     }
   };
 
