@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ArrowLeft, Eye, EyeOff, MailCheck, User as UserIcon, CheckCircle, School, PlusCircle, AlertTriangle, Search } from "lucide-react";
+import { Loader2, ArrowLeft, Eye, EyeOff, MailCheck, User as UserIcon, CheckCircle, School, PlusCircle, AlertTriangle, Search, Copy, Check } from "lucide-react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -66,11 +66,12 @@ import type { User, Center } from "@/lib/types";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertTitle } from "../ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 type RegistrationMode = 'join' | 'personal' | 'create';
 
-const createRegistrationSchema = (mode: RegistrationMode, isCenterValidated: boolean, isCenterNameValidated: boolean) => z.object({
+const createRegistrationSchema = (mode: RegistrationMode, isCenterValidated: boolean, isCenterNameValidated: boolean, isCodeGenerated: boolean) => z.object({
   fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
   email: z.string().email({ message: "Por favor, introduce una dirección de correo electrónico válida." }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
@@ -78,7 +79,6 @@ const createRegistrationSchema = (mode: RegistrationMode, isCenterValidated: boo
   ageRange: z.string().min(1, { message: "Por favor, selecciona un rango de edad." }),
   course: z.string(),
   className: z.string(),
-  role: z.enum(["student", "teacher", "admin"], { required_error: "Debes seleccionar un rol." }),
   newCenterName: z.string().optional(),
   newClassName: z.string().optional(),
 }).refine(data => {
@@ -114,7 +114,6 @@ const createRegistrationSchema = (mode: RegistrationMode, isCenterValidated: boo
 }).refine(data => {
     if (mode === 'create' && isCenterNameValidated) {
         if (!data.newClassName || data.newClassName.trim().length < 2) return false;
-        // Updated regex to be more flexible with course names
         const regex = /^[1-4](eso|ESO|bach|BACH)-[A-E]$/i;
         return regex.test(data.newClassName);
     }
@@ -122,6 +121,12 @@ const createRegistrationSchema = (mode: RegistrationMode, isCenterValidated: boo
 }, {
     message: "El formato debe ser 'CURSO-LETRA' (ej: 4eso-B, 1bach-A).",
     path: ["newClassName"],
+}).refine(data => {
+    if (mode === 'create') return isCodeGenerated;
+    return true;
+}, {
+    message: "Debes generar un código para el centro.",
+    path: ["newCenterName"], // Associate error with a visible field
 });
 
 
@@ -192,6 +197,8 @@ export default function AuthPage() {
   const [isCenterValidated, setIsCenterValidated] = useState(false);
   const [validatedCenter, setValidatedCenter] = useState<Center | null>(null);
   const [isCenterNameValidated, setIsCenterNameValidated] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [isCodeCopied, setIsCodeCopied] = useState(false);
   
   const auth = useAuth();
   const firestore = useFirestore();
@@ -204,7 +211,7 @@ export default function AuthPage() {
     if (user) router.push('/home');
   }, [user, router]);
   
-  const registrationSchema = useMemo(() => createRegistrationSchema(registrationMode, isCenterValidated, isCenterNameValidated), [registrationMode, isCenterValidated, isCenterNameValidated]);
+  const registrationSchema = useMemo(() => createRegistrationSchema(registrationMode, isCenterValidated, isCenterNameValidated, !!generatedCode), [registrationMode, isCenterValidated, isCenterNameValidated, generatedCode]);
 
   const form = useForm<RegistrationSchemaType>({
     resolver: zodResolver(registrationSchema),
@@ -244,6 +251,7 @@ export default function AuthPage() {
     setIsCenterValidated(false);
     setValidatedCenter(null);
     setIsCenterNameValidated(false);
+    setGeneratedCode(null);
   }, [registrationMode, form]);
 
   const loginForm = useForm<LoginSchemaType>({
@@ -269,12 +277,18 @@ export default function AuthPage() {
     setCurrentStep(prev => prev - 1);
   }
   
-  const generateCode = () => `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
+  const generateNewCode = () => `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
 
   async function onRegisterSubmit(values: RegistrationSchemaType) {
     setIsLoading(true);
     if (!auth || !firestore) {
         toast({ title: "Error", description: "Firebase no está inicializado.", variant: "destructive"});
+        setIsLoading(false);
+        return;
+    }
+    
+    if (registrationMode === 'create' && !generatedCode) {
+        toast({ title: "Error", description: "Debes generar un código para el nuevo centro.", variant: "destructive"});
         setIsLoading(false);
         return;
     }
@@ -291,22 +305,21 @@ export default function AuthPage() {
       let userData: Omit<User, 'uid'>;
 
       if (registrationMode === 'create') {
-        const newCode = generateCode();
         const newCenterRef = await addDoc(collection(firestore, "centers"), {
             name: values.newCenterName,
-            code: newCode,
+            code: generatedCode,
             classes: [{ name: values.newClassName, icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } }],
             createdAt: serverTimestamp(),
         });
         const [course, className] = values.newClassName!.split('-');
         userData = {
             name: values.fullName, email: values.email, avatar: defaultAvatarUrl,
-            center: newCode, ageRange: values.ageRange,
+            center: generatedCode!, ageRange: values.ageRange,
             course: course.toLowerCase().replace('º',''), className: className, role: `admin-${values.newClassName}`,
             organizationId: newCenterRef.id, trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
             isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
         };
-        toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${newCode}.` });
+        toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${generatedCode}.` });
       } else {
          userData = {
             name: values.fullName, email: values.email, avatar: defaultAvatarUrl,
@@ -499,7 +512,6 @@ export default function AuthPage() {
   
   const handleNewClassNameChange = (value: string) => {
     form.setValue('newClassName', value, { shouldValidate: true });
-    // This regex now supports variations like '1eso', '1ESO', '1bach', '1BACH'
     const match = value.match(/^([1-4](?:eso|bach))/i);
     if (match) {
         form.setValue('course', match[1].toLowerCase().replace('º',''), { shouldValidate: true });
@@ -507,6 +519,20 @@ export default function AuthPage() {
         form.setValue('course', '', { shouldValidate: true });
     }
   };
+  
+  const handleGenerateCode = () => {
+      const code = generateNewCode();
+      setGeneratedCode(code);
+      form.setValue('center', code, { shouldValidate: true });
+  }
+
+  const handleCopyCode = () => {
+    if (!generatedCode) return;
+    navigator.clipboard.writeText(generatedCode);
+    setIsCodeCopied(true);
+    toast({ title: "Código copiado" });
+    setTimeout(() => setIsCodeCopied(false), 2000);
+  }
 
   const registrationModeInfo = {
     join: { title: "Unirse a un Centro", description: "Introduce el código proporcionado por tu centro educativo para acceder a sus horarios, anuncios y clasificaciones." },
@@ -652,6 +678,7 @@ export default function AuthPage() {
                                           </FormItem>
                                       )} />
                                       {isCenterNameValidated && (
+                                        <>
                                           <FormField control={form.control} name="newClassName" render={({ field }) => (
                                               <FormItem>
                                                   <FormLabel>Nombre de tu Primera Clase</FormLabel>
@@ -660,6 +687,23 @@ export default function AuthPage() {
                                                   <FormMessage />
                                               </FormItem>
                                           )} />
+                                          {form.getValues('newClassName') && !form.formState.errors.newClassName && (
+                                            <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                                              <Label>Código de Acceso del Centro</Label>
+                                              <p className="text-xs text-muted-foreground">Este será el código que otros usuarios necesitarán para unirse a tu centro. Guárdalo bien.</p>
+                                              {generatedCode ? (
+                                                  <div className="flex items-center gap-2">
+                                                      <Badge variant="outline" className="text-base font-bold tracking-widest">{generatedCode}</Badge>
+                                                      <Button type="button" variant="ghost" size="icon" onClick={handleCopyCode} className="h-7 w-7">
+                                                          {isCodeCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+                                                      </Button>
+                                                  </div>
+                                              ) : (
+                                                  <Button type="button" onClick={handleGenerateCode} className="w-full">Generar Código</Button>
+                                              )}
+                                            </div>
+                                          )}
+                                        </>
                                       )}
                                     </div>
                                   )}
@@ -757,5 +801,7 @@ export default function AuthPage() {
     </main>
   );
 }
+
+    
 
     

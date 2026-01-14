@@ -46,17 +46,18 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, UserCheck, User as UserIcon, CheckCircle, School, PlusCircle, AlertTriangle, Search } from "lucide-react";
+import { Loader2, UserCheck, User as UserIcon, CheckCircle, School, PlusCircle, AlertTriangle, Search, Copy, Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Label } from "../ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Alert, AlertTitle } from "../ui/alert";
+import { Badge } from "../ui/badge";
 
 type RegistrationMode = 'join' | 'personal' | 'create';
 
-const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean, isCenterNameValidated: boolean) => z.object({
+const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean, isCenterNameValidated: boolean, isCodeGenerated: boolean) => z.object({
   center: z.string(),
   ageRange: z.string().min(1, { message: "Por favor, selecciona un rango de edad." }),
   course: z.string(),
@@ -96,7 +97,6 @@ const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean,
 }).refine(data => {
     if (mode === 'create' && isCenterNameValidated) {
         if (!data.newClassName || data.newClassName.trim().length < 2) return false;
-        // Updated regex to be more flexible with course names
         const regex = /^[1-4](eso|ESO|bach|BACH)-[A-E]$/i;
         return regex.test(data.newClassName);
     }
@@ -104,6 +104,12 @@ const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean,
 }, {
     message: "El formato debe ser 'CURSO-LETRA' (ej: 4eso-B, 1bach-A).",
     path: ["newClassName"],
+}).refine(data => {
+    if (mode === 'create') return isCodeGenerated;
+    return true;
+}, {
+    message: "Debes generar un código para el centro.",
+    path: ["newCenterName"], // Associate error with a visible field
 });
 
 type ProfileSchema = z.infer<ReturnType<typeof createProfileSchema>>;
@@ -130,13 +136,15 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     const [isCenterValidated, setIsCenterValidated] = useState(false);
     const [validatedCenter, setValidatedCenter] = useState<Center | null>(null);
     const [isCenterNameValidated, setIsCenterNameValidated] = useState(false);
+    const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+    const [isCodeCopied, setIsCodeCopied] = useState(false);
     const { toast } = useToast();
     
     const firestore = useFirestore();
     const centersCollection = useMemo(() => firestore ? collection(firestore, 'centers') : null, [firestore]);
     const { data: allCenters } = useCollection<Center>(centersCollection, { listen: false });
 
-    const profileSchema = useMemo(() => createProfileSchema(mode, isCenterValidated, isCenterNameValidated), [mode, isCenterValidated, isCenterNameValidated]);
+    const profileSchema = useMemo(() => createProfileSchema(mode, isCenterValidated, isCenterNameValidated, !!generatedCode), [mode, isCenterValidated, isCenterNameValidated, generatedCode]);
 
     const form = useForm<ProfileSchema>({
         resolver: zodResolver(profileSchema),
@@ -168,9 +176,10 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
         setIsCenterValidated(false);
         setValidatedCenter(null);
         setIsCenterNameValidated(false);
+        setGeneratedCode(null);
     }, [mode, form]);
 
-    const generateCode = () => `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
+    const generateNewCode = () => `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
 
     const onSubmit = async (values: ProfileSchema) => {
         setIsLoading(true);
@@ -196,11 +205,15 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                 setIsLoading(false);
                 return;
             }
+             if (!generatedCode) {
+                toast({ title: "Error", description: "Debes generar un código para el nuevo centro.", variant: "destructive"});
+                setIsLoading(false);
+                return;
+            }
             try {
-                const newCode = generateCode();
                 const newCenterRef = await addDoc(collection(firestore, "centers"), {
                     name: values.newCenterName,
-                    code: newCode,
+                    code: generatedCode,
                     classes: [{ name: values.newClassName, icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } }],
                     createdAt: serverTimestamp(),
                 });
@@ -208,14 +221,14 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                 const [course, className] = values.newClassName.split('-');
                 
                 onSave({
-                    center: newCode,
+                    center: generatedCode,
                     course: course.toLowerCase().replace('º',''),
                     className: className,
                     ageRange: values.ageRange,
                     organizationId: newCenterRef.id,
                     role: `admin-${values.newClassName}`
                 });
-                 toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${newCode}.` });
+                 toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${generatedCode}.` });
 
             } catch (err) {
                  toast({ title: "Error", description: "No se pudo crear el nuevo centro.", variant: "destructive" });
@@ -296,7 +309,6 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
 
     const handleNewClassNameChange = (value: string) => {
         form.setValue('newClassName', value, { shouldValidate: true });
-        // This regex now supports variations like '1eso', '1ESO', '1bach', '1BACH'
         const match = value.match(/^([1-4](?:eso|bach))/i);
         if (match) {
             form.setValue('course', match[1].toLowerCase().replace('º',''), { shouldValidate: true });
@@ -304,6 +316,20 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
             form.setValue('course', '', { shouldValidate: true });
         }
     };
+    
+    const handleGenerateCode = () => {
+        const code = generateNewCode();
+        setGeneratedCode(code);
+        form.setValue('center', code, { shouldValidate: true });
+    }
+
+    const handleCopyCode = () => {
+        if (!generatedCode) return;
+        navigator.clipboard.writeText(generatedCode);
+        setIsCodeCopied(true);
+        toast({ title: "Código copiado" });
+        setTimeout(() => setIsCodeCopied(false), 2000);
+    }
 
     const registrationModeInfo = {
       join: { title: "Unirse a un Centro", description: "Introduce el código proporcionado por tu centro educativo para acceder a sus horarios, anuncios y clasificaciones." },
@@ -400,14 +426,32 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                           </FormItem>
                       )} />
                       {isCenterNameValidated && (
-                          <FormField control={form.control} name="newClassName" render={({ field }) => (
-                              <FormItem>
-                                  <FormLabel>Nombre de tu Primera Clase</FormLabel>
-                                  <FormControl><Input placeholder="Ej: 4ESO-B" {...field} onChange={(e) => handleNewClassNameChange(e.target.value)} /></FormControl>
-                                  <FormDescription>Usa un formato como 'CURSO-LETRA'.</FormDescription>
-                                  <FormMessage />
-                              </FormItem>
-                          )} />
+                          <>
+                            <FormField control={form.control} name="newClassName" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Nombre de tu Primera Clase</FormLabel>
+                                    <FormControl><Input placeholder="Ej: 4ESO-B" {...field} onChange={(e) => handleNewClassNameChange(e.target.value)} /></FormControl>
+                                    <FormDescription>Usa un formato como 'CURSO-LETRA'.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            {form.getValues('newClassName') && !form.formState.errors.newClassName && (
+                                <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                                    <Label>Código de Acceso del Centro</Label>
+                                    <p className="text-xs text-muted-foreground">Este será el código que otros usuarios necesitarán para unirse a tu centro. Guárdalo bien.</p>
+                                    {generatedCode ? (
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="text-base font-bold tracking-widest">{generatedCode}</Badge>
+                                            <Button type="button" variant="ghost" size="icon" onClick={handleCopyCode} className="h-7 w-7">
+                                                {isCodeCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <Button type="button" onClick={handleGenerateCode} className="w-full">Generar Código</Button>
+                                    )}
+                                </div>
+                            )}
+                          </>
                       )}
                     </div>
                 )}
@@ -434,5 +478,7 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     </Dialog>
   );
 }
+
+    
 
     
