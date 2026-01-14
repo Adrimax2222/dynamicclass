@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ArrowLeft, Eye, EyeOff, MailCheck, User as UserIcon, CheckCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Eye, EyeOff, MailCheck, User as UserIcon, CheckCircle, School, PlusCircle } from "lucide-react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -16,7 +16,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, getDocs, query, where, addDoc, serverTimestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +28,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -53,11 +64,12 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import type { User, Center } from "@/lib/types";
 import LoadingScreen from "@/components/layout/loading-screen";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const createRegistrationSchema = (isCenterValidated: boolean) => z.object({
+type RegistrationMode = 'join' | 'personal' | 'create';
+
+const createRegistrationSchema = (mode: RegistrationMode, isCenterValidated: boolean) => z.object({
   fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
   email: z.string().email({ message: "Por favor, introduce una dirección de correo electrónico válida." }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
@@ -66,12 +78,26 @@ const createRegistrationSchema = (isCenterValidated: boolean) => z.object({
   course: z.string(),
   className: z.string(),
   role: z.enum(["student", "teacher", "admin"], { required_error: "Debes seleccionar un rol." }),
+  newCenterName: z.string().optional(),
+  newClassName: z.string().optional(),
 }).refine(data => {
-    if (data.center === 'personal') return true;
-    return isCenterValidated;
+    if (mode === 'join') return isCenterValidated;
+    return true;
 }, {
     message: "Debes validar tu código de centro.",
     path: ["center"],
+}).refine(data => {
+    if (mode === 'create') return data.newCenterName && data.newCenterName.trim().length > 2;
+    return true;
+}, {
+    message: "El nombre del centro es obligatorio.",
+    path: ["newCenterName"],
+}).refine(data => {
+    if (mode === 'create') return data.newClassName && data.newClassName.trim().length > 1;
+    return true;
+}, {
+    message: "El nombre de la clase es obligatorio.",
+    path: ["newClassName"],
 });
 
 
@@ -85,7 +111,7 @@ type LoginSchemaType = z.infer<typeof loginSchema>;
 
 const steps = [
     { id: 1, fields: ['fullName', 'email', 'password'] },
-    { id: 2, fields: ['center', 'ageRange', 'course', 'className', 'role'] },
+    { id: 2, fields: ['center', 'ageRange', 'course', 'className', 'role', 'newCenterName', 'newClassName'] },
 ];
 
 const courseOptions = [
@@ -138,7 +164,7 @@ export default function AuthPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward'>('forward');
   const [showPassword, setShowPassword] = useState(false);
-  const [usePersonal, setUsePersonal] = useState(false);
+  const [registrationMode, setRegistrationMode] = useState<RegistrationMode>('join');
   const [isCenterValidated, setIsCenterValidated] = useState(false);
   const [validatedCenter, setValidatedCenter] = useState<Center | null>(null);
 
@@ -146,76 +172,43 @@ export default function AuthPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  // Redirect if user is already logged in
   useEffect(() => {
-    if (user) {
-      router.push('/home');
-    }
+    if (user) router.push('/home');
   }, [user, router]);
   
-  const registrationSchema = useMemo(() => createRegistrationSchema(isCenterValidated || usePersonal), [isCenterValidated, usePersonal]);
+  const registrationSchema = useMemo(() => createRegistrationSchema(registrationMode, isCenterValidated), [registrationMode, isCenterValidated]);
 
   const form = useForm<RegistrationSchemaType>({
     resolver: zodResolver(registrationSchema),
     mode: "onChange",
     defaultValues: {
-      fullName: "",
-      email: "",
-      password: "",
-      center: "",
-      role: "student",
-      ageRange: "",
-      course: "",
-      className: "",
+      fullName: "", email: "", password: "", center: "",
+      role: "student", ageRange: "", course: "", className: "",
+      newCenterName: "", newClassName: "",
     },
   });
 
   const availableClasses = useMemo(() => {
     if (!validatedCenter || !validatedCenter.classes) return { courses: [], classNames: [] };
-
     const courses = new Set<string>();
     const classNames = new Set<string>();
-
     validatedCenter.classes.forEach(c => {
         const [course, className] = c.name.split('-');
-        if (course) {
-            const courseValue = course.toLowerCase().replace('º', '');
-            courses.add(courseValue);
-        }
-        if (className) {
-            classNames.add(className);
-        }
+        if (course) courses.add(course.toLowerCase().replace('º', ''));
+        if (className) classNames.add(className);
     });
-
-    return {
-        courses: Array.from(courses),
-        classNames: Array.from(classNames)
-    };
+    return { courses: Array.from(courses), classNames: Array.from(classNames) };
   }, [validatedCenter]);
 
-
   useEffect(() => {
-    if (usePersonal) {
-        form.setValue('center', 'personal', { shouldValidate: true });
-        form.setValue('course', 'personal', { shouldValidate: true });
-        form.setValue('className', 'personal', { shouldValidate: true });
-        setIsCenterValidated(false);
-        setValidatedCenter(null);
-    } else {
-        form.setValue('center', '', { shouldValidate: true });
-        form.setValue('course', '', { shouldValidate: true });
-        form.setValue('className', '', { shouldValidate: true });
-        setIsCenterValidated(false);
-        setValidatedCenter(null);
-    }
-  }, [usePersonal, form]);
-  
+    form.reset();
+    setIsCenterValidated(false);
+    setValidatedCenter(null);
+  }, [registrationMode, form]);
+
   const loginForm = useForm<LoginSchemaType>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
   async function goToNextStep() {
@@ -229,8 +222,10 @@ export default function AuthPage() {
 
   function goToPreviousStep() {
     setAnimationDirection('backward');
-    setCurrentStep(prev => prev + 1);
+    setCurrentStep(prev => prev - 1);
   }
+  
+  const generateCode = () => `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
 
   async function onRegisterSubmit(values: RegistrationSchemaType) {
     setIsLoading(true);
@@ -243,56 +238,53 @@ export default function AuthPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
-
       await sendEmailVerification(firebaseUser);
       
       const firstInitial = values.fullName.charAt(0).toUpperCase() || 'A';
       const defaultAvatarUrl = `letter_${firstInitial}_A78BFA`;
+      await updateProfile(firebaseUser, { displayName: values.fullName, photoURL: defaultAvatarUrl });
 
-      await updateProfile(firebaseUser, {
-        displayName: values.fullName,
-        photoURL: defaultAvatarUrl,
-      });
+      let userData: Omit<User, 'uid'>;
 
-       const newUser: Omit<User, 'uid'> = {
-          name: values.fullName,
-          email: values.email,
-          avatar: defaultAvatarUrl,
-          center: values.center,
-          ageRange: values.ageRange,
-          course: values.course,
-          className: values.className,
-          role: values.role,
-          trophies: 0,
-          tasks: 0,
-          exams: 0,
-          pending: 0,
-          activities: 0,
-          isNewUser: true,
-          studyMinutes: 0,
-          streak: 0,
-          lastStudyDay: '',
-          ownedAvatars: [],
-      };
+      if (registrationMode === 'create') {
+        const newCode = generateCode();
+        const newCenterRef = await addDoc(collection(firestore, "centers"), {
+            name: values.newCenterName,
+            code: newCode,
+            classes: [{ name: values.newClassName, schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } }],
+            createdAt: serverTimestamp(),
+        });
+        const [course, className] = values.newClassName!.split('-');
+        userData = {
+            name: values.fullName, email: values.email, avatar: defaultAvatarUrl,
+            center: newCode, ageRange: values.ageRange,
+            course: course.toLowerCase().replace('º',''), className: className, role: `admin-${values.newClassName}`,
+            organizationId: newCenterRef.id, trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
+            isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
+        };
+        toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${newCode}.` });
+      } else {
+         userData = {
+            name: values.fullName, email: values.email, avatar: defaultAvatarUrl,
+            center: registrationMode === 'personal' ? 'personal' : values.center,
+            ageRange: values.ageRange,
+            course: registrationMode === 'personal' ? 'personal' : values.course,
+            className: registrationMode === 'personal' ? 'personal' : values.className,
+            role: values.role, organizationId: registrationMode === 'join' ? validatedCenter?.uid : undefined,
+            trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
+            isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
+        };
+      }
 
-      await setDoc(doc(firestore, 'users', firebaseUser.uid), newUser);
-      
+      await setDoc(doc(firestore, 'users', firebaseUser.uid), userData);
       setRegistrationSuccess(true);
       
     } catch (error: any) {
       console.error("Registration Error:", error);
       let errorMessage = "No se pudo crear la cuenta. Inténtalo de nuevo.";
-      if (error.code === 'auth/email-already-in-use') {
-          errorMessage = "Esta dirección de correo electrónico ya está en uso.";
-      } else if (error.code === 'auth/weak-password') {
-          errorMessage = 'La contraseña es demasiado débil. Debe tener al menos 6 caracteres.';
-      }
-      
-      toast({
-        title: "Error de Registro",
-        description: `${errorMessage}`,
-        variant: "destructive",
-      });
+      if (error.code === 'auth/email-already-in-use') errorMessage = "Esta dirección de correo electrónico ya está en uso.";
+      else if (error.code === 'auth/weak-password') errorMessage = 'La contraseña es demasiado débil. Debe tener al menos 6 caracteres.';
+      toast({ title: "Error de Registro", description: errorMessage, variant: "destructive" });
     } finally {
         setIsLoading(false);
     }
@@ -301,11 +293,7 @@ export default function AuthPage() {
   async function onLoginSubmit(values: LoginSchemaType) {
     setIsLoading(true);
     if (!auth) {
-      toast({
-        title: "Error de inicialización",
-        description: "Firebase no está disponible. Por favor, recarga la página.",
-        variant: "destructive",
-      });
+      toast({ title: "Error de inicialización", description: "Firebase no disponible.", variant: "destructive" });
       setIsLoading(false);
       return;
     }
@@ -314,43 +302,24 @@ export default function AuthPage() {
     const isAdmin = ADMIN_EMAILS.includes(values.email);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        values.email,
-        values.password
-      );
-
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       await userCredential.user.reload();
       const freshUser = auth.currentUser;
 
       if (freshUser && !freshUser.emailVerified && !isAdmin) {
-        toast({
-          title: "Verificación Requerida",
-          description: "Por favor, verifica tu correo electrónico para iniciar sesión. Revisa tu bandeja de entrada.",
-          variant: "destructive",
-        });
+        toast({ title: "Verificación Requerida", description: "Verifica tu correo para iniciar sesión.", variant: "destructive" });
         await signOut(auth);
         setIsLoading(false);
         return;
       }
-
       router.push('/home');
-
     } catch (error: any) {
       console.error("Login Error:", error);
-      let errorMessage = "No se pudo iniciar sesión. Por favor, intenta de nuevo.";
-      if (
-        error.code === "auth/user-not-found" ||
-        error.code === "auth/wrong-password" ||
-        error.code === "auth/invalid-credential"
-      ) {
-        errorMessage = "El correo electrónico o la contraseña son incorrectos.";
+      let errorMessage = "No se pudo iniciar sesión. Intenta de nuevo.";
+      if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
+        errorMessage = "El correo o la contraseña son incorrectos.";
       }
-      toast({
-        title: "Error de Inicio de Sesión",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast({ title: "Error de Inicio de Sesión", description: errorMessage, variant: "destructive" });
     } finally {
         setIsLoading(false); 
     }
@@ -358,63 +327,39 @@ export default function AuthPage() {
   
   async function handleGoogleSignIn() {
     if (!auth || !firestore) {
-      toast({ title: "Error", description: "Firebase no está inicializado.", variant: "destructive" });
+      toast({ title: "Error", description: "Firebase no inicializado.", variant: "destructive" });
       return;
     }
-
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
-
     try {
       const result = await signInWithPopup(auth, provider);
       const firebaseUser = result.user;
-
       const userDocRef = doc(firestore, 'users', firebaseUser.uid);
       const userDoc = await getDoc(userDocRef);
-
       if (!userDoc.exists()) {
         const firstInitial = firebaseUser.displayName?.charAt(0).toUpperCase() || 'A';
         const newUser: Omit<User, 'uid'> = {
-            name: firebaseUser.displayName || 'Usuario',
-            email: firebaseUser.email!,
-            avatar: `letter_${firstInitial}_A78BFA`,
-            center: 'default',
-            ageRange: 'default', 
-            course: 'default',
-            className: 'default',
-            role: 'student',
-            trophies: 0,
-            tasks: 0,
-            exams: 0,
-            pending: 0,
-            activities: 0,
-            isNewUser: true,
-            studyMinutes: 0,
-            streak: 0,
-            lastStudyDay: '',
-            ownedAvatars: [],
+            name: firebaseUser.displayName || 'Usuario', email: firebaseUser.email!,
+            avatar: `letter_${firstInitial}_A78BFA`, center: 'default', ageRange: 'default', 
+            course: 'default', className: 'default', role: 'student',
+            trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
+            isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
         };
         await setDoc(userDocRef, newUser);
       }
-      
       router.push('/home');
-
     } catch (error: any) {
       console.error("Google Sign-In Error:", error);
       let errorMessage = "No se pudo iniciar sesión con Google. Inténtalo de nuevo.";
       if (error.code === 'auth/account-exists-with-different-credential') {
-        errorMessage = "Ya existe una cuenta con este correo electrónico pero con un método de inicio de sesión diferente.";
+        errorMessage = "Ya existe una cuenta con este correo pero con otro método de inicio de sesión.";
       }
-      toast({
-        title: "Error de Inicio de Sesión con Google",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast({ title: "Error de Inicio de Sesión con Google", description: errorMessage, variant: "destructive" });
     } finally {
       setIsGoogleLoading(false);
     }
   }
-
 
   const progress = ((currentStep + 1) / steps.length) * 100;
   const isFirstStep = currentStep === 0;
@@ -429,19 +374,10 @@ export default function AuthPage() {
     setAuthMode(mode);
     setRegistrationSuccess(false);
     loginForm.reset();
-    form.reset({
-      fullName: "",
-      email: "",
-      password: "",
-      center: "",
-      role: "student",
-      ageRange: "",
-      course: "",
-      className: "",
-    });
+    form.reset();
     setCurrentStep(0);
     setIsLoading(false);
-    setUsePersonal(false);
+    setRegistrationMode('join');
     setIsCenterValidated(false);
     setValidatedCenter(null);
   }
@@ -449,25 +385,19 @@ export default function AuthPage() {
   const formatAndSetCenterCode = (value: string) => {
     const digitsOnly = value.replace(/[^0-9]/g, '');
     let formatted = digitsOnly.slice(0, 6);
-    if (formatted.length > 3) {
-      formatted = `${formatted.slice(0, 3)}-${formatted.slice(3)}`;
-    }
+    if (formatted.length > 3) formatted = `${formatted.slice(0, 3)}-${formatted.slice(3)}`;
     form.setValue('center', formatted, { shouldValidate: true });
-    
     if (isCenterValidated && formatted !== validatedCenter?.code) {
         setIsCenterValidated(false);
         setValidatedCenter(null);
     }
   };
 
-
   const handleValidateCenter = async () => {
       if (!firestore) return;
       setIsLoading(true);
-
       const centerCode = form.getValues('center');
       const q = query(collection(firestore, 'centers'), where('code', '==', centerCode));
-      
       try {
           const querySnapshot = await getDocs(q);
           if (!querySnapshot.empty) {
@@ -479,21 +409,19 @@ export default function AuthPage() {
           } else {
               setValidatedCenter(null);
               setIsCenterValidated(false);
-              toast({ title: "Código no válido", description: "No se encontró ningún centro con ese código.", variant: "destructive" });
+              toast({ title: "Código no válido", description: "No se encontró centro con ese código.", variant: "destructive" });
           }
       } catch (error) {
           console.error("Error validating center:", error);
           setIsCenterValidated(false);
           setValidatedCenter(null);
-          toast({ title: "Error de validación", description: "No se pudo comprobar el código del centro.", variant: "destructive" });
+          toast({ title: "Error de validación", description: "No se pudo comprobar el código.", variant: "destructive" });
       } finally {
           setIsLoading(false);
       }
   };
 
-  if (user) {
-    return <LoadingScreen />;
-  }
+  if (user) return <LoadingScreen />;
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-start bg-muted/20 p-4 sm:pt-8 sm:justify-center">
@@ -511,7 +439,7 @@ export default function AuthPage() {
                         {authMode === 'register' ? 'Únete a la Clase' : 'Bienvenido de Nuevo'}
                     </CardTitle>
                     <CardDescription>
-                        {authMode === 'register' ? 'Crea tu cuenta para empezar a conectar.' : 'Inicia sesión para acceder a tu panel.'}
+                        {authMode === 'register' ? 'Crea tu cuenta para empezar.' : 'Inicia sesión para acceder a tu panel.'}
                     </CardDescription>
                 </>
             )}
@@ -522,7 +450,7 @@ export default function AuthPage() {
                     <MailCheck className="h-16 w-16 text-green-500 mx-auto animate-pulse-slow" />
                     <p className="text-foreground">¡Gracias por registrarte!</p>
                     <p className="text-muted-foreground text-sm">
-                        Te hemos enviado un correo electrónico. Por favor, haz clic en el enlace de verificación para activar tu cuenta y poder iniciar sesión.
+                        Te hemos enviado un correo. Haz clic en el enlace de verificación para activar tu cuenta.
                     </p>
                     <p className="text-sm font-semibold text-muted-foreground">
                         (Si no lo ves, ¡revisa tu carpeta de spam!)
@@ -541,90 +469,99 @@ export default function AuthPage() {
                             <div className="space-y-6">
                                 <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Nombre Completo</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" placeholder="tu@ejemplo.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField
-                                  control={form.control}
-                                  name="password"
-                                  render={({ field }) => (
+                                <FormField control={form.control} name="password" render={({ field }) => (
                                     <FormItem>
                                       <FormLabel>Contraseña</FormLabel>
                                       <div className="relative">
-                                        <FormControl>
-                                          <Input
-                                            type={showPassword ? "text" : "password"}
-                                            placeholder="••••••••"
-                                            {...field}
-                                            className="pr-10"
-                                          />
-                                        </FormControl>
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="icon"
-                                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
-                                          onClick={() => setShowPassword(!showPassword)}
-                                        >
+                                        <FormControl><Input type={showPassword ? "text" : "password"} placeholder="••••••••" {...field} className="pr-10" /></FormControl>
+                                        <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground" onClick={() => setShowPassword(!showPassword)}>
                                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                         </Button>
                                       </div>
                                       <FormMessage />
                                     </FormItem>
-                                  )}
-                                />
+                                )}/>
                             </div>
                           )}
                           {index === 1 && (
                             <ScrollArea className="h-[450px] pr-4">
                               <div className="space-y-4">
-                                  <div className="flex items-center space-x-2 rounded-lg border p-3">
-                                      <Switch id="personal-use-switch" checked={usePersonal} onCheckedChange={setUsePersonal} />
-                                      <Label htmlFor="personal-use-switch" className="flex flex-col gap-1">
-                                          <span className="font-semibold flex items-center gap-2"><UserIcon className="h-4 w-4" />Prefiero el uso personal</span>
+                                  <RadioGroup value={registrationMode} onValueChange={(v) => setRegistrationMode(v as RegistrationMode)} className="grid grid-cols-3 gap-2">
+                                      <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-accent/50", registrationMode === 'join' && "bg-accent border-primary")}>
+                                          <School className="h-5 w-5"/> <span className="text-xs font-semibold">Unirse</span>
+                                          <RadioGroupItem value="join" className="sr-only"/>
                                       </Label>
-                                  </div>
-
-                                  <FormField 
-                                    control={form.control} 
-                                    name="center" 
-                                    render={({ field }) => (
+                                       <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-accent/50", registrationMode === 'create' && "bg-accent border-primary")}>
+                                                    <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">Crear</span>
+                                                </Label>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>¿Crear un nuevo centro?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Asegúrate de que tu centro no exista ya en Dynamic Class para evitar duplicados. Si creas un centro, serás su administrador.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => setRegistrationMode('create')}>Sí, crear</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                      <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-accent/50", registrationMode === 'personal' && "bg-accent border-primary")}>
+                                          <UserIcon className="h-5 w-5"/> <span className="text-xs font-semibold">Personal</span>
+                                          <RadioGroupItem value="personal" className="sr-only"/>
+                                      </Label>
+                                  </RadioGroup>
+                                  
+                                  {registrationMode === 'join' && (
+                                    <FormField control={form.control} name="center" render={({ field }) => (
                                       <FormItem>
-                                        <FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Código de Centro Educativo</FormLabel>
+                                        <FormLabel>Código de Centro Educativo</FormLabel>
                                         <div className="flex items-center gap-2">
-                                          <FormControl>
-                                              <Input 
-                                              placeholder="123-456" 
-                                              {...field}
-                                              onChange={(e) => formatAndSetCenterCode(e.target.value)}
-                                              disabled={usePersonal || isCenterValidated}
-                                              />
-                                          </FormControl>
-                                          <Button 
-                                              type="button" 
-                                              onClick={handleValidateCenter} 
-                                              disabled={usePersonal || field.value.length !== 7 || isLoading || isCenterValidated}
-                                              variant={isCenterValidated ? "secondary" : "default"}
-                                              className="whitespace-nowrap"
-                                          >
+                                          <FormControl><Input placeholder="123-456" {...field} onChange={(e) => formatAndSetCenterCode(e.target.value)} disabled={isCenterValidated} /></FormControl>
+                                          <Button type="button" onClick={handleValidateCenter} disabled={field.value.length !== 7 || isLoading || isCenterValidated} variant={isCenterValidated ? "secondary" : "default"}>
                                               {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterValidated ? <CheckCircle className="h-4 w-4"/> : "Validar"}
                                           </Button>
                                         </div>
-                                        <FormDescription>
-                                          Únete al grupo de tu centro. Si no tienes uno, selecciona la opción de uso personal.
-                                        </FormDescription>
-                                        {!usePersonal && validatedCenter && isCenterValidated && (
+                                        <FormDescription>Únete al grupo de tu centro.</FormDescription>
+                                        {validatedCenter && isCenterValidated && (
                                           <FormDescription className="text-green-600 font-semibold flex items-center gap-2">
-                                              <CheckCircle className="h-4 w-4" />
-                                              {validatedCenter.name}
+                                              <CheckCircle className="h-4 w-4" />{validatedCenter.name}
                                           </FormDescription>
                                         )}
                                         <FormMessage />
                                       </FormItem>
-                                    )} 
-                                  />
-                                   
-                                  {!usePersonal && isCenterValidated && (
+                                    )} />
+                                  )}
+
+                                  {registrationMode === 'create' && (
+                                    <div className="space-y-4 p-3 border-l-4 border-primary bg-primary/5 rounded-r-lg">
+                                        <FormField control={form.control} name="newCenterName" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Nombre del Nuevo Centro</FormLabel>
+                                                <FormControl><Input placeholder="Ej: Instituto Adrimax" {...field} /></FormControl>
+                                                <FormDescription>El nombre de tu institución educativa.</FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="newClassName" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Nombre de tu Primera Clase</FormLabel>
+                                                <FormControl><Input placeholder="Ej: 4ESO-B" {...field} /></FormControl>
+                                                <FormDescription>Usa un formato como 'CURSO-LETRA'. Serás el admin de esta clase.</FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                    </div>
+                                  )}
+
+                                  {registrationMode === 'join' && isCenterValidated && (
                                     <div className="grid grid-cols-2 gap-4">
-                                      <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                      <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                      <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                      <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                                     </div>
                                   )}
 
@@ -635,18 +572,9 @@ export default function AuthPage() {
                                           <FormLabel>Tu Rol</FormLabel>
                                           <FormControl>
                                               <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-3 gap-4">
-                                                  <FormItem className="flex items-center space-x-2 space-y-0">
-                                                      <FormControl><RadioGroupItem value="student" /></FormControl>
-                                                      <FormLabel className="font-normal">Estudiante</FormLabel>
-                                                  </FormItem>
-                                                  <FormItem className="flex items-center space-x-2 space-y-0">
-                                                      <FormControl><RadioGroupItem value="teacher" disabled /></FormControl>
-                                                      <FormLabel className="font-normal opacity-50">Profesor</FormLabel>
-                                                  </FormItem>
-                                                  <FormItem className="flex items-center space-x-2 space-y-0">
-                                                      <FormControl><RadioGroupItem value="admin" disabled /></FormControl>
-                                                      <FormLabel className="font-normal opacity-50">Admin</FormLabel>
-                                                  </FormItem>
+                                                  <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="student" /></FormControl><FormLabel className="font-normal">Estudiante</FormLabel></FormItem>
+                                                  <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="teacher" disabled /></FormControl><FormLabel className="font-normal opacity-50">Profesor</FormLabel></FormItem>
+                                                  <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="admin" disabled /></FormControl><FormLabel className="font-normal opacity-50">Admin</FormLabel></FormItem>
                                               </RadioGroup>
                                           </FormControl>
                                           <FormMessage />
@@ -671,7 +599,7 @@ export default function AuthPage() {
                                 className="w-full" 
                                 size="lg" 
                                 disabled={isLoading || isGoogleLoading}>
-                                {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creando Cuenta...</>) : isLastStep ? ("Crear Cuenta") : ("Siguiente")}
+                                {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creando...</>) : isLastStep ? ("Crear Cuenta") : ("Siguiente")}
                             </Button>
                         </div>
                     </div>
@@ -681,37 +609,20 @@ export default function AuthPage() {
                 <Form {...loginForm}>
                     <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
                         <FormField control={loginForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" placeholder="tu@ejemplo.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField
-                          control={loginForm.control}
-                          name="password"
-                          render={({ field }) => (
+                        <FormField control={loginForm.control} name="password" render={({ field }) => (
                             <FormItem>
                               <FormLabel>Contraseña</FormLabel>
                               <div className="relative">
-                                <FormControl>
-                                  <Input
-                                    type={showPassword ? "text" : "password"}
-                                    placeholder="••••••••"
-                                    {...field}
-                                    className="pr-10"
-                                  />
-                                </FormControl>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
-                                  onClick={() => setShowPassword(!showPassword)}
-                                >
+                                <FormControl><Input type={showPassword ? "text" : "password"} placeholder="••••••••" {...field} className="pr-10" /></FormControl>
+                                <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground" onClick={() => setShowPassword(!showPassword)}>
                                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 </Button>
                               </div>
                               <FormMessage />
                             </FormItem>
-                          )}
-                        />
+                        )}/>
                         <Button type="submit" className="w-full" size="lg" disabled={isLoading || isGoogleLoading}>
-                            {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Iniciando Sesión...</>) : "Iniciar Sesión"}
+                            {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Iniciando...</>) : "Iniciar Sesión"}
                         </Button>
                     </form>
                 </Form>
@@ -719,40 +630,21 @@ export default function AuthPage() {
 
            {!registrationSuccess && (
             <>
-                <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">O continúa con</span>
-                    </div>
-                </div>
-
+                <div className="relative my-6"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">O continúa con</span></div></div>
                 <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
-                    {isGoogleLoading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <GoogleIcon className="mr-2 h-5 w-5" />
-                    )}
+                    {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
                     Google
                 </Button>
-
                 <div className="mt-6 text-center text-sm">
-                    {authMode === 'register' ? (
-                        <>¿Ya tienes una cuenta? <Button variant="link" className="p-0 h-auto" onClick={() => handleAuthModeChange('login')}>Inicia Sesión</Button></>
-                    ) : (
-                        <>¿No tienes una cuenta? <Button variant="link" className="p-0 h-auto" onClick={() => handleAuthModeChange('register')}>Crea una</Button></>
-                    )}
+                    {authMode === 'register' ? (<>¿Ya tienes cuenta? <Button variant="link" className="p-0 h-auto" onClick={() => handleAuthModeChange('login')}>Inicia Sesión</Button></>) : (<>¿No tienes cuenta? <Button variant="link" className="p-0 h-auto" onClick={() => handleAuthModeChange('register')}>Crea una</Button></>)}
                 </div>
             </>
            )}
-            
             <div className="mt-8 text-center text-sm text-muted-foreground">
                 <Link href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
                     Impulsado por <span className="font-semibold">Proyecto Adrimax</span>
                 </Link>
             </div>
-
         </CardContent>
       </Card>
     </main>

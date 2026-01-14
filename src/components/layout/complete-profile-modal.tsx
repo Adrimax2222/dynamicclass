@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import type { User, Center } from "@/lib/types";
 import { useFirestore } from "@/firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, addDoc, serverTimestamp } from "firebase/firestore";
 
 import {
     Dialog,
@@ -17,6 +17,17 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Form,
   FormControl,
@@ -35,26 +46,41 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, UserCheck, User as UserIcon, CheckCircle } from "lucide-react";
+import { Loader2, UserCheck, User as UserIcon, CheckCircle, School, PlusCircle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Label } from "../ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
+type RegistrationMode = 'join' | 'personal' | 'create';
 
-const createProfileSchema = (isCenterValidated: boolean) => z.object({
+const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean) => z.object({
   center: z.string(),
   ageRange: z.string().min(1, { message: "Por favor, selecciona un rango de edad." }),
   course: z.string(),
   className: z.string(),
+  newCenterName: z.string().optional(),
+  newClassName: z.string().optional(),
 }).refine(data => {
-    if (data.center === 'personal') return true;
-    return isCenterValidated;
+    if (mode === 'join') return isCenterValidated;
+    return true;
 }, {
     message: "Debes validar tu código de centro.",
     path: ['center'],
+}).refine(data => {
+    if (mode === 'create') return data.newCenterName && data.newCenterName.trim().length > 2;
+    return true;
+}, {
+    message: "El nombre del centro es obligatorio.",
+    path: ['newCenterName'],
+}).refine(data => {
+    if (mode === 'create') return data.newClassName && data.newClassName.trim().length > 1;
+    return true;
+}, {
+    message: "El nombre de la clase es obligatorio.",
+    path: ['newClassName'],
 });
-
 
 type ProfileSchema = z.infer<ReturnType<typeof createProfileSchema>>;
 
@@ -76,88 +102,100 @@ const classOptions = ['A', 'B', 'C', 'D', 'E'];
 
 export default function CompleteProfileModal({ user, onSave }: CompleteProfileModalProps) {
     const [isLoading, setIsLoading] = useState(false);
-    const [usePersonal, setUsePersonal] = useState(false);
+    const [mode, setMode] = useState<RegistrationMode>('join');
     const [isCenterValidated, setIsCenterValidated] = useState(false);
     const [validatedCenter, setValidatedCenter] = useState<Center | null>(null);
     const { toast } = useToast();
     
     const firestore = useFirestore();
 
-    const profileSchema = useMemo(() => createProfileSchema(isCenterValidated || usePersonal), [isCenterValidated, usePersonal]);
+    const profileSchema = useMemo(() => createProfileSchema(mode, isCenterValidated), [mode, isCenterValidated]);
 
     const form = useForm<ProfileSchema>({
         resolver: zodResolver(profileSchema),
+        mode: "onChange",
         defaultValues: {
             center: "",
             ageRange: "",
             course: "",
             className: "",
+            newCenterName: "",
+            newClassName: ""
         },
     });
     
     const availableClasses = useMemo(() => {
         if (!validatedCenter || !validatedCenter.classes) return { courses: [], classNames: [] };
-
         const courses = new Set<string>();
         const classNames = new Set<string>();
-
         validatedCenter.classes.forEach(c => {
             const [course, className] = c.name.split('-');
-            if (course) {
-                const courseValue = course.toLowerCase().replace('º', '');
-                courses.add(courseValue);
-            }
-            if (className) {
-                classNames.add(className);
-            }
+            if (course) courses.add(course.toLowerCase().replace('º', ''));
+            if (className) classNames.add(className);
         });
-
-        return {
-            courses: Array.from(courses),
-            classNames: Array.from(classNames)
-        };
+        return { courses: Array.from(courses), classNames: Array.from(classNames) };
     }, [validatedCenter]);
 
     useEffect(() => {
-      if (usePersonal) {
-        form.setValue('center', 'personal');
-        form.setValue('course', 'personal');
-        form.setValue('className', 'personal');
+        form.reset();
         setIsCenterValidated(false);
         setValidatedCenter(null);
-      } else {
-        form.setValue('center', '');
-        form.setValue('course', '');
-        form.setValue('className', '');
-        setIsCenterValidated(false);
-        setValidatedCenter(null);
-      }
-    }, [usePersonal, form]);
+    }, [mode, form]);
 
+    const generateCode = () => `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
 
-    const onSubmit = (values: ProfileSchema) => {
+    const onSubmit = async (values: ProfileSchema) => {
         setIsLoading(true);
-        if (usePersonal) {
+        if (mode === 'personal') {
+            onSave({ center: 'personal', course: 'personal', className: 'personal', ageRange: values.ageRange });
+        } else if (mode === 'join' && isCenterValidated) {
             onSave({
-                center: 'personal',
-                course: 'personal',
-                className: 'personal',
+                center: values.center,
+                course: values.course,
+                className: values.className,
                 ageRange: values.ageRange,
+                organizationId: validatedCenter?.uid
             });
-        } else {
-            onSave(values);
+        } else if (mode === 'create') {
+            if (!firestore || !values.newCenterName || !values.newClassName) {
+                toast({ title: "Error", description: "Faltan datos para crear el centro.", variant: "destructive" });
+                setIsLoading(false);
+                return;
+            }
+            try {
+                const newCode = generateCode();
+                const newCenterRef = await addDoc(collection(firestore, "centers"), {
+                    name: values.newCenterName,
+                    code: newCode,
+                    classes: [{ name: values.newClassName, schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } }],
+                    createdAt: serverTimestamp(),
+                });
+                
+                const [course, className] = values.newClassName.split('-');
+                
+                onSave({
+                    center: newCode,
+                    course: course.toLowerCase().replace('º',''),
+                    className: className,
+                    ageRange: values.ageRange,
+                    organizationId: newCenterRef.id,
+                    role: `admin-${values.newClassName}`
+                });
+                 toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${newCode}.` });
+
+            } catch (err) {
+                 toast({ title: "Error", description: "No se pudo crear el nuevo centro.", variant: "destructive" });
+            }
         }
+        setIsLoading(false);
     };
     
     const formatAndSetCenterCode = (value: string) => {
         const digitsOnly = value.replace(/[^0-9]/g, '');
         let formatted = digitsOnly.slice(0, 6);
-        if (formatted.length > 3) {
-            formatted = `${formatted.slice(0, 3)}-${formatted.slice(3)}`;
-        }
+        if (formatted.length > 3) formatted = `${formatted.slice(0, 3)}-${formatted.slice(3)}`;
         form.setValue('center', formatted, { shouldValidate: true });
-
-        if (formatted.length !== 7) {
+        if (isCenterValidated && formatted !== validatedCenter?.code) {
             setIsCenterValidated(false);
             setValidatedCenter(null);
         }
@@ -166,10 +204,8 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     const handleValidateCenter = async () => {
         if (!firestore) return;
         setIsLoading(true);
-
         const centerCode = form.getValues('center');
         const q = query(collection(firestore, 'centers'), where('code', '==', centerCode));
-        
         try {
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
@@ -208,120 +244,86 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
 
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                 <div className="flex items-center space-x-2 rounded-lg border p-3">
-                    <Switch id="personal-use-switch" checked={usePersonal} onCheckedChange={setUsePersonal} />
-                    <Label htmlFor="personal-use-switch" className="flex flex-col gap-1">
-                      <span className="font-semibold flex items-center gap-2"><UserIcon className="h-4 w-4" />Prefiero el uso personal</span>
+                 <RadioGroup value={mode} onValueChange={(v) => setMode(v as RegistrationMode)} className="grid grid-cols-3 gap-2">
+                    <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-accent/50", mode === 'join' && "bg-accent border-primary")}>
+                        <School className="h-5 w-5"/> <span className="text-xs font-semibold">Unirse</span>
+                        <RadioGroupItem value="join" className="sr-only"/>
                     </Label>
-                </div>
+                    <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-accent/50", mode === 'create' && "bg-accent border-primary")}>
+                        <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">Crear</span>
+                        <RadioGroupItem value="create" className="sr-only"/>
+                    </Label>
+                    <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-accent/50", mode === 'personal' && "bg-accent border-primary")}>
+                        <UserIcon className="h-5 w-5"/> <span className="text-xs font-semibold">Personal</span>
+                        <RadioGroupItem value="personal" className="sr-only"/>
+                    </Label>
+                </RadioGroup>
 
-                <FormField
-                    control={form.control}
-                    name="center"
-                    render={({ field }) => (
+                {mode === 'join' && (
+                    <FormField control={form.control} name="center" render={({ field }) => (
                         <FormItem>
-                            <FormLabel className={cn(usePersonal && 'text-muted-foreground/50')}>Código de Centro Educativo</FormLabel>
+                            <FormLabel>Código de Centro Educativo</FormLabel>
                             <div className="flex items-center gap-2">
-                                <FormControl>
-                                    <Input 
-                                        placeholder="123-456" 
-                                        {...field}
-                                        onChange={(e) => formatAndSetCenterCode(e.target.value)}
-                                        disabled={usePersonal || isCenterValidated}
-                                    />
-                                </FormControl>
-                                <Button 
-                                    type="button" 
-                                    onClick={handleValidateCenter} 
-                                    disabled={usePersonal || field.value.length !== 7 || isLoading || isCenterValidated}
-                                    variant={isCenterValidated ? "secondary" : "default"}
-                                >
+                                <FormControl><Input placeholder="123-456" {...field} onChange={(e) => formatAndSetCenterCode(e.target.value)} disabled={isCenterValidated} /></FormControl>
+                                <Button type="button" onClick={handleValidateCenter} disabled={field.value.length !== 7 || isLoading || isCenterValidated} variant={isCenterValidated ? "secondary" : "default"}>
                                     {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterValidated ? <CheckCircle className="h-4 w-4"/> : "Validar"}
                                 </Button>
                             </div>
-                            <FormDescription>
-                                Únete al grupo de tu centro. Si no tienes uno, selecciona la opción de uso personal.
-                            </FormDescription>
-                            {!usePersonal && validatedCenter && isCenterValidated && (
+                            <FormDescription>Únete al grupo de tu centro.</FormDescription>
+                            {validatedCenter && isCenterValidated && (
                                 <FormDescription className="text-green-600 font-semibold flex items-center gap-2">
-                                    <CheckCircle className="h-4 w-4" />
-                                    {validatedCenter.name}
+                                    <CheckCircle className="h-4 w-4" />{validatedCenter.name}
                                 </FormDescription>
                             )}
                             <FormMessage />
                         </FormItem>
-                    )}
-                />
+                    )} />
+                )}
                 
-                {!usePersonal && isCenterValidated && (
-                    <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="course"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Curso</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}>
-                                    <FormControl>
-                                        <SelectTrigger><SelectValue placeholder="Curso" /></SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {courseOptions.map(option => (
-                                            <SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="className"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className={cn((usePersonal || !isCenterValidated) && 'text-muted-foreground/50')}>Clase</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} disabled={usePersonal || !isCenterValidated}>
-                                    <FormControl>
-                                        <SelectTrigger><SelectValue placeholder="Clase" /></SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {classOptions.map(option => (
-                                            <SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>
-                                                {option}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                {mode === 'create' && (
+                    <div className="space-y-4 p-3 border-l-4 border-primary bg-primary/5 rounded-r-lg">
+                        <FormField control={form.control} name="newCenterName" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Nombre del Nuevo Centro</FormLabel>
+                                <FormControl><Input placeholder="Ej: Instituto Adrimax" {...field} /></FormControl>
+                                <FormDescription>El nombre de tu institución educativa.</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField control={form.control} name="newClassName" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Nombre de tu Primera Clase</FormLabel>
+                                <FormControl><Input placeholder="Ej: 4ESO-B" {...field} /></FormControl>
+                                <FormDescription>Usa un formato como 'CURSO-LETRA'.</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
                     </div>
                 )}
-                 <FormField
-                    control={form.control}
-                    name="ageRange"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Rango de Edad</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="12-15">12-15 años</SelectItem>
-                                    <SelectItem value="16-18">16-18 años</SelectItem>
-                                    <SelectItem value="19-22">19-22 años</SelectItem>
-                                    <SelectItem value="23+">23+ años</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                
+                {mode === 'join' && isCenterValidated && (
+                     <div className="grid grid-cols-2 gap-4">
+                        <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    </div>
+                )}
+
+                 <FormField control={form.control} name="ageRange" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Rango de Edad</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger></FormControl>
+                            <SelectContent>
+                                <SelectItem value="12-15">12-15 años</SelectItem>
+                                <SelectItem value="16-18">16-18 años</SelectItem>
+                                <SelectItem value="19-22">19-22 años</SelectItem>
+                                <SelectItem value="23+">23+ años</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+
                  <DialogFooter className="pt-6">
                     <Button type="submit" className="w-full" disabled={isLoading}>
                          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
