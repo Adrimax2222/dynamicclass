@@ -31,15 +31,21 @@ export default function AdminPage() {
 
     useEffect(() => {
         if (user) {
-            // Redirect ONLY class admins to their specific group management page
-            if (user.role?.startsWith('admin-') && user.role !== 'admin' && user.role !== 'center-admin' && user.organizationId) {
+            const isGlobalAdmin = user.role === 'admin';
+            const isCenterAdmin = user.role === 'center-admin';
+
+            // If the user is a class admin, redirect them to their specific group management page.
+            if (user.role?.startsWith('admin-') && !isGlobalAdmin && !isCenterAdmin && user.organizationId) {
                  router.replace(`/admin/groups/${user.organizationId}`);
-            } else if (user.role !== 'admin' && user.role !== 'center-admin') {
+            } 
+            // If the user is not any kind of admin, send them home.
+            else if (!isGlobalAdmin && !isCenterAdmin) {
                 router.replace('/home');
             }
         }
     }, [user, router]);
 
+    // Show loading screen while user data is loading or if the user is not an authorized admin
     if (!user || (user.role !== 'admin' && user.role !== 'center-admin')) {
         return <LoadingScreen />;
     }
@@ -526,4 +532,5 @@ function GroupsTab({ user }: { user: User }) {
 }
 
 
+    
     
