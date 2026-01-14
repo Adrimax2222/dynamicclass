@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData, User, CompletedItem, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle, GraduationCap, School, PlusCircle, Search, Copy, Check, RefreshCw } from "lucide-react";
+import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle, GraduationCap, School, PlusCircle, Search, Copy, Check, RefreshCw, Shield, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -117,6 +117,10 @@ export default function ProfilePage() {
     return `${minutes}m`;
   };
 
+  const isUserAdmin = user?.role === 'admin';
+  const isCenterAdmin = user?.role === 'center-admin' && user.organizationId;
+  const isUserClassAdmin = user?.role?.startsWith('admin-') && user.role !== 'admin' && user.organizationId;
+
 
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
@@ -193,6 +197,53 @@ export default function ProfilePage() {
             </div>
         </CardContent>
       </Card>
+
+      {isUserAdmin ? (
+        <Card className="mb-8 border-blue-500/50">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-blue-500"><ShieldCheck />Panel de Administrador</CardTitle>
+                  <CardDescription>Gestiona usuarios, grupos y otros aspectos de la aplicación.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button asChild className="w-full">
+                    <Link href="/admin">
+                        <Shield className="mr-2 h-4 w-4" />
+                        Acceder al Panel
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
+      ) : isCenterAdmin ? (
+          <Card className="mb-8 border-purple-500/50">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-purple-600"><ShieldCheck />Panel de Admin Centro</CardTitle>
+                  <CardDescription>Gestiona tu centro educativo, sus clases y miembros.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button asChild className="w-full bg-purple-600 hover:bg-purple-700">
+                    <Link href={`/admin/groups/${user.organizationId}`}>
+                        <Shield className="mr-2 h-4 w-4" />
+                        Gestionar mi Centro
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
+      ) : isUserClassAdmin && (
+        <Card className="mb-8 border-green-500/50">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-600"><GraduationCap />Panel de Admin Clase</CardTitle>
+                <CardDescription>Gestiona los miembros, horarios y calendario de tu clase.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button asChild className="w-full bg-green-600 hover:bg-green-700">
+                    <Link href={`/admin/groups/${user.organizationId}`}>
+                        <Shield className="mr-2 h-4 w-4" />
+                        Gestionar mi Clase
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
+      )}
 
       <Card className="mb-8 bg-blue-500/5 border-blue-500/20">
           <CardHeader>
@@ -833,20 +884,10 @@ const handleSaveChanges = async () => {
                 
                 {mode === 'create' && (
                     <div className="space-y-4">
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="link" className="text-xs p-0 h-auto">¿Estás seguro de que tu centro no existe?</Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Comprobación</AlertDialogTitle>
-                                    <AlertDialogDescription>Antes de crear un centro, asegúrate de que no exista ya en la plataforma para evitar duplicados.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogAction>Entendido</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild><Button variant="link" className="text-xs p-0 h-auto">¿Estás seguro de que tu centro no existe?</Button></AlertDialogTrigger>
+                            <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Comprobación</AlertDialogTitle><AlertDialogDescription>Antes de crear un centro, asegúrate de que no exista ya en la plataforma para evitar duplicados.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction>Entendido</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                          </AlertDialog>
                       <div className="space-y-2">
                           <Label>Nombre del Nuevo Centro</Label>
                           <div className="flex items-center gap-2">
@@ -1031,3 +1072,5 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
+
+    

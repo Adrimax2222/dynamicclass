@@ -282,58 +282,8 @@ export default function SettingsPage() {
                 <PrivacyPolicyDialog />
             </CardContent>
         </Card>
-
-        {isUserAdmin ? (
-             <Card className="border-blue-500/50">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-blue-500"><ShieldCheck />Panel de Administrador</CardTitle>
-                     <CardDescription>Gestiona usuarios, grupos y otros aspectos de la aplicación.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button asChild className="w-full">
-                        <Link href="/admin">
-                            <Shield className="mr-2 h-4 w-4" />
-                            Acceder al Panel
-                        </Link>
-                    </Button>
-                </CardContent>
-            </Card>
-        ) : isCenterAdmin ? (
-             <Card className="border-purple-500/50">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-purple-600"><ShieldCheck />Panel de Admin Centro</CardTitle>
-                     <CardDescription>Gestiona tu centro educativo, sus clases y miembros.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button asChild className="w-full bg-purple-600 hover:bg-purple-700">
-                        <Link href={`/admin/groups/${user.organizationId}`}>
-                            <Shield className="mr-2 h-4 w-4" />
-                            Gestionar mi Centro
-                        </Link>
-                    </Button>
-                </CardContent>
-            </Card>
-        ) : isUserClassAdmin ? (
-            <Card className="border-green-500/50">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-green-600"><GraduationCap />Panel de Admin Clase</CardTitle>
-                    <CardDescription>Gestiona los miembros, horarios y calendario de tu clase.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button asChild className="w-full bg-green-600 hover:bg-green-700">
-                        <Link href={`/admin/groups/${user.organizationId}`}>
-                            <Shield className="mr-2 h-4 w-4" />
-                            Gestionar mi Clase
-                        </Link>
-                    </Button>
-                </CardContent>
-            </Card>
-        ) : (
-             <DeveloperPortalDialog />
-        )}
         
-        { (isUserAdmin || isCenterAdmin || isUserClassAdmin) && <DeveloperPortalDialog /> }
-
+        <DeveloperPortalDialog />
 
         <Card className="border-destructive/50">
             <CardHeader>
@@ -796,3 +746,6 @@ function WeeklySummaryInfoDialog() {
 }
 
 
+
+
+    
