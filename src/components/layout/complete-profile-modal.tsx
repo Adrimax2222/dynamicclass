@@ -221,7 +221,7 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                 const [course, className] = values.newClassName.split('-');
                 
                 // First save with 'student' role
-                await onSave({
+                onSave({
                     center: generatedCode,
                     course: course.toLowerCase().replace('º',''),
                     className: className,

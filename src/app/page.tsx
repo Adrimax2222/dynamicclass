@@ -297,7 +297,6 @@ export default function AuthPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
-      await sendEmailVerification(firebaseUser);
       
       const firstInitial = values.fullName.charAt(0).toUpperCase() || 'A';
       const defaultAvatarUrl = `letter_${firstInitial}_A78BFA`;
@@ -344,7 +343,8 @@ export default function AuthPage() {
         };
         await setDoc(userDocRef, userData);
       }
-
+      
+      await sendEmailVerification(firebaseUser);
       setRegistrationSuccess(true);
       
     } catch (error: any) {
