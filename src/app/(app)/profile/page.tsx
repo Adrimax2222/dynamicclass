@@ -528,26 +528,28 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
 
     try {
         if (mode === 'personal') {
-            updatedData.center = 'personal';
-            updatedData.course = 'personal';
-            updatedData.className = 'personal';
-            if (user.role !== 'admin') { // Admin role should persist
-              updatedData.role = 'student';
-            }
-            updatedData.organizationId = '';
+            updatedData = {
+                ...updatedData,
+                center: 'personal',
+                course: 'personal',
+                className: 'personal',
+                role: user.role === 'admin' ? 'admin' : 'student',
+                organizationId: '',
+            };
         } else if (mode === 'join') {
             if (!isCenterValidated || !validatedCenter) {
                 toast({ title: "Error", description: "Debes validar el código del centro.", variant: "destructive" });
                 setIsLoading(false);
                 return;
             }
-            updatedData.center = center;
-            updatedData.course = course;
-            updatedData.className = className;
-            if (user.role !== 'admin') {
-              updatedData.role = 'student';
-            }
-            updatedData.organizationId = validatedCenter.uid;
+             updatedData = {
+                ...updatedData,
+                center: center,
+                course: course,
+                className: className,
+                role: user.role === 'admin' ? 'admin' : 'student',
+                organizationId: validatedCenter.uid,
+            };
         } else if (mode === 'create') {
             if (!isCenterNameValidated || !newClassName || !generatedCode) {
                 toast({ title: "Error", description: "Completa todos los campos para crear el centro.", variant: "destructive" });
@@ -564,11 +566,14 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
             
             const [newCourse, newClass] = newClassName.split('-');
 
-            updatedData.center = generatedCode;
-            updatedData.course = newCourse.toLowerCase().replace('º','');
-            updatedData.className = newClass;
-            updatedData.role = 'center-admin';
-            updatedData.organizationId = newCenterRef.id;
+            updatedData = {
+                ...updatedData,
+                center: generatedCode,
+                course: newCourse.toLowerCase().replace('º',''),
+                className: newClass,
+                role: 'center-admin',
+                organizationId: newCenterRef.id,
+            };
 
             toast({ title: "¡Centro Creado!", description: `"${newCenterName}" se ha creado con el código ${generatedCode}.` });
         }
@@ -776,20 +781,18 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
              <div className="space-y-4 pt-6 border-t">
                 <Label>Datos del Centro</Label>
                 <RadioGroup value={mode} onValueChange={(v) => setMode(v as RegistrationMode)} className="grid grid-cols-3 gap-2">
-                    {Object.keys(registrationModeInfo).map((key) => {
-                        const item = registrationModeInfo[key as RegistrationMode];
-                        let Icon;
-                        if (key === 'join') Icon = School;
-                        else if (key === 'create') Icon = PlusCircle;
-                        else Icon = UserIcon;
-                        
-                        return (
-                             <Label key={key} className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === key ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
-                                <Icon className="h-5 w-5"/> <span className="text-xs font-semibold">{item.title.split(' ')[0]}</span>
-                                <RadioGroupItem value={key} className="sr-only"/>
-                            </Label>
-                        )
-                    })}
+                    <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'join' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
+                        <School className="h-5 w-5"/> <span className="text-xs font-semibold">{registrationModeInfo.join.title.split(' ')[0]}</span>
+                        <RadioGroupItem value='join' className="sr-only"/>
+                    </Label>
+                     <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'create' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground", user.role === 'center-admin' && "cursor-not-allowed opacity-50")}>
+                        <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">{registrationModeInfo.create.title.split(' ')[0]}</span>
+                        <RadioGroupItem value='create' className="sr-only" disabled={user.role === 'center-admin'}/>
+                    </Label>
+                    <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'personal' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
+                        <UserIcon className="h-5 w-5"/> <span className="text-xs font-semibold">{registrationModeInfo.personal.title.split(' ')[0]}</span>
+                        <RadioGroupItem value='personal' className="sr-only"/>
+                    </Label>
                 </RadioGroup>
                 
                 <div className="p-3 bg-muted/50 rounded-lg text-center">
@@ -832,7 +835,7 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
                     <div className="space-y-4">
                       <AlertDialog>
                         <AlertDialogTrigger asChild><Button variant="link" className="text-xs p-0 h-auto">¿Estás seguro de que tu centro no existe?</Button></AlertDialogTrigger>
-                        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Comprobación</AlertDialogTitle><AlertDialogDescription>Antes de crear un centro, asegúrate de que no exista ya en la plataforma para evitar duplicados.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction>Entendido</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Comprobación</AlertDialogTitle><AlertDialogDescription>Antes de crear un centro, asegúrate de que no exista ya en la plataforma para evitar duplicados.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction>Entendido</AlertDialogAction></AlertDialogContent>
                       </AlertDialog>
                       <div className="space-y-2">
                           <Label>Nombre del Nuevo Centro</Label>
@@ -1024,5 +1027,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
     
 
 
+
+    
 
     
