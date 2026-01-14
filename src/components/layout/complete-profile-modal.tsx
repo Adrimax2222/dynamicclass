@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, UserCheck, User as UserIcon, CheckCircle, School, PlusCircle, AlertTriangle } from "lucide-react";
+import { Loader2, UserCheck, User as UserIcon, CheckCircle, School, PlusCircle, AlertTriangle, Search } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Label } from "../ui/label";
@@ -56,7 +56,7 @@ import { Alert, AlertTitle } from "../ui/alert";
 
 type RegistrationMode = 'join' | 'personal' | 'create';
 
-const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean) => z.object({
+const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean, isCenterNameValidated: boolean) => z.object({
   center: z.string(),
   ageRange: z.string().min(1, { message: "Por favor, selecciona un rango de edad." }),
   course: z.string(),
@@ -88,10 +88,10 @@ const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean)
     message: "Debes seleccionar una clase.",
     path: ["className"],
 }).refine(data => {
-    if (mode === 'create') return data.newCenterName && data.newCenterName.trim().length > 2;
+    if (mode === 'create') return isCenterNameValidated;
     return true;
 }, {
-    message: "El nombre del centro es obligatorio.",
+    message: "Debes comprobar la disponibilidad del nombre del centro.",
     path: ['newCenterName'],
 }).refine(data => {
     if (mode === 'create') return data.newClassName && data.newClassName.trim().length > 1 && data.newClassName.includes('-');
@@ -124,14 +124,14 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     const [mode, setMode] = useState<RegistrationMode>('join');
     const [isCenterValidated, setIsCenterValidated] = useState(false);
     const [validatedCenter, setValidatedCenter] = useState<Center | null>(null);
-    const [centerExistsWarning, setCenterExistsWarning] = useState(false);
+    const [isCenterNameValidated, setIsCenterNameValidated] = useState(false);
     const { toast } = useToast();
     
     const firestore = useFirestore();
     const centersCollection = useMemo(() => firestore ? collection(firestore, 'centers') : null, [firestore]);
     const { data: allCenters } = useCollection<Center>(centersCollection, { listen: false });
 
-    const profileSchema = useMemo(() => createProfileSchema(mode, isCenterValidated), [mode, isCenterValidated]);
+    const profileSchema = useMemo(() => createProfileSchema(mode, isCenterValidated, isCenterNameValidated), [mode, isCenterValidated, isCenterNameValidated]);
 
     const form = useForm<ProfileSchema>({
         resolver: zodResolver(profileSchema),
@@ -162,15 +162,15 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
         form.reset();
         setIsCenterValidated(false);
         setValidatedCenter(null);
-        setCenterExistsWarning(false);
+        setIsCenterNameValidated(false);
     }, [mode, form]);
 
     const generateCode = () => `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
 
     const onSubmit = async (values: ProfileSchema) => {
         setIsLoading(true);
-        if (mode === 'create' && centerExistsWarning) {
-          toast({ title: "Centro Duplicado", description: "Este centro ya existe. Por favor, usa el modo 'Unirse' para registrarte.", variant: "destructive" });
+        if (mode === 'create' && !isCenterNameValidated) {
+          form.setError('newCenterName', { type: 'manual', message: 'Debes comprobar la disponibilidad del nombre del centro.' });
           setIsLoading(false);
           return;
         }
@@ -262,18 +262,25 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
         }
     };
     
-    const handleCheckCenterName = async (name: string) => {
-        if (!allCenters || name.length < 3) {
-            setCenterExistsWarning(false);
+    const handleCheckCenterName = async () => {
+        const name = form.getValues('newCenterName');
+        if (!allCenters || !name || name.length < 3) {
+            form.setError('newCenterName', { type: 'manual', message: 'El nombre debe tener al menos 3 caracteres.' });
             return;
         }
+        setIsLoading(true);
         const exists = allCenters.some(center => center.name.toLowerCase() === name.toLowerCase());
-        setCenterExistsWarning(exists);
+        
         if (exists) {
+            setIsCenterNameValidated(false);
             form.setError('newCenterName', { type: 'manual', message: 'Este centro ya existe. Por favor, únete a él.' });
+            toast({ title: "Centro Duplicado", description: "Este nombre de centro ya está en uso.", variant: "destructive" });
         } else {
+            setIsCenterNameValidated(true);
             form.clearErrors('newCenterName');
+            toast({ title: "Nombre Disponible", description: "Puedes crear un centro con este nombre." });
         }
+        setIsLoading(false);
     };
 
     const registrationModeInfo = {
@@ -298,13 +305,13 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                  <RadioGroup value={mode} onValueChange={(v) => setMode(v as RegistrationMode)} className="grid grid-cols-3 gap-2">
-                    <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'join' ? "bg-primary/10 border-primary text-primary" : "text-muted-foreground")}>
+                    <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'join' ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
                         <School className="h-5 w-5"/> <span className="text-xs font-semibold">Unirse</span>
                         <RadioGroupItem value="join" className="sr-only"/>
                     </Label>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                             <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'create' ? "bg-primary/10 border-primary text-primary" : "text-muted-foreground")}>
+                             <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'create' ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
                                 <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">Crear</span>
                             </Label>
                         </AlertDialogTrigger>
@@ -321,7 +328,7 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-                    <Label className={cn("rounded-lg border p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'personal' ? "bg-primary/10 border-primary text-primary" : "text-muted-foreground")}>
+                    <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'personal' ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
                         <UserIcon className="h-5 w-5"/> <span className="text-xs font-semibold">Personal</span>
                         <RadioGroupItem value="personal" className="sr-only"/>
                     </Label>
@@ -343,14 +350,22 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                                     {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterValidated ? <CheckCircle className="h-4 w-4"/> : "Validar"}
                                 </Button>
                             </div>
-                            {validatedCenter && isCenterValidated && (
-                                <FormDescription className="text-green-600 font-semibold flex items-center gap-2">
-                                    <CheckCircle className="h-4 w-4" />{validatedCenter.name}
-                                </FormDescription>
-                            )}
-                            <FormMessage />
+                           {validatedCenter && isCenterValidated ? (
+                              <FormDescription className="text-green-600 font-semibold flex items-center gap-2">
+                                  <CheckCircle className="h-4 w-4" />{validatedCenter.name}
+                              </FormDescription>
+                            ) : fieldState.error ? (
+                               <FormMessage />
+                            ) : null}
                         </FormItem>
                     )} />
+                )}
+                
+                 {isCenterValidated && mode === 'join' && (
+                     <div className="grid grid-cols-2 gap-4">
+                        <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    </div>
                 )}
                 
                 {mode === 'create' && (
@@ -358,27 +373,30 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                         <FormField control={form.control} name="newCenterName" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Nombre del Nuevo Centro</FormLabel>
-                                <FormControl><Input placeholder="Ej: Instituto Adrimax" {...field} onChange={(e) => {field.onChange(e); handleCheckCenterName(e.target.value);}} /></FormControl>
+                                <div className="flex items-center gap-2">
+                                    <FormControl>
+                                        <Input placeholder="Ej: Instituto Adrimax" {...field} disabled={isCenterNameValidated} />
+                                    </FormControl>
+                                    <Button type="button" onClick={handleCheckCenterName} disabled={isLoading || isCenterNameValidated} variant={isCenterNameValidated ? "secondary" : "default"}>
+                                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterNameValidated ? <CheckCircle className="h-4 w-4"/> : <Search className="h-4 w-4"/>}
+                                    </Button>
+                                </div>
                                 <FormMessage />
                             </FormItem>
                         )} />
-                        <FormField control={form.control} name="newClassName" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Nombre de tu Primera Clase</FormLabel>
-                                <FormControl><Input placeholder="Ej: 4ESO-B" {...field} /></FormControl>
-                                <FormDescription>Usa un formato como 'CURSO-LETRA'.</FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
+                        
+                        {isCenterNameValidated && (
+                            <FormField control={form.control} name="newClassName" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Nombre de tu Primera Clase</FormLabel>
+                                    <FormControl><Input placeholder="Ej: 4ESO-B" {...field} /></FormControl>
+                                    <FormDescription>Usa un formato como 'CURSO-LETRA'.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                        )}
                     </div>
                 )}
-                
-                {mode === 'join' && isCenterValidated ? (
-                     <div className="grid grid-cols-2 gap-4">
-                        <FormField control={form.control} name="course" render={({ field }) => (<FormItem><FormLabel>Curso</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Curso..." /></SelectTrigger></FormControl><SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="className" render={({ field }) => (<FormItem><FormLabel>Clase</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Clase..." /></SelectTrigger></FormControl><SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                    </div>
-                ) : null}
 
                  <FormField control={form.control} name="ageRange" render={({ field }) => (
                     <FormItem>
@@ -397,7 +415,7 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                 )} />
 
                  <DialogFooter className="pt-6">
-                    <Button type="button" onClick={form.handleSubmit(onSubmit)} className="w-full" disabled={isLoading || (mode === 'create' && centerExistsWarning)}>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
                          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Guardar y Continuar
                     </Button>
