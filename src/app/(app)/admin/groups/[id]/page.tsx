@@ -77,20 +77,20 @@ export default function ManageGroupPage() {
 
     return (
         <div className="container mx-auto max-w-4xl p-4 sm:p-6">
-            <header className="mb-8 flex items-center justify-between">
-                <div className="flex items-center gap-4">
+            <header className="mb-8 flex items-start justify-between">
+                <div className="flex items-start gap-4">
                     <Button variant="ghost" size="icon" onClick={() => router.push(isGlobalAdmin ? '/admin' : '/settings')}>
                         <ChevronLeft />
                     </Button>
                     {center.imageUrl ? (
-                        <img src={center.imageUrl} alt={center.name} className="h-12 w-12 object-cover rounded-lg" />
+                        <img src={center.imageUrl} alt={center.name} className="h-12 w-12 object-cover rounded-lg flex-shrink-0" />
                     ) : (
-                        <div className="h-12 w-12 flex items-center justify-center bg-muted rounded-lg">
+                        <div className="h-12 w-12 flex items-center justify-center bg-muted rounded-lg flex-shrink-0">
                            <Group className="h-6 w-6 text-muted-foreground" />
                         </div>
                     )}
-                    <div>
-                        <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
+                    <div className="flex flex-col">
+                        <h1 className="text-xl font-bold font-headline tracking-tighter sm:text-2xl break-words">
                             {center.name}
                         </h1>
                          <div className="flex items-center gap-2 mt-1">
@@ -101,7 +101,7 @@ export default function ManageGroupPage() {
                     </div>
                 </div>
                  {canManageAllClasses && (
-                    <Button asChild variant="outline" size="sm">
+                    <Button asChild variant="outline" size="sm" className="ml-2 flex-shrink-0">
                         <Link href={`/admin/centers/${center.uid}/edit`}>
                             <Edit className="mr-2 h-4 w-4" />
                             Editar
