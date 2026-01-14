@@ -94,10 +94,12 @@ const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean,
     message: "Debes comprobar la disponibilidad del nombre del centro.",
     path: ['newCenterName'],
 }).refine(data => {
-    if (mode === 'create') return data.newClassName && data.newClassName.trim().length > 1 && data.newClassName.includes('-');
-    return true;
+    if (mode !== 'create') return true;
+    if (!data.newClassName || data.newClassName.trim().length < 2) return false;
+    const regex = /^[1-4](eso|bach)-[A-E]$/i;
+    return regex.test(data.newClassName);
 }, {
-    message: "El formato de clase debe ser 'CURSO-LETRA'.",
+    message: "El formato debe ser 'CURSO-LETRA' (ej: 4eso-B, 1bach-A).",
     path: ["newClassName"],
 });
 

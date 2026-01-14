@@ -112,10 +112,12 @@ const createRegistrationSchema = (mode: RegistrationMode, isCenterValidated: boo
     message: "Debes comprobar la disponibilidad del nombre del centro.",
     path: ["newCenterName"],
 }).refine(data => {
-    if (mode === 'create') return data.newClassName && data.newClassName.trim().length > 1 && data.newClassName.includes('-');
-    return true;
+    if (mode !== 'create') return true;
+    if (!data.newClassName || data.newClassName.trim().length < 2) return false;
+    const regex = /^[1-4](eso|bach)-[A-E]$/i;
+    return regex.test(data.newClassName);
 }, {
-    message: "El formato de clase debe ser 'CURSO-LETRA'.",
+    message: "El formato debe ser 'CURSO-LETRA' (ej: 4eso-B, 1bach-A).",
     path: ["newClassName"],
 });
 
@@ -451,35 +453,35 @@ export default function AuthPage() {
       }
   };
   
-    const handleCheckCenterName = async () => {
-        const name = form.getValues('newCenterName');
-        if (!allCenters || !name || name.length < 3) {
-            form.setError('newCenterName', { type: 'manual', message: 'El nombre debe tener al menos 3 caracteres.' });
-            return;
-        }
-        setIsLoading(true);
+  const handleCheckCenterName = async () => {
+    const name = form.getValues('newCenterName');
+    if (!allCenters || !name || name.length < 3) {
+        form.setError('newCenterName', { type: 'manual', message: 'El nombre debe tener al menos 3 caracteres.' });
+        return;
+    }
+    setIsLoading(true);
 
-        const normalize = (str: string) => {
-            return str
-                .toLowerCase()
-                .replace(/^(ies|ins|institut|colegio|escuela|centro)\s+/i, '')
-                .trim();
-        };
-
-        const normalizedInput = normalize(name);
-
-        const exists = allCenters.some(center => normalize(center.name) === normalizedInput);
-        
-        if (exists) {
-            setIsCenterNameValidated(false);
-            form.setError('newCenterName', { type: 'manual', message: 'Este centro ya existe. Por favor, únete a él.' });
-        } else {
-            setIsCenterNameValidated(true);
-            form.clearErrors('newCenterName');
-            toast({ title: "Nombre Disponible", description: "Puedes crear un centro con este nombre." });
-        }
-        setIsLoading(false);
+    const normalize = (str: string) => {
+        return str
+            .toLowerCase()
+            .replace(/^(ies|ins|institut|colegio|escuela|centro)\s+/i, '')
+            .trim();
     };
+
+    const normalizedInput = normalize(name);
+
+    const exists = allCenters.some(center => normalize(center.name) === normalizedInput);
+    
+    if (exists) {
+        setIsCenterNameValidated(false);
+        form.setError('newCenterName', { type: 'manual', message: 'Este centro ya existe. Por favor, únete a él.' });
+    } else {
+        setIsCenterNameValidated(true);
+        form.clearErrors('newCenterName');
+        toast({ title: "Nombre Disponible", description: "Puedes crear un centro con este nombre." });
+    }
+    setIsLoading(false);
+  };
 
   const registrationModeInfo = {
     join: { title: "Unirse a un Centro", description: "Introduce el código proporcionado por tu centro educativo para acceder a sus horarios, anuncios y clasificaciones." },
