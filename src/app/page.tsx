@@ -121,7 +121,7 @@ const createRegistrationSchema = (mode: RegistrationMode, isCenterValidated: boo
     }
     return true;
 }, {
-    message: "El formato debe ser 'CURSO-LETRA' (ej: 4eso-B, 1bach-A).",
+    message: "El formato debe ser 'CURSO-LETRA' (ej: 4ESO-B, 1bach-A).",
     path: ["newClassName"],
 }).refine(data => {
     if (mode === 'create') return isCodeGenerated;
@@ -220,7 +220,7 @@ export default function AuthPage() {
     mode: "onChange",
     defaultValues: {
       fullName: "", email: "", password: "", center: "",
-      role: "student", ageRange: "", course: "", className: "",
+      ageRange: "", course: "", className: "",
       newCenterName: "", newClassName: "",
     },
   });
@@ -242,7 +242,6 @@ export default function AuthPage() {
       fullName: form.getValues('fullName'),
       email: form.getValues('email'),
       password: form.getValues('password'),
-      role: 'student',
       ageRange: '',
       center: '',
       course: '',
@@ -303,7 +302,8 @@ export default function AuthPage() {
       const firstInitial = values.fullName.charAt(0).toUpperCase() || 'A';
       const defaultAvatarUrl = `letter_${firstInitial}_A78BFA`;
       await updateProfile(firebaseUser, { displayName: values.fullName, photoURL: defaultAvatarUrl });
-
+      
+      const userDocRef = doc(firestore, 'users', firebaseUser.uid);
       let userData: Omit<User, 'uid'>;
 
       if (registrationMode === 'create') {
@@ -314,14 +314,22 @@ export default function AuthPage() {
             createdAt: serverTimestamp(),
         });
         const [course, className] = values.newClassName!.split('-');
+        
         userData = {
             name: values.fullName, email: values.email, avatar: defaultAvatarUrl,
             center: generatedCode!, ageRange: values.ageRange,
-            course: course.toLowerCase().replace('º',''), className: className, role: `admin-${values.newClassName}`,
+            course: course.toLowerCase().replace('º',''), className: className, 
+            role: 'student', // Create as student first
             organizationId: newCenterRef.id, trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
             isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
         };
+        await setDoc(userDocRef, userData);
+        
+        // Now update the role to admin
+        await updateDoc(userDocRef, { role: `admin-${values.newClassName}` });
+
         toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${generatedCode}.` });
+
       } else {
          userData = {
             name: values.fullName, email: values.email, avatar: defaultAvatarUrl,
@@ -329,13 +337,14 @@ export default function AuthPage() {
             ageRange: values.ageRange,
             course: registrationMode === 'personal' ? 'personal' : values.course,
             className: registrationMode === 'personal' ? 'personal' : values.className,
-            role: values.role, organizationId: registrationMode === 'join' ? validatedCenter?.uid : undefined,
+            role: 'student', 
+            organizationId: registrationMode === 'join' ? validatedCenter?.uid : undefined,
             trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
             isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
         };
+        await setDoc(userDocRef, userData);
       }
 
-      await setDoc(doc(firestore, 'users', firebaseUser.uid), userData);
       setRegistrationSuccess(true);
       
     } catch (error: any) {
@@ -722,20 +731,6 @@ export default function AuthPage() {
                                       )}
                                       <FormField control={form.control} name="ageRange" render={({ field }) => (<FormItem><FormLabel>Rango de Edad</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona tu rango de edad" /></SelectTrigger></FormControl><SelectContent><SelectItem value="12-15">12-15 años</SelectItem><SelectItem value="16-18">16-18 años</SelectItem><SelectItem value="19-22">19-22 años</SelectItem><SelectItem value="23+">23+ años</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                   </div>
-
-                                  <FormField control={form.control} name="role" render={({ field }) => (
-                                      <FormItem className="space-y-3 pt-4">
-                                          <FormLabel>Tu Rol</FormLabel>
-                                          <FormControl>
-                                              <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-3 gap-4">
-                                                  <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="student" /></FormControl><FormLabel className="font-normal">Estudiante</FormLabel></FormItem>
-                                                  <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="teacher" disabled /></FormControl><FormLabel className="font-normal opacity-50">Profesor</FormLabel></FormItem>
-                                                  <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="admin" disabled /></FormControl><FormLabel className="font-normal opacity-50">Admin</FormLabel></FormItem>
-                                              </RadioGroup>
-                                          </FormControl>
-                                          <FormMessage />
-                                      </FormItem>
-                                  )} />
                               </div>
                             </ScrollArea>
                           )}

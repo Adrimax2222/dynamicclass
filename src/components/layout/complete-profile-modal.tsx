@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import type { User, Center } from "@/lib/types";
 import { useFirestore, useCollection } from "@/firebase";
-import { collection, getDocs, query, where, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, query, where, addDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 
 import {
     Dialog,
@@ -102,7 +102,7 @@ const createProfileSchema = (mode: RegistrationMode, isCenterValidated: boolean,
     }
     return true;
 }, {
-    message: "El formato debe ser 'CURSO-LETRA' (ej: 4eso-B, 1bach-A).",
+    message: "El formato debe ser 'CURSO-LETRA' (ej: 4ESO-B, 1bach-A).",
     path: ["newClassName"],
 }).refine(data => {
     if (mode === 'create') return isCodeGenerated;
@@ -220,15 +220,25 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                 
                 const [course, className] = values.newClassName.split('-');
                 
-                onSave({
+                // First save with 'student' role
+                await onSave({
                     center: generatedCode,
                     course: course.toLowerCase().replace('º',''),
                     className: className,
                     ageRange: values.ageRange,
                     organizationId: newCenterRef.id,
-                    role: `admin-${values.newClassName}`
+                    role: 'student', // Save as student first
                 });
-                 toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${generatedCode}.` });
+                
+                // Then, update the role to admin
+                if (firestore && user) {
+                    const userDocRef = doc(firestore, 'users', user.uid);
+                    await updateDoc(userDocRef, {
+                        role: `admin-${values.newClassName}`
+                    });
+                }
+                
+                toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${generatedCode}.` });
 
             } catch (err) {
                  toast({ title: "Error", description: "No se pudo crear el nuevo centro.", variant: "destructive" });
