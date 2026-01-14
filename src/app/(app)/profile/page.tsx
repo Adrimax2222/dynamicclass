@@ -337,13 +337,13 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
 
   const initializeState = () => {
     if (user) {
-        const isPersonal = user.center === 'personal';
+        const isPersonal = user.center === 'personal' || user.center === 'default';
         setMode(isPersonal ? 'personal' : 'join');
         setName(user.name);
         setCenter(isPersonal ? '' : user.center || "");
-        setAgeRange(isPersonal ? 'personal' : user.ageRange || '');
-        setCourse(isPersonal ? 'personal' : user.course || '');
-        setClassName(isPersonal ? 'personal' : user.className || '');
+        setAgeRange(user.ageRange === 'default' ? '' : user.ageRange);
+        setCourse(isPersonal ? '' : user.course || '');
+        setClassName(isPersonal ? '' : user.className || '');
         
         const [id, id_extra, color] = user.avatar.split('_');
         
@@ -355,39 +355,31 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
              const initial = user.name.charAt(0).toUpperCase() || 'A';
              setEditableAvatar({ id: `letter_${initial}`, color: 'A78BFA' });
         }
+        
+        if (!isPersonal && user.center) {
+            const currentCenter = allCenters.find(c => c.code === user.center);
+            if (currentCenter) {
+                setValidatedCenter(currentCenter);
+                setIsCenterValidated(true);
+            }
+        }
     }
   };
   
   useEffect(() => {
     if (isOpen) {
         initializeState();
-        if (user?.center && user.center !== 'personal' && user.center !== 'default') {
-            const currentCenter = allCenters.find(c => c.code === user.center);
-            if(currentCenter) {
-                setValidatedCenter(currentCenter);
-                setIsCenterValidated(true);
-            }
-        }
-    } else {
-        // Reset local state when dialog closes
-        setMode(user?.center === 'personal' ? 'personal' : 'join');
-        setIsCenterValidated(user?.center !== 'personal' && user?.center !== 'default');
-        setValidatedCenter(null);
-        setIsCenterNameValidated(false);
-        setGeneratedCode(null);
-        setIsCodeCopied(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isOpen, allCenters]);
+  }, [isOpen]);
 
   const availableClasses = useMemo(() => {
-    const selectedCenter = allCenters.find(c => c.code === center);
-    if (!selectedCenter || !selectedCenter.classes) return { courses: [], classNames: [] };
+    if (!validatedCenter || !validatedCenter.classes) return { courses: [], classNames: [] };
 
     const courses = new Set<string>();
     const classNames = new Set<string>();
 
-    selectedCenter.classes.forEach(c => {
+    validatedCenter.classes.forEach(c => {
         const [course, className] = c.name.split('-');
         if (course) {
             const courseValue = course.toLowerCase().replace('º', '');
@@ -402,7 +394,7 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
         courses: Array.from(courses),
         classNames: Array.from(classNames)
     };
-  }, [center, allCenters]);
+  }, [validatedCenter]);
   
   
   const handleLetterSelect = (letter: string) => {
@@ -524,7 +516,7 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
     if (!firestore || !user) return;
     setIsLoading(true);
 
-    const finalAvatarString = editableAvatar.id.startsWith('letter') 
+    const finalAvatarString = editableAvatar.id.startsWith('letter')
         ? `${editableAvatar.id}_${editableAvatar.color}`
         : `${editableAvatar.id}_${editableAvatar.color}`;
 
@@ -533,39 +525,51 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
         avatar: finalAvatarString,
         ageRange,
     };
-    
+
     try {
         if (mode === 'personal') {
-            updatedData = { ...updatedData, center: 'personal', course: 'personal', className: 'personal', role: 'student', organizationId: '' };
+            updatedData.center = 'personal';
+            updatedData.course = 'personal';
+            updatedData.className = 'personal';
+            if (user.role !== 'admin') { // Admin role should persist
+              updatedData.role = 'student';
+            }
+            updatedData.organizationId = '';
         } else if (mode === 'join') {
-            if (!isCenterValidated) {
+            if (!isCenterValidated || !validatedCenter) {
                 toast({ title: "Error", description: "Debes validar el código del centro.", variant: "destructive" });
                 setIsLoading(false);
                 return;
             }
-            updatedData = { ...updatedData, center, course, className, role: 'student', organizationId: validatedCenter?.uid };
+            updatedData.center = center;
+            updatedData.course = course;
+            updatedData.className = className;
+            if (user.role !== 'admin') {
+              updatedData.role = 'student';
+            }
+            updatedData.organizationId = validatedCenter.uid;
         } else if (mode === 'create') {
             if (!isCenterNameValidated || !newClassName || !generatedCode) {
                 toast({ title: "Error", description: "Completa todos los campos para crear el centro.", variant: "destructive" });
                 setIsLoading(false);
                 return;
             }
+            
             const newCenterRef = await addDoc(collection(firestore, "centers"), {
                 name: newCenterName,
                 code: generatedCode,
                 classes: [{ name: newClassName, icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } }],
-                createdAt: new Date(),
+                createdAt: serverTimestamp(),
             });
             
             const [newCourse, newClass] = newClassName.split('-');
-            updatedData = { 
-                ...updatedData, 
-                center: generatedCode, 
-                course: newCourse.toLowerCase().replace('º',''), 
-                className: newClass,
-                role: 'center-admin', 
-                organizationId: newCenterRef.id 
-            };
+
+            updatedData.center = generatedCode;
+            updatedData.course = newCourse.toLowerCase().replace('º','');
+            updatedData.className = newClass;
+            updatedData.role = 'center-admin';
+            updatedData.organizationId = newCenterRef.id;
+
             toast({ title: "¡Centro Creado!", description: `"${newCenterName}" se ha creado con el código ${generatedCode}.` });
         }
         
@@ -578,7 +582,7 @@ function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
             title: "¡Perfil actualizado!",
             description: "Tu información ha sido guardada correctamente.",
         });
-        setIsOpen(false); 
+        setIsOpen(false);
     } catch (error) {
         console.error("Error updating profile:", error);
         toast({
@@ -1019,3 +1023,6 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
     
 
+
+
+    
