@@ -269,7 +269,16 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
             return;
         }
         setIsLoading(true);
-        const exists = allCenters.some(center => center.name.toLowerCase() === name.toLowerCase());
+        
+        const normalize = (str: string) => {
+            return str
+                .toLowerCase()
+                .replace(/^(ies|institut|colegio|escuela|centro)\s+/i, '')
+                .trim();
+        };
+
+        const normalizedInput = normalize(name);
+        const exists = allCenters.some(center => normalize(center.name) === normalizedInput);
         
         if (exists) {
             setIsCenterNameValidated(false);
@@ -305,13 +314,13 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                  <RadioGroup value={mode} onValueChange={(v) => setMode(v as RegistrationMode)} className="grid grid-cols-3 gap-2">
-                    <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'join' ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
+                    <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'join' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
                         <School className="h-5 w-5"/> <span className="text-xs font-semibold">Unirse</span>
                         <RadioGroupItem value="join" className="sr-only"/>
                     </Label>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                             <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'create' ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
+                             <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'create' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
                                 <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">Crear</span>
                             </Label>
                         </AlertDialogTrigger>
@@ -328,7 +337,7 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-                    <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'personal' ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
+                    <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'personal' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
                         <UserIcon className="h-5 w-5"/> <span className="text-xs font-semibold">Personal</span>
                         <RadioGroupItem value="personal" className="sr-only"/>
                     </Label>
@@ -426,5 +435,3 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     </Dialog>
   );
 }
-
-    
