@@ -91,6 +91,7 @@ export default function SettingsPage() {
   };
   
   const isUserAdmin = user?.role === 'admin';
+  const isCenterAdmin = user?.role === 'center-admin' && user.organizationId;
   const isUserClassAdmin = user?.role?.startsWith('admin-') && user.role !== 'admin' && user.organizationId;
 
 
@@ -297,10 +298,25 @@ export default function SettingsPage() {
                     </Button>
                 </CardContent>
             </Card>
+        ) : isCenterAdmin ? (
+             <Card className="border-purple-500/50">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-purple-600"><ShieldCheck />Panel de Admin Centro</CardTitle>
+                     <CardDescription>Gestiona tu centro educativo, sus clases y miembros.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button asChild className="w-full bg-purple-600 hover:bg-purple-700">
+                        <Link href={`/admin/groups/${user.organizationId}`}>
+                            <Shield className="mr-2 h-4 w-4" />
+                            Gestionar mi Centro
+                        </Link>
+                    </Button>
+                </CardContent>
+            </Card>
         ) : isUserClassAdmin ? (
             <Card className="border-green-500/50">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-green-600"><GraduationCap />Panel de Gestión de Clase</CardTitle>
+                    <CardTitle className="flex items-center gap-2 text-green-600"><GraduationCap />Panel de Admin Clase</CardTitle>
                     <CardDescription>Gestiona los miembros, horarios y calendario de tu clase.</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -316,7 +332,7 @@ export default function SettingsPage() {
              <DeveloperPortalDialog />
         )}
         
-        { (isUserAdmin || isUserClassAdmin) && <DeveloperPortalDialog /> }
+        { (isUserAdmin || isCenterAdmin || isUserClassAdmin) && <DeveloperPortalDialog /> }
 
 
         <Card className="border-destructive/50">
@@ -778,4 +794,5 @@ function WeeklySummaryInfoDialog() {
     </Dialog>
   );
 }
+
 

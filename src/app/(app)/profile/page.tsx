@@ -149,9 +149,17 @@ export default function ProfilePage() {
         <CardContent className="p-4 text-center -mt-16">
           <AvatarDisplay user={user} className="mx-auto h-24 w-24 ring-4 ring-background" />
           <h2 className="mt-4 text-2xl font-bold">{user.name}</h2>
-          {user.role === 'admin' && (
-            <Badge variant="destructive" className="mt-2">Admin</Badge>
-          )}
+          <div className="mt-2 flex items-center justify-center gap-2">
+            {user.role === 'admin' && (
+                <Badge variant="destructive">Admin Global</Badge>
+            )}
+            {user.role === 'center-admin' && (
+                <Badge variant="secondary" className="bg-purple-500/10 text-purple-600 border-purple-500/20">Admin Centro</Badge>
+            )}
+            {user.role.startsWith('admin-') && user.role !== 'admin' && user.role !== 'center-admin' && (
+                <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20">Admin Clase</Badge>
+            )}
+          </div>
           <p className={cn("text-muted-foreground mt-2", !isCenterCodeValid && user.center !== 'personal' && "text-red-500 font-bold")}>{displayCenter}</p>
           <EditProfileDialog allCenters={centers} />
         </CardContent>
