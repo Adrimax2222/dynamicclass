@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit } from "lucide-react";
+import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit, Group } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -82,6 +82,13 @@ export default function ManageGroupPage() {
                     <Button variant="ghost" size="icon" onClick={() => router.push(isGlobalAdmin ? '/admin' : '/settings')}>
                         <ChevronLeft />
                     </Button>
+                    {center.imageUrl ? (
+                        <img src={center.imageUrl} alt={center.name} className="h-12 w-12 object-cover rounded-lg" />
+                    ) : (
+                        <div className="h-12 w-12 flex items-center justify-center bg-muted rounded-lg">
+                           <Group className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                    )}
                     <div>
                         <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
                             {center.name}
