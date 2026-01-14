@@ -340,48 +340,7 @@ export default function AuthPage() {
       
     } catch (error: any) {
         if (error.code === 'auth/email-already-in-use') {
-            try {
-                // If email exists, try to sign in and update the profile instead.
-                // This is a workaround for testing, might need more robust logic for production.
-                const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-                const firebaseUser = userCredential.user;
-
-                let updatedData: Partial<User>;
-
-                if (registrationMode === 'create') {
-                    const newCenterRef = await addDoc(collection(firestore, "centers"), {
-                        name: values.newCenterName,
-                        code: generatedCode,
-                        classes: [{ name: values.newClassName, icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } }],
-                        createdAt: serverTimestamp(),
-                    });
-                    const [course, className] = values.newClassName!.split('-');
-                    updatedData = {
-                        center: generatedCode!, ageRange: values.ageRange,
-                        course: course.toLowerCase().replace('º',''), className: className, role: `admin-${values.newClassName}`,
-                        organizationId: newCenterRef.id,
-                    };
-                    toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${generatedCode}.` });
-                } else {
-                    updatedData = {
-                        center: registrationMode === 'personal' ? 'personal' : values.center,
-                        ageRange: values.ageRange,
-                        course: registrationMode === 'personal' ? 'personal' : values.course,
-                        className: registrationMode === 'personal' ? 'personal' : values.className,
-                        role: values.role, 
-                        organizationId: registrationMode === 'join' ? validatedCenter?.uid : undefined,
-                    };
-                }
-                
-                const userDocRef = doc(firestore, 'users', firebaseUser.uid);
-                await updateDoc(userDocRef, updatedData);
-                router.push('/home');
-                return; // Exit here to avoid showing registration success screen
-                
-            } catch (signInError) {
-                console.error("Sign-in after failed registration error:", signInError);
-                toast({ title: "Error de Registro", description: "Esta dirección de correo electrónico ya está en uso.", variant: "destructive" });
-            }
+            toast({ title: "Error de Registro", description: "Esta dirección de correo electrónico ya está en uso. Por favor, inicia sesión.", variant: "destructive" });
         } else {
             console.error("Registration Error:", error);
             let errorMessage = "No se pudo crear la cuenta. Inténtalo de nuevo.";
