@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info } from "lucide-react";
+import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -77,20 +77,30 @@ export default function ManageGroupPage() {
 
     return (
         <div className="container mx-auto max-w-4xl p-4 sm:p-6">
-            <header className="mb-8 flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => router.push(isGlobalAdmin ? '/admin' : '/settings')}>
-                    <ChevronLeft />
-                </Button>
-                <div>
-                    <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
-                        {center.name}
-                    </h1>
-                     <div className="flex items-center gap-2 mt-1">
-                        <p className="text-sm text-muted-foreground">Código:</p>
-                        <Badge variant="outline">{center.code}</Badge>
-                        <CopyButton text={center.code} />
+            <header className="mb-8 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <Button variant="ghost" size="icon" onClick={() => router.push(isGlobalAdmin ? '/admin' : '/settings')}>
+                        <ChevronLeft />
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
+                            {center.name}
+                        </h1>
+                         <div className="flex items-center gap-2 mt-1">
+                            <p className="text-sm text-muted-foreground">Código:</p>
+                            <Badge variant="outline">{center.code}</Badge>
+                            <CopyButton text={center.code} />
+                        </div>
                     </div>
                 </div>
+                 {canManageAllClasses && (
+                    <Button asChild variant="outline" size="sm">
+                        <Link href={`/admin/centers/${center.uid}/edit`}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Editar Centro
+                        </Link>
+                    </Button>
+                )}
             </header>
 
             <Tabs defaultValue="classes" className="w-full">
