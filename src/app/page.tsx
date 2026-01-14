@@ -321,7 +321,7 @@ export default function AuthPage() {
             name: values.fullName, email: values.email, avatar: defaultAvatarUrl,
             center: generatedCode, ageRange: values.ageRange,
             course: course.toLowerCase().replace('º',''), className: className, 
-            role: `admin-${values.newClassName}`, // Assign role directly
+            role: 'center-admin', // Assign center-admin role
             organizationId: newCenterRef.id, trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
             isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
         };

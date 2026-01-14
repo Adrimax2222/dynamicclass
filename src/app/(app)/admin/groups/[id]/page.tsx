@@ -40,6 +40,7 @@ export default function ManageGroupPage() {
     const { data: center, isLoading } = useDoc<Center>(centerDocRef);
     
     const isGlobalAdmin = currentUser?.role === 'admin';
+    const isCenterAdmin = currentUser?.role === 'center-admin' && currentUser.organizationId === centerId;
     const classAdminRoleName = currentUser?.role.startsWith('admin-') ? currentUser.role.split('admin-')[1] : null;
     const isClassAdmin = !!classAdminRoleName;
 
@@ -55,7 +56,7 @@ export default function ManageGroupPage() {
     }
 
     // Permission check
-    if (!isGlobalAdmin && !isClassAdmin) {
+    if (!isGlobalAdmin && !isCenterAdmin && !isClassAdmin) {
         return <div className="p-8 text-center">No tienes permiso para ver esta página.</div>;
     }
     
@@ -68,9 +69,11 @@ export default function ManageGroupPage() {
          return <LoadingScreen />;
     }
     
-    const filteredClasses = isClassAdmin
-        ? center.classes.filter(c => c.name === classAdminRoleName)
-        : center.classes;
+    // A class admin can only see their own class, but center/global admins see all
+    const canManageAllClasses = isGlobalAdmin || isCenterAdmin;
+    const filteredClasses = canManageAllClasses
+        ? center.classes
+        : center.classes.filter(c => c.name === classAdminRoleName);
 
     return (
         <div className="container mx-auto max-w-4xl p-4 sm:p-6">
@@ -91,7 +94,7 @@ export default function ManageGroupPage() {
             </header>
 
             <Tabs defaultValue="classes" className="w-full">
-                {isGlobalAdmin && (
+                {canManageAllClasses && (
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="classes"><GraduationCap className="mr-2 h-4 w-4"/>Clases</TabsTrigger>
                         <TabsTrigger value="all-members"><Users className="mr-2 h-4 w-4"/>Todos los Miembros</TabsTrigger>
@@ -100,9 +103,9 @@ export default function ManageGroupPage() {
 
                 <div className="py-6">
                     <TabsContent value="classes">
-                        <ClassesTab center={center} visibleClasses={filteredClasses} isGlobalAdmin={isGlobalAdmin}/>
+                        <ClassesTab center={center} visibleClasses={filteredClasses} isGlobalAdmin={canManageAllClasses}/>
                     </TabsContent>
-                    {isGlobalAdmin && (
+                    {canManageAllClasses && (
                         <TabsContent value="all-members">
                             <MembersTab centerId={center.uid} />
                         </TabsContent>

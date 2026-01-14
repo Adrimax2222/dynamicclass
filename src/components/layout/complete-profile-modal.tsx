@@ -215,14 +215,13 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                 
                 const [course, className] = values.newClassName.split('-');
                 
-                // Pass all data, including the direct role assignment
                 onSave({
                     center: generatedCode,
                     course: course.toLowerCase().replace('º',''),
                     className: className,
                     ageRange: values.ageRange,
                     organizationId: newCenterRef.id,
-                    role: `admin-${values.newClassName}`, // Assign role directly
+                    role: 'center-admin',
                 });
                 
                 toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${generatedCode}.` });

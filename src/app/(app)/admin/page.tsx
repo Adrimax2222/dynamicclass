@@ -30,14 +30,9 @@ export default function AdminPage() {
 
     useEffect(() => {
         if (user) {
-            if (user.role?.startsWith('admin-')) {
-                // It's a class admin, redirect them to their specific group management page
-                if (user.organizationId) {
-                     router.replace(`/admin/groups/${user.organizationId}`);
-                } else {
-                     // Fallback if class details are missing, though they should exist for a class admin
-                     router.replace('/home');
-                }
+            // Redirect class or center admins to their specific group management page
+            if ((user.role?.startsWith('admin-') || user.role === 'center-admin') && user.organizationId) {
+                 router.replace(`/admin/groups/${user.organizationId}`);
             } else if (user.role !== 'admin') {
                 router.replace('/home');
             }

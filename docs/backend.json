@@ -13,7 +13,7 @@
         "ageRange": { "type": "string" },
         "course": { "type": "string" },
         "className": { "type": "string" },
-        "role": { "type": "string", "description": "Can be 'student', 'teacher', 'admin', or a dynamic role like 'admin-4ESO-B'." },
+        "role": { "type": "string", "description": "Can be 'student', 'teacher', 'admin', 'center-admin', or a dynamic role like 'admin-4ESO-B'." },
         "avatar": { "type": "string", "format": "uri" },
         "trophies": { "type": "number" },
         "tasks": { "type": "number" },
