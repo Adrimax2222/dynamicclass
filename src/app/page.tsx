@@ -77,12 +77,16 @@ const createRegistrationSchema = (mode: RegistrationMode, isCenterValidated: boo
   fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
   email: z.string().email({ message: "Por favor, introduce una dirección de correo electrónico válida." }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
+  confirmPassword: z.string().min(6, { message: "La confirmación de contraseña debe tener al menos 6 caracteres." }),
   center: z.string(),
   ageRange: z.string().min(1, { message: "Por favor, selecciona un rango de edad." }),
   course: z.string(),
   className: z.string(),
   newCenterName: z.string().optional(),
   newClassName: z.string().optional(),
+}).refine(data => data.password === data.confirmPassword, {
+    message: "Las contraseñas no coinciden.",
+    path: ["confirmPassword"],
 }).refine(data => {
     if (mode === 'join') return data.center.trim() !== '';
     return true;
@@ -141,7 +145,7 @@ type RegistrationSchemaType = z.infer<ReturnType<typeof createRegistrationSchema
 type LoginSchemaType = z.infer<typeof loginSchema>;
 
 const steps = [
-    { id: 1, fields: ['fullName', 'email', 'password'] },
+    { id: 1, fields: ['fullName', 'email', 'password', 'confirmPassword'] },
     { id: 2, fields: ['center', 'ageRange', 'course', 'className', 'role', 'newCenterName', 'newClassName'] },
 ];
 
@@ -222,7 +226,7 @@ export default function AuthPage() {
     resolver: zodResolver(registrationSchema),
     mode: "onChange",
     defaultValues: {
-      fullName: "", email: "", password: "", center: "",
+      fullName: "", email: "", password: "", confirmPassword: "", center: "",
       ageRange: "", course: "", className: "",
       newCenterName: "", newClassName: "",
     },
@@ -245,6 +249,7 @@ export default function AuthPage() {
       fullName: form.getValues('fullName'),
       email: form.getValues('email'),
       password: form.getValues('password'),
+      confirmPassword: form.getValues('confirmPassword'),
       ageRange: '',
       center: '',
       course: '',
@@ -281,7 +286,7 @@ export default function AuthPage() {
     setCurrentStep(prev => prev - 1);
   }
   
-  const generateNewCode = () => `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
+  const generateNewCode = () => `${''}${Math.floor(100 + Math.random() * 900)}-${''}${Math.floor(100 + Math.random() * 900)}`;
 
   async function onRegisterSubmit(values: RegistrationSchemaType) {
     setIsLoading(true);
@@ -302,7 +307,7 @@ export default function AuthPage() {
       const firebaseUser = userCredential.user;
       
       const firstInitial = values.fullName.charAt(0).toUpperCase() || 'A';
-      const defaultAvatarUrl = `letter_${firstInitial}_A78BFA`;
+      const defaultAvatarUrl = `letter_${''}${firstInitial}_A78BFA`;
       await updateProfile(firebaseUser, { displayName: values.fullName, photoURL: defaultAvatarUrl });
       
       const userDocRef = doc(firestore, 'users', firebaseUser.uid);
@@ -325,7 +330,7 @@ export default function AuthPage() {
             organizationId: newCenterRef.id, trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
             isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
         };
-        toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${generatedCode}.` });
+        toast({ title: "¡Centro Creado!", description: `"${''}${values.newCenterName}" se ha creado con el código ${''}${generatedCode}.` });
 
       } else {
          userData = {
@@ -410,7 +415,7 @@ export default function AuthPage() {
         const firstInitial = firebaseUser.displayName?.charAt(0).toUpperCase() || 'A';
         const newUser: Omit<User, 'uid'> = {
             name: firebaseUser.displayName || 'Usuario', email: firebaseUser.email!,
-            avatar: `letter_${firstInitial}_A78BFA`, center: 'default', ageRange: 'default', 
+            avatar: `letter_${''}${firstInitial}_A78BFA`, center: 'default', ageRange: 'default', 
             course: 'default', className: 'default', role: 'student',
             trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
             isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
@@ -454,7 +459,7 @@ export default function AuthPage() {
   const formatAndSetCenterCode = (value: string) => {
     const digitsOnly = value.replace(/[^0-9]/g, '');
     let formatted = digitsOnly.slice(0, 6);
-    if (formatted.length > 3) formatted = `${formatted.slice(0, 3)}-${formatted.slice(3)}`;
+    if (formatted.length > 3) formatted = `${''}${formatted.slice(0, 3)}-${''}${formatted.slice(3)}`;
     form.setValue('center', formatted, { shouldValidate: true });
     if (isCenterValidated && formatted !== validatedCenter?.code) {
         setIsCenterValidated(false);
@@ -476,7 +481,7 @@ export default function AuthPage() {
               setValidatedCenter(centerData);
               setIsCenterValidated(true);
               form.clearErrors('center');
-              toast({ title: "Centro validado", description: `Te has unido a ${centerData.name}.` });
+              toast({ title: "Centro validado", description: `Te has unido a ${''}${centerData.name}.` });
           } else {
               setValidatedCenter(null);
               setIsCenterValidated(false);
@@ -603,6 +608,18 @@ export default function AuthPage() {
                                 <FormField control={form.control} name="password" render={({ field }) => (
                                     <FormItem>
                                       <FormLabel>Contraseña</FormLabel>
+                                      <div className="relative">
+                                        <FormControl><Input type={showPassword ? "text" : "password"} placeholder="••••••••" {...field} className="pr-10" /></FormControl>
+                                        <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground" onClick={() => setShowPassword(!showPassword)}>
+                                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </Button>
+                                      </div>
+                                      <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                <FormField control={form.control} name="confirmPassword" render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Repetir Contraseña</FormLabel>
                                       <div className="relative">
                                         <FormControl><Input type={showPassword ? "text" : "password"} placeholder="••••••••" {...field} className="pr-10" /></FormControl>
                                         <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground" onClick={() => setShowPassword(!showPassword)}>
