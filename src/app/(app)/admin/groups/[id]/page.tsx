@@ -97,7 +97,7 @@ export default function ManageGroupPage() {
                     <Button asChild variant="outline" size="sm">
                         <Link href={`/admin/centers/${center.uid}/edit`}>
                             <Edit className="mr-2 h-4 w-4" />
-                            Editar Centro
+                            Editar
                         </Link>
                     </Button>
                 )}
@@ -365,5 +365,7 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
         </Card>
     );
 }
+
+    
 
     
