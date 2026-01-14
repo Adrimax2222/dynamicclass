@@ -142,9 +142,7 @@ service cloud.firestore {
     // ============= CENTERS =============
 
     match /centers/{centerId} {
-      // Admins can do anything
       allow write: if request.auth != null; // Allow any authenticated user to create a center
-      // Allow ANYONE (authenticated or not) to read the list of centers to validate the code on registration
       allow list, get: if true;
     }
   }
