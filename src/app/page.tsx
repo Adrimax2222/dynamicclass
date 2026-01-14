@@ -209,8 +209,11 @@ export default function AuthPage() {
   const centersCollection = useMemo(() => firestore ? collection(firestore, 'centers') : null, [firestore]);
   const { data: allCenters } = useCollection<Center>(centersCollection, { listen: false });
 
+  // This effect will redirect the user if they are already logged in.
   useEffect(() => {
-    // This effect is intentionally left empty. User creation is handled onSubmit.
+    if (user) {
+      router.replace('/home');
+    }
   }, [user, router]);
   
   const registrationSchema = useMemo(() => createRegistrationSchema(registrationMode, isCenterValidated, isCenterNameValidated, !!generatedCode), [registrationMode, isCenterValidated, isCenterNameValidated, generatedCode]);
@@ -305,7 +308,7 @@ export default function AuthPage() {
       const userDocRef = doc(firestore, 'users', firebaseUser.uid);
       let userData: Omit<User, 'uid'>;
 
-      if (registrationMode === 'create') {
+      if (registrationMode === 'create' && values.newCenterName && values.newClassName && generatedCode) {
         const newCenterRef = await addDoc(collection(firestore, "centers"), {
             name: values.newCenterName,
             code: generatedCode,
@@ -316,16 +319,12 @@ export default function AuthPage() {
         
         userData = {
             name: values.fullName, email: values.email, avatar: defaultAvatarUrl,
-            center: generatedCode!, ageRange: values.ageRange,
+            center: generatedCode, ageRange: values.ageRange,
             course: course.toLowerCase().replace('º',''), className: className, 
-            role: 'student',
+            role: `admin-${values.newClassName}`, // Assign role directly
             organizationId: newCenterRef.id, trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
             isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
         };
-        await setDoc(userDocRef, userData);
-        
-        await updateDoc(userDocRef, { role: `admin-${values.newClassName}` });
-
         toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${generatedCode}.` });
 
       } else {
@@ -340,9 +339,9 @@ export default function AuthPage() {
             trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
             isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
         };
-        await setDoc(userDocRef, userData);
       }
       
+      await setDoc(userDocRef, userData);
       await sendEmailVerification(firebaseUser);
       setRegistrationSuccess(true);
       
@@ -800,5 +799,3 @@ export default function AuthPage() {
     </main>
   );
 }
-
-    

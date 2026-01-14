@@ -199,14 +199,9 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                 ageRange: values.ageRange,
                 organizationId: validatedCenter?.uid
             });
-        } else if (mode === 'create') {
-            if (!firestore || !values.newCenterName || !values.newClassName) {
+        } else if (mode === 'create' && values.newCenterName && values.newClassName && generatedCode) {
+            if (!firestore) {
                 toast({ title: "Error", description: "Faltan datos para crear el centro.", variant: "destructive" });
-                setIsLoading(false);
-                return;
-            }
-             if (!generatedCode) {
-                toast({ title: "Error", description: "Debes generar un código para el nuevo centro.", variant: "destructive"});
                 setIsLoading(false);
                 return;
             }
@@ -220,23 +215,15 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
                 
                 const [course, className] = values.newClassName.split('-');
                 
-                // First save with 'student' role
+                // Pass all data, including the direct role assignment
                 onSave({
                     center: generatedCode,
                     course: course.toLowerCase().replace('º',''),
                     className: className,
                     ageRange: values.ageRange,
                     organizationId: newCenterRef.id,
-                    role: 'student', // Save as student first
+                    role: `admin-${values.newClassName}`, // Assign role directly
                 });
-                
-                // Then, update the role to admin
-                if (firestore && user) {
-                    const userDocRef = doc(firestore, 'users', user.uid);
-                    await updateDoc(userDocRef, {
-                        role: `admin-${values.newClassName}`
-                    });
-                }
                 
                 toast({ title: "¡Centro Creado!", description: `"${values.newCenterName}" se ha creado con el código ${generatedCode}.` });
 
@@ -488,5 +475,3 @@ export default function CompleteProfileModal({ user, onSave }: CompleteProfileMo
     </Dialog>
   );
 }
-
-    
