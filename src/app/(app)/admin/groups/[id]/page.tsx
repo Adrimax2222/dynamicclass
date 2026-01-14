@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -177,7 +176,7 @@ function MembersTab({ centerId }: { centerId: string }) {
                     <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                         {filteredMembers.map((member, i) => (
                             <div key={member.uid || i} className="flex items-center gap-4 p-2 rounded-lg border">
-                                <AvatarDisplay user={member} className="h-10 w-10" showHat={false} />
+                                <AvatarDisplay user={member} className="h-10 w-10" />
                                 <div className="flex-1">
                                     <p className="font-semibold">{member.name}</p>
                                     <p className="text-xs text-muted-foreground">{member.email}</p>

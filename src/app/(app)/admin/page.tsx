@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -686,8 +685,3 @@ function EditCenterDialog({ center, children }: { center: Center, children: Reac
         </Dialog>
     )
 }
-    
-
-    
-
-    
