@@ -158,7 +158,7 @@ export default function ProfilePage() {
             <AvatarDisplay user={user} className="w-full h-full ring-4 ring-background" />
             <EditProfileDialog allCenters={centers} defaultOpenItem="item-1">
                 <button
-                  className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1.5 rounded-full ring-2 ring-background transition-transform hover:scale-110 active:scale-95 shadow-md"
+                  className="absolute bottom-0 -right-1 bg-primary text-primary-foreground p-1.5 rounded-full ring-2 ring-background transition-transform hover:scale-110 active:scale-95 shadow-md"
                   onClick={() => setDefaultOpenItem("item-1")}
                   aria-label="Editar avatar"
                 >
@@ -1097,6 +1097,8 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
+    
+
     
 
     
