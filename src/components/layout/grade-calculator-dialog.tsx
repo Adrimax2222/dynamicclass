@@ -65,7 +65,7 @@ interface GradeCalculatorDialogProps {
     openTo?: "calculator" | "report";
 }
 
-const defaultSubjects = ["E.F", "Catalán", "Castellano", "Inglés", "Sociales", "Mates", "Proyecto", "Optativa", "Tutoria", "Cultura y valores", "Fisica y Quimica", "Biologia", "Musica"];
+const newDefaultSubjects = ["E.F", "Catalán", "Castellano", "Inglés", "Sociales", "Mates", "Proyecto", "Optativa", "Tutoria", "Cultura y valores", "Fisica y Quimica", "Biologia", "Musica"];
 
 export function GradeCalculatorDialog({ children, isScheduleAvailable, user, openTo = "calculator" }: GradeCalculatorDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
@@ -96,13 +96,13 @@ export function GradeCalculatorDialog({ children, isScheduleAvailable, user, ope
                       const scheduleSubjects = Object.values(userClassDef.schedule).flat().map(c => c.subject);
                       availableSubjects = [...new Set(scheduleSubjects)];
                   } else {
-                      availableSubjects = defaultSubjects;
+                      availableSubjects = newDefaultSubjects;
                   }
               } else {
-                  availableSubjects = defaultSubjects;
+                  availableSubjects = newDefaultSubjects;
               }
           } else {
-              availableSubjects = defaultSubjects;
+              availableSubjects = newDefaultSubjects;
           }
 
           try {
