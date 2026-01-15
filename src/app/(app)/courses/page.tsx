@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -176,6 +177,10 @@ function AnnouncementsTab() {
         viewedBy: [],
         reactions: {},
     };
+
+    if (newAnnouncement.type === 'poll') {
+        newAnnouncement.pollVotes = {};
+    }
     
     await addDoc(announcementsCollectionRef, newAnnouncement);
   }
@@ -629,7 +634,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
         </CardHeader>
         <CardContent className="p-4 pt-0">
             {announcement.type === 'poll' ? (
-                <PollDisplay announcement={announcement} allUsers={allUsersInCenter} />
+                <PollDisplay announcement={announcement} allUsers={allUsersInCenter} canManage={canManage} />
             ) : isEditing ? (
                  <div className="space-y-2">
                     <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={3} />
@@ -708,9 +713,8 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
   );
 }
 
-const PollDisplay = ({ announcement, allUsers }: { announcement: Announcement, allUsers: AppUser[] }) => {
+const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Announcement, allUsers: AppUser[], canManage: boolean }) => {
     const { user, firestore } = useApp();
-    const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
     const userVote = useMemo(() => {
         if (!user || !announcement.pollVotes) return null;
@@ -737,18 +741,25 @@ const PollDisplay = ({ announcement, allUsers }: { announcement: Announcement, a
             const currentData = annDoc.data() as Announcement;
             const votes = { ...(currentData.pollVotes || {}) };
             
-            // Single vote logic: remove user from all other options
-            Object.keys(votes).forEach(optId => {
-                if (votes[optId]?.includes(user.uid)) {
-                    votes[optId] = votes[optId].filter(uid => uid !== user.uid);
-                }
-            });
-            
-            // Add vote to the new option
-            if (!votes[optionId]) {
-                votes[optionId] = [];
+            const isAlreadyVotedForThis = votes[optionId]?.includes(user.uid);
+
+            if (!currentData.allowMultipleVotes) {
+                 // Remove user from all other options
+                Object.keys(votes).forEach(optId => {
+                    if (optId !== optionId && votes[optId]?.includes(user.uid)) {
+                        votes[optId] = votes[optId].filter(uid => uid !== user.uid);
+                    }
+                });
             }
-            if (!votes[optionId].includes(user.uid)) {
+            
+            if (isAlreadyVotedForThis) {
+                // Un-vote
+                votes[optionId] = votes[optionId].filter(uid => uid !== user.uid);
+            } else {
+                // Vote
+                if (!votes[optionId]) {
+                    votes[optionId] = [];
+                }
                 votes[optionId].push(user.uid);
             }
 
@@ -796,7 +807,7 @@ const PollDisplay = ({ announcement, allUsers }: { announcement: Announcement, a
                     <span>Vota para ver los resultados de la encuesta.</span>
                 </div>
             )}
-             <PollResultsDialog announcement={announcement} allUsers={allUsers} />
+             {canManage && <PollResultsDialog announcement={announcement} allUsers={allUsers} />}
         </div>
     )
 }
@@ -824,9 +835,6 @@ function VotersDisplay({ uids, allUsers }: { uids: string[], allUsers: AppUser[]
 }
 
 function PollResultsDialog({ announcement, allUsers }: { announcement: Announcement, allUsers: AppUser[]}) {
-    const { user } = useApp();
-    if (user?.role === 'student') return null;
-
     return (
         <Dialog>
             <DialogTrigger asChild>
@@ -1088,3 +1096,4 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     </Dialog>
   )
 }
+
