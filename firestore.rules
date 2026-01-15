@@ -55,61 +55,46 @@ service cloud.firestore {
     }
     
     function isValidAnnouncement() {
-      let data = request.resource.data;
+        let data = request.resource.data;
 
-      // -- Rule 1: Check required fields for ALL announcements --
-      // These fields MUST exist on the incoming request.
-      if (!('authorId' in data) || !('authorName' in data) || !('authorAvatar' in data) || !('scope' in data) || !('type' in data)) {
-        return false;
-      }
-      
-      // -- Rule 2: Check initial values --
-      // These fields must have these specific values on creation.
-      if (data.authorId != request.auth.uid || data.isPinned != false || data.viewedBy.size() != 0 || data.reactions.size() != 0) {
-        return false;
-      }
+        // --- Common checks for creation ---
+        let commonChecks = data.authorId == request.auth.uid &&
+                           'authorName' in data && data.authorName is string &&
+                           'authorAvatar' in data && data.authorAvatar is string &&
+                           data.isPinned == false &&
+                           'viewedBy' in data && data.viewedBy is list && data.viewedBy.size() == 0 &&
+                           'reactions' in data && data.reactions is map && data.reactions.size() == 0;
+        if (!commonChecks) { return false; }
 
-      // -- Rule 3: Type-specific validation --
-      if (data.type == 'poll') {
-        // For polls, these fields MUST exist and be valid.
-        if (!('pollQuestion' in data) || !(data.pollQuestion is string) || data.pollQuestion.size() == 0 ||
-            !('pollOptions' in data) || !(data.pollOptions is list) || data.pollOptions.size() < 2 ||
-            !('allowMultipleVotes' in data) || !(data.allowMultipleVotes is bool) ||
-            !('pollVotes' in data) || !(data.pollVotes is map) || data.pollVotes.size() != 0) {
-          return false;
+        // --- Type-specific validation ---
+        let typeValid = false;
+        if (data.type == 'text') {
+            typeValid = 'text' in data && data.text is string && data.text.size() > 0 &&
+                        !('pollQuestion' in data) && !('pollOptions' in data) &&
+                        !('allowMultipleVotes' in data) && !('pollVotes' in data);
+        } else if (data.type == 'poll') {
+            typeValid = 'pollQuestion' in data && data.pollQuestion is string && data.pollQuestion.size() > 0 &&
+                        'pollOptions' in data && data.pollOptions is list && data.pollOptions.size() >= 2 &&
+                        'allowMultipleVotes' in data && data.allowMultipleVotes is bool &&
+                        'pollVotes' in data && data.pollVotes is map && data.pollVotes.size() == 0 &&
+                        !('text' in data);
         }
-        // And 'text' MUST NOT exist.
-        if ('text' in data) {
-          return false;
-        }
-      } else if (data.type == 'text') {
-        // For text, 'text' MUST exist and be valid.
-        if (!('text' in data) || !(data.text is string) || data.text.size() == 0) {
-          return false;
-        }
-        // And poll fields MUST NOT exist.
-        if ('pollQuestion' in data || 'pollOptions' in data || 'allowMultipleVotes' in data || 'pollVotes' in data) {
-          return false;
-        }
-      } else {
-        // No other types are allowed.
-        return false;
-      }
-      
-      // -- Rule 4: Scope-specific validation --
-      if (data.scope == 'general') {
-        if ('centerId' in data || 'className' in data) { return false; }
-      } else if (data.scope == 'center') {
-        if (!('centerId' in data) || 'className' in data) { return false; }
-      } else if (data.scope == 'class') {
-        if (!('centerId' in data) || !('className' in data)) { return false; }
-      } else {
-        // No other scopes are allowed.
-        return false;
-      }
+        if (!typeValid) { return false; }
 
-      // If all checks pass
-      return true;
+        // --- Scope-specific validation ---
+        let scopeValid = false;
+        if (data.scope == 'general') {
+            scopeValid = !('centerId' in data) && !('className' in data);
+        } else if (data.scope == 'center') {
+            scopeValid = 'centerId' in data && data.centerId is string &&
+                         !('className' in data);
+        } else if (data.scope == 'class') {
+            scopeValid = 'centerId' in data && data.centerId is string &&
+                         'className' in data && data.className is string;
+        }
+        if (!scopeValid) { return false; }
+
+        return true;
     }
 
     // ============= USERS COLLECTION =============
