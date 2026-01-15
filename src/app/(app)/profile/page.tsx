@@ -20,6 +20,17 @@ import {
   DialogClose,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -219,39 +230,38 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
       
-        {isUserAdmin ? (
-            <Card className="mb-8 border-blue-500/50">
-                <CardHeader className="flex-row items-center justify-between p-4">
-                    <div>
-                        <CardTitle className="flex items-center gap-2 text-blue-500 text-base"><ShieldCheck />Panel de Administrador</CardTitle>
-                    </div>
-                    <Button asChild size="sm">
-                        <Link href="/admin">Acceder</Link>
-                    </Button>
-                </CardHeader>
-            </Card>
-        ) : isCenterAdmin ? (
-            <Card className="mb-8 border-purple-500/50">
-                <CardHeader className="flex-row items-center justify-between p-4">
-                    <div>
-                        <CardTitle className="flex items-center gap-2 text-purple-600 text-base"><ShieldCheck />Panel de Admin Centro</CardTitle>
-                    </div>
-                    <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700">
-                        <Link href={`/admin/groups/${user.organizationId}`}>Gestionar</Link>
-                    </Button>
-                </CardHeader>
-            </Card>
-        ) : isUserClassAdmin && (
-            <Card className="mb-8 border-green-500/50">
-                <CardHeader className="flex-row items-center justify-between p-4">
-                    <div>
-                        <CardTitle className="flex items-center gap-2 text-green-600 text-base"><GraduationCap />Panel de Admin Clase</CardTitle>
-                    </div>
-                    <Button asChild size="sm" className="bg-green-600 hover:bg-green-700">
-                        <Link href={`/admin/groups/${user.organizationId}`}>Gestionar</Link>
-                    </Button>
-                </CardHeader>
-            </Card>
+        {isAnyAdmin && (
+          <Card className={cn("mb-8", 
+            isUserAdmin && "border-blue-500/50",
+            isCenterAdmin && "border-purple-500/50",
+            isUserClassAdmin && !isUserAdmin && !isCenterAdmin && "border-green-500/50"
+          )}>
+            <CardHeader className="flex-row items-center justify-between p-4">
+              <div>
+                <CardTitle className={cn("flex items-center gap-2 text-base",
+                  isUserAdmin && "text-blue-500",
+                  isCenterAdmin && "text-purple-600",
+                  isUserClassAdmin && !isUserAdmin && !isCenterAdmin && "text-green-600"
+                )}>
+                  {isUserClassAdmin && !isUserAdmin && !isCenterAdmin ? <GraduationCap/> : <ShieldCheck />}
+                  {isUserAdmin ? 'Panel de Administrador' : isCenterAdmin ? 'Panel de Admin Centro' : 'Panel de Admin Clase'}
+                </CardTitle>
+              </div>
+              <Button 
+                asChild 
+                size="sm" 
+                className={cn(
+                  isUserAdmin && "bg-blue-500 hover:bg-blue-600",
+                  isCenterAdmin && "bg-purple-600 hover:bg-purple-700",
+                  isUserClassAdmin && !isUserAdmin && !isCenterAdmin && "bg-green-600 hover:bg-green-700"
+                )}
+              >
+                <Link href={isUserAdmin ? "/admin" : `/admin/groups/${user.organizationId}`}>
+                  {isUserAdmin ? 'Acceder' : 'Gestionar'}
+                </Link>
+              </Button>
+            </CardHeader>
+          </Card>
         )}
 
 
@@ -583,7 +593,7 @@ const handleSaveChanges = async () => {
     setIsLoading(true);
 
     const finalAvatarString = editableAvatar.id.startsWith('letter')
-        ? `${editableAvatar.id}_${editableAvatar.color}`
+        ? `letter_${editableAvatar.id.split('_')[1]}_${editableAvatar.color}`
         : `${editableAvatar.id}_${editableAvatar.color}`;
 
     let updatedData: Partial<User> = {
@@ -737,7 +747,7 @@ const handleSaveChanges = async () => {
                         <div className="space-y-6 pt-2">
                              <div className="flex justify-center py-4">
                                 <AvatarDisplay 
-                                    user={{ avatar: `${editableAvatar.id}_${editableAvatar.color}`, name: user.name }}
+                                    user={{ avatar: `${editableAvatar.id.startsWith('letter') ? `letter_${editableAvatar.id.split('_')[1]}` : editableAvatar.id}_${editableAvatar.color}`, name: user.name }}
                                     className="h-24 w-24 ring-4 ring-primary ring-offset-2" 
                                 />
                             </div>
@@ -800,8 +810,8 @@ const handleSaveChanges = async () => {
                                             const isSelected = editableAvatar.id === avatar.id;
                                             return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
                                         })}
-                                        <Collapsible>
-                                            <div className="col-span-4 grid grid-cols-4 gap-4">
+                                        <div className="col-span-4">
+                                            <Collapsible>
                                                 <CollapsibleTrigger asChild>
                                                     <div className="w-full aspect-square flex items-center justify-center">
                                                         <button type="button" className="h-full w-full rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50">
@@ -809,7 +819,7 @@ const handleSaveChanges = async () => {
                                                         </button>
                                                     </div>
                                                 </CollapsibleTrigger>
-                                                <CollapsibleContent className="col-span-4 mt-4 p-4 border-t">
+                                                <CollapsibleContent className="mt-4 p-4 border-t col-span-4">
                                                     <div className="grid grid-cols-4 gap-4">
                                                         {EXPANDED_SHOP_AVATARS.map((avatar) => {
                                                             const isOwned = user.ownedAvatars?.includes(avatar.id);
@@ -818,8 +828,8 @@ const handleSaveChanges = async () => {
                                                         })}
                                                     </div>
                                                 </CollapsibleContent>
-                                            </div>
-                                        </Collapsible>
+                                            </Collapsible>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -1216,6 +1226,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
 
 
