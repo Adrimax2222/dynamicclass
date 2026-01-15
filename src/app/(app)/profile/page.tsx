@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData, User, CompletedItem, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle, GraduationCap, School, PlusCircle, Search, Copy, Check, RefreshCw, Shield, ShieldCheck } from "lucide-react";
+import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle, GraduationCap, School, PlusCircle, Search, Copy, Check, RefreshCw, Shield, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -184,7 +184,6 @@ export default function ProfilePage() {
           <p className={cn("text-muted-foreground mt-2", !isCenterCodeValid && user.center !== 'personal' && "text-red-500 font-bold")}>{displayCenter}</p>
           <EditProfileDialog allCenters={centers}>
             <Button variant="outline" size="sm" className="mt-4" onClick={() => setDefaultOpenItem('')}>
-              <Edit className="h-4 w-4 mr-2" />
               Configuración de Perfil
             </Button>
           </EditProfileDialog>
@@ -219,7 +218,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-        {isUserAdmin ? (
+      {isUserAdmin ? (
         <Card className="mb-8 border-blue-500/50">
             <CardHeader className="flex-row items-center justify-between p-4">
                 <div>
@@ -378,7 +377,8 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
   const [defaultOpenItem, setDefaultOpenItem] = useState(propDefaultOpenItem);
   
   const [editableAvatar, setEditableAvatar] = useState<EditableAvatar>({ id: 'letter_A', color: 'A78BFA'});
-  
+  const [avatarMode, setAvatarMode] = useState<'letter' | 'library'>('letter');
+
   const [name, setName] = useState(user?.name || "");
   const [center, setCenter] = useState(user?.center === 'personal' ? '' : user?.center || "");
   const [ageRange, setAgeRange] = useState(user?.ageRange || "");
@@ -413,11 +413,14 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
         
         if (id === 'letter') {
              setEditableAvatar({ id: `letter_${id_extra}`, color: color || '737373' });
+             setAvatarMode('letter');
         } else if (shopAvatarMap.has(id)) {
              setEditableAvatar({ id: id, color: id_extra || '737373' });
+             setAvatarMode('library');
         } else {
              const initial = user.name.charAt(0).toUpperCase() || 'A';
              setEditableAvatar({ id: `letter_${initial}`, color: 'A78BFA' });
+             setAvatarMode('letter');
         }
         
         if (!isPersonal && user.center) {
@@ -434,8 +437,9 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
     if (isOpen) {
         setDefaultOpenItem(propDefaultOpenItem);
         initializeState();
+    } else {
+        setDefaultOpenItem(''); // Reset when dialog closes
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, user, allCenters, propDefaultOpenItem]);
 
   const availableClasses = useMemo(() => {
@@ -665,27 +669,27 @@ const handleSaveChanges = async () => {
     }
   };
   
-  const isLetterSelectorDisabled = useMemo(() => {
-    return editableAvatar.id.startsWith('letter') ? false : true;
-  }, [editableAvatar.id]);
-  
   const isSaveDisabled = useMemo(() => {
     if (isLoading) return true;
     
-    const selectedId = editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[0] : editableAvatar.id;
-    const shopItem = shopAvatarMap.get(selectedId);
-    
-    if (editableAvatar.id.startsWith('letter_')) {
+    // Allow saving if avatar is a letter
+    if (avatarMode === 'letter') {
         return false;
     }
-    
-    if (shopItem) {
-        const isOwned = user.ownedAvatars?.includes(shopItem.id);
-        if (shopItem.price > 0 && !isOwned) return true;
-    }
 
-    return false;
-  }, [editableAvatar.id, user.ownedAvatars, isLoading]);
+    // If avatar is from library, check ownership
+    if (avatarMode === 'library') {
+        const shopItem = SHOP_AVATARS.find(item => item.id === editableAvatar.id);
+        if (shopItem) {
+            const isOwned = user.ownedAvatars?.includes(shopItem.id);
+            if (shopItem.price > 0 && !isOwned) {
+                return true; // Can't save if not owned and not free
+            }
+        }
+    }
+    
+    return false; // Default to enabled
+  }, [editableAvatar.id, user.ownedAvatars, isLoading, avatarMode]);
   
   const registrationModeInfo = {
     join: { title: "Unirse a un Centro", description: "Introduce el código proporcionado por tu centro educativo." },
@@ -696,11 +700,11 @@ const handleSaveChanges = async () => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        {children}
+        {children || <Button>Configuración de Perfil</Button>}
       </DialogTrigger>
       <DialogContent className="max-w-md w-[95vw]">
         <DialogHeader>
-          <DialogTitle>Editor de Perfil</DialogTitle>
+          <DialogTitle>Configuración de Perfil</DialogTitle>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh] -mx-6 px-6">
             <Accordion type="single" collapsible defaultValue={defaultOpenItem} className="w-full">
@@ -714,89 +718,17 @@ const handleSaveChanges = async () => {
                                     className="h-24 w-24 ring-4 ring-primary ring-offset-2" 
                                 />
                             </div>
-
-                            <div className="space-y-4">
-                                <Label>Avatar</Label>
-                                <div className="grid grid-cols-4 gap-4">
-                                    {SHOP_AVATARS.map((avatar) => {
-                                        const isOwned = user.ownedAvatars?.includes(avatar.id);
-                                        const isSelected = editableAvatar.id === avatar.id;
-                                        const Icon = avatar.icon;
-                                        const isFree = avatar.price === 0;
-
-                                        return (
-                                            <div key={avatar.id} className="relative group flex flex-col items-center gap-2">
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => handleSelectShopAvatar(avatar.id)}
-                                                    className={cn("w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
-                                                >
-                                                   <div className="w-full h-full flex items-center justify-center">
-                                                        <Icon className="h-8 w-8 text-muted-foreground" />
-                                                   </div>
-                                                </button>
-                                                <div className="text-center">
-                                                    {isOwned || isFree ? (
-                                                        <Badge variant="secondary" className="flex items-center gap-1">
-                                                            {isFree && !isOwned ? 'Gratis' : <><CheckCircle className="h-3 w-3 text-green-500" /> Adquirido</>}
-                                                        </Badge>
-                                                    ) : (
-                                                        <AlertDialog>
-                                                            <AlertDialogTrigger asChild>
-                                                                <Button size="sm" variant="outline" className="h-8 w-full" disabled={isLoading}>
-                                                                    <Trophy className="h-4 w-4 mr-1 text-yellow-400" />
-                                                                    {avatar.price}
-                                                                </Button>
-                                                            </AlertDialogTrigger>
-                                                            <AlertDialogContent>
-                                                                <AlertDialogHeader>
-                                                                    <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
-                                                                    <AlertDialogDescription>
-                                                                        ¿Quieres comprar este avatar por {avatar.price} trofeos? Tus trofeos actuales son {user.trophies}.
-                                                                    </AlertDialogDescription>
-                                                                </AlertDialogHeader>
-                                                                <AlertDialogFooter>
-                                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                    <AlertDialogAction onClick={() => handlePurchaseAvatar(avatar)}>Comprar</AlertDialogAction>
-                                                                </AlertDialogFooter>
-                                                            </AlertDialogContent>
-                                                        </AlertDialog>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                    <div className="relative group flex flex-col items-center gap-2">
-                                        <div
-                                            className={cn(
-                                                "w-full aspect-square rounded-lg flex flex-col items-center justify-center bg-muted transition-all",
-                                                editableAvatar.id.startsWith('letter') && "ring-4 ring-primary ring-offset-2"
-                                            )}
-                                        >
-                                            <CaseUpper className="h-8 w-8 text-muted-foreground mb-2" />
-                                            <Select
-                                                onValueChange={handleLetterSelect}
-                                                value={editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[1] : ''}
-                                                onOpenChange={(isOpen) => {
-                                                if (isOpen) {
-                                                    const currentLetter = editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[1] : 'A';
-                                                    setEditableAvatar(prev => ({...prev, id: `letter_${currentLetter}`}))
-                                                }
-                                                }}
-                                            >
-                                                <SelectTrigger className="w-20 h-8 text-xs">
-                                                    <SelectValue placeholder="Letra" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {ALPHABET.map(letter => (
-                                                        <SelectItem key={letter} value={letter}>{letter}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            
+                            <RadioGroup value={avatarMode} onValueChange={(v) => setAvatarMode(v as 'letter' | 'library')} className="grid grid-cols-2 gap-2">
+                                <Label className={cn("rounded-md border p-2 flex items-center justify-center gap-2 cursor-pointer", avatarMode === 'letter' && 'bg-primary/10 border-primary')}>
+                                    <CaseUpper className="h-4 w-4"/> Letras
+                                    <RadioGroupItem value="letter" className="sr-only"/>
+                                </Label>
+                                <Label className={cn("rounded-md border p-2 flex items-center justify-center gap-2 cursor-pointer", avatarMode === 'library' && 'bg-primary/10 border-primary')}>
+                                    <Sparkles className="h-4 w-4 text-yellow-400"/> Biblioteca
+                                    <RadioGroupItem value="library" className="sr-only"/>
+                                </Label>
+                            </RadioGroup>
 
                             <div className="space-y-4">
                                 <Label>Color de Fondo</Label>
@@ -816,6 +748,82 @@ const handleSaveChanges = async () => {
                                     ))}
                                 </div>
                             </div>
+                            
+                            {avatarMode === 'letter' && (
+                                <div className="space-y-4">
+                                    <Label>Letra</Label>
+                                     <Select
+                                        onValueChange={handleLetterSelect}
+                                        value={editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[1] : ''}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Selecciona una letra..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {ALPHABET.map(letter => (
+                                                <SelectItem key={letter} value={letter}>{letter}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+
+                            {avatarMode === 'library' && (
+                                <div className="space-y-4">
+                                    <Label>Biblioteca de Iconos</Label>
+                                    <div className="grid grid-cols-4 gap-4">
+                                        {SHOP_AVATARS.map((avatar) => {
+                                            const isOwned = user.ownedAvatars?.includes(avatar.id);
+                                            const isSelected = editableAvatar.id === avatar.id;
+                                            const Icon = avatar.icon;
+                                            const isFree = avatar.price === 0;
+
+                                            return (
+                                                <div key={avatar.id} className="relative group flex flex-col items-center gap-2">
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => handleSelectShopAvatar(avatar.id)}
+                                                        className={cn("w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
+                                                    >
+                                                       <div className="w-full h-full flex items-center justify-center">
+                                                            <Icon className="h-8 w-8 text-muted-foreground" />
+                                                       </div>
+                                                    </button>
+                                                    <div className="text-center">
+                                                        {isOwned || isFree ? (
+                                                            <Badge variant="secondary" className="flex items-center gap-1">
+                                                                {isFree && !isOwned ? 'Gratis' : <><CheckCircle className="h-3 w-3 text-green-500" /> Adquirido</>}
+                                                            </Badge>
+                                                        ) : (
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <Button size="sm" variant="outline" className="h-8 w-full" disabled={isLoading}>
+                                                                        <Trophy className="h-4 w-4 mr-1 text-yellow-400" />
+                                                                        {avatar.price}
+                                                                    </Button>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader>
+                                                                        <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
+                                                                        <AlertDialogDescription>
+                                                                            ¿Quieres comprar este avatar por {avatar.price} trofeos? Tus trofeos actuales son {user.trophies}.
+                                                                        </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={() => handlePurchaseAvatar(avatar)}>Comprar</AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
                     </AccordionContent>
                 </AccordionItem>
@@ -889,7 +897,7 @@ const handleSaveChanges = async () => {
                                             <AlertDialogAction>Entendido</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
-                                </AlertDialog>
+                                  </AlertDialog>
                                 <div className="space-y-2">
                                     <Label>Nombre del Nuevo Centro</Label>
                                     <div className="flex items-center gap-2">
