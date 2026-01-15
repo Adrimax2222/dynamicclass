@@ -218,7 +218,7 @@ export default function ProfilePage() {
             </div>
         </CardContent>
       </Card>
-
+      
       {isUserAdmin ? (
         <Card className="mb-8 border-blue-500/50">
           <CardHeader className="flex-row items-center justify-between p-4">
@@ -241,7 +241,7 @@ export default function ProfilePage() {
             </Button>
           </CardHeader>
         </Card>
-      ) : isUserClassAdmin && (
+      ) : isUserClassAdmin ? (
         <Card className="mb-8 border-green-500/50">
           <CardHeader className="flex-row items-center justify-between p-4">
             <div>
@@ -252,7 +252,8 @@ export default function ProfilePage() {
             </Button>
           </CardHeader>
         </Card>
-      )}
+      ) : null}
+
 
       <Card className="mb-8 bg-blue-500/5 border-blue-500/20">
           <CardHeader className="flex-row items-center justify-between p-4">
@@ -785,20 +786,19 @@ const handleSaveChanges = async () => {
                                                 const isSelected = editableAvatar.id === avatar.id;
                                                 return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
                                             })}
-                                            
-                                            <CollapsibleTrigger asChild>
-                                                <div className="relative group flex flex-col items-center gap-2">
+                                            <div className="relative group flex flex-col items-center gap-2">
+                                                <CollapsibleTrigger asChild>
                                                     <button
                                                         type="button"
                                                         className="w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50"
                                                     >
                                                         <Plus className="h-8 w-8 text-muted-foreground" />
                                                     </button>
-                                                    <div className="text-center">
-                                                        <p className="text-xs font-bold text-muted-foreground">Más</p>
-                                                    </div>
+                                                </CollapsibleTrigger>
+                                                 <div className="text-center">
+                                                    <p className="text-xs font-bold text-muted-foreground">Más</p>
                                                 </div>
-                                            </CollapsibleTrigger>
+                                            </div>
                                         </div>
                                         <CollapsibleContent className="col-span-4 mt-4 p-4 border-t">
                                             <div className="grid grid-cols-4 gap-4">
@@ -1167,6 +1167,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
 
 
