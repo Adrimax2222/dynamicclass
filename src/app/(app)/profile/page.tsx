@@ -220,37 +220,37 @@ export default function ProfilePage() {
       </Card>
 
       {isUserAdmin ? (
-          <Card className="mb-8 border-blue-500/50">
-            <CardHeader className="flex-row items-center justify-between p-4">
-                <div>
-                    <CardTitle className="flex items-center gap-2 text-blue-500 text-base"><ShieldCheck />Panel de Administrador</CardTitle>
-                </div>
-                <Button asChild size="sm">
-                    <Link href="/admin">Acceder</Link>
-                </Button>
-            </CardHeader>
+        <Card className="mb-8 border-blue-500/50">
+          <CardHeader className="flex-row items-center justify-between p-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-blue-500 text-base"><ShieldCheck />Panel de Administrador</CardTitle>
+            </div>
+            <Button asChild size="sm">
+              <Link href="/admin">Acceder</Link>
+            </Button>
+          </CardHeader>
         </Card>
       ) : isCenterAdmin ? (
-          <Card className="mb-8 border-purple-500/50">
-            <CardHeader className="flex-row items-center justify-between p-4">
-                 <div>
-                    <CardTitle className="flex items-center gap-2 text-purple-600 text-base"><ShieldCheck />Panel de Admin Centro</CardTitle>
-                </div>
-                <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700">
-                    <Link href={`/admin/groups/${user.organizationId}`}>Gestionar</Link>
-                </Button>
-            </CardHeader>
+        <Card className="mb-8 border-purple-500/50">
+          <CardHeader className="flex-row items-center justify-between p-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-purple-600 text-base"><ShieldCheck />Panel de Admin Centro</CardTitle>
+            </div>
+            <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700">
+              <Link href={`/admin/groups/${user.organizationId}`}>Gestionar</Link>
+            </Button>
+          </CardHeader>
         </Card>
       ) : isUserClassAdmin ? (
         <Card className="mb-8 border-green-500/50">
-            <CardHeader className="flex-row items-center justify-between p-4">
-                <div>
-                    <CardTitle className="flex items-center gap-2 text-green-600 text-base"><GraduationCap />Panel de Admin Clase</CardTitle>
-                </div>
-                <Button asChild size="sm" className="bg-green-600 hover:bg-green-700">
-                    <Link href={`/admin/groups/${user.organizationId}`}>Gestionar</Link>
-                </Button>
-            </CardHeader>
+          <CardHeader className="flex-row items-center justify-between p-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-green-600 text-base"><GraduationCap />Panel de Admin Clase</CardTitle>
+            </div>
+            <Button asChild size="sm" className="bg-green-600 hover:bg-green-700">
+              <Link href={`/admin/groups/${user.organizationId}`}>Gestionar</Link>
+            </Button>
+          </CardHeader>
         </Card>
       ) : null}
 
@@ -328,12 +328,12 @@ const SHOP_AVATARS_FEATURED = [
     { id: 'paw', icon: PawPrint, price: 5 },
     { id: 'gamepad', icon: Gamepad2, price: 12 },
     { id: 'ghost', icon: Ghost, price: 8 },
-    { id: 'rocket', icon: Rocket, price: 10 },
-    { id: 'pizza', icon: Pizza, price: 15 },
-    { id: 'cat', icon: Cat, price: 7 },
 ];
 
 const EXPANDED_SHOP_AVATARS = [
+    { id: 'rocket', icon: Rocket, price: 10 },
+    { id: 'pizza', icon: Pizza, price: 15 },
+    { id: 'cat', icon: Cat, price: 7 },
     { id: 'star', icon: Star, price: 20 },
     { id: 'crown', icon: Crown, price: 50 },
     { id: 'flame', icon: Flame, price: 25 },
@@ -784,27 +784,32 @@ const handleSaveChanges = async () => {
                                             const isSelected = editableAvatar.id === avatar.id;
                                             return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
                                         })}
-                                        <Collapsible>
-                                            <CollapsibleTrigger asChild>
-                                                <div className="relative group flex flex-col items-center gap-2">
-                                                    <button type="button" className="w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50">
-                                                        <Plus className="h-8 w-8 text-muted-foreground" />
-                                                    </button>
-                                                    <div className="text-center">
-                                                        <p className="text-xs font-bold text-muted-foreground">Más</p>
+                                        <div className="col-span-4">
+                                            <Collapsible>
+                                                <CollapsibleTrigger asChild>
+                                                    <div className="relative group flex flex-col items-center gap-2">
+                                                        <button
+                                                            type="button"
+                                                            className="w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50"
+                                                        >
+                                                            <Plus className="h-8 w-8 text-muted-foreground" />
+                                                        </button>
+                                                        <div className="text-center">
+                                                            <p className="text-xs font-bold text-muted-foreground">Más</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </CollapsibleTrigger>
-                                            <CollapsibleContent className="mt-4 p-4 border-t col-span-4">
-                                                <div className="grid grid-cols-4 gap-4">
-                                                    {EXPANDED_SHOP_AVATARS.map((avatar) => {
-                                                        const isOwned = user.ownedAvatars?.includes(avatar.id);
-                                                        const isSelected = editableAvatar.id === avatar.id;
-                                                        return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
-                                                    })}
-                                                </div>
-                                            </CollapsibleContent>
-                                        </Collapsible>
+                                                </CollapsibleTrigger>
+                                                <CollapsibleContent className="mt-4 p-4 border-t col-span-4">
+                                                    <div className="grid grid-cols-4 gap-4">
+                                                        {EXPANDED_SHOP_AVATARS.map((avatar) => {
+                                                            const isOwned = user.ownedAvatars?.includes(avatar.id);
+                                                            const isSelected = editableAvatar.id === avatar.id;
+                                                            return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
+                                                        })}
+                                                    </div>
+                                                </CollapsibleContent>
+                                            </Collapsible>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -1163,6 +1168,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
 
 
