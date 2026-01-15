@@ -123,7 +123,8 @@ export default function ProfilePage() {
 
   const isUserAdmin = user?.role === 'admin';
   const isCenterAdmin = user?.role === 'center-admin' && user.organizationId;
-  const isUserClassAdmin = user?.role?.startsWith('admin-') && user.role !== 'admin' && user.organizationId;
+  const isUserClassAdmin = user?.role?.startsWith('admin-');
+  const isAnyAdmin = isUserAdmin || isCenterAdmin || isUserClassAdmin;
 
 
   return (
@@ -793,31 +794,33 @@ const handleSaveChanges = async () => {
                            {avatarMode === 'library' && (
                                 <div className="space-y-4">
                                     <Label>Biblioteca de Iconos</Label>
-                                    <Collapsible className="space-y-4">
-                                        <div className="grid grid-cols-4 gap-4">
-                                            {SHOP_AVATARS_FEATURED.map((avatar) => {
-                                                const isOwned = user.ownedAvatars?.includes(avatar.id);
-                                                const isSelected = editableAvatar.id === avatar.id;
-                                                return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
-                                            })}
-                                            <CollapsibleTrigger asChild>
-                                                <div className="w-full aspect-square flex items-center justify-center">
-                                                    <button className="h-full w-full rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50">
-                                                        <Plus className="h-8 w-8 text-muted-foreground" />
-                                                    </button>
-                                                </div>
-                                            </CollapsibleTrigger>
-                                        </div>
-                                        <CollapsibleContent className="col-span-4 mt-4 p-4 border-t">
-                                            <div className="grid grid-cols-4 gap-4">
-                                                {EXPANDED_SHOP_AVATARS.map((avatar) => {
-                                                    const isOwned = user.ownedAvatars?.includes(avatar.id);
-                                                    const isSelected = editableAvatar.id === avatar.id;
-                                                    return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
-                                                })}
+                                    <div className="grid grid-cols-4 gap-4">
+                                        {SHOP_AVATARS_FEATURED.map((avatar) => {
+                                            const isOwned = user.ownedAvatars?.includes(avatar.id);
+                                            const isSelected = editableAvatar.id === avatar.id;
+                                            return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
+                                        })}
+                                        <Collapsible>
+                                            <div className="col-span-4 grid grid-cols-4 gap-4">
+                                                <CollapsibleTrigger asChild>
+                                                    <div className="w-full aspect-square flex items-center justify-center">
+                                                        <button type="button" className="h-full w-full rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50">
+                                                            <Plus className="h-8 w-8 text-muted-foreground" />
+                                                        </button>
+                                                    </div>
+                                                </CollapsibleTrigger>
+                                                <CollapsibleContent className="col-span-4 mt-4 p-4 border-t">
+                                                    <div className="grid grid-cols-4 gap-4">
+                                                        {EXPANDED_SHOP_AVATARS.map((avatar) => {
+                                                            const isOwned = user.ownedAvatars?.includes(avatar.id);
+                                                            const isSelected = editableAvatar.id === avatar.id;
+                                                            return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
+                                                        })}
+                                                    </div>
+                                                </CollapsibleContent>
                                             </div>
-                                        </CollapsibleContent>
-                                    </Collapsible>
+                                        </Collapsible>
+                                    </div>
                                 </div>
                             )}
 
@@ -830,15 +833,15 @@ const handleSaveChanges = async () => {
                          <div className="space-y-4 pt-2">
                             <RadioGroup value={mode} onValueChange={(v) => setMode(v as RegistrationMode)} className="grid grid-cols-3 gap-2">
                                 <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'join' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
-                                    <School className="h-5 w-5"/> <span className="text-xs font-semibold">{registrationModeInfo.join.title.split(' ')[0]}</span>
+                                    <School className="h-5 w-5"/> <span className="text-xs font-semibold">Unirse/Centro</span>
                                     <RadioGroupItem value='join' className="sr-only"/>
                                 </Label>
                                 <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'create' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground", user.role === 'center-admin' && "cursor-not-allowed opacity-50")}>
-                                    <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">{registrationModeInfo.create.title.split(' ')[0]}</span>
+                                    <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">Crear</span>
                                     <RadioGroupItem value='create' className="sr-only" disabled={user.role === 'center-admin'}/>
                                 </Label>
                                 <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'personal' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
-                                    <UserIcon className="h-5 w-5"/> <span className="text-xs font-semibold">{registrationModeInfo.personal.title.split(' ')[0]}</span>
+                                    <UserIcon className="h-5 w-5"/> <span className="text-xs font-semibold">Personal</span>
                                     <RadioGroupItem value='personal' className="sr-only"/>
                                 </Label>
                             </RadioGroup>
@@ -1213,6 +1216,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
 
 
