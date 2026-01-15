@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData, User, CompletedItem, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle, GraduationCap, School, PlusCircle, Search, Copy, Check, RefreshCw, Shield, ShieldCheck, Sparkles } from "lucide-react";
+import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle, GraduationCap, School, PlusCircle, Search, Copy, Check, RefreshCw, Shield, ShieldCheck, Sparkles, Plus, Star, Crown, Dna, Brain, Beaker, Atom, Code } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +48,8 @@ import { Switch } from "@/components/ui/switch";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
 
@@ -222,7 +224,6 @@ export default function ProfilePage() {
             <CardHeader className="flex-row items-center justify-between p-4">
                 <div>
                     <CardTitle className="flex items-center gap-2 text-blue-500 text-base"><ShieldCheck />Panel de Administrador</CardTitle>
-                    <CardDescription className="text-xs pt-1">Gestiona usuarios, grupos y más.</CardDescription>
                 </div>
                 <Button asChild size="sm">
                     <Link href="/admin">Acceder</Link>
@@ -234,7 +235,6 @@ export default function ProfilePage() {
             <CardHeader className="flex-row items-center justify-between p-4">
                  <div>
                     <CardTitle className="flex items-center gap-2 text-purple-600 text-base"><ShieldCheck />Panel de Admin Centro</CardTitle>
-                    <CardDescription className="text-xs pt-1">Gestiona tu centro educativo.</CardDescription>
                 </div>
                 <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700">
                     <Link href={`/admin/groups/${user.organizationId}`}>Gestionar</Link>
@@ -246,7 +246,6 @@ export default function ProfilePage() {
             <CardHeader className="flex-row items-center justify-between p-4">
                 <div>
                     <CardTitle className="flex items-center gap-2 text-green-600 text-base"><GraduationCap />Panel de Admin Clase</CardTitle>
-                    <CardDescription className="text-xs pt-1">Gestiona los miembros y el horario de tu clase.</CardDescription>
                 </div>
                 <Button asChild size="sm" className="bg-green-600 hover:bg-green-700">
                     <Link href={`/admin/groups/${user.organizationId}`}>Gestionar</Link>
@@ -326,18 +325,28 @@ export default function ProfilePage() {
   );
 }
 
-const SHOP_AVATARS = [
+const SHOP_AVATARS_FEATURED = [
     { id: 'paw', icon: PawPrint, price: 5 },
     { id: 'gamepad', icon: Gamepad2, price: 12 },
     { id: 'ghost', icon: Ghost, price: 8 },
-    { id: 'palmtree', icon: Palmtree, price: 0 },
     { id: 'rocket', icon: Rocket, price: 10 },
     { id: 'pizza', icon: Pizza, price: 15 },
     { id: 'cat', icon: Cat, price: 7 },
-    { id: 'heart', icon: Heart, price: 9 },
 ];
 
-const shopAvatarMap = new Map(SHOP_AVATARS.map(item => [item.id, item]));
+const EXPANDED_SHOP_AVATARS = [
+    { id: 'star', icon: Star, price: 20 },
+    { id: 'crown', icon: Crown, price: 50 },
+    { id: 'flame', icon: Flame, price: 25 },
+    { id: 'dna', icon: Dna, price: 18 },
+    { id: 'brain', icon: Brain, price: 30 },
+    { id: 'beaker', icon: Beaker, price: 15 },
+    { id: 'atom', icon: Atom, price: 22 },
+    { id: 'code', icon: Code, price: 10 },
+];
+
+const allShopAvatars = [...SHOP_AVATARS_FEATURED, ...EXPANDED_SHOP_AVATARS];
+const shopAvatarMap = new Map(allShopAvatars.map(item => [item.id, item]));
 
 const AVATAR_COLORS = [
     { name: 'Gris', value: '737373' },
@@ -434,7 +443,7 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
   
   useEffect(() => {
     if (isOpen) {
-        setDefaultOpenItem(propDefaultOpenItem);
+        setDefaultOpenItem(propDefaultOpenItem || '');
         initializeState();
     } else {
         setDefaultOpenItem(''); // Reset when dialog closes
@@ -477,7 +486,7 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
      setEditableAvatar(prev => ({ ...prev, id: avatarId }));
   };
 
-  const handlePurchaseAvatar = async (avatar: typeof SHOP_AVATARS[0]) => {
+  const handlePurchaseAvatar = async (avatar: { id: string, price: number }) => {
      if (!firestore || !user || user.trophies < avatar.price) {
         toast({ title: "Fondos insuficientes", description: "No tienes suficientes trofeos para comprar este avatar.", variant: "destructive"});
         return;
@@ -678,7 +687,7 @@ const handleSaveChanges = async () => {
 
     // If avatar is from library, check ownership
     if (avatarMode === 'library') {
-        const shopItem = SHOP_AVATARS.find(item => item.id === editableAvatar.id);
+        const shopItem = allShopAvatars.find(item => item.id === editableAvatar.id);
         if (shopItem) {
             const isOwned = user.ownedAvatars?.includes(shopItem.id);
             if (shopItem.price > 0 && !isOwned) {
@@ -706,7 +715,7 @@ const handleSaveChanges = async () => {
           <DialogTitle>Configuración de Perfil</DialogTitle>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh] -mx-6 px-6">
-            <Accordion type="single" collapsible defaultValue={defaultOpenItem} className="w-full">
+            <Accordion type="single" collapsible value={defaultOpenItem} onValueChange={setDefaultOpenItem} className="w-full">
                 <AccordionItem value="item-1">
                     <AccordionTrigger>Avatar y Color</AccordionTrigger>
                     <AccordionContent>
@@ -771,54 +780,36 @@ const handleSaveChanges = async () => {
                                 <div className="space-y-4">
                                     <Label>Biblioteca de Iconos</Label>
                                     <div className="grid grid-cols-4 gap-4">
-                                        {SHOP_AVATARS.map((avatar) => {
+                                        {SHOP_AVATARS_FEATURED.map((avatar) => {
                                             const isOwned = user.ownedAvatars?.includes(avatar.id);
                                             const isSelected = editableAvatar.id === avatar.id;
                                             const Icon = avatar.icon;
-                                            const isFree = avatar.price === 0;
-
-                                            return (
-                                                <div key={avatar.id} className="relative group flex flex-col items-center gap-2">
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => handleSelectShopAvatar(avatar.id)}
-                                                        className={cn("w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
-                                                    >
-                                                       <div className="w-full h-full flex items-center justify-center">
-                                                            <Icon className="h-8 w-8 text-muted-foreground" />
-                                                       </div>
+                                            return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
+                                        })}
+                                        <Collapsible>
+                                            <CollapsibleTrigger asChild>
+                                                <div className="relative group flex flex-col items-center gap-2">
+                                                    <button type="button" className="w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50">
+                                                        <div className="w-full h-full flex items-center justify-center">
+                                                            <Plus className="h-8 w-8 text-muted-foreground" />
+                                                        </div>
                                                     </button>
                                                     <div className="text-center">
-                                                        {isOwned || isFree ? (
-                                                            <Badge variant="secondary" className="flex items-center gap-1">
-                                                                {isFree && !isOwned ? 'Gratis' : <><CheckCircle className="h-3 w-3 text-green-500" /> Adquirido</>}
-                                                            </Badge>
-                                                        ) : (
-                                                            <AlertDialog>
-                                                                <AlertDialogTrigger asChild>
-                                                                    <Button size="sm" variant="outline" className="h-8 w-full" disabled={isLoading}>
-                                                                        <Trophy className="h-4 w-4 mr-1 text-yellow-400" />
-                                                                        {avatar.price}
-                                                                    </Button>
-                                                                </AlertDialogTrigger>
-                                                                <AlertDialogContent>
-                                                                    <AlertDialogHeader>
-                                                                        <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
-                                                                        <AlertDialogDescription>
-                                                                            ¿Quieres comprar este avatar por {avatar.price} trofeos? Tus trofeos actuales son {user.trophies}.
-                                                                        </AlertDialogDescription>
-                                                                    </AlertDialogHeader>
-                                                                    <AlertDialogFooter>
-                                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                        <AlertDialogAction onClick={() => handlePurchaseAvatar(avatar)}>Comprar</AlertDialogAction>
-                                                                    </AlertDialogFooter>
-                                                                </AlertDialogContent>
-                                                            </AlertDialog>
-                                                        )}
+                                                        <p className="text-xs font-bold text-muted-foreground">Más</p>
                                                     </div>
                                                 </div>
-                                            )
-                                        })}
+                                            </CollapsibleTrigger>
+                                            <CollapsibleContent className="col-span-4 mt-4">
+                                                <div className="grid grid-cols-4 gap-4 p-4 border-t">
+                                                {EXPANDED_SHOP_AVATARS.map((avatar) => {
+                                                    const isOwned = user.ownedAvatars?.includes(avatar.id);
+                                                    const isSelected = editableAvatar.id === avatar.id;
+                                                    const Icon = avatar.icon;
+                                                    return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
+                                                })}
+                                                </div>
+                                            </CollapsibleContent>
+                                        </Collapsible>
                                     </div>
                                 </div>
                             )}
@@ -981,6 +972,62 @@ const handleSaveChanges = async () => {
   );
 }
 
+function AvatarButton({ avatar, isOwned, isSelected, isLoading, onSelect, onPurchase, userTrophies }: {
+    avatar: { id: string; icon: React.ElementType; price: number };
+    isOwned: boolean | undefined;
+    isSelected: boolean;
+    isLoading: boolean;
+    onSelect: (id: string) => void;
+    onPurchase: (avatar: { id: string; price: number }) => void;
+    userTrophies: number;
+}) {
+    const Icon = avatar.icon;
+    const isFree = avatar.price === 0;
+
+    return (
+        <div key={avatar.id} className="relative group flex flex-col items-center gap-2">
+            <button
+                type="button"
+                onClick={() => onSelect(avatar.id)}
+                className={cn("w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
+            >
+                <div className="w-full h-full flex items-center justify-center">
+                    <Icon className="h-8 w-8 text-muted-foreground" />
+                </div>
+            </button>
+            <div className="text-center">
+                {isOwned || isFree ? (
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                        {isFree && !isOwned ? 'Gratis' : <><CheckCircle className="h-3 w-3 text-green-500" /> Adquirido</>}
+                    </Badge>
+                ) : (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="outline" className="h-8 w-full" disabled={isLoading}>
+                                <Trophy className="h-4 w-4 mr-1 text-yellow-400" />
+                                {avatar.price}
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    ¿Quieres comprar este avatar por {avatar.price} trofeos? Tus trofeos actuales son {userTrophies}.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onPurchase(avatar)}>Comprar</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
+            </div>
+        </div>
+    );
+}
+
+
 
 function AchievementCard({ title, value, icon: Icon, color }: { title: string; value: string | number; icon: React.ElementType; color: string; }) {
     return (
@@ -1121,6 +1168,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
 
 
