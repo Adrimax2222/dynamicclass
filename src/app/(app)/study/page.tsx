@@ -55,6 +55,7 @@ import {
   Palette,
   Save,
   Sparkles,
+  BrainCircuit,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -734,15 +735,13 @@ export default function StudyPage() {
                        </div>
                     </div>
                     <Link href="/editor" className="block mt-4">
-                        <div className="relative p-6 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform shadow-lg">
-                            <Sparkles className="absolute -right-3 -bottom-3 h-20 w-20 opacity-10" />
-                            <div className="relative z-10">
-                                <h3 className="text-lg font-bold flex items-center gap-2">
-                                    <Sparkles className="h-5 w-5"/>
-                                    Editor Mágico
-                                </h3>
-                                <p className="text-sm opacity-80 mt-1">Transforma tus apuntes con IA.</p>
+                        <div className="relative p-4 rounded-lg bg-gradient-to-br from-yellow-400 to-amber-500 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform">
+                             <div className="relative z-10">
+                                <h3 className="font-bold">Editor Mágico</h3>
+                                <p className="text-xs opacity-80">Transforma tus apuntes con IA.</p>
                             </div>
+                            <Sparkles className="absolute -right-2 -bottom-2 h-16 w-16 opacity-10" />
+                            <BrainCircuit className="absolute top-2 right-2 h-6 w-6 opacity-20" />
                         </div>
                     </Link>
                 </CardContent>
@@ -869,7 +868,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             
             const processedSrc = processImage(img, newPage.rotation, null, newPage.isColor);
             
-            setPages(prev => [...prev, { ...prev, processedSrc }]);
+            setPages(prev => [...prev, { ...newPage, processedSrc }]);
             setActivePageId(newPage.id);
             setMode('preview');
             stopCamera();
