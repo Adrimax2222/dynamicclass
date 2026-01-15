@@ -57,50 +57,62 @@ service cloud.firestore {
     function isValidAnnouncement() {
       let data = request.resource.data;
 
-      // --- Common validations for CREATE ---
-      // Ensure required keys are present (excluding server-generated ones like createdAt)
-      if (!data.keys().hasAll(['authorId', 'authorName', 'authorAvatar', 'scope', 'type', 'isPinned', 'viewedBy', 'reactions'])) {
+      // 1. Common value validations (always apply on create)
+      if (data.authorId != request.auth.uid ||
+          data.isPinned != false ||
+          data.viewedBy.size() != 0 ||
+          data.reactions.size() != 0) {
         return false;
       }
 
-      // Author must be the current user
-      if (data.authorId != request.auth.uid) { return false; }
-      // Scope must be valid
-      if (!(data.scope in ['general', 'center', 'class'])) { return false; }
-      // Must be created unpinned
-      if (data.isPinned != false) { return false; }
-      // Must be created with no views
-      if (data.viewedBy.size() != 0) { return false; }
-      // Must be created with no reactions
-      if (data.reactions.size() != 0) { return false; }
+      // 2. Base keys presence check
+      if (!data.keys().hasAll(['authorId', 'authorName', 'authorAvatar', 'scope', 'type'])) {
+        return false;
+      }
       
-      // --- Type-specific validations for CREATE ---
+      // 3. Type-specific validations
       if (data.type == 'text') {
-        if (!('text' in data) || !(data.text is string) || data.text.size() == 0 || data.text.size() >= 1000) {
-            return false;
+        if (!data.keys().has('text') || !(data.text is string) || data.text.size() == 0 || data.text.size() >= 1000) {
+          return false;
         }
-        // ensure no poll fields are present
-        if (('pollQuestion' in data) || ('pollOptions' in data) || ('pollVotes' in data)) {
-            return false;
+        if (data.keys().hasAny(['pollQuestion', 'pollOptions', 'allowMultipleVotes', 'pollVotes'])) {
+          return false;
         }
-        return true;
+      } else if (data.type == 'poll') {
+        if (!data.keys().hasAll(['pollQuestion', 'pollOptions', 'allowMultipleVotes', 'pollVotes'])) {
+          return false;
+        }
+        if (!(data.pollQuestion is string) || data.pollQuestion.size() == 0 ||
+            !(data.pollOptions is list) || data.pollOptions.size() < 2 ||
+            !(data.allowMultipleVotes is bool) ||
+            !(data.pollVotes is map) || data.pollVotes.size() != 0) {
+          return false;
+        }
+        if (data.keys().has('text')) {
+          return false;
+        }
+      } else {
+        return false; // Invalid type
       }
-      
-      if (data.type == 'poll') {
-        if (!('pollQuestion' in data) || !(data.pollQuestion is string) || data.pollQuestion.size() == 0) { return false; }
-        if (!('pollOptions' in data) || !(data.pollOptions is list) || data.pollOptions.size() < 2) { return false; }
-        if (!('allowMultipleVotes' in data) || !(data.allowMultipleVotes is bool)) { return false; }
-        if (!('pollVotes' in data) || !(data.pollVotes is map) || data.pollVotes.size() != 0) { return false; }
 
-        // ensure no text field is present
-        if ('text' in data) {
-            return false;
+      // 4. Scope-specific validations
+      if (data.scope == 'general') {
+        if (data.keys().hasAny(['centerId', 'className'])) {
+          return false;
         }
-        return true;
+      } else if (data.scope == 'center') {
+        if (!data.keys().has('centerId') || data.keys().has('className')) {
+          return false;
+        }
+      } else if (data.scope == 'class') {
+        if (!data.keys().hasAll(['centerId', 'className'])) {
+          return false;
+        }
+      } else {
+        return false; // Invalid scope
       }
 
-      // If type is not 'text' or 'poll', it's invalid
-      return false;
+      return true;
     }
 
     // ============= USERS COLLECTION =============
