@@ -163,21 +163,21 @@ function AnnouncementsTab() {
     await addDoc(announcementsCollectionRef, newAnnouncement);
   }
 
-  const handleUpdateAnnouncement = async (id: string, text: string) => {
+  const handleUpdateAnnouncement = async (uid: string, text: string) => {
     if (!firestore) return;
-    const announcementDocRef = doc(firestore, "announcements", id);
+    const announcementDocRef = doc(firestore, "announcements", uid);
     await updateDoc(announcementDocRef, { text });
   }
 
-  const handleDeleteAnnouncement = async (id: string) => {
+  const handleDeleteAnnouncement = async (uid: string) => {
       if (!firestore) return;
-      const announcementDocRef = doc(firestore, "announcements", id);
+      const announcementDocRef = doc(firestore, "announcements", uid);
       await deleteDoc(announcementDocRef);
   }
   
-  const handlePinAnnouncement = async (id: string, currentStatus: boolean) => {
+  const handlePinAnnouncement = async (uid: string, currentStatus: boolean) => {
     if (!firestore) return;
-    const announcementDocRef = doc(firestore, "announcements", id);
+    const announcementDocRef = doc(firestore, "announcements", uid);
     await updateDoc(announcementDocRef, { isPinned: !currentStatus });
   };
 
@@ -278,13 +278,13 @@ function AnnouncementsTab() {
       <div className="space-y-4">
         {sortedAndFilteredAnnouncements.map((announcement) => (
           <AnnouncementItem
-              key={announcement.id}
+              key={announcement.uid}
               announcement={announcement}
               isAuthor={user?.uid === announcement.authorId}
               canManage={canUserManageAnnouncement(announcement)}
               onUpdate={handleUpdateAnnouncement}
               onDelete={handleDeleteAnnouncement}
-              onPin={() => handlePinAnnouncement(announcement.id, !!announcement.isPinned)}
+              onPin={() => handlePinAnnouncement(announcement.uid, !!announcement.isPinned)}
           />
         ))}
       </div>
@@ -377,7 +377,7 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: Announc
 }
 
 
-function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelete, onPin }: { announcement: Announcement, isAuthor: boolean, canManage: boolean, onUpdate: (id: string, text: string) => void, onDelete: (id: string) => void, onPin: () => void }) {
+function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelete, onPin }: { announcement: Announcement, isAuthor: boolean, canManage: boolean, onUpdate: (uid: string, text: string) => void, onDelete: (uid: string) => void, onPin: () => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(announcement.text);
   const { user, firestore } = useApp();
@@ -393,7 +393,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          const announcementDocRef = doc(firestore, "announcements", announcement.id);
+          const announcementDocRef = doc(firestore, "announcements", announcement.uid);
           updateDoc(announcementDocRef, {
             viewedBy: arrayUnion(user.uid)
           }).catch(err => console.error("Failed to update view count", err));
@@ -406,7 +406,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
     observer.observe(node);
 
     return () => observer.disconnect();
-  }, [announcement.id, announcement.viewedBy, firestore, user]);
+  }, [announcement.uid, announcement.viewedBy, firestore, user]);
 
   const formatTimestamp = (timestamp: { seconds: number }) => {
     if (!timestamp) return "";
@@ -415,7 +415,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
   };
   
   const handleUpdate = () => {
-    onUpdate(announcement.id, editText);
+    onUpdate(announcement.uid, editText);
     setIsEditing(false);
   }
 
@@ -480,7 +480,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                 {isAuthor && (
                     <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>Editar</Button>
                 )}
-                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(announcement.id)}>Eliminar</Button>
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(announcement.uid)}>Eliminar</Button>
             </CardFooter>
         )}
     </Card>

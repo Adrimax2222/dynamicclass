@@ -103,7 +103,7 @@ export default function HomePage() {
       const today = startOfToday();
       
       if (category === 'Anuncios') {
-        return allAnnouncements.filter(ann => !readAnnouncementIds.includes(ann.id));
+        return allAnnouncements.filter(ann => !readAnnouncementIds.includes(ann.uid));
       }
 
       // 1. Filter only for school calendar events
@@ -401,7 +401,7 @@ export default function HomePage() {
   }
 
   const handleAnnouncementsClick = () => {
-    const announcementIds = getCategorizedEvents('Anuncios').map(ann => ann.id);
+    const announcementIds = (getCategorizedEvents('Anuncios') as Announcement[]).map(ann => ann.uid);
     const newReadIds = Array.from(new Set([...readAnnouncementIds, ...announcementIds]));
     setReadAnnouncementIds(newReadIds);
     localStorage.setItem('readAnnouncementIds', JSON.stringify(newReadIds));
@@ -411,7 +411,7 @@ export default function HomePage() {
   const handleLikeAnnouncement = async (announcementId: string) => {
     if (!firestore || !user) return;
     const announcementRef = doc(firestore, "announcements", announcementId);
-    const announcement = allAnnouncements.find(ann => ann.id === announcementId);
+    const announcement = allAnnouncements.find(ann => ann.uid === announcementId);
     if (!announcement) return;
 
     const likedBy = announcement.likedBy || [];

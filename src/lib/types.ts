@@ -116,7 +116,7 @@ export type Note = {
 export type AnnouncementScope = 'general' | 'center' | 'class';
 
 export type Announcement = {
-  id: string;
+  uid: string;
   text: string;
   authorId: string;
   authorName: string;
