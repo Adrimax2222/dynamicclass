@@ -218,40 +218,40 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
       
-      {isUserAdmin ? (
-        <Card className="mb-8 border-blue-500/50">
-          <CardHeader className="flex-row items-center justify-between p-4">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-blue-500 text-base"><ShieldCheck />Panel de Administrador</CardTitle>
-            </div>
-            <Button asChild size="sm">
-              <Link href="/admin">Acceder</Link>
-            </Button>
-          </CardHeader>
-        </Card>
-      ) : isCenterAdmin ? (
-        <Card className="mb-8 border-purple-500/50">
-          <CardHeader className="flex-row items-center justify-between p-4">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-purple-600 text-base"><ShieldCheck />Panel de Admin Centro</CardTitle>
-            </div>
-            <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700">
-              <Link href={`/admin/groups/${user.organizationId}`}>Gestionar</Link>
-            </Button>
-          </CardHeader>
-        </Card>
-      ) : isUserClassAdmin ? (
-        <Card className="mb-8 border-green-500/50">
-          <CardHeader className="flex-row items-center justify-between p-4">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-green-600 text-base"><GraduationCap />Panel de Admin Clase</CardTitle>
-            </div>
-            <Button asChild size="sm" className="bg-green-600 hover:bg-green-700">
-              <Link href={`/admin/groups/${user.organizationId}`}>Gestionar</Link>
-            </Button>
-          </CardHeader>
-        </Card>
-      ) : null}
+        {isUserAdmin ? (
+            <Card className="mb-8 border-blue-500/50">
+                <CardHeader className="flex-row items-center justify-between p-4">
+                    <div>
+                        <CardTitle className="flex items-center gap-2 text-blue-500 text-base"><ShieldCheck />Panel de Administrador</CardTitle>
+                    </div>
+                    <Button asChild size="sm">
+                        <Link href="/admin">Acceder</Link>
+                    </Button>
+                </CardHeader>
+            </Card>
+        ) : isCenterAdmin ? (
+            <Card className="mb-8 border-purple-500/50">
+                <CardHeader className="flex-row items-center justify-between p-4">
+                    <div>
+                        <CardTitle className="flex items-center gap-2 text-purple-600 text-base"><ShieldCheck />Panel de Admin Centro</CardTitle>
+                    </div>
+                    <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700">
+                        <Link href={`/admin/groups/${user.organizationId}`}>Gestionar</Link>
+                    </Button>
+                </CardHeader>
+            </Card>
+        ) : isUserClassAdmin && (
+            <Card className="mb-8 border-green-500/50">
+                <CardHeader className="flex-row items-center justify-between p-4">
+                    <div>
+                        <CardTitle className="flex items-center gap-2 text-green-600 text-base"><GraduationCap />Panel de Admin Clase</CardTitle>
+                    </div>
+                    <Button asChild size="sm" className="bg-green-600 hover:bg-green-700">
+                        <Link href={`/admin/groups/${user.organizationId}`}>Gestionar</Link>
+                    </Button>
+                </CardHeader>
+            </Card>
+        )}
 
 
       <Card className="mb-8 bg-blue-500/5 border-blue-500/20">
@@ -387,7 +387,10 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
 
   const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
   
-  const isAlreadyClassAdmin = user?.role?.startsWith('admin-') && user.role !== 'admin';
+  const isUserAdmin = user?.role === 'admin';
+  const isCenterAdmin = user?.role === 'center-admin';
+  const isUserClassAdmin = user?.role?.startsWith('admin-');
+  const isAnyAdmin = isUserAdmin || isCenterAdmin || isUserClassAdmin;
 
   const initializeState = () => {
     if (user) {
@@ -787,7 +790,7 @@ const handleSaveChanges = async () => {
                                 </div>
                             )}
 
-                            {avatarMode === 'library' && (
+                           {avatarMode === 'library' && (
                                 <div className="space-y-4">
                                     <Label>Biblioteca de Iconos</Label>
                                     <Collapsible className="space-y-4">
@@ -797,13 +800,13 @@ const handleSaveChanges = async () => {
                                                 const isSelected = editableAvatar.id === avatar.id;
                                                 return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
                                             })}
-                                            <div className="col-span-1">
-                                                <CollapsibleTrigger asChild>
-                                                    <button className="w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50">
-                                                      <Plus className="h-8 w-8 text-muted-foreground" />
+                                            <CollapsibleTrigger asChild>
+                                                <div className="w-full aspect-square flex items-center justify-center">
+                                                    <button className="h-full w-full rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50">
+                                                        <Plus className="h-8 w-8 text-muted-foreground" />
                                                     </button>
-                                                </CollapsibleTrigger>
-                                            </div>
+                                                </div>
+                                            </CollapsibleTrigger>
                                         </div>
                                         <CollapsibleContent className="col-span-4 mt-4 p-4 border-t">
                                             <div className="grid grid-cols-4 gap-4">
@@ -874,11 +877,11 @@ const handleSaveChanges = async () => {
                                             </Select>
                                         </div>
                                     </div>
-                                    <Collapsible open={isCreatingClass} onOpenChange={setIsCreatingClass} className="mt-4" disabled={isAlreadyClassAdmin}>
+                                    <Collapsible open={isCreatingClass} onOpenChange={setIsCreatingClass} className="mt-4" disabled={isAnyAdmin}>
                                         <CollapsibleTrigger asChild>
-                                             <Button variant="link" className="text-xs p-0 h-auto" disabled={isAlreadyClassAdmin}>¿Tu clase no está en la lista? Créala aquí.</Button>
+                                             <Button variant="link" className="text-xs p-0 h-auto" disabled={isAnyAdmin}>¿Tu clase no está en la lista? Créala aquí.</Button>
                                         </CollapsibleTrigger>
-                                        {isAlreadyClassAdmin && <p className="text-xs text-muted-foreground">Ya administras una clase, no puedes crear otra.</p>}
+                                        {isAnyAdmin && <p className="text-xs text-muted-foreground">Ya tienes un rol de administrador, no puedes crear una clase.</p>}
                                         <CollapsibleContent className="space-y-4 pt-2">
                                             <p className="text-xs text-muted-foreground p-3 bg-muted/50 border rounded-lg">Crea una nueva clase en tu centro. <strong className="text-foreground">Importante:</strong> te convertirás en el administrador de esta clase.</p>
                                              <div className="grid grid-cols-2 gap-4">
@@ -1210,6 +1213,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
 
 
