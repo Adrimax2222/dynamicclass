@@ -261,7 +261,6 @@ export default function ProfilePage() {
                   <GraduationCap className="h-5 w-5 text-blue-500" />
                   <span>Modo Profesor</span>
               </CardTitle>
-              <CardDescription className="text-xs pt-1">Herramientas exclusivas para educadores.</CardDescription>
             </div>
             <Badge variant="outline">Próximamente</Badge>
           </CardHeader>
@@ -783,10 +782,9 @@ const handleSaveChanges = async () => {
                                         {SHOP_AVATARS_FEATURED.map((avatar) => {
                                             const isOwned = user.ownedAvatars?.includes(avatar.id);
                                             const isSelected = editableAvatar.id === avatar.id;
-                                            const Icon = avatar.icon;
                                             return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
                                         })}
-                                        <Collapsible>
+                                        <Collapsible className="col-span-4">
                                             <CollapsibleTrigger asChild>
                                                 <div className="relative group flex flex-col items-center gap-2">
                                                     <button type="button" className="w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50">
@@ -799,14 +797,13 @@ const handleSaveChanges = async () => {
                                                     </div>
                                                 </div>
                                             </CollapsibleTrigger>
-                                            <CollapsibleContent className="col-span-4 mt-4">
-                                                <div className="grid grid-cols-4 gap-4 p-4 border-t">
-                                                {EXPANDED_SHOP_AVATARS.map((avatar) => {
-                                                    const isOwned = user.ownedAvatars?.includes(avatar.id);
-                                                    const isSelected = editableAvatar.id === avatar.id;
-                                                    const Icon = avatar.icon;
-                                                    return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
-                                                })}
+                                            <CollapsibleContent className="mt-4 p-4 border-t">
+                                                <div className="grid grid-cols-4 gap-4">
+                                                    {EXPANDED_SHOP_AVATARS.map((avatar) => {
+                                                        const isOwned = user.ownedAvatars?.includes(avatar.id);
+                                                        const isSelected = editableAvatar.id === avatar.id;
+                                                        return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
+                                                    })}
                                                 </div>
                                             </CollapsibleContent>
                                         </Collapsible>
@@ -1168,6 +1165,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
 
 
