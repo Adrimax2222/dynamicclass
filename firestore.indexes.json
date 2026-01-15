@@ -10,6 +10,16 @@
         { "fieldPath": "className", "order": "ASCENDING" },
         { "fieldPath": "trophies", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "center", "order": "ASCENDING" },
+        { "fieldPath": "course", "order": "ASCENDING" },
+        { "fieldPath": "className", "order": "ASCENDING" },
+        { "fieldPath": "streak", "order": "DESCENDING" }
+      ]
     }
   ]
 }
