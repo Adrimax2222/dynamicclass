@@ -68,7 +68,11 @@
         "likedBy": { "type": "array", "items": { "type": "string" } },
         "likes": { "type": "number" },
         "isPinned": { "type": "boolean" },
-        "viewedBy": { "type": "array", "items": { "type": "string" } }
+        "viewedBy": { "type": "array", "items": { "type": "string" } },
+        "reactions": {
+          "type": "object",
+          "description": "A map of emoji reactions to a list of user UIDs."
+        }
       },
       "required": ["text", "authorId", "authorName", "authorAvatar", "createdAt", "scope"]
     },

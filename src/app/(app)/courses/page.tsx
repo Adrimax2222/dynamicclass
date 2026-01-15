@@ -19,6 +19,7 @@ import {
   Users,
   Pin,
   Eye,
+  SmilePlus,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -30,7 +31,11 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -57,6 +62,7 @@ import {
   where,
   getDoc,
   arrayUnion,
+  runTransaction,
 } from "firebase/firestore";
 import type { Note, Announcement, AnnouncementScope, Schedule, Center } from "@/lib/types";
 import {
@@ -152,6 +158,7 @@ function AnnouncementsTab() {
         createdAt: serverTimestamp(),
         isPinned: false,
         viewedBy: [],
+        reactions: {},
     };
     
     if (scope === 'center' && centerId) {
@@ -181,6 +188,39 @@ function AnnouncementsTab() {
     const announcementDocRef = doc(firestore, "announcements", uid);
     await updateDoc(announcementDocRef, { isPinned: !currentStatus });
   };
+  
+  const handleReaction = async (announcementId: string, emoji: string) => {
+    if (!firestore || !user) return;
+    const announcementDocRef = doc(firestore, "announcements", announcementId);
+    
+    try {
+        await runTransaction(firestore, async (transaction) => {
+            const annDoc = await transaction.get(announcementDocRef);
+            if (!annDoc.exists()) {
+                throw "Document does not exist!";
+            }
+
+            const data = annDoc.data();
+            const currentReactions = data.reactions || {};
+            const existingReactors: string[] = currentReactions[emoji] || [];
+            
+            if (existingReactors.includes(user.uid)) {
+                // User is removing their reaction
+                currentReactions[emoji] = existingReactors.filter((uid: string) => uid !== user.uid);
+                if (currentReactions[emoji].length === 0) {
+                    delete currentReactions[emoji];
+                }
+            } else {
+                // User is adding a reaction
+                currentReactions[emoji] = [...existingReactors, user.uid];
+            }
+            
+            transaction.update(announcementDocRef, { reactions: currentReactions });
+        });
+    } catch (error) {
+        console.error("Error updating reaction:", error);
+    }
+  }
 
   const userIsInCenter = user?.center && user.center !== 'personal';
   const userClassName = useMemo(() => user ? `${user.course.replace('eso','ESO')}-${user.className}` : null, [user]);
@@ -190,7 +230,8 @@ function AnnouncementsTab() {
     if (user.role === 'admin') return true;
     if (user.role === 'center-admin' && user.organizationId === ann.centerId) return true;
     if (user.role.startsWith('admin-') && ann.scope === 'class') {
-        return user.organizationId === ann.centerId && userClassName === ann.className;
+        const adminClassName = user.role.split('admin-')[1];
+        return user.organizationId === ann.centerId && adminClassName === ann.className;
     }
     return false;
   }
@@ -290,6 +331,7 @@ function AnnouncementsTab() {
               onUpdate={handleUpdateAnnouncement}
               onDelete={handleDeleteAnnouncement}
               onPin={() => handlePinAnnouncement(announcement.uid, !!announcement.isPinned)}
+              onReaction={handleReaction}
           />
         ))}
       </div>
@@ -308,14 +350,15 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: Announc
   
   const adminClassName = useMemo(() => {
     if (isClassAdmin && user) {
-        return `${user.course.replace('eso','ESO')}-${user.className}`;
+        const roleParts = user.role.split('admin-');
+        if (roleParts.length > 1) return roleParts[1];
     }
     return null;
   }, [isClassAdmin, user]);
   
   const getInitialScope = useCallback((): AnnouncementScope => {
-      if (isCenterAdmin) return 'center';
       if (isClassAdmin) return 'class';
+      if (isCenterAdmin) return 'center';
       return 'general';
   }, [isCenterAdmin, isClassAdmin]);
 
@@ -354,7 +397,7 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: Announc
     <Card className="shadow-sm">
         <CardContent className="p-4 space-y-3">
             <div className="flex gap-3">
-                {user && <AvatarDisplay user={user} className="h-10 w-10" />}
+                {user && <AvatarDisplay user={user} className="h-10 w-10 border" />}
                 <Textarea 
                     value={text}
                     onChange={(e) => setText(e.target.value)}
@@ -393,11 +436,21 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: Announc
 }
 
 
-function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelete, onPin }: { announcement: Announcement, isAuthor: boolean, canManage: boolean, onUpdate: (uid: string, text: string) => void, onDelete: (uid: string) => void, onPin: () => void }) {
+function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelete, onPin, onReaction }: { 
+    announcement: Announcement, 
+    isAuthor: boolean, 
+    canManage: boolean, 
+    onUpdate: (uid: string, text: string) => void, 
+    onDelete: (uid: string) => void, 
+    onPin: () => void,
+    onReaction: (uid: string, emoji: string) => void,
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(announcement.text);
   const { user, firestore } = useApp();
   const ref = useRef<HTMLDivElement>(null);
+  
+  const availableReactions = ['😊', '😂', '❤️', '👍', '👎', '😡', '😮', '🎉', '😢'];
 
   useEffect(() => {
     const node = ref.current;
@@ -482,18 +535,60 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                     {announcement.text}
                 </div>
             )}
+             <div className="flex flex-wrap gap-2 mt-3">
+                {Object.entries(announcement.reactions || {}).map(([emoji, uids]) => {
+                    if (uids.length === 0) return null;
+                    const userHasReacted = uids.includes(user?.uid || '');
+                    return (
+                        <Badge
+                            key={emoji}
+                            variant={userHasReacted ? "default" : "secondary"}
+                            className="cursor-pointer transition-transform hover:scale-110 py-1 px-2"
+                            onClick={() => onReaction(announcement.uid, emoji)}
+                        >
+                            <span className="text-base mr-1.5">{emoji}</span>
+                            <span className="font-bold text-sm">{uids.length}</span>
+                        </Badge>
+                    )
+                })}
+            </div>
         </CardContent>
         {(isAuthor || canManage) && !isEditing && (
-             <CardFooter className="p-4 pt-0 justify-end">
-                {canManage && (
-                     <Button variant="ghost" size="sm" onClick={onPin}>
-                        <Pin className={cn("h-4 w-4", announcement.isPinned && "fill-current text-primary")} />
-                    </Button>
-                )}
-                {isAuthor && (
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>Editar</Button>
-                )}
-                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(announcement.uid)}>Eliminar</Button>
+             <CardFooter className="p-4 pt-0 justify-between">
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                            <SmilePlus className="h-4 w-4" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-1">
+                        <div className="grid grid-cols-5 gap-0">
+                            {availableReactions.map(emoji => (
+                                <Button
+                                    key={emoji}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-xl rounded-full h-9 w-9"
+                                    onClick={() => onReaction(announcement.uid, emoji)}
+                                >
+                                    {emoji}
+                                </Button>
+                            ))}
+                        </div>
+                    </PopoverContent>
+                </Popover>
+
+                <div className="flex items-center">
+                    {canManage && (
+                        <Button variant="ghost" size="sm" onClick={onPin}>
+                            <Pin className={cn("h-4 w-4", announcement.isPinned && "fill-current text-primary")} />
+                        </Button>
+                    )}
+                    {isAuthor && (
+                        <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>Editar</Button>
+                    )}
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(announcement.uid)}>Eliminar</Button>
+                </div>
             </CardFooter>
         )}
     </Card>

@@ -170,6 +170,10 @@ service cloud.firestore {
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewedBy']) &&
                        request.resource.data.viewedBy.toSet().difference(resource.data.viewedBy.toSet()).hasOnly([request.auth.uid]) &&
                        resource.data.viewedBy.toSet().difference(request.resource.data.viewedBy.toSet()).size() == 0;
+
+      // Any user can update reactions.
+      allow update: if request.auth != null &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']);
     }
 
     // ============= CENTERS =============

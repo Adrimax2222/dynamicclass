@@ -129,6 +129,7 @@ export type Announcement = {
   likes?: number;
   isPinned?: boolean;
   viewedBy?: string[];
+  reactions?: { [key: string]: string[] };
 };
 
 export type CompletedItem = {
