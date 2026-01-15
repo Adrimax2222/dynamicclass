@@ -73,6 +73,7 @@ import jsPDF from 'jspdf';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from 'next/link';
 import type { Center } from "@/lib/types";
+import { Switch } from "@/components/ui/switch";
 
 
 type TimerMode = "pomodoro" | "long" | "deep" | "custom";
@@ -139,6 +140,7 @@ export default function StudyPage() {
   const [activePlaylist, setActivePlaylist] = useState<Playlist>(defaultPlaylists[0]);
   const [isMounted, setIsMounted] = useState(false);
   const [isScheduleAvailable, setIsScheduleAvailable] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const lastLoggedMinuteRef = useRef<number | null>();
@@ -313,15 +315,65 @@ export default function StudyPage() {
     }
 
   }, [timeLeft, isActive, phase, firestore, user, mode, updateUser, handleStreak, modes]);
+  
+  const handleToggleFocusMode = (checked: boolean) => {
+    if (!isActive) return;
+    setIsFocusMode(checked);
+  };
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+        if (document.visibilityState === 'hidden') {
+            setIsActive(false); // Pause the timer
+            toast({
+                title: "Enfoque Interrumpido",
+                description: "El temporizador se ha pausado. Vuelve a la app para continuar.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const exitFullScreen = () => {
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(err => console.error(err));
+        }
+    };
+
+    if (isFocusMode && isActive) {
+        document.documentElement.requestFullscreen().catch(err => {
+            console.error(`Error al activar pantalla completa: ${err.message}`);
+            setIsFocusMode(false);
+            toast({
+                title: "Error de Pantalla Completa",
+                description: "Tu navegador no permitió entrar en pantalla completa.",
+                variant: "destructive"
+            });
+        });
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+    } else {
+        exitFullScreen();
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    return () => {
+        exitFullScreen();
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isFocusMode, isActive, toast]);
 
 
   const handleModeChange = (newMode: TimerMode) => {
     setIsActive(false);
+    setIsFocusMode(false);
     setMode(newMode);
     setPhase("focus");
   };
 
   const handleToggle = () => {
+    const willBeActive = !isActive;
+    if (!willBeActive) {
+        setIsFocusMode(false);
+    }
     if (!isActive) {
       lastLoggedMinuteRef.current = Math.floor((modes[mode].focus * 60 - timeLeft) / 60);
     }
@@ -330,6 +382,7 @@ export default function StudyPage() {
 
   const handleReset = () => {
     setIsActive(false);
+    setIsFocusMode(false);
     setPhase("focus");
     setTimeLeft(getInitialTime());
     lastLoggedMinuteRef.current = null;
@@ -337,6 +390,7 @@ export default function StudyPage() {
 
   const handleSkip = () => {
     setIsActive(false);
+    setIsFocusMode(false);
     const nextPhase = phase === "focus" ? "break" : "focus";
     setPhase(nextPhase);
     lastLoggedMinuteRef.current = null;
@@ -370,13 +424,13 @@ export default function StudyPage() {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    return `${''}${String(mins).padStart(2, "0")}:${''}${String(secs).padStart(2, "0")}`;
   };
 
    const formatStudyTime = (totalMinutes: number = 0) => {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
-    return `${hours}h ${minutes}m`;
+    return `${''}${hours}h ${''}${minutes}m`;
   };
 
   const progress = useMemo(() => {
@@ -444,7 +498,7 @@ export default function StudyPage() {
                                     className={cn(
                                         "w-full flex flex-col items-center justify-center gap-1 p-3 rounded-lg border-2 transition-all duration-300",
                                         mode === key
-                                            ? `border-transparent bg-gradient-to-br text-white shadow-lg ${modeData.colors}`
+                                            ? `border-transparent bg-gradient-to-br text-white shadow-lg ${''}${modeData.colors}`
                                             : "border-dashed bg-muted/50 hover:bg-muted"
                                     )}
                                 >
@@ -465,7 +519,7 @@ export default function StudyPage() {
                         })}
                     </div>
                     
-                    <div className="relative flex items-center justify-center my-6">
+                    <div className="relative flex items-center justify-center">
                         <div className="relative w-56 h-56 rounded-full bg-background flex flex-col items-center justify-center shadow-inner">
                             <p className="font-mono text-6xl font-bold tracking-tighter">
                                 {formatTime(timeLeft)}
@@ -476,7 +530,22 @@ export default function StudyPage() {
                         </div>
                     </div>
 
-                    <Progress value={100 - progress} className={cn("h-2", `[&>div]:bg-gradient-to-r ${phaseColors}`)} />
+                    <div className="flex items-center justify-center space-x-2 my-4">
+                        <Switch 
+                            id="focus-mode-switch" 
+                            checked={isFocusMode} 
+                            onCheckedChange={handleToggleFocusMode} 
+                            disabled={!isActive}
+                        />
+                        <Label 
+                            htmlFor="focus-mode-switch" 
+                            className={cn("font-semibold", !isActive && "text-muted-foreground/50 cursor-not-allowed")}
+                        >
+                            Modo Enfoque
+                        </Label>
+                    </div>
+
+                    <Progress value={100 - progress} className={cn("h-2", `[&>div]:bg-gradient-to-r ${''}${phaseColors}`)} />
 
                     <div className="flex justify-between items-center gap-2 mt-6">
                         <Dialog>
@@ -798,7 +867,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             
             const processedSrc = processImage(img, newPage.rotation, null, newPage.isColor);
             
-            setPages(prev => [...prev, { ...newPage, processedSrc }]);
+            setPages(prev => [...prev, { ...prev, processedSrc }]);
             setActivePageId(newPage.id);
             setMode('preview');
             stopCamera();
@@ -998,7 +1067,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
               };
               savedDocs.push(newDoc);
               localStorage.setItem('scannedDocuments', JSON.stringify(savedDocs));
-              toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${fileName}" en tu historial.` });
+              toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${''}${fileName}" en tu historial.` });
             } else {
               toast({ title: 'PDF Descargado', description: `El guardado en el historial está desactivado.` });
             }
@@ -1098,7 +1167,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 onMouseUp={handleCropMouseUp}
                                 onMouseLeave={handleCropMouseUp}
                             >
-                                <img src={activePage.processedSrc} alt={`Page ${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
+                                <img src={activePage.processedSrc} alt={`Page ${''}${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
                                 {isCropping && activePage.crop && (
                                     <div
                                         className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
@@ -1126,7 +1195,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 <div key={p.id} className="relative group shrink-0" onClick={() => setActivePageId(p.id)}>
                                      <img 
                                         src={p.processedSrc} 
-                                        alt={`Thumbnail ${index + 1}`}
+                                        alt={`Thumbnail ${''}${index + 1}`}
                                         className={cn(
                                             "h-20 w-20 object-cover rounded-md border-2 cursor-pointer transition-all",
                                             activePageId === p.id ? "border-primary shadow-lg scale-105" : "border-transparent hover:border-primary/50"
@@ -1280,10 +1349,10 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
             return;
         }
 
-        const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator`;
+        const embedUrl = `https://open.spotify.com/embed/playlist/${''}${playlistId}?utm_source=generator`;
         
         const newPlaylist: Playlist = {
-            id: `user-${Date.now()}`,
+            id: `user-${''}${Date.now()}`,
             name: newPlaylistName,
             url: embedUrl,
         };
@@ -1291,7 +1360,7 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
         setUserPlaylists(prev => [...prev, newPlaylist]);
         setNewPlaylistName("");
         setNewPlaylistUrl("");
-        toast({ title: "¡Playlist añadida!", description: `"${newPlaylist.name}" se ha guardado.`});
+        toast({ title: "¡Playlist añadida!", description: `"${''}${newPlaylist.name}" se ha guardado.`});
     };
     
     const handleDeletePlaylist = (id: string) => {
@@ -1415,7 +1484,7 @@ function ScienceCalculatorDialog() {
             const resultString = String(result);
             setDisplay(resultString);
             setExpression(resultString);
-            setHistory(prev => [`${expression} = ${resultString}`, ...prev].slice(0, 10));
+            setHistory(prev => [`${''}${expression} = ${''}${resultString}`, ...prev].slice(0, 10));
         } catch (e) {
             setDisplay("Error");
             setExpression("");
@@ -1679,3 +1748,5 @@ function UnitConverter() {
         </Tabs>
     );
 }
+
+    
