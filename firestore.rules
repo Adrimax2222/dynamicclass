@@ -57,43 +57,43 @@ service cloud.firestore {
     function isValidAnnouncement() {
         let data = request.resource.data;
 
-        // --- Common checks for creation ---
-        let commonChecks = data.authorId == request.auth.uid &&
-                           'authorName' in data && data.authorName is string &&
-                           'authorAvatar' in data && data.authorAvatar is string &&
-                           data.isPinned == false &&
-                           'viewedBy' in data && data.viewedBy is list && data.viewedBy.size() == 0 &&
-                           'reactions' in data && data.reactions is map && data.reactions.size() == 0;
-        if (!commonChecks) { return false; }
+        // 1. Common required fields and initial values.
+        if (!(
+            'authorId' in data && data.authorId == request.auth.uid &&
+            'authorName' in data && data.authorName is string &&
+            'authorAvatar' in data && data.authorAvatar is string &&
+            'isPinned' in data && data.isPinned == false &&
+            'viewedBy' in data && data.viewedBy is list && data.viewedBy.size() == 0 &&
+            'reactions' in data && data.reactions is map && data.reactions.size() == 0 &&
+            'scope' in data && data.scope in ['general', 'center', 'class'] &&
+            'type' in data && data.type in ['text', 'poll']
+        )) { return false; }
 
-        // --- Type-specific validation ---
-        let typeValid = false;
-        if (data.type == 'text') {
-            typeValid = 'text' in data && data.text is string && data.text.size() > 0 &&
-                        !('pollQuestion' in data) && !('pollOptions' in data) &&
-                        !('allowMultipleVotes' in data) && !('pollVotes' in data);
-        } else if (data.type == 'poll') {
-            typeValid = 'pollQuestion' in data && data.pollQuestion is string && data.pollQuestion.size() > 0 &&
-                        'pollOptions' in data && data.pollOptions is list && data.pollOptions.size() >= 2 &&
-                        'allowMultipleVotes' in data && data.allowMultipleVotes is bool &&
-                        'pollVotes' in data && data.pollVotes is map && data.pollVotes.size() == 0 &&
-                        !('text' in data);
-        }
-        if (!typeValid) { return false; }
-
-        // --- Scope-specific validation ---
-        let scopeValid = false;
+        // 2. Scope-specific field validation
         if (data.scope == 'general') {
-            scopeValid = !('centerId' in data) && !('className' in data);
+            if ('centerId' in data || 'className' in data) { return false; }
         } else if (data.scope == 'center') {
-            scopeValid = 'centerId' in data && data.centerId is string &&
-                         !('className' in data);
+            if (!('centerId' in data) || 'className' in data) { return false; }
+            if (!(data.centerId is string)) { return false; }
         } else if (data.scope == 'class') {
-            scopeValid = 'centerId' in data && data.centerId is string &&
-                         'className' in data && data.className is string;
+            if (!('centerId' in data) || !('className' in data)) { return false; }
+            if (!(data.centerId is string && data.className is string)) { return false; }
         }
-        if (!scopeValid) { return false; }
 
+        // 3. Type-specific field validation
+        if (data.type == 'text') {
+            if (!('text' in data) || !(data.text is string && data.text.size() > 0)) { return false; }
+            if ('pollQuestion' in data || 'pollOptions' in data || 'allowMultipleVotes' in data || 'pollVotes' in data) { return false; }
+        } else if (data.type == 'poll') {
+            if (
+                !('pollQuestion' in data) || !(data.pollQuestion is string && data.pollQuestion.size() > 0) ||
+                !('pollOptions' in data) || !(data.pollOptions is list && data.pollOptions.size() >= 2) ||
+                !('allowMultipleVotes' in data) || !(data.allowMultipleVotes is bool) ||
+                !('pollVotes' in data) || !(data.pollVotes is map && data.pollVotes.size() == 0)
+            ) { return false; }
+            if ('text' in data) { return false; }
+        }
+        
         return true;
     }
 
@@ -179,8 +179,7 @@ service cloud.firestore {
     // ============= ANNOUNCEMENTS =============
 
     match /announcements/{announcementId} {
-      allow list: if request.auth != null;
-      allow get: if request.auth != null;
+      allow list, get: if request.auth != null;
 
       function canManage(ann) {
         return isGlobalAdmin() ||
