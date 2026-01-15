@@ -216,7 +216,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {isUserAdmin ? (
+        {isUserAdmin ? (
         <Card className="mb-8 border-blue-500/50">
             <CardHeader className="flex-row items-center justify-between p-4">
                 <div>
@@ -368,10 +368,11 @@ const courseOptions = [
 
 const classOptions = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
-function EditProfileDialog({ allCenters, children, defaultOpenItem }: { allCenters: Center[], children?: React.ReactNode, defaultOpenItem?: string }) {
+function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultOpenItem }: { allCenters: Center[], children?: React.ReactNode, defaultOpenItem?: string }) {
   const { user, updateUser } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [defaultOpenItem, setDefaultOpenItem] = useState(propDefaultOpenItem);
   
   const [editableAvatar, setEditableAvatar] = useState<EditableAvatar>({ id: 'letter_A', color: 'A78BFA'});
   
@@ -428,10 +429,11 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem }: { allCente
   
   useEffect(() => {
     if (isOpen) {
+        setDefaultOpenItem(propDefaultOpenItem);
         initializeState();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, user, allCenters]);
+  }, [isOpen, user, allCenters, propDefaultOpenItem]);
 
   const availableClasses = useMemo(() => {
     if (!validatedCenter || !validatedCenter.classes) return { courses: [], classNames: [] };
@@ -698,7 +700,7 @@ const handleSaveChanges = async () => {
           <DialogTitle>Editor de Perfil</DialogTitle>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh] -mx-6 px-6">
-            <Accordion type="single" collapsible defaultValue={defaultOpenItem || "item-1"} className="w-full">
+            <Accordion type="single" collapsible defaultValue={defaultOpenItem} className="w-full">
                 <AccordionItem value="item-1">
                     <AccordionTrigger>Avatar y Color</AccordionTrigger>
                     <AccordionContent>
@@ -872,18 +874,7 @@ const handleSaveChanges = async () => {
                             {mode === 'create' && (
                                 <div className="space-y-4">
                                   <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button variant="link" className="text-xs p-0 h-auto">¿Estás seguro de que tu centro no existe?</Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Comprobación</AlertDialogTitle>
-                                        <AlertDialogDescription>Antes de crear un centro, asegúrate de que no exista ya en la plataforma para evitar duplicados.</AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogAction>Entendido</AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
+                                    <AlertDialogTrigger asChild><Button variant="link" className="text-xs p-0 h-auto">¿Estás seguro de que tu centro no existe?</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Comprobación</AlertDialogTitle><AlertDialogDescription>Antes de crear un centro, asegúrate de que no exista ya en la plataforma para evitar duplicados.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction>Entendido</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                                   </AlertDialog>
                                 <div className="space-y-2">
                                     <Label>Nombre del Nuevo Centro</Label>
