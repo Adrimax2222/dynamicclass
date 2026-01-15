@@ -134,7 +134,7 @@ export default function ProfilePage() {
 
   const isUserAdmin = user?.role === 'admin';
   const isCenterAdmin = user?.role === 'center-admin' && user.organizationId;
-  const isUserClassAdmin = user?.role?.startsWith('admin-');
+  const isUserClassAdmin = user?.role?.startsWith('admin-') && user.role !== 'admin' && user.role !== 'center-admin';
   const isAnyAdmin = isUserAdmin || isCenterAdmin || isUserClassAdmin;
 
 
@@ -813,19 +813,17 @@ const handleSaveChanges = async () => {
                                             })}
                                             <CollapsibleTrigger asChild>
                                                 <button type="button" className="h-full w-full rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50 aspect-square">
-                                                    <Plus className="h-8 w-8 text-muted-foreground" />
+                                                    <Plus className="h-6 w-6 text-muted-foreground" />
                                                 </button>
                                             </CollapsibleTrigger>
                                         </div>
-                                        <CollapsibleContent>
-                                            <div className="mt-4 pt-4 border-t">
-                                                <div className="grid grid-cols-4 gap-4">
-                                                    {EXPANDED_SHOP_AVATARS.map((avatar) => {
-                                                        const isOwned = user.ownedAvatars?.includes(avatar.id);
-                                                        const isSelected = editableAvatar.id === avatar.id;
-                                                        return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
-                                                    })}
-                                                </div>
+                                        <CollapsibleContent className="col-span-4 mt-4 pt-4 border-t">
+                                            <div className="grid grid-cols-4 gap-4">
+                                                {EXPANDED_SHOP_AVATARS.map((avatar) => {
+                                                    const isOwned = user.ownedAvatars?.includes(avatar.id);
+                                                    const isSelected = editableAvatar.id === avatar.id;
+                                                    return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
+                                                })}
                                             </div>
                                         </CollapsibleContent>
                                     </Collapsible>
@@ -1224,6 +1222,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
 
 
