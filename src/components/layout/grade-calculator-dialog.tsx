@@ -110,42 +110,28 @@ export function GradeCalculatorDialog({ children, isScheduleAvailable, user, ope
               const parsedConfigs: AllSubjectConfigs = savedConfigs ? JSON.parse(savedConfigs) : {};
               
               let finalSubjects: string[];
+              let updatedConfigs: AllSubjectConfigs = {};
 
               if (hasSchedule) {
-                  const savedSubjects = Object.keys(parsedConfigs);
-                  finalSubjects = [...new Set([...availableSubjects, ...savedSubjects])];
-              } else {
+                  // If there's a schedule, ONLY use subjects from that schedule.
                   finalSubjects = availableSubjects;
-                  // If there is no schedule, we reset the configs to only use the default subjects
-                  const newConfigs: AllSubjectConfigs = {};
                   finalSubjects.forEach(sub => {
-                    newConfigs[sub] = parsedConfigs[sub] || { grades: [{ id: Date.now(), title: "", grade: "", weight: "" }], desiredGrade: "5", result: null };
+                      updatedConfigs[sub] = parsedConfigs[sub] || { grades: [{ id: Date.now(), title: "", grade: "", weight: "" }], desiredGrade: "5", result: null };
                   });
-                  setAllConfigs(newConfigs);
+              } else {
+                  // If there's NO schedule, ONLY use the default subjects.
+                  finalSubjects = availableSubjects;
+                  finalSubjects.forEach(sub => {
+                    // We can reuse saved configs for default subjects if they exist.
+                    updatedConfigs[sub] = parsedConfigs[sub] || { grades: [{ id: Date.now(), title: "", grade: "", weight: "" }], desiredGrade: "5", result: null };
+                  });
               }
               
               setSubjects(finalSubjects);
+              setAllConfigs(updatedConfigs);
               
               if (finalSubjects.length > 0) {
-                  const firstSubject = finalSubjects[0];
-                  setActiveSubject(firstSubject);
-                  
-                   const updatedConfigs = {...parsedConfigs};
-                   if (!hasSchedule) {
-                        // Ensure only default subjects exist in config if no schedule
-                        Object.keys(updatedConfigs).forEach(key => {
-                            if (!finalSubjects.includes(key)) {
-                                delete updatedConfigs[key];
-                            }
-                        });
-                   }
-
-                  finalSubjects.forEach(sub => {
-                      if (!updatedConfigs[sub]) {
-                          updatedConfigs[sub] = { grades: [{ id: Date.now(), title: "", grade: "", weight: "" }], desiredGrade: "5", result: null };
-                      }
-                  });
-                  setAllConfigs(updatedConfigs);
+                  setActiveSubject(finalSubjects[0]);
               }
           } catch (error) {
               console.error("Failed to load or parse grade configurations from localStorage", error);
@@ -651,3 +637,5 @@ function ReportTab({ allConfigs, user }: { allConfigs: AllSubjectConfigs, user: 
         </div>
     );
 }
+
+    
