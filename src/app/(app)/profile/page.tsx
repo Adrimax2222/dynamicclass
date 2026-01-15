@@ -218,7 +218,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {isUserAdmin ? (
+      {isUserAdmin && (
         <Card className="mb-8 border-blue-500/50">
             <CardHeader className="flex-row items-center justify-between p-4">
                 <div>
@@ -1122,3 +1122,4 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
