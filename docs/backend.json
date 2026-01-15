@@ -64,7 +64,11 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "scope": { "type": "string", "enum": ["general", "center", "class"] },
         "centerId": { "type": "string" },
-        "className": { "type": "string" }
+        "className": { "type": "string" },
+        "likedBy": { "type": "array", "items": { "type": "string" } },
+        "likes": { "type": "number" },
+        "isPinned": { "type": "boolean" },
+        "viewedBy": { "type": "array", "items": { "type": "string" } }
       },
       "required": ["text", "authorId", "authorName", "authorAvatar", "createdAt", "scope"]
     },

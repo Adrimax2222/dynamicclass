@@ -144,15 +144,32 @@ service cloud.firestore {
 
     match /announcements/{announcementId} {
       allow list: if request.auth != null;
-      allow get: if request.auth != null; // Further filtering on client-side
+      allow get: if request.auth != null;
+
+      function canManage(ann) {
+        return isGlobalAdmin() ||
+               (ann.scope == 'center' && ann.centerId != null && isCenterAdmin(ann.centerId)) ||
+               (ann.scope == 'class' && ann.className != null && isClassAdmin(ann.className));
+      }
 
       // Create: Admins can create announcements
-      allow create: if isValidAnnouncement() && (isGlobalAdmin() || isCenterAdmin(request.resource.data.centerId) || 
-                    (isClassAdmin(request.resource.data.className) && request.resource.data.scope == 'class'));
-      
-      // Update/Delete: Admins can manage announcements they have scope over
-      allow update, delete: if isGlobalAdmin() || isCenterAdmin(resource.data.centerId) ||
-                              (isClassAdmin(resource.data.className) && resource.data.scope == 'class');
+      allow create: if isValidAnnouncement() && canManage(request.resource.data);
+
+      // Delete: Admins or the original author can delete
+      allow delete: if canManage(resource.data) || isOwner(resource.data.authorId);
+
+      // Update: Admins can update any field (pin, text, etc.)
+      allow update: if canManage(resource.data);
+
+      // Authors can ONLY update the text
+      allow update: if isOwner(resource.data.authorId) &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text']);
+
+      // Any user can add themselves to 'viewedBy' array.
+      allow update: if request.auth != null &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewedBy']) &&
+                       request.resource.data.viewedBy.toSet().difference(resource.data.viewedBy.toSet()).hasOnly([request.auth.uid]) &&
+                       resource.data.viewedBy.toSet().difference(request.resource.data.viewedBy.toSet()).size() == 0;
     }
 
     // ============= CENTERS =============
@@ -165,5 +182,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

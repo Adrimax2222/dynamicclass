@@ -127,6 +127,8 @@ export type Announcement = {
   className?: string; // Name of the class if scope is 'class', e.g. "4ESO-B"
   likedBy?: string[];
   likes?: number;
+  isPinned?: boolean;
+  viewedBy?: string[];
 };
 
 export type CompletedItem = {

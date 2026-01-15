@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   Notebook,
   Building,
@@ -17,6 +17,8 @@ import {
   Filter,
   BookX,
   Users,
+  Pin,
+  Eye,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -53,7 +55,8 @@ import {
   orderBy,
   query,
   where,
-  getDoc
+  getDoc,
+  arrayUnion,
 } from "firebase/firestore";
 import type { Note, Announcement, AnnouncementScope, Schedule, Center } from "@/lib/types";
 import {
@@ -72,6 +75,8 @@ import { Logo } from "@/components/icons";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { FullScheduleView } from "@/components/layout/full-schedule-view";
+import { cn } from "@/lib/utils";
+
 
 export default function InfoPage() {
   return (
@@ -143,7 +148,9 @@ function AnnouncementsTab() {
         authorId: user.uid,
         authorName: user.name,
         authorAvatar: user.avatar,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        isPinned: false,
+        viewedBy: [],
     };
     
     if (scope === 'center' && centerId) {
@@ -167,26 +174,50 @@ function AnnouncementsTab() {
       const announcementDocRef = doc(firestore, "announcements", id);
       await deleteDoc(announcementDocRef);
   }
+  
+  const handlePinAnnouncement = async (id: string, currentStatus: boolean) => {
+    if (!firestore) return;
+    const announcementDocRef = doc(firestore, "announcements", id);
+    await updateDoc(announcementDocRef, { isPinned: !currentStatus });
+  };
 
   const userIsInCenter = user?.center && user.center !== 'personal';
   const userClassName = useMemo(() => user ? `${user.course.replace('eso','ESO')}-${user.className}` : null, [user]);
 
-  const filteredAnnouncements = announcements.filter(ann => {
+  const canUserManageAnnouncement = (ann: Announcement) => {
     if (!user) return false;
-
-    if (filter === 'all') {
-      if (ann.scope === 'general') return true;
-      if (ann.scope === 'center' && user.organizationId === ann.centerId) return true;
-      if (ann.scope === 'class' && user.organizationId === ann.centerId && userClassName === ann.className) return true;
-      return false;
+    if (user.role === 'admin') return true;
+    if (user.role === 'center-admin' && user.organizationId === ann.centerId) return true;
+    if (user.role.startsWith('admin-') && ann.scope === 'class') {
+        return user.organizationId === ann.centerId && userClassName === ann.className;
     }
-    
-    if (filter === 'general') return ann.scope === 'general';
-    if (filter === 'center') return ann.scope === 'center' && user.organizationId === ann.centerId;
-    if (filter === 'my-class') return ann.scope === 'class' && user.organizationId === ann.centerId && userClassName === ann.className;
-    
     return false;
-  });
+  }
+
+  const sortedAndFilteredAnnouncements = useMemo(() => {
+    const sorted = [...announcements].sort((a, b) => {
+        const pinA = a.isPinned ? 1 : 0;
+        const pinB = b.isPinned ? 1 : 0;
+        if (pinB !== pinA) {
+            return pinB - pinA;
+        }
+        return (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0);
+    });
+
+    return sorted.filter(ann => {
+      if (!user) return false;
+      if (filter === 'all') {
+        if (ann.scope === 'general') return true;
+        if (ann.scope === 'center' && user.organizationId === ann.centerId) return true;
+        if (ann.scope === 'class' && user.organizationId === ann.centerId && userClassName === ann.className) return true;
+        return false;
+      }
+      if (filter === 'general') return ann.scope === 'general';
+      if (filter === 'center') return ann.scope === 'center' && user.organizationId === ann.centerId;
+      if (filter === 'my-class') return ann.scope === 'class' && user.organizationId === ann.centerId && userClassName === ann.className;
+      return false;
+    });
+  }, [announcements, filter, user, userClassName]);
   
   const canPost = user?.role === 'admin' || (user?.role && user.role.startsWith('admin-'));
 
@@ -234,7 +265,7 @@ function AnnouncementsTab() {
 
       {isLoading && <Loader2 className="mx-auto my-8 h-8 w-8 animate-spin text-primary" />}
       
-      {!isLoading && filteredAnnouncements.length === 0 && (
+      {!isLoading && sortedAndFilteredAnnouncements.length === 0 && (
         <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
           <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
           <p className="font-semibold">No hay anuncios</p>
@@ -245,15 +276,16 @@ function AnnouncementsTab() {
       )}
 
       <div className="space-y-4">
-        {filteredAnnouncements.map((announcement) => (
-          <div key={`${announcement.id}-${announcement.createdAt.seconds}`}>
-              <AnnouncementItem
-                  announcement={announcement}
-                  isAuthor={user?.uid === announcement.authorId}
-                  onUpdate={handleUpdateAnnouncement}
-                  onDelete={handleDeleteAnnouncement}
-              />
-          </div>
+        {sortedAndFilteredAnnouncements.map((announcement) => (
+          <AnnouncementItem
+              key={announcement.id}
+              announcement={announcement}
+              isAuthor={user?.uid === announcement.authorId}
+              canManage={canUserManageAnnouncement(announcement)}
+              onUpdate={handleUpdateAnnouncement}
+              onDelete={handleDeleteAnnouncement}
+              onPin={() => handlePinAnnouncement(announcement.id, !!announcement.isPinned)}
+          />
         ))}
       </div>
     </div>
@@ -267,8 +299,9 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: Announc
   const { user } = useApp();
   
   const isGlobalAdmin = user?.role === 'admin';
+  const isCenterAdmin = user?.role === 'center-admin';
   const isClassAdmin = user?.role && user.role.startsWith('admin-');
-  const adminClassName = isClassAdmin ? user.role.split('admin-')[1] : null;
+  const adminClassName = useMemo(() => isClassAdmin ? `${user.course.replace('eso','ESO')}-${user.className}` : null, [isClassAdmin, user]);
 
   const handleSend = async () => {
     if (!text.trim() || !user) return;
@@ -321,7 +354,7 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: Announc
                                <div className="flex items-center gap-2"><Globe className="h-4 w-4" /> General</div>
                             </SelectItem>
                         )}
-                        {isGlobalAdmin && (
+                        {(isGlobalAdmin || isCenterAdmin) && (
                             <SelectItem value="center">
                                <div className="flex items-center gap-2"><Building className="h-4 w-4" /> Centro</div>
                             </SelectItem>
@@ -344,9 +377,36 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: Announc
 }
 
 
-function AnnouncementItem({ announcement, isAuthor, onUpdate, onDelete }: { announcement: Announcement, isAuthor: boolean, onUpdate: (id: string, text: string) => void, onDelete: (id: string) => void }) {
+function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelete, onPin }: { announcement: Announcement, isAuthor: boolean, canManage: boolean, onUpdate: (id: string, text: string) => void, onDelete: (id: string) => void, onPin: () => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(announcement.text);
+  const { user, firestore } = useApp();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || !firestore || !user) return;
+
+    const hasViewed = announcement.viewedBy?.includes(user.uid);
+    if (hasViewed) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          const announcementDocRef = doc(firestore, "announcements", announcement.id);
+          updateDoc(announcementDocRef, {
+            viewedBy: arrayUnion(user.uid)
+          }).catch(err => console.error("Failed to update view count", err));
+          observer.unobserve(node);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [announcement.id, announcement.viewedBy, firestore, user]);
 
   const formatTimestamp = (timestamp: { seconds: number }) => {
     if (!timestamp) return "";
@@ -373,7 +433,7 @@ function AnnouncementItem({ announcement, isAuthor, onUpdate, onDelete }: { anno
   }
 
   return (
-    <Card className="overflow-hidden transition-all duration-300 hover:border-primary/20 hover:shadow-md">
+    <Card ref={ref} className={cn("overflow-hidden transition-all duration-300 hover:border-primary/20 hover:shadow-md", announcement.isPinned && "border-primary/50 bg-primary/5")}>
         <CardHeader className="flex flex-row items-start gap-4 space-y-0 p-4">
              <Avatar className="h-10 w-10 border">
                 <AvatarImage src={announcement.authorAvatar} />
@@ -385,7 +445,13 @@ function AnnouncementItem({ announcement, isAuthor, onUpdate, onDelete }: { anno
                         <p className="font-bold text-sm">{announcement.authorName}</p>
                         <p className="text-xs text-muted-foreground">{formatTimestamp(announcement.createdAt)}</p>
                     </div>
-                    {getBadge()}
+                     <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Eye className="h-4 w-4" />
+                            <span>{announcement.viewedBy?.length || 0}</span>
+                        </div>
+                        {getBadge()}
+                    </div>
                 </div>
             </div>
         </CardHeader>
@@ -404,9 +470,16 @@ function AnnouncementItem({ announcement, isAuthor, onUpdate, onDelete }: { anno
                 </div>
             )}
         </CardContent>
-        {isAuthor && !isEditing && (
+        {(isAuthor || canManage) && !isEditing && (
              <CardFooter className="p-4 pt-0 justify-end">
-                <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>Editar</Button>
+                {canManage && (
+                     <Button variant="ghost" size="sm" onClick={onPin}>
+                        <Pin className={cn("h-4 w-4", announcement.isPinned && "fill-current text-primary")} />
+                    </Button>
+                )}
+                {isAuthor && (
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>Editar</Button>
+                )}
                 <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(announcement.id)}>Eliminar</Button>
             </CardFooter>
         )}
@@ -629,5 +702,3 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     </Dialog>
   )
 }
-
-    
