@@ -46,6 +46,7 @@ import { es } from "date-fns/locale";
 import { Switch } from "@/components/ui/switch";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
 
@@ -689,248 +690,267 @@ const handleSaveChanges = async () => {
       </DialogTrigger>
       <DialogContent className="max-w-md w-[95vw]">
         <DialogHeader>
-          <DialogTitle>Editor</DialogTitle>
+          <DialogTitle>Editor de Perfil</DialogTitle>
         </DialogHeader>
-        <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto px-1 pr-4">
-            
-            <div className="flex justify-center py-4">
-                <AvatarDisplay 
-                    user={{ avatar: `${editableAvatar.id}_${editableAvatar.color}`, name: user.name }}
-                    className="h-24 w-24 ring-4 ring-primary ring-offset-2" 
-                />
-            </div>
+        <ScrollArea className="max-h-[70vh] -mx-6 px-6">
+            <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+                <AccordionItem value="item-1">
+                    <AccordionTrigger>Avatar y Color</AccordionTrigger>
+                    <AccordionContent>
+                        <div className="space-y-6 pt-2">
+                             <div className="flex justify-center py-4">
+                                <AvatarDisplay 
+                                    user={{ avatar: `${editableAvatar.id}_${editableAvatar.color}`, name: user.name }}
+                                    className="h-24 w-24 ring-4 ring-primary ring-offset-2" 
+                                />
+                            </div>
 
-            <div className="space-y-4 pt-4 border-t">
-                <Label>Avatar</Label>
-                 <div className="grid grid-cols-4 gap-4">
-                    {SHOP_AVATARS.map((avatar) => {
-                        const isOwned = user.ownedAvatars?.includes(avatar.id);
-                        const isSelected = editableAvatar.id === avatar.id;
-                        const Icon = avatar.icon;
-                        const isFree = avatar.price === 0;
+                            <div className="space-y-4">
+                                <Label>Avatar</Label>
+                                <div className="grid grid-cols-4 gap-4">
+                                    {SHOP_AVATARS.map((avatar) => {
+                                        const isOwned = user.ownedAvatars?.includes(avatar.id);
+                                        const isSelected = editableAvatar.id === avatar.id;
+                                        const Icon = avatar.icon;
+                                        const isFree = avatar.price === 0;
 
-                        return (
-                            <div key={avatar.id} className="relative group flex flex-col items-center gap-2">
-                                <button 
-                                    type="button" 
-                                    onClick={() => handleSelectShopAvatar(avatar.id)}
-                                    className={cn("w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
-                                >
-                                   <div className="w-full h-full flex items-center justify-center">
-                                        <Icon className="h-8 w-8 text-muted-foreground" />
-                                   </div>
-                                </button>
-                                <div className="text-center">
-                                    {isOwned || isFree ? (
-                                        <Badge variant="secondary" className="flex items-center gap-1">
-                                            {isFree && !isOwned ? (
-                                                'Gratis'
-                                            ) : (
-                                                <><CheckCircle className="h-3 w-3 text-green-500" /> Adquirido</>
+                                        return (
+                                            <div key={avatar.id} className="relative group flex flex-col items-center gap-2">
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => handleSelectShopAvatar(avatar.id)}
+                                                    className={cn("w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105", isSelected && "ring-4 ring-primary ring-offset-2")}
+                                                >
+                                                   <div className="w-full h-full flex items-center justify-center">
+                                                        <Icon className="h-8 w-8 text-muted-foreground" />
+                                                   </div>
+                                                </button>
+                                                <div className="text-center">
+                                                    {isOwned || isFree ? (
+                                                        <Badge variant="secondary" className="flex items-center gap-1">
+                                                            {isFree && !isOwned ? 'Gratis' : <><CheckCircle className="h-3 w-3 text-green-500" /> Adquirido</>}
+                                                        </Badge>
+                                                    ) : (
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button size="sm" variant="outline" className="h-8 w-full" disabled={isLoading}>
+                                                                    <Trophy className="h-4 w-4 mr-1 text-yellow-400" />
+                                                                    {avatar.price}
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        ¿Quieres comprar este avatar por {avatar.price} trofeos? Tus trofeos actuales son {user.trophies}.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                    <AlertDialogAction onClick={() => handlePurchaseAvatar(avatar)}>Comprar</AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                    <div className="relative group flex flex-col items-center gap-2">
+                                        <div
+                                            className={cn(
+                                                "w-full aspect-square rounded-lg flex flex-col items-center justify-center bg-muted transition-all",
+                                                editableAvatar.id.startsWith('letter') && "ring-4 ring-primary ring-offset-2"
                                             )}
-                                        </Badge>
-                                    ) : (
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button size="sm" variant="outline" className="h-8 w-full" disabled={isLoading}>
-                                                    <Trophy className="h-4 w-4 mr-1 text-yellow-400" />
-                                                    {avatar.price}
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        ¿Quieres comprar este avatar por {avatar.price} trofeos? Tus trofeos actuales son {user.trophies}.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handlePurchaseAvatar(avatar)}>Comprar</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    )}
+                                        >
+                                            <CaseUpper className="h-8 w-8 text-muted-foreground mb-2" />
+                                            <Select
+                                                onValueChange={handleLetterSelect}
+                                                value={editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[1] : ''}
+                                                onOpenChange={(isOpen) => {
+                                                if (isOpen) {
+                                                    const currentLetter = editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[1] : 'A';
+                                                    setEditableAvatar(prev => ({...prev, id: `letter_${currentLetter}`}))
+                                                }
+                                                }}
+                                            >
+                                                <SelectTrigger className="w-20 h-8 text-xs">
+                                                    <SelectValue placeholder="Letra" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {ALPHABET.map(letter => (
+                                                        <SelectItem key={letter} value={letter}>{letter}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        )
-                    })}
-                     <div className="relative group flex flex-col items-center gap-2">
-                        <div
-                            className={cn(
-                                "w-full aspect-square rounded-lg flex flex-col items-center justify-center bg-muted transition-all",
-                                editableAvatar.id.startsWith('letter') && "ring-4 ring-primary ring-offset-2"
-                            )}
-                        >
-                            <CaseUpper className="h-8 w-8 text-muted-foreground mb-2" />
-                            <Select
-                                onValueChange={handleLetterSelect}
-                                value={editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[1] : ''}
-                                onOpenChange={(isOpen) => {
-                                  if (isOpen) {
-                                    const currentLetter = editableAvatar.id.startsWith('letter') ? editableAvatar.id.split('_')[1] : 'A';
-                                    setEditableAvatar(prev => ({...prev, id: `letter_${currentLetter}`}))
-                                  }
-                                }}
-                            >
-                                <SelectTrigger className="w-20 h-8 text-xs">
-                                    <SelectValue placeholder="Letra" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {ALPHABET.map(letter => (
-                                        <SelectItem key={letter} value={letter}>{letter}</SelectItem>
+
+                            <div className="space-y-4">
+                                <Label>Color de Fondo</Label>
+                                <div className="flex flex-wrap gap-3">
+                                    {AVATAR_COLORS.map(color => (
+                                        <button
+                                            key={color.value}
+                                            type="button"
+                                            onClick={() => handleColorClick(color.value)}
+                                            className={cn(
+                                                "h-8 w-8 rounded-full border-2 transition-transform hover:scale-110",
+                                                editableAvatar.color === color.value ? 'border-ring' : 'border-transparent'
+                                            )}
+                                            style={{ backgroundColor: `#${color.value}` }}
+                                            aria-label={`Seleccionar color ${color.name}`}
+                                        />
                                     ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                     </div>
-                </div>
-            </div>
-
-            <div className="space-y-4 pt-4 border-t">
-                <Label>Color de Fondo</Label>
-                <div className="flex flex-wrap gap-3">
-                    {AVATAR_COLORS.map(color => (
-                        <button
-                            key={color.value}
-                            type="button"
-                            onClick={() => handleColorClick(color.value)}
-                            className={cn(
-                                "h-8 w-8 rounded-full border-2 transition-transform hover:scale-110",
-                                editableAvatar.color === color.value ? 'border-ring' : 'border-transparent'
-                            )}
-                            style={{ backgroundColor: `#${color.value}` }}
-                            aria-label={`Seleccionar color ${color.name}`}
-                        />
-                    ))}
-                </div>
-            </div>
-            
-            <div className="space-y-4 pt-6 border-t">
-                <Label>Datos Personales</Label>
-                <div className="space-y-2">
-                    <Label htmlFor="name">Nombre Completo</Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="ageRange">Rango de Edad</Label>
-                    <Select onValueChange={setAgeRange} value={ageRange === 'personal' ? '' : ageRange}>
-                        <SelectTrigger id="ageRange">
-                            <SelectValue placeholder="Selecciona tu rango de edad" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="12-15">12-15 años</SelectItem>
-                            <SelectItem value="16-18">16-18 años</SelectItem>
-                            <SelectItem value="19-22">19-22 años</SelectItem>
-                            <SelectItem value="23+">23+ años</SelectItem>
-                            <SelectItem value="No especificado">No especificado</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-
-             <div className="space-y-4 pt-6 border-t">
-                <Label>Datos del Centro</Label>
-                <RadioGroup value={mode} onValueChange={(v) => setMode(v as RegistrationMode)} className="grid grid-cols-3 gap-2">
-                    <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'join' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
-                        <School className="h-5 w-5"/> <span className="text-xs font-semibold">{registrationModeInfo.join.title.split(' ')[0]}</span>
-                        <RadioGroupItem value='join' className="sr-only"/>
-                    </Label>
-                     <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'create' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground", user.role === 'center-admin' && "cursor-not-allowed opacity-50")}>
-                        <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">{registrationModeInfo.create.title.split(' ')[0]}</span>
-                        <RadioGroupItem value='create' className="sr-only" disabled={user.role === 'center-admin'}/>
-                    </Label>
-                    <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'personal' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
-                        <UserIcon className="h-5 w-5"/> <span className="text-xs font-semibold">{registrationModeInfo.personal.title.split(' ')[0]}</span>
-                        <RadioGroupItem value='personal' className="sr-only"/>
-                    </Label>
-                </RadioGroup>
-                
-                <div className="p-3 bg-muted/50 rounded-lg text-center">
-                    <h4 className="font-semibold text-sm">{registrationModeInfo[mode].title}</h4>
-                    <p className="text-xs text-muted-foreground">{registrationModeInfo[mode].description}</p>
-                </div>
-
-                {mode === 'join' && (
-                  <div className="space-y-4">
-                     <div className="space-y-2">
-                        <Label htmlFor="center-code">Código de Centro</Label>
-                        <div className="flex items-center gap-2">
-                            <Input id="center-code" value={center} onChange={e => formatAndSetCenterCode(e.target.value)} placeholder="123-456" disabled={isCenterValidated} />
-                             <Button type="button" onClick={handleValidateCenter} disabled={center.length < 7 || isLoading || isCenterValidated} variant={isCenterValidated ? "secondary" : "default"}>
-                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterValidated ? <CheckCircle className="h-4 w-4"/> : "Validar"}
-                            </Button>
-                        </div>
-                        {validatedCenter && <p className="text-sm font-semibold text-green-600 flex items-center gap-2"><CheckCircle className="h-4 w-4"/> {validatedCenter.name}</p>}
-                     </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="course" className={cn(!isCenterValidated && 'text-muted-foreground/50')}>Curso</Label>
-                            <Select onValueChange={setCourse} value={course} disabled={!isCenterValidated}>
-                                <SelectTrigger id="course"><SelectValue placeholder="Curso..." /></SelectTrigger>
-                                <SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="className" className={cn(!isCenterValidated && 'text-muted-foreground/50')}>Clase</Label>
-                            <Select onValueChange={setClassName} value={className} disabled={!isCenterValidated}>
-                                <SelectTrigger id="className"><SelectValue placeholder="Clase..." /></SelectTrigger>
-                                <SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                  </div>
-                )}
-                
-                {mode === 'create' && (
-                    <div className="space-y-4">
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild><Button variant="link" className="text-xs p-0 h-auto">¿Estás seguro de que tu centro no existe?</Button></AlertDialogTrigger>
-                            <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Comprobación</AlertDialogTitle><AlertDialogDescription>Antes de crear un centro, asegúrate de que no exista ya en la plataforma para evitar duplicados.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction>Entendido</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
-                          </AlertDialog>
-                      <div className="space-y-2">
-                          <Label>Nombre del Nuevo Centro</Label>
-                          <div className="flex items-center gap-2">
-                            <Input placeholder="Ej: Instituto Adrimax" value={newCenterName} onChange={e => setNewCenterName(e.target.value)} disabled={isCenterNameValidated} />
-                            <Button type="button" onClick={handleCheckCenterName} disabled={!newCenterName || isLoading || isCenterNameValidated} variant={isCenterNameValidated ? "secondary" : "default"}>
-                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterNameValidated ? <CheckCircle className="h-4 w-4"/> : <Search className="h-4 w-4"/>}
-                            </Button>
-                          </div>
-                      </div>
-                      {isCenterNameValidated && (
-                         <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Nombre de la Primera Clase</Label>
-                                <Input placeholder="Ej: 4ESO-B" value={newClassName} onChange={e => setNewClassName(e.target.value)} />
-                                <p className="text-xs text-muted-foreground">Formato: 'CURSO-LETRA' (1eso-A, 2bach-C, etc.)</p>
+                                </div>
                             </div>
-                            <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
-                                <Label>Código de Acceso del Centro</Label>
-                                <p className="text-xs text-muted-foreground">Este será el código para que otros se unan. Guárdalo bien.</p>
-                                {generatedCode ? (
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-2">
+                    <AccordionTrigger>Datos del Centro</AccordionTrigger>
+                    <AccordionContent>
+                         <div className="space-y-4 pt-2">
+                            <RadioGroup value={mode} onValueChange={(v) => setMode(v as RegistrationMode)} className="grid grid-cols-3 gap-2">
+                                <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'join' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
+                                    <School className="h-5 w-5"/> <span className="text-xs font-semibold">{registrationModeInfo.join.title.split(' ')[0]}</span>
+                                    <RadioGroupItem value='join' className="sr-only"/>
+                                </Label>
+                                <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'create' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground", user.role === 'center-admin' && "cursor-not-allowed opacity-50")}>
+                                    <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">{registrationModeInfo.create.title.split(' ')[0]}</span>
+                                    <RadioGroupItem value='create' className="sr-only" disabled={user.role === 'center-admin'}/>
+                                </Label>
+                                <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'personal' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
+                                    <UserIcon className="h-5 w-5"/> <span className="text-xs font-semibold">{registrationModeInfo.personal.title.split(' ')[0]}</span>
+                                    <RadioGroupItem value='personal' className="sr-only"/>
+                                </Label>
+                            </RadioGroup>
+                            
+                            <div className="p-3 bg-muted/50 rounded-lg text-center">
+                                <h4 className="font-semibold text-sm">{registrationModeInfo[mode].title}</h4>
+                                <p className="text-xs text-muted-foreground">{registrationModeInfo[mode].description}</p>
+                            </div>
+
+                            {mode === 'join' && (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="center-code">Código de Centro</Label>
                                     <div className="flex items-center gap-2">
-                                        <Badge variant="outline" className="text-base font-bold tracking-widest">{generatedCode}</Badge>
-                                        <Button type="button" variant="ghost" size="icon" onClick={handleCopyCode} className="h-7 w-7">
-                                            {isCodeCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+                                        <Input id="center-code" value={center} onChange={e => formatAndSetCenterCode(e.target.value)} placeholder="123-456" disabled={isCenterValidated} />
+                                        <Button type="button" onClick={handleValidateCenter} disabled={center.length < 7 || isLoading || isCenterValidated} variant={isCenterValidated ? "secondary" : "default"}>
+                                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterValidated ? <CheckCircle className="h-4 w-4"/> : "Validar"}
                                         </Button>
                                     </div>
-                                ) : (
-                                    <Button type="button" onClick={handleGenerateCode} className="w-full"><RefreshCw className="mr-2 h-4 w-4"/>Generar Código</Button>
-                                )}
+                                    {validatedCenter && <p className="text-sm font-semibold text-green-600 flex items-center gap-2"><CheckCircle className="h-4 w-4"/> {validatedCenter.name}</p>}
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="course" className={cn(!isCenterValidated && 'text-muted-foreground/50')}>Curso</Label>
+                                        <Select onValueChange={setCourse} value={course} disabled={!isCenterValidated}>
+                                            <SelectTrigger id="course"><SelectValue placeholder="Curso..." /></SelectTrigger>
+                                            <SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="className" className={cn(!isCenterValidated && 'text-muted-foreground/50')}>Clase</Label>
+                                        <Select onValueChange={setClassName} value={className} disabled={!isCenterValidated}>
+                                            <SelectTrigger id="className"><SelectValue placeholder="Clase..." /></SelectTrigger>
+                                            <SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
                             </div>
-                         </div>
-                      )}
-                    </div>
-                )}
-             </div>
-
-            <div className="space-y-2 pt-6 border-t">
-                <Label htmlFor="email">Correo Electrónico</Label>
-                <Input id="email" value={user.email} disabled />
-                <p className="text-xs text-muted-foreground">El correo electrónico no se puede cambiar.</p>
-            </div>
-        </div>
-        <DialogFooter>
+                            )}
+                            
+                            {mode === 'create' && (
+                                <div className="space-y-4">
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                        <Button variant="link" className="text-xs p-0 h-auto">¿Estás seguro de que tu centro no existe?</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Comprobación</AlertDialogTitle>
+                                                <AlertDialogDescription>Antes de crear un centro, asegúrate de que no exista ya en la plataforma para evitar duplicados.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogAction>Entendido</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                <div className="space-y-2">
+                                    <Label>Nombre del Nuevo Centro</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Input placeholder="Ej: Instituto Adrimax" value={newCenterName} onChange={e => setNewCenterName(e.target.value)} disabled={isCenterNameValidated} />
+                                        <Button type="button" onClick={handleCheckCenterName} disabled={!newCenterName || isLoading || isCenterNameValidated} variant={isCenterNameValidated ? "secondary" : "default"}>
+                                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterNameValidated ? <CheckCircle className="h-4 w-4"/> : <Search className="h-4 w-4"/>}
+                                        </Button>
+                                    </div>
+                                </div>
+                                {isCenterNameValidated && (
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label>Nombre de la Primera Clase</Label>
+                                            <Input placeholder="Ej: 4ESO-B" value={newClassName} onChange={e => setNewClassName(e.target.value)} />
+                                            <p className="text-xs text-muted-foreground">Formato: 'CURSO-LETRA' (1eso-A, 2bach-C, etc.)</p>
+                                        </div>
+                                        <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                                            <Label>Código de Acceso del Centro</Label>
+                                            <p className="text-xs text-muted-foreground">Este será el código para que otros se unan. Guárdalo bien.</p>
+                                            {generatedCode ? (
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant="outline" className="text-base font-bold tracking-widest">{generatedCode}</Badge>
+                                                    <Button type="button" variant="ghost" size="icon" onClick={handleCopyCode} className="h-7 w-7">
+                                                        {isCodeCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <Button type="button" onClick={handleGenerateCode} className="w-full"><RefreshCw className="mr-2 h-4 w-4"/>Generar Código</Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                                </div>
+                            )}
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-3">
+                    <AccordionTrigger>Datos Personales</AccordionTrigger>
+                    <AccordionContent>
+                        <div className="space-y-4 pt-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Nombre Completo</Label>
+                                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="ageRange">Rango de Edad</Label>
+                                <Select onValueChange={setAgeRange} value={ageRange === 'personal' ? '' : ageRange}>
+                                    <SelectTrigger id="ageRange">
+                                        <SelectValue placeholder="Selecciona tu rango de edad" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="12-15">12-15 años</SelectItem>
+                                        <SelectItem value="16-18">16-18 años</SelectItem>
+                                        <SelectItem value="19-22">19-22 años</SelectItem>
+                                        <SelectItem value="23+">23+ años</SelectItem>
+                                        <SelectItem value="No especificado">No especificado</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Correo Electrónico</Label>
+                                <Input id="email" value={user.email} disabled />
+                                <p className="text-xs text-muted-foreground">El correo electrónico no se puede cambiar.</p>
+                            </div>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
+        </ScrollArea>
+        <DialogFooter className="border-t pt-4">
           <DialogClose asChild>
             <Button variant="outline" disabled={isLoading}>Cancelar</Button>
           </DialogClose>
@@ -1072,5 +1092,6 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
+    
 
     
