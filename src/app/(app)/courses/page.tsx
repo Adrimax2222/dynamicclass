@@ -219,7 +219,11 @@ function AnnouncementsTab() {
     });
   }, [announcements, filter, user, userClassName]);
   
-  const canPost = user?.role === 'admin' || (user?.role && user.role.startsWith('admin-'));
+  const isGlobalAdmin = user?.role === 'admin';
+  const isCenterAdmin = user?.role === 'center-admin';
+  const isClassAdmin = user?.role?.startsWith('admin-');
+  const canPost = isGlobalAdmin || isCenterAdmin || isClassAdmin;
+
 
   return (
     <div className="space-y-6">
@@ -294,14 +298,32 @@ function AnnouncementsTab() {
 
 function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: AnnouncementScope, centerId?: string, className?: string) => Promise<void> }) {
   const [text, setText] = useState("");
-  const [scope, setScope] = useState<AnnouncementScope>("general");
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useApp();
   
   const isGlobalAdmin = user?.role === 'admin';
   const isCenterAdmin = user?.role === 'center-admin';
-  const isClassAdmin = user?.role && user.role.startsWith('admin-');
-  const adminClassName = useMemo(() => isClassAdmin ? `${user.course.replace('eso','ESO')}-${user.className}` : null, [isClassAdmin, user]);
+  const isClassAdmin = user?.role?.startsWith('admin-');
+  
+  const adminClassName = useMemo(() => {
+    if (isClassAdmin && user) {
+        return `${user.course.replace('eso','ESO')}-${user.className}`;
+    }
+    return null;
+  }, [isClassAdmin, user]);
+  
+  const getInitialScope = useCallback((): AnnouncementScope => {
+      if (isCenterAdmin) return 'center';
+      if (isClassAdmin) return 'class';
+      return 'general';
+  }, [isCenterAdmin, isClassAdmin]);
+
+  const [scope, setScope] = useState<AnnouncementScope>(getInitialScope());
+
+  useEffect(() => {
+    setScope(getInitialScope());
+  }, [isGlobalAdmin, isCenterAdmin, isClassAdmin, getInitialScope]);
+
 
   const handleSend = async () => {
     if (!text.trim() || !user) return;
@@ -344,26 +366,22 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: Announc
                 />
             </div>
             <div className="flex flex-col sm:flex-row justify-end items-stretch gap-2">
-                <Select onValueChange={(v: AnnouncementScope) => setScope(v)} defaultValue={isGlobalAdmin ? "general" : "class"}>
+                <Select onValueChange={(v: AnnouncementScope) => setScope(v)} value={scope} disabled={!isGlobalAdmin}>
                     <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue/>
                     </SelectTrigger>
                     <SelectContent>
-                        {isGlobalAdmin && (
-                            <SelectItem value="general">
-                               <div className="flex items-center gap-2"><Globe className="h-4 w-4" /> General</div>
-                            </SelectItem>
-                        )}
-                        {(isGlobalAdmin || isCenterAdmin) && (
-                            <SelectItem value="center">
-                               <div className="flex items-center gap-2"><Building className="h-4 w-4" /> Centro</div>
-                            </SelectItem>
-                        )}
-                         {(isGlobalAdmin || isClassAdmin) && user?.organizationId && (
-                           <SelectItem value="class">
-                               <div className="flex items-center gap-2"><Users className="h-4 w-4" /> {adminClassName || 'Clase'}</div>
-                           </SelectItem>
-                        )}
+                        {isGlobalAdmin ? (
+                            <>
+                                <SelectItem value="general"><div className="flex items-center gap-2"><Globe className="h-4 w-4" /> General</div></SelectItem>
+                                <SelectItem value="center"><div className="flex items-center gap-2"><Building className="h-4 w-4" /> Centro</div></SelectItem>
+                                <SelectItem value="class"><div className="flex items-center gap-2"><Users className="h-4 w-4" /> {adminClassName || 'Clase'}</div></SelectItem>
+                            </>
+                        ) : isCenterAdmin ? (
+                            <SelectItem value="center"><div className="flex items-center gap-2"><Building className="h-4 w-4" /> Centro</div></SelectItem>
+                        ) : isClassAdmin && user?.organizationId ? (
+                           <SelectItem value="class"><div className="flex items-center gap-2"><Users className="h-4 w-4" /> {adminClassName || 'Clase'}</div></SelectItem>
+                        ) : null}
                     </SelectContent>
                 </Select>
                 <Button onClick={handleSend} disabled={isLoading || !text.trim()} className="w-full sm:w-auto">
