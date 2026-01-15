@@ -114,23 +114,37 @@ export type Note = {
 };
 
 export type AnnouncementScope = 'general' | 'center' | 'class';
+export type AnnouncementType = 'text' | 'poll' | 'file';
+
+export type PollOption = {
+  id: string;
+  text: string;
+};
 
 export type Announcement = {
   uid: string;
-  text: string;
+  text?: string;
   authorId: string;
   authorName: string;
   authorAvatar: string;
   createdAt: { seconds: number, nanoseconds: number };
   scope: AnnouncementScope;
-  centerId?: string; // ID of the center if scope is 'center' or 'class'
-  className?: string; // Name of the class if scope is 'class', e.g. "4ESO-B"
+  centerId?: string;
+  className?: string;
   likedBy?: string[];
   likes?: number;
   isPinned?: boolean;
   viewedBy?: string[];
   reactions?: { [key: string]: string[] };
+  
+  // Poll fields
+  type: AnnouncementType;
+  pollQuestion?: string;
+  pollOptions?: PollOption[];
+  pollVotes?: { [optionId: string]: string[] }; // optionId -> [userId]
+  allowMultipleVotes?: boolean;
 };
+
 
 export type CompletedItem = {
     id: string;

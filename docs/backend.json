@@ -72,9 +72,27 @@
         "reactions": {
           "type": "object",
           "description": "A map of emoji reactions to a list of user UIDs."
-        }
+        },
+        "type": { "type": "string", "enum": ["text", "poll"] },
+        "pollQuestion": { "type": "string" },
+        "pollOptions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "text": { "type": "string" }
+            },
+            "required": ["id", "text"]
+          }
+        },
+        "pollVotes": {
+          "type": "object",
+          "description": "A map of option IDs to a list of user UIDs who voted."
+        },
+        "allowMultipleVotes": { "type": "boolean" }
       },
-      "required": ["text", "authorId", "authorName", "authorAvatar", "createdAt", "scope"]
+      "required": ["authorId", "authorName", "authorAvatar", "createdAt", "scope"]
     },
     "Chat": {
       "title": "Chat",

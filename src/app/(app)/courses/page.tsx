@@ -20,6 +20,14 @@ import {
   Pin,
   Eye,
   SmilePlus,
+  TextIcon,
+  File,
+  Vote,
+  PlusIcon,
+  Switch,
+  CheckCircle2,
+  EyeOff,
+  ChevronDown,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -64,7 +72,7 @@ import {
   arrayUnion,
   runTransaction,
 } from "firebase/firestore";
-import type { Note, Announcement, AnnouncementScope, Schedule, Center } from "@/lib/types";
+import type { Note, Announcement, AnnouncementScope, Schedule, Center, AnnouncementType, PollOption, User as AppUser } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -73,6 +81,7 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -83,6 +92,7 @@ import { es } from "date-fns/locale";
 import { FullScheduleView } from "@/components/layout/full-schedule-view";
 import { cn } from "@/lib/utils";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 
 export default function InfoPage() {
@@ -142,16 +152,21 @@ function AnnouncementsTab() {
     if (!firestore) return null;
     return query(collection(firestore, "announcements"), orderBy("createdAt", "desc"));
   }, [firestore]);
+  
+  const usersInCenterQuery = useMemoFirebase(() => {
+    if (!firestore || !user?.organizationId) return null;
+    return query(collection(firestore, "users"), where("organizationId", "==", user.organizationId));
+  }, [firestore, user?.organizationId]);
 
+  const { data: usersInCenter = [] } = useCollection<AppUser>(usersInCenterQuery);
   const { data: announcements = [], isLoading } = useCollection<Announcement>(announcementsCollection);
 
-  const handleAddAnnouncement = async (text: string, scope: AnnouncementScope, centerId?: string, className?: string) => {
+  const handleAddAnnouncement = async (announcementData: Partial<Announcement>) => {
     if (!firestore || !user) return;
     const announcementsCollectionRef = collection(firestore, "announcements");
     
-    let newAnnouncement: Partial<Announcement> = {
-        text,
-        scope,
+    const newAnnouncement: Partial<Announcement> = {
+        ...announcementData,
         authorId: user.uid,
         authorName: user.name,
         authorAvatar: user.avatar,
@@ -160,13 +175,6 @@ function AnnouncementsTab() {
         viewedBy: [],
         reactions: {},
     };
-    
-    if (scope === 'center' && centerId) {
-        newAnnouncement.centerId = centerId;
-    } else if (scope === 'class' && centerId && className) {
-        newAnnouncement.centerId = centerId;
-        newAnnouncement.className = className;
-    }
     
     await addDoc(announcementsCollectionRef, newAnnouncement);
   }
@@ -202,25 +210,19 @@ function AnnouncementsTab() {
 
             const data = annDoc.data();
             let currentReactions = data.reactions || {};
-
-            // Check if the user is un-reacting from the emoji they just clicked
             const isUnreacting = (currentReactions[emoji] || []).includes(user.uid);
 
-            // First, remove the user's ID from ANY existing reaction
             Object.keys(currentReactions).forEach(key => {
                 const reactors = currentReactions[key] as string[];
                 const userIndex = reactors.indexOf(user.uid);
                 if (userIndex > -1) {
                     reactors.splice(userIndex, 1);
                 }
-                // If no one is reacting with this emoji anymore, remove the key
                 if (reactors.length === 0) {
                     delete currentReactions[key];
                 }
             });
 
-            // If the user was not un-reacting (i.e., they are adding a new reaction or changing reaction),
-            // then add their new reaction.
             if (!isUnreacting) {
                 if (!currentReactions[emoji]) {
                     currentReactions[emoji] = [];
@@ -345,6 +347,7 @@ function AnnouncementsTab() {
               onDelete={handleDeleteAnnouncement}
               onPin={() => handlePinAnnouncement(announcement.uid, !!announcement.isPinned)}
               onReaction={handleReaction}
+              allUsersInCenter={usersInCenter}
           />
         ))}
       </div>
@@ -352,102 +355,192 @@ function AnnouncementsTab() {
   );
 }
 
-function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: AnnouncementScope, centerId?: string, className?: string) => Promise<void> }) {
-  const [text, setText] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const { user } = useApp();
-  
-  const isGlobalAdmin = user?.role === 'admin';
-  const isCenterAdmin = user?.role === 'center-admin';
-  const isClassAdmin = user?.role?.startsWith('admin-');
-  
-  const adminClassName = useMemo(() => {
-    if (isClassAdmin && user) {
-        const roleParts = user.role.split('admin-');
-        if (roleParts.length > 1) return roleParts[1];
-    }
-    return null;
-  }, [isClassAdmin, user]);
-  
-  const getInitialScope = useCallback((): AnnouncementScope => {
-      if (isClassAdmin) return 'class';
-      if (isCenterAdmin) return 'center';
-      return 'general';
-  }, [isCenterAdmin, isClassAdmin]);
+function NewAnnouncementCard({ onSend }: { onSend: (data: Partial<Announcement>) => Promise<void> }) {
+    const [isLoading, setIsLoading] = useState(false);
+    const { user } = useApp();
 
-  const [scope, setScope] = useState<AnnouncementScope>(getInitialScope());
+    const [announcementType, setAnnouncementType] = useState<AnnouncementType>('text');
+    const [text, setText] = useState("");
+    const [pollQuestion, setPollQuestion] = useState("");
+    const [pollOptions, setPollOptions] = useState<PollOption[]>([{ id: '1', text: '' }, { id: '2', text: '' }]);
+    const [allowMultipleVotes, setAllowMultipleVotes] = useState(false);
 
-  useEffect(() => {
-    setScope(getInitialScope());
-  }, [isGlobalAdmin, isCenterAdmin, isClassAdmin, getInitialScope]);
+    const isGlobalAdmin = user?.role === 'admin';
+    const isCenterAdmin = user?.role === 'center-admin';
+    const isClassAdmin = user?.role?.startsWith('admin-');
 
+    const adminClassName = useMemo(() => {
+        if (isClassAdmin && user) {
+            const roleParts = user.role.split('admin-');
+            if (roleParts.length > 1) return roleParts[1];
+        }
+        return null;
+    }, [isClassAdmin, user]);
 
-  const handleSend = async () => {
-    if (!text.trim() || !user) return;
-    setIsLoading(true);
+    const getInitialScope = useCallback((): AnnouncementScope => {
+        if (isClassAdmin) return 'class';
+        if (isCenterAdmin) return 'center';
+        return 'general';
+    }, [isCenterAdmin, isClassAdmin]);
+
+    const [scope, setScope] = useState<AnnouncementScope>(getInitialScope());
+
+    useEffect(() => {
+        setScope(getInitialScope());
+    }, [isGlobalAdmin, isCenterAdmin, isClassAdmin, getInitialScope]);
+
+    const handleAddOption = () => {
+        setPollOptions(prev => [...prev, { id: (prev.length + 1).toString(), text: '' }]);
+    };
     
-    try {
-        let centerId: string | undefined = undefined;
-        let className: string | undefined = undefined;
+    const handleRemoveOption = (id: string) => {
+        setPollOptions(prev => prev.filter(opt => opt.id !== id));
+    };
 
-        if (scope === 'center' || scope === 'class') {
-          centerId = user.organizationId;
+    const handleOptionChange = (id: string, newText: string) => {
+        setPollOptions(prev => prev.map(opt => opt.id === id ? { ...opt, text: newText } : opt));
+    };
+    
+    const handleSend = async () => {
+        if (!user) return;
+        setIsLoading(true);
+
+        try {
+            let announcementData: Partial<Announcement> = {
+                scope,
+                type: announcementType,
+            };
+
+            if (scope === 'center' || scope === 'class') {
+                announcementData.centerId = user.organizationId;
+            }
+            if (scope === 'class' && adminClassName) {
+                announcementData.className = adminClassName;
+            }
+
+            if (announcementType === 'text') {
+                if (!text.trim()) {
+                    setIsLoading(false);
+                    return;
+                }
+                announcementData.text = text;
+            } else if (announcementType === 'poll') {
+                const validOptions = pollOptions.filter(opt => opt.text.trim() !== '');
+                if (!pollQuestion.trim() || validOptions.length < 2) {
+                     setIsLoading(false);
+                     return; // Add toast feedback later
+                }
+                announcementData.pollQuestion = pollQuestion;
+                announcementData.pollOptions = validOptions.map((opt, index) => ({ id: (index + 1).toString(), text: opt.text })); // Re-ID to be safe
+                announcementData.allowMultipleVotes = allowMultipleVotes;
+                announcementData.pollVotes = {};
+            }
+
+            await onSend(announcementData);
+            
+            // Reset form
+            setText("");
+            setPollQuestion("");
+            setPollOptions([{ id: '1', text: '' }, { id: '2', text: '' }]);
+            setAllowMultipleVotes(false);
+            setAnnouncementType('text');
+
+        } catch (error) {
+            console.error("Failed to send announcement", error);
+        } finally {
+            setIsLoading(false);
         }
-        if (scope === 'class' && adminClassName) {
-          className = adminClassName;
-        }
-        
-        await onSend(text, scope, centerId, className);
-        setText("");
-    } catch (error) {
-        console.error("Failed to send announcement", error);
-    } finally {
-        setIsLoading(false);
     }
-  }
 
-  return (
-    <Card className="shadow-sm">
-        <CardContent className="p-4 space-y-3">
-            <div className="flex gap-3">
-                {user && <AvatarDisplay user={user} className="h-10 w-10 border" />}
-                <Textarea 
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder="Escribe un nuevo anuncio..."
-                    className="flex-1 bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
-                    rows={2}
-                />
-            </div>
-            <div className="flex flex-col sm:flex-row justify-end items-stretch gap-2">
-                <Select onValueChange={(v: AnnouncementScope) => setScope(v)} value={scope} disabled={!isGlobalAdmin && (isCenterAdmin || isClassAdmin)}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                        <SelectValue/>
-                    </SelectTrigger>
-                    <SelectContent>
-                        {isGlobalAdmin && (
-                            <SelectItem value="general"><div className="flex items-center gap-2"><Globe className="h-4 w-4" /> General</div></SelectItem>
-                        )}
-                        {(isGlobalAdmin || isCenterAdmin) && user?.organizationId && (
-                           <SelectItem value="center"><div className="flex items-center gap-2"><Building className="h-4 w-4" /> Centro</div></SelectItem>
-                        )}
-                        {(isGlobalAdmin || isClassAdmin) && user?.organizationId && adminClassName && (
-                           <SelectItem value="class"><div className="flex items-center gap-2"><Users className="h-4 w-4" /> {adminClassName}</div></SelectItem>
-                        )}
-                    </SelectContent>
-                </Select>
-                <Button onClick={handleSend} disabled={isLoading || !text.trim()} className="w-full sm:w-auto">
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                    Publicar
-                </Button>
-            </div>
-        </CardContent>
-    </Card>
-  )
+    return (
+        <Card className="shadow-sm">
+            <CardContent className="p-4 space-y-3">
+                <div className="flex gap-3">
+                    {user && <AvatarDisplay user={user} className="h-10 w-10 border" />}
+                    <div className="flex-1 space-y-3">
+                       {announcementType === 'text' && (
+                            <Textarea
+                                value={text}
+                                onChange={(e) => setText(e.target.value)}
+                                placeholder="Escribe un nuevo anuncio..."
+                                className="bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
+                                rows={3}
+                            />
+                       )}
+                       {announcementType === 'poll' && (
+                           <div className="space-y-3 p-3 bg-muted/50 rounded-md border">
+                               <Input 
+                                 value={pollQuestion}
+                                 onChange={(e) => setPollQuestion(e.target.value)}
+                                 placeholder="Pregunta de la votación..."
+                                 className="text-base font-semibold"
+                               />
+                               <div className="space-y-2">
+                                  {pollOptions.map((option, index) => (
+                                      <div key={option.id} className="flex items-center gap-2">
+                                        <Input
+                                          value={option.text}
+                                          onChange={(e) => handleOptionChange(option.id, e.target.value)}
+                                          placeholder={`Opción ${index + 1}`}
+                                        />
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0" onClick={() => handleRemoveOption(option.id)} disabled={pollOptions.length <= 2}>
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                  ))}
+                               </div>
+                               <Button variant="outline" size="sm" onClick={handleAddOption} className="w-full border-dashed">
+                                    <PlusIcon className="h-4 w-4 mr-2"/>Añadir opción
+                               </Button>
+                               <div className="flex items-center space-x-2 pt-2">
+                                    <Switch id="multiple-votes" checked={allowMultipleVotes} onCheckedChange={setAllowMultipleVotes} />
+                                    <Label htmlFor="multiple-votes">Permitir múltiples respuestas</Label>
+                               </div>
+                           </div>
+                       )}
+                    </div>
+                </div>
+                <div className="flex flex-col sm:flex-row justify-end items-stretch gap-2">
+                    <div className="flex items-center gap-2">
+                         <Select onValueChange={(v: AnnouncementType) => setAnnouncementType(v)} value={announcementType}>
+                            <SelectTrigger className="w-full sm:w-[130px]">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="text"><div className="flex items-center gap-2"><TextIcon className="h-4 w-4" /> Texto</div></SelectItem>
+                                <SelectItem value="poll"><div className="flex items-center gap-2"><Vote className="h-4 w-4" /> Votación</div></SelectItem>
+                                <SelectItem value="file" disabled><div className="flex items-center gap-2"><File className="h-4 w-4" /> Archivo</div></SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Select onValueChange={(v: AnnouncementScope) => setScope(v)} value={scope} disabled={!isGlobalAdmin && (isCenterAdmin || isClassAdmin)}>
+                            <SelectTrigger className="w-full sm:w-[130px]">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {isGlobalAdmin && (
+                                    <SelectItem value="general"><div className="flex items-center gap-2"><Globe className="h-4 w-4" /> General</div></SelectItem>
+                                )}
+                                {(isGlobalAdmin || isCenterAdmin) && user?.organizationId && (
+                                   <SelectItem value="center"><div className="flex items-center gap-2"><Building className="h-4 w-4" /> Centro</div></SelectItem>
+                                )}
+                                {(isGlobalAdmin || isClassAdmin) && user?.organizationId && adminClassName && (
+                                   <SelectItem value="class"><div className="flex items-center gap-2"><Users className="h-4 w-4" /> {adminClassName}</div></SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <Button onClick={handleSend} disabled={isLoading} className="w-full sm:w-auto">
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                        Publicar
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    );
 }
 
 
-function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelete, onPin, onReaction }: { 
+function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelete, onPin, onReaction, allUsersInCenter }: { 
     announcement: Announcement, 
     isAuthor: boolean, 
     canManage: boolean, 
@@ -455,9 +548,10 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
     onDelete: (uid: string) => void, 
     onPin: () => void,
     onReaction: (uid: string, emoji: string) => void,
+    allUsersInCenter: AppUser[]
 }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(announcement.text);
+  const [editText, setEditText] = useState(announcement.text || '');
   const { user, firestore } = useApp();
   const ref = useRef<HTMLDivElement>(null);
   
@@ -533,7 +627,9 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
             </div>
         </CardHeader>
         <CardContent className="p-4 pt-0">
-            {isEditing ? (
+            {announcement.type === 'poll' ? (
+                <PollDisplay announcement={announcement} allUsers={allUsersInCenter} />
+            ) : isEditing ? (
                  <div className="space-y-2">
                     <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={3} />
                     <div className="flex justify-end gap-2">
@@ -549,7 +645,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
         </CardContent>
         {(isAuthor || canManage || user) && !isEditing && (
              <CardFooter className="p-4 pt-0 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
@@ -598,7 +694,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                             <Pin className={cn("h-4 w-4", announcement.isPinned && "fill-current text-primary")} />
                         </Button>
                     )}
-                    {isAuthor && (
+                    {isAuthor && announcement.type !== 'poll' && (
                         <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>Editar</Button>
                     )}
                    {(isAuthor || canManage) && (
@@ -609,6 +705,171 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
         )}
     </Card>
   );
+}
+
+const PollDisplay = ({ announcement, allUsers }: { announcement: Announcement, allUsers: AppUser[] }) => {
+    const { user, firestore } = useApp();
+    const [selectedOption, setSelectedOption] = useState<string | null>(null);
+
+    const userVote = useMemo(() => {
+        if (!user || !announcement.pollVotes) return null;
+        for (const optionId in announcement.pollVotes) {
+            if (announcement.pollVotes[optionId].includes(user.uid)) {
+                return optionId;
+            }
+        }
+        return null;
+    }, [user, announcement.pollVotes]);
+    
+    const totalVotes = useMemo(() => {
+        return Object.values(announcement.pollVotes || {}).reduce((acc, uids) => acc + uids.length, 0);
+    }, [announcement.pollVotes]);
+
+    const handleVote = async (optionId: string) => {
+        if (!firestore || !user) return;
+        const announcementRef = doc(firestore, "announcements", announcement.uid);
+
+        await runTransaction(firestore, async (transaction) => {
+            const annDoc = await transaction.get(announcementRef);
+            if (!annDoc.exists()) throw "Document does not exist!";
+            
+            const currentData = annDoc.data() as Announcement;
+            const votes = { ...(currentData.pollVotes || {}) };
+            
+            // Single vote logic: remove user from all other options
+            Object.keys(votes).forEach(optId => {
+                if (votes[optId]?.includes(user.uid)) {
+                    votes[optId] = votes[optId].filter(uid => uid !== user.uid);
+                }
+            });
+            
+            // Add vote to the new option
+            if (!votes[optionId]) {
+                votes[optionId] = [];
+            }
+            if (!votes[optionId].includes(user.uid)) {
+                votes[optionId].push(user.uid);
+            }
+
+            transaction.update(announcementRef, { pollVotes: votes });
+        });
+    };
+
+    return (
+        <div className="space-y-3">
+            <h4 className="font-bold text-base">{announcement.pollQuestion}</h4>
+            <div className="space-y-2">
+                {announcement.pollOptions?.map(option => {
+                    const votesForOption = announcement.pollVotes?.[option.id] || [];
+                    const percentage = totalVotes > 0 ? (votesForOption.length / totalVotes) * 100 : 0;
+                    
+                    if (!userVote) {
+                        return (
+                            <Button key={option.id} variant="outline" className="w-full justify-start h-auto p-3" onClick={() => handleVote(option.id)}>
+                                <div className="h-5 w-5 rounded-full border-2 border-primary mr-3 shrink-0"/>
+                                <span className="flex-1 text-left whitespace-normal">{option.text}</span>
+                            </Button>
+                        )
+                    }
+
+                    return (
+                        <div key={option.id} className="relative p-3 rounded-lg border overflow-hidden cursor-pointer" onClick={() => handleVote(option.id)}>
+                            <div className="absolute top-0 left-0 bottom-0 bg-primary/10" style={{ width: `${percentage}%` }} />
+                            <div className="relative flex items-center gap-3">
+                                <div className={cn("h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center", userVote === option.id && "bg-primary")}>
+                                   {userVote === option.id && <CheckCircle2 className="h-3 w-3 text-white"/>}
+                                </div>
+                                <span className="flex-1 font-semibold">{option.text}</span>
+                                <div className="flex items-center gap-2">
+                                    <VotersDisplay uids={votesForOption} allUsers={allUsers} />
+                                    <span className="text-sm font-bold w-12 text-right">{percentage.toFixed(0)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+             {!userVote && (
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-2">
+                    <EyeOff className="h-4 w-4"/>
+                    <span>Vota para ver los resultados de la encuesta.</span>
+                </div>
+            )}
+             <PollResultsDialog announcement={announcement} allUsers={allUsers} />
+        </div>
+    )
+}
+
+function VotersDisplay({ uids, allUsers }: { uids: string[], allUsers: AppUser[] }) {
+    const voters = useMemo(() => uids.map(uid => allUsers.find(u => u.uid === uid)).filter(Boolean) as AppUser[], [uids, allUsers]);
+    
+    if (voters.length === 0) return null;
+    
+    const votersToShow = voters.slice(0, 3);
+    const remainingCount = voters.length - votersToShow.length;
+
+    return (
+        <div className="flex -space-x-2">
+            {votersToShow.map(voter => (
+                <AvatarDisplay key={voter.uid} user={voter} className="h-6 w-6 border-2 border-background" />
+            ))}
+            {remainingCount > 0 && (
+                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold border-2 border-background">
+                    +{remainingCount}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function PollResultsDialog({ announcement, allUsers }: { announcement: Announcement, allUsers: AppUser[]}) {
+    const { user } = useApp();
+    if (user?.role === 'student') return null;
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                 <Button variant="secondary" size="sm" className="mt-2">Ver respuestas</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Resultados de la Votación</DialogTitle>
+                    <DialogDescription>{announcement.pollQuestion}</DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[60vh] -mx-6 px-6">
+                    <div className="space-y-4">
+                        {announcement.pollOptions?.map(option => {
+                            const voterUids = announcement.pollVotes?.[option.id] || [];
+                            const voters = voterUids.map(uid => allUsers.find(u => u.uid === uid)).filter(Boolean) as AppUser[];
+
+                            return (
+                                <div key={option.id}>
+                                    <h4 className="font-semibold text-sm mb-2">{option.text} <Badge>{voters.length} Votos</Badge></h4>
+                                    {voters.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {voters.map(voter => (
+                                                <div key={voter.uid} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md text-sm">
+                                                    <AvatarDisplay user={voter} className="h-6 w-6"/>
+                                                    <span>{voter.name}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-muted-foreground">Nadie ha votado por esta opción todavía.</p>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+                </ScrollArea>
+                 <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline">Cerrar</Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
 }
 
 function MyClassesTab() {

@@ -56,9 +56,25 @@ service cloud.firestore {
     
     function isValidAnnouncement() {
       let data = request.resource.data;
-      return data.keys().hasAll(['text', 'authorId', 'authorName', 'authorAvatar', 'createdAt', 'scope']) &&
-             data.text is string && data.text.size() > 0 && data.text.size() < 1000 &&
-             data.scope in ['general', 'center', 'class'];
+      // Common fields validation
+      let commonValid = data.keys().hasAll(['authorId', 'authorName', 'authorAvatar', 'createdAt', 'scope']) &&
+                        data.scope in ['general', 'center', 'class'];
+      if (!commonValid) {
+        return false;
+      }
+
+      // Type-specific validation
+      let type = data.get('type', 'text'); // Default to 'text' if not present
+      if (type == 'text') {
+        return 'text' in data && data.text is string && data.text.size() > 0 && data.text.size() < 1000;
+      }
+      if (type == 'poll') {
+        return 'pollQuestion' in data && data.pollQuestion is string && data.pollQuestion.size() > 0 &&
+               'pollOptions' in data && data.pollOptions is list && data.pollOptions.size() > 1 &&
+               'allowMultipleVotes' in data && data.allowMultipleVotes is bool;
+      }
+
+      return false; // Reject unknown types
     }
 
     // ============= USERS COLLECTION =============
@@ -174,6 +190,10 @@ service cloud.firestore {
       // Any user can update reactions.
       allow update: if request.auth != null &&
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']);
+                       
+      // Any user can update their votes in a poll
+      allow update: if request.auth != null &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollVotes']);
     }
 
     // ============= CENTERS =============
