@@ -287,43 +287,40 @@ export default function SettingsPage() {
         </Card>
 
         <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><LifeBuoy />Soporte y Legal</CardTitle>
-                <CardDescription>
-                Ayuda, sugerencias y políticas de la aplicación.
-                </CardDescription>
+            <CardHeader className="p-4">
+                <CardTitle className="flex items-center gap-2 text-base"><LifeBuoy />Soporte y Legal</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-                <a href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
+            <CardContent className="space-y-2 p-4 pt-0">
+                <a href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-3 transition-colors hover:bg-muted/50">
                     <div className="flex items-center gap-3">
                         <Globe className="h-5 w-5 text-primary" />
-                        <span className="font-medium">Web Oficial</span>
+                        <span className="font-medium text-sm">Web Oficial</span>
                     </div>
                     <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </a>
-                <a href="https://form.jotform.com/230622014643040" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
+                <a href="https://form.jotform.com/230622014643040" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-3 transition-colors hover:bg-muted/50">
                     <div className="flex items-center gap-3">
                         <FileText className="h-5 w-5 text-primary" />
-                        <span className="font-medium">Formulario de Asistencia</span>
+                        <span className="font-medium text-sm">Formulario de Asistencia</span>
                     </div>
                     <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </a>
-                <div className="flex items-center justify-between rounded-md border p-4">
+                <div className="flex items-center justify-between rounded-md border p-3">
                     <div className="flex items-center gap-3">
                         <Mail className="h-5 w-5 text-primary" />
                         <div className="flex flex-col">
-                            <span className="font-medium">Contacto y Soporte</span>
-                            <span className="text-sm text-muted-foreground">info.dynamicclass@gmail.com</span>
+                            <span className="font-medium text-sm">Contacto y Soporte</span>
+                            <span className="text-xs text-muted-foreground">info.dynamicclass@gmail.com</span>
                         </div>
                     </div>
                     <Button variant="ghost" size="icon" onClick={handleCopy} className="h-8 w-8">
                         {isCopied ? <Check className="h-4 w-4 text-green-500"/> : <Copy className="h-4 w-4 text-muted-foreground" />}
                     </Button>
                 </div>
-                <a href="https://docs.google.com/forms/d/e/1FAIpQLSdVdZ5H7L4Je1-NbX-3TTmvZX6kRVyHhagokwaBNYwZQOUlfw/viewform?usp=sharing&ouid=117084013399350850231" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border-accent/50 bg-accent/10 p-4 transition-colors hover:bg-accent/20">
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSdVdZ5H7L4Je1-NbX-3TTmvZX6kRVyHhagokwaBNYwZQOUlfw/viewform?usp=sharing&ouid=117084013399350850231" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border-accent/50 bg-accent/10 p-3 transition-colors hover:bg-accent/20">
                     <div className="flex items-center gap-3">
                         <FlaskConical className="h-5 w-5 text-accent" />
-                        <span className="font-medium text-accent">Formulario para Beta Testers</span>
+                        <span className="font-medium text-accent text-sm">Formulario para Beta Testers</span>
                     </div>
                     <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </a>
@@ -599,10 +596,10 @@ function PrivacyPolicyDialog() {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <button className="flex w-full items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50 text-left">
+                <button className="flex w-full items-center justify-between rounded-md border p-3 transition-colors hover:bg-muted/50 text-left">
                     <div className="flex items-center gap-3">
                         <Shield className="h-5 w-5 text-primary" />
-                        <span className="font-medium">Políticas de Privacidad y Seguridad</span>
+                        <span className="font-medium text-sm">Políticas de Privacidad y Seguridad</span>
                     </div>
                     <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </button>
@@ -716,9 +713,8 @@ function DeveloperPortalDialog() {
     <Dialog>
         <DialogTrigger asChild>
             <Card className="border-purple-400/30 bg-purple-500/5 cursor-pointer hover:bg-purple-500/10 transition-colors">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-purple-600 dark:text-purple-400"><FlaskConical />Portal de Desarrolladores</CardTitle>
-                    <CardDescription className="text-purple-600/80 dark:text-purple-400/80">Acceso a funciones experimentales y de depuración.</CardDescription>
+                <CardHeader className="p-4">
+                    <CardTitle className="flex items-center gap-2 text-purple-600 dark:text-purple-400 text-base"><FlaskConical />Portal de Desarrolladores</CardTitle>
                 </CardHeader>
             </Card>
         </DialogTrigger>
