@@ -82,8 +82,9 @@ export function GradeCalculatorDialog({ children, isScheduleAvailable, user, ope
       if (!isOpen) return;
 
       const loadData = async () => {
-          let availableSubjects: string[];
-          
+          let availableSubjects: string[] = [];
+          let hasSchedule = false;
+
           if (firestore && user.organizationId && user.center !== 'personal') {
               const centerDocRef = doc(firestore, 'centers', user.organizationId);
               const centerDoc = await getDoc(centerDocRef);
@@ -95,30 +96,51 @@ export function GradeCalculatorDialog({ children, isScheduleAvailable, user, ope
                   if (userClassDef?.schedule) {
                       const scheduleSubjects = Object.values(userClassDef.schedule).flat().map(c => c.subject);
                       availableSubjects = [...new Set(scheduleSubjects)];
-                  } else {
-                      availableSubjects = newDefaultSubjects;
+                      hasSchedule = true;
                   }
-              } else {
-                  availableSubjects = newDefaultSubjects;
               }
-          } else {
+          }
+
+          if (!hasSchedule) {
               availableSubjects = newDefaultSubjects;
           }
 
           try {
               const savedConfigs = localStorage.getItem(storageKey);
               const parsedConfigs: AllSubjectConfigs = savedConfigs ? JSON.parse(savedConfigs) : {};
-              const savedSubjects = Object.keys(parsedConfigs);
-              const allSubjects = [...new Set([...availableSubjects, ...savedSubjects])];
               
-              setSubjects(allSubjects);
+              let finalSubjects: string[];
+
+              if (hasSchedule) {
+                  const savedSubjects = Object.keys(parsedConfigs);
+                  finalSubjects = [...new Set([...availableSubjects, ...savedSubjects])];
+              } else {
+                  finalSubjects = availableSubjects;
+                  // If there is no schedule, we reset the configs to only use the default subjects
+                  const newConfigs: AllSubjectConfigs = {};
+                  finalSubjects.forEach(sub => {
+                    newConfigs[sub] = parsedConfigs[sub] || { grades: [{ id: Date.now(), title: "", grade: "", weight: "" }], desiredGrade: "5", result: null };
+                  });
+                  setAllConfigs(newConfigs);
+              }
               
-              if (allSubjects.length > 0) {
-                  const firstSubject = allSubjects[0];
+              setSubjects(finalSubjects);
+              
+              if (finalSubjects.length > 0) {
+                  const firstSubject = finalSubjects[0];
                   setActiveSubject(firstSubject);
                   
-                  const updatedConfigs = {...parsedConfigs};
-                  allSubjects.forEach(sub => {
+                   const updatedConfigs = {...parsedConfigs};
+                   if (!hasSchedule) {
+                        // Ensure only default subjects exist in config if no schedule
+                        Object.keys(updatedConfigs).forEach(key => {
+                            if (!finalSubjects.includes(key)) {
+                                delete updatedConfigs[key];
+                            }
+                        });
+                   }
+
+                  finalSubjects.forEach(sub => {
                       if (!updatedConfigs[sub]) {
                           updatedConfigs[sub] = { grades: [{ id: Date.now(), title: "", grade: "", weight: "" }], desiredGrade: "5", result: null };
                       }
