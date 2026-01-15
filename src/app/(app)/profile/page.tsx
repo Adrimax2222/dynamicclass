@@ -220,7 +220,7 @@ export default function ProfilePage() {
       </Card>
 
       {isUserAdmin ? (
-        <Card className="mb-8 border-blue-500/50">
+          <Card className="mb-8 border-blue-500/50">
             <CardHeader className="flex-row items-center justify-between p-4">
                 <div>
                     <CardTitle className="flex items-center gap-2 text-blue-500 text-base"><ShieldCheck />Panel de Administrador</CardTitle>
@@ -784,20 +784,18 @@ const handleSaveChanges = async () => {
                                             const isSelected = editableAvatar.id === avatar.id;
                                             return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
                                         })}
-                                        <Collapsible className="col-span-4">
+                                        <Collapsible>
                                             <CollapsibleTrigger asChild>
                                                 <div className="relative group flex flex-col items-center gap-2">
                                                     <button type="button" className="w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50">
-                                                        <div className="w-full h-full flex items-center justify-center">
-                                                            <Plus className="h-8 w-8 text-muted-foreground" />
-                                                        </div>
+                                                        <Plus className="h-8 w-8 text-muted-foreground" />
                                                     </button>
                                                     <div className="text-center">
                                                         <p className="text-xs font-bold text-muted-foreground">Más</p>
                                                     </div>
                                                 </div>
                                             </CollapsibleTrigger>
-                                            <CollapsibleContent className="mt-4 p-4 border-t">
+                                            <CollapsibleContent className="mt-4 p-4 border-t col-span-4">
                                                 <div className="grid grid-cols-4 gap-4">
                                                     {EXPANDED_SHOP_AVATARS.map((avatar) => {
                                                         const isOwned = user.ownedAvatars?.includes(avatar.id);
@@ -1165,6 +1163,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
 
 
