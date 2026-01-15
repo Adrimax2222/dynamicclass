@@ -162,7 +162,6 @@ export default function ProfilePage() {
             <EditProfileDialog allCenters={centers} defaultOpenItem="item-1">
                 <button
                   className="absolute bottom-0 -right-1 bg-primary text-primary-foreground p-1.5 rounded-full ring-2 ring-background transition-transform hover:scale-110 active:scale-95 shadow-md"
-                  onClick={() => setDefaultOpenItem("item-1")}
                   aria-label="Editar avatar"
                 >
                     <Edit className="h-4 w-4"/>
@@ -218,7 +217,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {isUserAdmin && (
+      {isUserAdmin ? (
         <Card className="mb-8 border-blue-500/50">
             <CardHeader className="flex-row items-center justify-between p-4">
                 <div>
@@ -242,7 +241,7 @@ export default function ProfilePage() {
                 </Button>
             </CardHeader>
         </Card>
-      ) : isUserClassAdmin && (
+      ) : isUserClassAdmin ? (
         <Card className="mb-8 border-green-500/50">
             <CardHeader className="flex-row items-center justify-between p-4">
                 <div>
@@ -254,7 +253,7 @@ export default function ProfilePage() {
                 </Button>
             </CardHeader>
         </Card>
-      )}
+      ) : null}
 
       <Card className="mb-8 bg-blue-500/5 border-blue-500/20">
           <CardHeader className="flex-row items-center justify-between p-4">
@@ -1122,4 +1121,6 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
+
 
