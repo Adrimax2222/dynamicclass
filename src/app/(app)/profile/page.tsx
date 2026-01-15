@@ -55,6 +55,7 @@ export default function ProfilePage() {
   const firestore = useFirestore();
   const centersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'centers') : null, [firestore]);
   const { data: centers = [] } = useCollection<Center>(centersCollection);
+  const [defaultOpenItem, setDefaultOpenItem] = useState('');
 
 
   if (!user) {
@@ -153,7 +154,18 @@ export default function ProfilePage() {
       <Card className="mb-8 overflow-hidden shadow-lg">
         <div className="bg-muted/40 h-24" />
         <CardContent className="p-4 text-center -mt-16">
-          <AvatarDisplay user={user} className="mx-auto h-24 w-24 ring-4 ring-background" />
+          <div className="relative w-24 h-24 mx-auto">
+            <AvatarDisplay user={user} className="w-full h-full ring-4 ring-background" />
+            <EditProfileDialog allCenters={centers} defaultOpenItem="item-1">
+                <button
+                  className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1.5 rounded-full ring-2 ring-background transition-transform hover:scale-110 active:scale-95 shadow-md"
+                  onClick={() => setDefaultOpenItem("item-1")}
+                  aria-label="Editar avatar"
+                >
+                    <Edit className="h-4 w-4"/>
+                </button>
+            </EditProfileDialog>
+          </div>
           <h2 className="mt-4 text-2xl font-bold">{user.name}</h2>
           <div className="mt-2 flex items-center justify-center gap-2">
             {user.role === 'admin' && (
@@ -167,7 +179,12 @@ export default function ProfilePage() {
             )}
           </div>
           <p className={cn("text-muted-foreground mt-2", !isCenterCodeValid && user.center !== 'personal' && "text-red-500 font-bold")}>{displayCenter}</p>
-          <EditProfileDialog allCenters={centers} />
+          <EditProfileDialog allCenters={centers}>
+            <Button variant="outline" size="sm" className="mt-4" onClick={() => setDefaultOpenItem('')}>
+              <Edit className="h-4 w-4 mr-2" />
+              Configuración de Perfil
+            </Button>
+          </EditProfileDialog>
         </CardContent>
       </Card>
       
@@ -351,7 +368,7 @@ const courseOptions = [
 
 const classOptions = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
-function EditProfileDialog({ allCenters }: { allCenters: Center[] }) {
+function EditProfileDialog({ allCenters, children, defaultOpenItem }: { allCenters: Center[], children?: React.ReactNode, defaultOpenItem?: string }) {
   const { user, updateUser } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -674,17 +691,14 @@ const handleSaveChanges = async () => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="mt-4">
-          <Edit className="h-4 w-4 mr-2" />
-          Configuración de Perfil
-        </Button>
+        {children}
       </DialogTrigger>
       <DialogContent className="max-w-md w-[95vw]">
         <DialogHeader>
           <DialogTitle>Editor de Perfil</DialogTitle>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh] -mx-6 px-6">
-            <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+            <Accordion type="single" collapsible defaultValue={defaultOpenItem || "item-1"} className="w-full">
                 <AccordionItem value="item-1">
                     <AccordionTrigger>Avatar y Color</AccordionTrigger>
                     <AccordionContent>
@@ -1083,6 +1097,8 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
+    
+
     
 
     
