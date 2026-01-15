@@ -76,6 +76,7 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { FullScheduleView } from "@/components/layout/full-schedule-view";
 import { cn } from "@/lib/utils";
+import { AvatarDisplay } from "@/components/profile/avatar-creator";
 
 
 export default function InfoPage() {
@@ -353,10 +354,7 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: Announc
     <Card className="shadow-sm">
         <CardContent className="p-4 space-y-3">
             <div className="flex gap-3">
-                <Avatar className="h-10 w-10">
-                    <AvatarImage src={user?.avatar} />
-                    <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
-                </Avatar>
+                {user && <AvatarDisplay user={user} className="h-10 w-10" />}
                 <Textarea 
                     value={text}
                     onChange={(e) => setText(e.target.value)}
@@ -453,10 +451,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
   return (
     <Card ref={ref} className={cn("overflow-hidden transition-all duration-300 hover:border-primary/20 hover:shadow-md", announcement.isPinned && "border-primary/50 bg-primary/5")}>
         <CardHeader className="flex flex-row items-start gap-4 space-y-0 p-4">
-             <Avatar className="h-10 w-10 border">
-                <AvatarImage src={announcement.authorAvatar} />
-                <AvatarFallback>{announcement.authorName.charAt(0)}</AvatarFallback>
-            </Avatar>
+             <AvatarDisplay user={{ name: announcement.authorName, avatar: announcement.authorAvatar }} className="h-10 w-10 border" />
             <div className="flex-1">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                     <div>

@@ -475,7 +475,8 @@ export default function AuthPage() {
         const firstInitial = firebaseUser.displayName?.charAt(0).toUpperCase() || 'A';
         const newUser: Omit<User, 'uid'> = {
             name: firebaseUser.displayName || 'Usuario', email: firebaseUser.email!,
-            avatar: `letter_${''}${firstInitial}_A78BFA`, center: 'default', ageRange: 'default', 
+            avatar: firebaseUser.photoURL || `letter_${firstInitial}_A78BFA`, 
+            center: 'default', ageRange: 'default', 
             course: 'default', className: 'default', role: 'student',
             trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
             isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [],
