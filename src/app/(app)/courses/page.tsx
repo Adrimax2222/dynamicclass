@@ -535,48 +535,51 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                     {announcement.text}
                 </div>
             )}
-             <div className="flex flex-wrap gap-2 mt-3">
-                {Object.entries(announcement.reactions || {}).map(([emoji, uids]) => {
-                    if (uids.length === 0) return null;
-                    const userHasReacted = uids.includes(user?.uid || '');
-                    return (
-                        <Badge
-                            key={emoji}
-                            variant={userHasReacted ? "default" : "secondary"}
-                            className="cursor-pointer transition-transform hover:scale-110 py-1 px-2"
-                            onClick={() => onReaction(announcement.uid, emoji)}
-                        >
-                            <span className="text-base mr-1.5">{emoji}</span>
-                            <span className="font-bold text-sm">{uids.length}</span>
-                        </Badge>
-                    )
-                })}
-            </div>
         </CardContent>
         {(isAuthor || canManage) && !isEditing && (
-             <CardFooter className="p-4 pt-0 justify-between">
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                            <SmilePlus className="h-4 w-4" />
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-1">
-                        <div className="grid grid-cols-5 gap-0">
-                            {availableReactions.map(emoji => (
-                                <Button
+             <CardFooter className="p-4 pt-0 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                                <SmilePlus className="h-4 w-4" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-1">
+                            <div className="grid grid-cols-5 gap-0">
+                                {availableReactions.map(emoji => (
+                                    <Button
+                                        key={emoji}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-xl rounded-full h-9 w-9"
+                                        onClick={() => onReaction(announcement.uid, emoji)}
+                                    >
+                                        {emoji}
+                                    </Button>
+                                ))}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
+                    <div className="flex flex-wrap gap-2">
+                        {Object.entries(announcement.reactions || {}).map(([emoji, uids]) => {
+                            if (uids.length === 0) return null;
+                            const userHasReacted = uids.includes(user?.uid || '');
+                            return (
+                                <Badge
                                     key={emoji}
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-xl rounded-full h-9 w-9"
+                                    variant={userHasReacted ? "default" : "secondary"}
+                                    className="cursor-pointer transition-transform hover:scale-110 py-1 px-2"
                                     onClick={() => onReaction(announcement.uid, emoji)}
                                 >
-                                    {emoji}
-                                </Button>
-                            ))}
-                        </div>
-                    </PopoverContent>
-                </Popover>
+                                    <span className="text-base mr-1.5">{emoji}</span>
+                                    <span className="font-bold text-sm">{uids.length}</span>
+                                </Badge>
+                            )
+                        })}
+                    </div>
+                </div>
 
                 <div className="flex items-center">
                     {canManage && (
@@ -734,7 +737,7 @@ function NotesTab() {
       )}
       <div className="grid gap-4 md:grid-cols-2">
         {notes.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)).map((note) => (
-          <Card key={note.id} className="flex flex-col">
+          <Card key={note.uid} className="flex flex-col">
             <CardHeader>
               <CardTitle className="text-base">{note.title}</CardTitle>
             </CardHeader>
@@ -742,10 +745,10 @@ function NotesTab() {
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">{note.content}</p>
             </CardContent>
             <div className="p-4 pt-0 flex justify-end gap-2">
-               <NoteDialog note={note} onSave={(title, content) => handleUpdateNote(note.id, title, content)} >
+               <NoteDialog note={note} onSave={(title, content) => handleUpdateNote(note.uid, title, content)} >
                   <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
                </NoteDialog>
-               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteNote(note.id)}>
+               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteNote(note.uid)}>
                   <Trash2 className="h-4 w-4" />
                </Button>
             </div>
