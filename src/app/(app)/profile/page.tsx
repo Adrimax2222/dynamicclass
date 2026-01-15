@@ -30,7 +30,7 @@ import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useMemo } from "react";
-import { doc, updateDoc, arrayUnion, increment, collection, query, orderBy, getDocs, addDoc, serverTimestamp, where } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, increment, collection, query, orderBy, getDocs, addDoc, serverTimestamp, where, writeBatch } from "firebase/firestore";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -201,61 +201,52 @@ export default function ProfilePage() {
 
       {isUserAdmin ? (
         <Card className="mb-8 border-blue-500/50">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-blue-500"><ShieldCheck />Panel de Administrador</CardTitle>
-                  <CardDescription>Gestiona usuarios, grupos y otros aspectos de la aplicación.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Button asChild className="w-full">
-                    <Link href="/admin">
-                        <Shield className="mr-2 h-4 w-4" />
-                        Acceder al Panel
-                    </Link>
+            <CardHeader className="flex-row items-center justify-between p-4">
+                <div>
+                    <CardTitle className="flex items-center gap-2 text-blue-500 text-base"><ShieldCheck />Panel de Administrador</CardTitle>
+                    <CardDescription className="text-xs pt-1">Gestiona usuarios, grupos y más.</CardDescription>
+                </div>
+                <Button asChild size="sm">
+                    <Link href="/admin">Acceder</Link>
                 </Button>
-            </CardContent>
+            </CardHeader>
         </Card>
       ) : isCenterAdmin ? (
           <Card className="mb-8 border-purple-500/50">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-purple-600"><ShieldCheck />Panel de Admin Centro</CardTitle>
-                  <CardDescription>Gestiona tu centro educativo, sus clases y miembros.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Button asChild className="w-full bg-purple-600 hover:bg-purple-700">
-                    <Link href={`/admin/groups/${user.organizationId}`}>
-                        <Shield className="mr-2 h-4 w-4" />
-                        Gestionar mi Centro
-                    </Link>
+            <CardHeader className="flex-row items-center justify-between p-4">
+                 <div>
+                    <CardTitle className="flex items-center gap-2 text-purple-600 text-base"><ShieldCheck />Panel de Admin Centro</CardTitle>
+                    <CardDescription className="text-xs pt-1">Gestiona tu centro educativo.</CardDescription>
+                </div>
+                <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700">
+                    <Link href={`/admin/groups/${user.organizationId}`}>Gestionar</Link>
                 </Button>
-            </CardContent>
+            </CardHeader>
         </Card>
       ) : isUserClassAdmin && (
         <Card className="mb-8 border-green-500/50">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-600"><GraduationCap />Panel de Admin Clase</CardTitle>
-                <CardDescription>Gestiona los miembros, horarios y calendario de tu clase.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Button asChild className="w-full bg-green-600 hover:bg-green-700">
-                    <Link href={`/admin/groups/${user.organizationId}`}>
-                        <Shield className="mr-2 h-4 w-4" />
-                        Gestionar mi Clase
-                    </Link>
+            <CardHeader className="flex-row items-center justify-between p-4">
+                <div>
+                    <CardTitle className="flex items-center gap-2 text-green-600 text-base"><GraduationCap />Panel de Admin Clase</CardTitle>
+                    <CardDescription className="text-xs pt-1">Gestiona los miembros y el horario de tu clase.</CardDescription>
+                </div>
+                <Button asChild size="sm" className="bg-green-600 hover:bg-green-700">
+                    <Link href={`/admin/groups/${user.organizationId}`}>Gestionar</Link>
                 </Button>
-            </CardContent>
+            </CardHeader>
         </Card>
       )}
 
       <Card className="mb-8 bg-blue-500/5 border-blue-500/20">
-          <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                  <GraduationCap className="h-6 w-6 text-blue-500" />
+          <CardHeader className="flex-row items-center justify-between p-4">
+            <div>
+              <CardTitle className="flex items-center gap-3 text-base">
+                  <GraduationCap className="h-5 w-5 text-blue-500" />
                   <span>Modo Profesor</span>
-                  <Badge variant="outline">Próximamente</Badge>
               </CardTitle>
-              <CardDescription>
-                  Estamos desarrollando herramientas exclusivas para que los educadores gestionen sus clases y se comuniquen con los estudiantes de manera más eficaz.
-              </CardDescription>
+              <CardDescription className="text-xs pt-1">Herramientas exclusivas para educadores.</CardDescription>
+            </div>
+            <Badge variant="outline">Próximamente</Badge>
           </CardHeader>
       </Card>
       
@@ -866,20 +857,20 @@ const handleSaveChanges = async () => {
                             
                             {mode === 'create' && (
                                 <div className="space-y-4">
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                        <Button variant="link" className="text-xs p-0 h-auto">¿Estás seguro de que tu centro no existe?</Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Comprobación</AlertDialogTitle>
-                                                <AlertDialogDescription>Antes de crear un centro, asegúrate de que no exista ya en la plataforma para evitar duplicados.</AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogAction>Entendido</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="link" className="text-xs p-0 h-auto">¿Estás seguro de que tu centro no existe?</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Comprobación</AlertDialogTitle>
+                                        <AlertDialogDescription>Antes de crear un centro, asegúrate de que no exista ya en la plataforma para evitar duplicados.</AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogAction>Entendido</AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                 <div className="space-y-2">
                                     <Label>Nombre del Nuevo Centro</Label>
                                     <div className="flex items-center gap-2">
@@ -1092,6 +1083,8 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
+    
+
     
 
     
