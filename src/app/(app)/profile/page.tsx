@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { SummaryCardData, User, CompletedItem, Center } from "@/lib/types";
+import type { SummaryCardData, User, CompletedItem, Center, ClassDefinition } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle, GraduationCap, School, PlusCircle, Search, Copy, Check, RefreshCw, Shield, ShieldCheck, Sparkles, Plus, Star, Crown, Dna, Brain, Beaker, Atom, Code } from "lucide-react";
 import Link from "next/link";
@@ -34,7 +34,6 @@ import { doc, updateDoc, arrayUnion, increment, collection, query, orderBy, getD
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
 import { StreakRankingDialog } from "@/components/layout/streak-ranking-dialog";
@@ -370,7 +369,6 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
   const [course, setCourse] = useState(user?.course || "");
   const [className, setClassName] = useState(user?.className || "");
   const [newCenterName, setNewCenterName] = useState('');
-  const [newClassName, setNewClassName] = useState('');
   
   const [mode, setMode] = useState<RegistrationMode>(user?.center === 'personal' ? 'personal' : 'join');
   const [isCenterValidated, setIsCenterValidated] = useState(user?.center !== 'personal' && user?.center !== 'default');
@@ -378,6 +376,11 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
   const [isCenterNameValidated, setIsCenterNameValidated] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isCodeCopied, setIsCodeCopied] = useState(false);
+
+  // State for creating a new class within an existing center
+  const [isCreatingClass, setIsCreatingClass] = useState(false);
+  const [newCourse, setNewCourse] = useState('');
+  const [newClassName, setNewClassName] = useState('');
   
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -428,13 +431,15 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
   }, [isOpen, user, allCenters, propDefaultOpenItem]);
 
   const availableClasses = useMemo(() => {
-    if (!validatedCenter || !validatedCenter.classes) return { courses: [], classNames: [] };
+    if (!validatedCenter || !validatedCenter.classes) return { courses: [], classNames: [], existingClassNames: new Set() };
 
     const courses = new Set<string>();
     const classNames = new Set<string>();
+    const existingClassNames = new Set<string>();
 
     validatedCenter.classes.forEach(c => {
         const [course, className] = c.name.split('-');
+        existingClassNames.add(c.name);
         if (course) {
             const courseValue = course.toLowerCase().replace('º', '');
             courses.add(courseValue);
@@ -446,7 +451,8 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
 
     return {
         courses: Array.from(courses),
-        classNames: Array.from(classNames)
+        classNames: Array.from(classNames),
+        existingClassNames,
     };
   }, [validatedCenter]);
   
@@ -581,7 +587,34 @@ const handleSaveChanges = async () => {
     };
 
     try {
-        if (mode === 'personal') {
+        if (isCreatingClass) {
+            if (!validatedCenter || !newCourse || !newClassName) {
+                toast({ title: "Error", description: "Completa los campos para crear la nueva clase.", variant: "destructive" });
+                setIsLoading(false);
+                return;
+            }
+
+            const newClassDefinition: ClassDefinition = {
+                name: `${newCourse.replace('eso','ESO')}-${newClassName}`,
+                icalUrl: '',
+                schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] }
+            };
+
+            const centerDocRef = doc(firestore, 'centers', validatedCenter.uid);
+            await updateDoc(centerDocRef, {
+                classes: arrayUnion(newClassDefinition)
+            });
+
+            updatedData = {
+                ...updatedData,
+                course: newCourse,
+                className: newClassName,
+                role: `admin-${newCourse.toUpperCase()}-${newClassName}`, // Assign class admin role
+            };
+            
+            setValidatedCenter(prev => prev ? ({ ...prev, classes: [...prev.classes, newClassDefinition] }) : null);
+            toast({ title: "¡Clase Creada!", description: `Ahora eres administrador de la clase ${newClassDefinition.name}.` });
+        } else if (mode === 'personal') {
             updatedData = {
                 ...updatedData,
                 center: 'personal',
@@ -601,11 +634,12 @@ const handleSaveChanges = async () => {
                 center: center,
                 course: course,
                 className: className,
-                role: user.role === 'admin' ? 'admin' : 'student',
+                role: user.role === 'admin' ? 'admin' : (user.role.startsWith('admin-') ? user.role : 'student'),
                 organizationId: validatedCenter.uid,
             };
         } else if (mode === 'create') {
-            if (!isCenterNameValidated || !newClassName || !generatedCode) {
+            const combinedNewClassName = `${newCourse.toUpperCase()}-${newClassName}`;
+            if (!isCenterNameValidated || !newCourse || !newClassName || !generatedCode) {
                 toast({ title: "Error", description: "Completa todos los campos para crear el centro.", variant: "destructive" });
                 setIsLoading(false);
                 return;
@@ -614,17 +648,15 @@ const handleSaveChanges = async () => {
             const newCenterRef = await addDoc(collection(firestore, "centers"), {
                 name: newCenterName,
                 code: generatedCode,
-                classes: [{ name: newClassName, icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } }],
+                classes: [{ name: combinedNewClassName, icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } }],
                 createdAt: serverTimestamp(),
             });
             
-            const [newCourse, newClass] = newClassName.split('-');
-
             updatedData = {
                 ...updatedData,
                 center: generatedCode,
-                course: newCourse.toLowerCase().replace('º',''),
-                className: newClass,
+                course: newCourse,
+                className: newClassName,
                 role: 'center-admin',
                 organizationId: newCenterRef.id,
             };
@@ -756,23 +788,20 @@ const handleSaveChanges = async () => {
                             {avatarMode === 'library' && (
                                 <div className="space-y-4">
                                     <Label>Biblioteca de Iconos</Label>
-                                    <Collapsible>
+                                    <Collapsible className="space-y-4">
                                         <div className="grid grid-cols-4 gap-4">
                                             {SHOP_AVATARS_FEATURED.map((avatar) => {
                                                 const isOwned = user.ownedAvatars?.includes(avatar.id);
                                                 const isSelected = editableAvatar.id === avatar.id;
                                                 return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
                                             })}
-                                            <CollapsibleTrigger asChild>
-                                                <div className="relative group flex flex-col items-center gap-2 cursor-pointer">
-                                                    <div className="w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50">
-                                                        <Plus className="h-8 w-8 text-muted-foreground" />
-                                                    </div>
-                                                    <div className="text-center">
-                                                        <p className="text-xs font-bold text-muted-foreground">Más</p>
-                                                    </div>
-                                                </div>
-                                            </CollapsibleTrigger>
+                                            <div className="relative group flex flex-col items-center justify-center gap-2 cursor-pointer">
+                                                <CollapsibleTrigger asChild>
+                                                    <button className="w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50">
+                                                      <Plus className="h-8 w-8 text-muted-foreground" />
+                                                    </button>
+                                                </CollapsibleTrigger>
+                                            </div>
                                         </div>
                                         <CollapsibleContent className="col-span-4 mt-4 p-4 border-t">
                                             <div className="grid grid-cols-4 gap-4">
@@ -826,21 +855,47 @@ const handleSaveChanges = async () => {
                                     </div>
                                     {validatedCenter && <p className="text-sm font-semibold text-green-600 flex items-center gap-2"><CheckCircle className="h-4 w-4"/> {validatedCenter.name}</p>}
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="course" className={cn(!isCenterValidated && 'text-muted-foreground/50')}>Curso</Label>
-                                        <Select onValueChange={setCourse} value={course} disabled={!isCenterValidated}>
-                                            <SelectTrigger id="course"><SelectValue placeholder="Curso..." /></SelectTrigger>
-                                            <SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent>
-                                        </Select>
+                                <div className={cn(!isCenterValidated && 'opacity-50 pointer-events-none')}>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="course">Curso</Label>
+                                            <Select onValueChange={setCourse} value={course}>
+                                                <SelectTrigger id="course"><SelectValue placeholder="Curso..." /></SelectTrigger>
+                                                <SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value} disabled={!availableClasses.courses.includes(option.value)}>{option.label}</SelectItem>))}</SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="className">Clase</Label>
+                                            <Select onValueChange={setClassName} value={className}>
+                                                <SelectTrigger id="className"><SelectValue placeholder="Clase..." /></SelectTrigger>
+                                                <SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="className" className={cn(!isCenterValidated && 'text-muted-foreground/50')}>Clase</Label>
-                                        <Select onValueChange={setClassName} value={className} disabled={!isCenterValidated}>
-                                            <SelectTrigger id="className"><SelectValue placeholder="Clase..." /></SelectTrigger>
-                                            <SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={!availableClasses.classNames.includes(option)}>{option}</SelectItem>))}</SelectContent>
-                                        </Select>
-                                    </div>
+                                    <Collapsible open={isCreatingClass} onOpenChange={setIsCreatingClass} className="mt-4">
+                                        <CollapsibleTrigger asChild>
+                                             <Button variant="link" className="text-xs p-0 h-auto">¿Tu clase no está en la lista? Créala aquí.</Button>
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent className="space-y-4 pt-2">
+                                            <p className="text-xs text-muted-foreground p-3 bg-muted/50 border rounded-lg">Crea una nueva clase en tu centro. <strong className="text-foreground">Importante:</strong> te convertirás en el administrador de esta clase.</p>
+                                             <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="new-course">Nuevo Curso</Label>
+                                                    <Select onValueChange={setNewCourse} value={newCourse}>
+                                                        <SelectTrigger id="new-course"><SelectValue placeholder="Curso..." /></SelectTrigger>
+                                                        <SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="new-className">Nueva Clase</Label>
+                                                    <Select onValueChange={setNewClassName} value={newClassName} disabled={!newCourse}>
+                                                        <SelectTrigger id="new-className"><SelectValue placeholder="Clase..." /></SelectTrigger>
+                                                        <SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option} disabled={availableClasses.existingClassNames.has(`${newCourse.toUpperCase()}-${option}`)}>{option}</SelectItem>))}</SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                        </CollapsibleContent>
+                                    </Collapsible>
                                 </div>
                             </div>
                             )}
@@ -872,10 +927,21 @@ const handleSaveChanges = async () => {
                                 </div>
                                 {isCenterNameValidated && (
                                     <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label>Nombre de la Primera Clase</Label>
-                                            <Input placeholder="Ej: 4ESO-B" value={newClassName} onChange={e => setNewClassName(e.target.value)} />
-                                            <p className="text-xs text-muted-foreground">Formato: 'CURSO-LETRA' (1eso-A, 2bach-C, etc.)</p>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="create-course">Curso de la Clase</Label>
+                                                <Select onValueChange={setNewCourse} value={newCourse}>
+                                                    <SelectTrigger id="create-course"><SelectValue placeholder="Curso..." /></SelectTrigger>
+                                                    <SelectContent>{courseOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="create-className">Nombre de la Clase</Label>
+                                                <Select onValueChange={setNewClassName} value={newClassName} disabled={!newCourse}>
+                                                    <SelectTrigger id="create-className"><SelectValue placeholder="Clase..." /></SelectTrigger>
+                                                    <SelectContent>{classOptions.map(option => (<SelectItem key={option} value={option}>{option}</SelectItem>))}</SelectContent>
+                                                </Select>
+                                            </div>
                                         </div>
                                         <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
                                             <Label>Código de Acceso del Centro</Label>
@@ -1141,6 +1207,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
 
 
