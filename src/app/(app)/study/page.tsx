@@ -734,13 +734,15 @@ export default function StudyPage() {
                        </div>
                     </div>
                     <Link href="/editor" className="block mt-4">
-                        <div className="relative p-6 rounded-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-transform ring-2 ring-white/20 hover:ring-white/40">
-                             <div className="absolute inset-0 bg-black/10"></div>
-                             <Sparkles className="h-10 w-10 text-white/20 absolute -top-3 -right-2 animate-pulse-slow"/>
-                             <div className="relative z-10">
-                                <h3 className="text-lg font-bold">✨ MODO EDITOR MÁGICO</h3>
-                                <p className="text-sm opacity-80">Transforma tus apuntes con IA.</p>
-                             </div>
+                        <div className="relative p-6 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white overflow-hidden cursor-pointer hover:scale-105 transition-transform shadow-lg">
+                            <Sparkles className="absolute -right-3 -bottom-3 h-20 w-20 opacity-10" />
+                            <div className="relative z-10">
+                                <h3 className="text-lg font-bold flex items-center gap-2">
+                                    <Sparkles className="h-5 w-5"/>
+                                    Editor Mágico
+                                </h3>
+                                <p className="text-sm opacity-80 mt-1">Transforma tus apuntes con IA.</p>
+                            </div>
                         </div>
                     </Link>
                 </CardContent>
@@ -1748,5 +1750,3 @@ function UnitConverter() {
         </Tabs>
     );
 }
-
-    
