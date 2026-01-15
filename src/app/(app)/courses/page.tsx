@@ -538,7 +538,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
         </CardContent>
         {(isAuthor || canManage) && !isEditing && (
              <CardFooter className="p-4 pt-0 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
@@ -562,7 +562,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                         </PopoverContent>
                     </Popover>
 
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1">
                         {Object.entries(announcement.reactions || {}).map(([emoji, uids]) => {
                             if (uids.length === 0) return null;
                             const userHasReacted = uids.includes(user?.uid || '');
@@ -570,11 +570,11 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                                 <Badge
                                     key={emoji}
                                     variant={userHasReacted ? "default" : "secondary"}
-                                    className="cursor-pointer transition-transform hover:scale-110 py-1 px-2"
+                                    className="cursor-pointer transition-transform hover:scale-110 py-0.5 px-1.5"
                                     onClick={() => onReaction(announcement.uid, emoji)}
                                 >
-                                    <span className="text-base mr-1.5">{emoji}</span>
-                                    <span className="font-bold text-sm">{uids.length}</span>
+                                    <span className="text-sm mr-1">{emoji}</span>
+                                    <span className="font-bold text-xs">{uids.length}</span>
                                 </Badge>
                             )
                         })}
@@ -813,3 +813,5 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     </Dialog>
   )
 }
+
+    
