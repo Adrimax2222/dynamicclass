@@ -386,6 +386,8 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
   const { toast } = useToast();
 
   const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+  
+  const isAlreadyClassAdmin = user?.role?.startsWith('admin-') && user.role !== 'admin';
 
   const initializeState = () => {
     if (user) {
@@ -795,7 +797,7 @@ const handleSaveChanges = async () => {
                                                 const isSelected = editableAvatar.id === avatar.id;
                                                 return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
                                             })}
-                                            <div className="relative group flex flex-col items-center justify-center gap-2 cursor-pointer">
+                                            <div className="col-span-1">
                                                 <CollapsibleTrigger asChild>
                                                     <button className="w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50">
                                                       <Plus className="h-8 w-8 text-muted-foreground" />
@@ -872,10 +874,11 @@ const handleSaveChanges = async () => {
                                             </Select>
                                         </div>
                                     </div>
-                                    <Collapsible open={isCreatingClass} onOpenChange={setIsCreatingClass} className="mt-4">
+                                    <Collapsible open={isCreatingClass} onOpenChange={setIsCreatingClass} className="mt-4" disabled={isAlreadyClassAdmin}>
                                         <CollapsibleTrigger asChild>
-                                             <Button variant="link" className="text-xs p-0 h-auto">¿Tu clase no está en la lista? Créala aquí.</Button>
+                                             <Button variant="link" className="text-xs p-0 h-auto" disabled={isAlreadyClassAdmin}>¿Tu clase no está en la lista? Créala aquí.</Button>
                                         </CollapsibleTrigger>
+                                        {isAlreadyClassAdmin && <p className="text-xs text-muted-foreground">Ya administras una clase, no puedes crear otra.</p>}
                                         <CollapsibleContent className="space-y-4 pt-2">
                                             <p className="text-xs text-muted-foreground p-3 bg-muted/50 border rounded-lg">Crea una nueva clase en tu centro. <strong className="text-foreground">Importante:</strong> te convertirás en el administrador de esta clase.</p>
                                              <div className="grid grid-cols-2 gap-4">
@@ -1207,6 +1210,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
 
 
