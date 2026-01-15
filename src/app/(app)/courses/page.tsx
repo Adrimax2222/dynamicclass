@@ -92,6 +92,7 @@ import { FullScheduleView } from "@/components/layout/full-schedule-view";
 import { cn } from "@/lib/utils";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 
 
@@ -512,7 +513,7 @@ function NewAnnouncementCard({ onSend }: { onSend: (data: Partial<Announcement>)
                                 <SelectItem value="file" disabled><div className="flex items-center gap-2"><File className="h-4 w-4" /> Archivo</div></SelectItem>
                             </SelectContent>
                         </Select>
-                        <Select onValueChange={(v: AnnouncementScope) => setScope(v)} value={scope} disabled={!isGlobalAdmin && (isCenterAdmin || isClassAdmin)}>
+                        <Select onValueChange={(v: AnnouncementScope) => setScope(v)} value={scope} disabled={!isGlobalAdmin}>
                             <SelectTrigger className="w-full sm:w-[130px]">
                                 <SelectValue />
                             </SelectTrigger>
