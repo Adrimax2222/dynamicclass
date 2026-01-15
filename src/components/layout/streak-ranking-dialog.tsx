@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -15,7 +14,7 @@ import { useFirestore, useCollection } from "@/firebase";
 import { collection, query, orderBy, limit, where } from "firebase/firestore";
 import type { User } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Flame, Medal, Gem, Users, GraduationCap, ShieldAlert } from "lucide-react";
+import { Flame, Medal, Gem, Users, GraduationCap, ShieldAlert, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -240,5 +239,3 @@ function RankingItem({ user, rank, isCurrentUser }: { user: User; rank: number; 
         </div>
     );
 }
-
-    
