@@ -25,6 +25,7 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
+  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -76,18 +77,18 @@ export default function InfoPage() {
   return (
     <div className="flex flex-col min-h-full">
       <header className="p-4 sm:p-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
-        <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl flex items-center gap-2">
-          <InfoIcon className="h-6 w-6" />
+        <h1 className="text-3xl font-bold font-headline tracking-tighter flex items-center gap-3">
+          <InfoIcon className="h-7 w-7" />
           Punto de Información
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground mt-1">
           Anuncios, recursos y herramientas para tu día a día.
         </p>
       </header>
 
       <main className="flex-1">
         <Tabs defaultValue="announcements" className="w-full">
-          <div className="p-4">
+          <div className="p-4 sm:p-6">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="announcements">
                 <Building className="h-4 w-4 mr-2" /> Anuncios
@@ -174,11 +175,8 @@ function AnnouncementsTab() {
     if (!user) return false;
 
     if (filter === 'all') {
-      // General announcements are for everyone.
       if (ann.scope === 'general') return true;
-      // Center announcements are for users in that center.
       if (ann.scope === 'center' && user.organizationId === ann.centerId) return true;
-      // Class announcements are for users in that specific class.
       if (ann.scope === 'class' && user.organizationId === ann.centerId && userClassName === ann.className) return true;
       return false;
     }
@@ -195,7 +193,7 @@ function AnnouncementsTab() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold">Últimos Anuncios</h2>
+          <h2 className="text-xl font-semibold">Últimos Anuncios</h2>
           <div className="w-full sm:w-auto">
             <Select onValueChange={(v: AnnouncementFilter) => setFilter(v)} defaultValue="all">
                 <SelectTrigger className="w-full sm:w-[220px]">
@@ -246,16 +244,18 @@ function AnnouncementsTab() {
         </div>
       )}
 
-      {filteredAnnouncements.map((announcement) => (
-        <div key={`${announcement.id}-${announcement.createdAt.seconds}`}>
-            <AnnouncementItem
-                announcement={announcement}
-                isAuthor={user?.uid === announcement.authorId}
-                onUpdate={handleUpdateAnnouncement}
-                onDelete={handleDeleteAnnouncement}
-            />
-        </div>
-      ))}
+      <div className="space-y-4">
+        {filteredAnnouncements.map((announcement) => (
+          <div key={`${announcement.id}-${announcement.createdAt.seconds}`}>
+              <AnnouncementItem
+                  announcement={announcement}
+                  isAuthor={user?.uid === announcement.authorId}
+                  onUpdate={handleUpdateAnnouncement}
+                  onDelete={handleDeleteAnnouncement}
+              />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -295,23 +295,19 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: Announc
   }
 
   return (
-    <Card className="shadow-lg">
-        <CardHeader>
-            <CardTitle className="text-base">Nuevo Anuncio</CardTitle>
-            <CardDescription>Este mensaje será visible según el ámbito que elijas.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <Card className="shadow-sm">
+        <CardContent className="p-4 space-y-3">
             <div className="flex gap-3">
-                <Avatar className="h-9 w-9">
+                <Avatar className="h-10 w-10">
                     <AvatarImage src={user?.avatar} />
                     <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <Textarea 
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    placeholder="Escribe tu anuncio aquí..."
-                    className="flex-1"
-                    rows={3}
+                    placeholder="Escribe un nuevo anuncio..."
+                    className="flex-1 bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
+                    rows={2}
                 />
             </div>
             <div className="flex flex-col sm:flex-row justify-end items-stretch gap-2">
@@ -366,31 +362,36 @@ function AnnouncementItem({ announcement, isAuthor, onUpdate, onDelete }: { anno
   const getBadge = () => {
       switch(announcement.scope) {
           case 'general':
-              return <Badge variant="outline" className="border-primary/20"><Globe className="h-3 w-3 mr-1"/>General</Badge>;
+              return <Badge variant="outline"><Globe className="h-3 w-3 mr-1.5"/>General</Badge>;
           case 'center':
-              return <Badge variant="secondary"><Building className="h-3 w-3 mr-1"/>Centro</Badge>;
+              return <Badge variant="secondary"><Building className="h-3 w-3 mr-1.5"/>Centro</Badge>;
           case 'class':
-               return <Badge><Users className="h-3 w-3 mr-1"/>{announcement.className || 'Clase'}</Badge>;
+               return <Badge><Users className="h-3 w-3 mr-1.5"/>{announcement.className || 'Clase'}</Badge>;
           default:
               return null;
       }
   }
 
   return (
-    <div className="flex items-start gap-3">
-      <Avatar className="h-9 w-9 border-2 border-primary/50">
-        <AvatarImage src={announcement.authorAvatar} />
-         <AvatarFallback>{announcement.authorName.charAt(0)}</AvatarFallback>
-      </Avatar>
-      <div className="w-full">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <p className="font-bold text-sm">{announcement.authorName}</p>
-          <p className="text-xs text-muted-foreground">{formatTimestamp(announcement.createdAt)}</p>
-          {getBadge()}
-        </div>
-        <div className="rounded-lg px-4 py-3 bg-muted mt-1">
+    <Card className="overflow-hidden transition-all duration-300 hover:border-primary/20 hover:shadow-md">
+        <CardHeader className="flex flex-row items-start gap-4 space-y-0 p-4">
+             <Avatar className="h-10 w-10 border">
+                <AvatarImage src={announcement.authorAvatar} />
+                <AvatarFallback>{announcement.authorName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+                    <div>
+                        <p className="font-bold text-sm">{announcement.authorName}</p>
+                        <p className="text-xs text-muted-foreground">{formatTimestamp(announcement.createdAt)}</p>
+                    </div>
+                    {getBadge()}
+                </div>
+            </div>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
             {isEditing ? (
-                <div className="space-y-2">
+                 <div className="space-y-2">
                     <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={3} />
                     <div className="flex justify-end gap-2">
                         <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>Cancelar</Button>
@@ -398,17 +399,18 @@ function AnnouncementItem({ announcement, isAuthor, onUpdate, onDelete }: { anno
                     </div>
                 </div>
             ) : (
-                <p className="text-sm whitespace-pre-wrap">{announcement.text}</p>
+                <div className="rounded-lg bg-muted/50 p-4 border text-sm text-foreground/90 whitespace-pre-wrap">
+                    {announcement.text}
+                </div>
             )}
-        </div>
+        </CardContent>
         {isAuthor && !isEditing && (
-            <div className="flex gap-1 mt-1">
-                <Button variant="ghost" size="xs" onClick={() => setIsEditing(true)}>Editar</Button>
-                <Button variant="ghost" size="xs" className="text-destructive hover:text-destructive" onClick={() => onDelete(announcement.id)}>Eliminar</Button>
-            </div>
+             <CardFooter className="p-4 pt-0 justify-end">
+                <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>Editar</Button>
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(announcement.id)}>Eliminar</Button>
+            </CardFooter>
         )}
-      </div>
-    </div>
+    </Card>
   );
 }
 
@@ -627,3 +629,5 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     </Dialog>
   )
 }
+
+    
