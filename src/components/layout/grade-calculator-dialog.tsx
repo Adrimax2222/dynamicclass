@@ -24,11 +24,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { fullSchedule } from "@/lib/data";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { User } from "@/lib/types";
+import type { User, Center } from "@/lib/types";
+import { useFirestore } from "@/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 interface Grade {
   id: number;
@@ -64,57 +65,76 @@ interface GradeCalculatorDialogProps {
     openTo?: "calculator" | "report";
 }
 
+const defaultSubjects = ["E.F", "Catalán", "Castellano", "Inglés", "Sociales", "Mates", "Proyecto", "Optativa", "Tutoria", "Cultura y valores", "Fisica y Quimica", "Biologia", "Musica"];
+
 export function GradeCalculatorDialog({ children, isScheduleAvailable, user, openTo = "calculator" }: GradeCalculatorDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [allConfigs, setAllConfigs] = useState<AllSubjectConfigs>({});
     const [subjects, setSubjects] = useState<string[]>([]);
     const [activeSubject, setActiveSubject] = useState<string>('');
     const [newSubjectName, setNewSubjectName] = useState('');
+    const firestore = useFirestore();
 
     const storageKey = `gradeConfigs-${user.uid}`;
 
-    // Load from localStorage on mount
+    // Load data on dialog open
     useEffect(() => {
       if (!isOpen) return;
-        try {
-            const savedConfigs = localStorage.getItem(storageKey);
-            const parsedConfigs: AllSubjectConfigs = savedConfigs ? JSON.parse(savedConfigs) : {};
-            
-            let initialSubjects: string[];
-            if (isScheduleAvailable) {
-                const scheduleSubjects = Object.values(fullSchedule).flat().map(c => c.subject);
-                const uniqueScheduleSubjects = [...new Set(scheduleSubjects)];
-                initialSubjects = uniqueScheduleSubjects;
-            } else {
-                initialSubjects = [];
-            }
-            
-            const savedSubjects = Object.keys(parsedConfigs);
-            const allSubjects = [...new Set([...initialSubjects, ...savedSubjects])];
 
-            setSubjects(allSubjects);
+      const loadData = async () => {
+          let availableSubjects: string[];
+          
+          if (firestore && user.organizationId && user.center !== 'personal') {
+              const centerDocRef = doc(firestore, 'centers', user.organizationId);
+              const centerDoc = await getDoc(centerDocRef);
+              if (centerDoc.exists()) {
+                  const centerData = centerDoc.data() as Center;
+                  const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
+                  const userClassDef = centerData.classes.find(c => c.name === userClassName);
+                  
+                  if (userClassDef?.schedule) {
+                      const scheduleSubjects = Object.values(userClassDef.schedule).flat().map(c => c.subject);
+                      availableSubjects = [...new Set(scheduleSubjects)];
+                  } else {
+                      availableSubjects = defaultSubjects;
+                  }
+              } else {
+                  availableSubjects = defaultSubjects;
+              }
+          } else {
+              availableSubjects = defaultSubjects;
+          }
 
-            if (allSubjects.length > 0) {
-                const firstSubject = allSubjects[0];
-                setActiveSubject(firstSubject);
-                // Ensure a default config exists for all subjects if they are new
-                const updatedConfigs = {...parsedConfigs};
-                allSubjects.forEach(sub => {
-                    if (!updatedConfigs[sub]) {
-                        updatedConfigs[sub] = { grades: [{ id: Date.now(), title: "", grade: "", weight: "" }], desiredGrade: "5", result: null };
-                    }
-                });
-                 setAllConfigs(updatedConfigs);
-            } else {
-                 setAllConfigs({});
-            }
+          try {
+              const savedConfigs = localStorage.getItem(storageKey);
+              const parsedConfigs: AllSubjectConfigs = savedConfigs ? JSON.parse(savedConfigs) : {};
+              const savedSubjects = Object.keys(parsedConfigs);
+              const allSubjects = [...new Set([...availableSubjects, ...savedSubjects])];
+              
+              setSubjects(allSubjects);
+              
+              if (allSubjects.length > 0) {
+                  const firstSubject = allSubjects[0];
+                  setActiveSubject(firstSubject);
+                  
+                  const updatedConfigs = {...parsedConfigs};
+                  allSubjects.forEach(sub => {
+                      if (!updatedConfigs[sub]) {
+                          updatedConfigs[sub] = { grades: [{ id: Date.now(), title: "", grade: "", weight: "" }], desiredGrade: "5", result: null };
+                      }
+                  });
+                  setAllConfigs(updatedConfigs);
+              }
+          } catch (error) {
+              console.error("Failed to load or parse grade configurations from localStorage", error);
+              setSubjects(availableSubjects);
+              setAllConfigs({});
+          }
+      };
+      
+      loadData();
+    }, [isOpen, firestore, user, storageKey]);
 
-        } catch (error) {
-            console.error("Failed to load or parse grade configurations from localStorage", error);
-            setAllConfigs({});
-            setSubjects([]);
-        }
-    }, [isScheduleAvailable, isOpen, storageKey]);
 
     // Save to localStorage whenever configs change
     useEffect(() => {
@@ -375,6 +395,11 @@ export function GradeCalculatorDialog({ children, isScheduleAvailable, user, ope
                                               </DialogContent>
                                           </Dialog>
                                       </div>
+                                       {!isScheduleAvailable && (
+                                            <p className="text-xs text-muted-foreground pt-1 px-1">
+                                                Las asignaturas de tu clase las configura un administrador en la sección de horarios.
+                                            </p>
+                                        )}
                                   </div>
                               
                                   <div className="space-y-4">
@@ -604,6 +629,3 @@ function ReportTab({ allConfigs, user }: { allConfigs: AllSubjectConfigs, user: 
         </div>
     );
 }
-
-
-    

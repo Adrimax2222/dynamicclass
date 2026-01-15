@@ -61,7 +61,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { GradeCalculatorDialog } from "@/components/layout/grade-calculator-dialog";
 import { useFirestore } from "@/firebase";
-import { doc, updateDoc, increment } from "firebase/firestore";
+import { doc, updateDoc, increment, getDoc } from "firebase/firestore";
 import { format as formatDate, subDays, isSameDay } from 'date-fns';
 import { WipDialog } from "@/components/layout/wip-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
@@ -72,6 +72,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import jsPDF from 'jspdf';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from 'next/link';
+import type { Center } from "@/lib/types";
 
 
 type TimerMode = "pomodoro" | "long" | "deep" | "custom";
@@ -137,6 +138,7 @@ export default function StudyPage() {
   const [userPlaylists, setUserPlaylists] = useState<Playlist[]>([]);
   const [activePlaylist, setActivePlaylist] = useState<Playlist>(defaultPlaylists[0]);
   const [isMounted, setIsMounted] = useState(false);
+  const [isScheduleAvailable, setIsScheduleAvailable] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const lastLoggedMinuteRef = useRef<number | null>();
@@ -178,6 +180,26 @@ export default function StudyPage() {
       localStorage.setItem('customStudyMode', JSON.stringify(customMode));
     }
   }, [customMode, isMounted]);
+
+  useEffect(() => {
+    if (!firestore || !user || !user.organizationId) {
+        setIsScheduleAvailable(false);
+        return;
+    }
+    const checkSchedule = async () => {
+        const centerDocRef = doc(firestore, 'centers', user.organizationId!);
+        const centerDoc = await getDoc(centerDocRef);
+        if (centerDoc.exists()) {
+            const centerData = centerDoc.data() as Center;
+            const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
+            const userClassDef = centerData.classes.find(c => c.name === userClassName);
+            setIsScheduleAvailable(!!userClassDef?.schedule);
+        } else {
+            setIsScheduleAvailable(false);
+        }
+    };
+    checkSchedule();
+  }, [firestore, user]);
 
 
   const getInitialTime = useCallback(() => {
@@ -365,7 +387,6 @@ export default function StudyPage() {
   
   if (!user) return null;
 
-  const isScheduleAvailable = user?.course === "4eso" && user?.className === "B";
   const streakCount = user.streak || 0;
 
   const phaseColors = phase === 'focus' 
@@ -1658,5 +1679,3 @@ function UnitConverter() {
         </Tabs>
     );
 }
-
-    
