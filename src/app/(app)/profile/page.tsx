@@ -45,7 +45,7 @@ import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Switch } from "@/components/ui/switch";
-import { AvatarDisplay } from "@/components/profile/avatar-creator";
+import { AvatarDisplay, allShopAvatars, SHOP_AVATARS_FEATURED, EXPANDED_SHOP_AVATARS } from "@/components/profile/avatar-creator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -325,29 +325,6 @@ export default function ProfilePage() {
   );
 }
 
-const SHOP_AVATARS_FEATURED = [
-    { id: 'paw', icon: PawPrint, price: 5 },
-    { id: 'gamepad', icon: Gamepad2, price: 12 },
-    { id: 'ghost', icon: Ghost, price: 8 },
-];
-
-const EXPANDED_SHOP_AVATARS = [
-    { id: 'rocket', icon: Rocket, price: 10 },
-    { id: 'pizza', icon: Pizza, price: 15 },
-    { id: 'cat', icon: Cat, price: 7 },
-    { id: 'star', icon: Star, price: 20 },
-    { id: 'crown', icon: Crown, price: 50 },
-    { id: 'flame', icon: Flame, price: 25 },
-    { id: 'dna', icon: Dna, price: 18 },
-    { id: 'brain', icon: Brain, price: 30 },
-    { id: 'beaker', icon: Beaker, price: 15 },
-    { id: 'atom', icon: Atom, price: 22 },
-    { id: 'code', icon: Code, price: 10 },
-];
-
-const allShopAvatars = [...SHOP_AVATARS_FEATURED, ...EXPANDED_SHOP_AVATARS];
-const shopAvatarMap = new Map(allShopAvatars.map(item => [item.id, item]));
-
 const AVATAR_COLORS = [
     { name: 'Gris', value: '737373' },
     { name: 'Rojo', value: 'F87171' },
@@ -422,7 +399,7 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
         if (id === 'letter') {
              setEditableAvatar({ id: `letter_${id_extra}`, color: color || '737373' });
              setAvatarMode('letter');
-        } else if (shopAvatarMap.has(id)) {
+        } else if (allShopAvatars.some(a => a.id === id)) {
              setEditableAvatar({ id: id, color: id_extra || '737373' });
              setAvatarMode('library');
         } else {
@@ -786,19 +763,16 @@ const handleSaveChanges = async () => {
                                                 const isSelected = editableAvatar.id === avatar.id;
                                                 return <AvatarButton key={avatar.id} avatar={avatar} isOwned={isOwned} isSelected={isSelected} isLoading={isLoading} onSelect={handleSelectShopAvatar} onPurchase={handlePurchaseAvatar} userTrophies={user.trophies} />;
                                             })}
-                                            <div className="relative group flex flex-col items-center gap-2">
-                                                <CollapsibleTrigger asChild>
-                                                    <button
-                                                        type="button"
-                                                        className="w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50"
-                                                    >
+                                            <CollapsibleTrigger asChild>
+                                                <div className="relative group flex flex-col items-center gap-2 cursor-pointer">
+                                                    <div className="w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105 ring-2 ring-dashed ring-muted-foreground/50">
                                                         <Plus className="h-8 w-8 text-muted-foreground" />
-                                                    </button>
-                                                </CollapsibleTrigger>
-                                                 <div className="text-center">
-                                                    <p className="text-xs font-bold text-muted-foreground">Más</p>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-xs font-bold text-muted-foreground">Más</p>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            </CollapsibleTrigger>
                                         </div>
                                         <CollapsibleContent className="col-span-4 mt-4 p-4 border-t">
                                             <div className="grid grid-cols-4 gap-4">
@@ -1167,6 +1141,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
 
 

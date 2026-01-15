@@ -4,20 +4,31 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { User } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart } from "lucide-react";
+import { PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart, Star, Crown, Flame, Dna, Brain, Beaker, Atom, Code } from "lucide-react";
 
-const SHOP_AVATARS = [
-    { id: 'paw', icon: PawPrint },
-    { id: 'gamepad', icon: Gamepad2 },
-    { id: 'ghost', icon: Ghost },
-    { id: 'palmtree', icon: Palmtree },
-    { id: 'rocket', icon: Rocket },
-    { id: 'pizza', icon: Pizza },
-    { id: 'cat', icon: Cat },
-    { id: 'heart', icon: Heart },
+export const SHOP_AVATARS_FEATURED = [
+    { id: 'paw', icon: PawPrint, price: 5 },
+    { id: 'gamepad', icon: Gamepad2, price: 12 },
+    { id: 'ghost', icon: Ghost, price: 8 },
 ];
 
-const shopAvatarMap = new Map(SHOP_AVATARS.map(item => [item.id, item]));
+export const EXPANDED_SHOP_AVATARS = [
+    { id: 'rocket', icon: Rocket, price: 10 },
+    { id: 'pizza', icon: Pizza, price: 15 },
+    { id: 'cat', icon: Cat, price: 7 },
+    { id: 'star', icon: Star, price: 20 },
+    { id: 'crown', icon: Crown, price: 50 },
+    { id: 'flame', icon: Flame, price: 25 },
+    { id: 'dna', icon: Dna, price: 18 },
+    { id: 'brain', icon: Brain, price: 30 },
+    { id: 'beaker', icon: Beaker, price: 15 },
+    { id: 'atom', icon: Atom, price: 22 },
+    { id: 'code', icon: Code, price: 10 },
+];
+
+export const allShopAvatars = [...SHOP_AVATARS_FEATURED, ...EXPANDED_SHOP_AVATARS];
+const shopAvatarMap = new Map(allShopAvatars.map(item => [item.id, { ...item, icon: item.icon }]));
+
 
 interface AvatarDisplayProps {
     user: Partial<User>;
