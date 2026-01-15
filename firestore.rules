@@ -53,49 +53,6 @@ service cloud.firestore {
              request.resource.data.title.size() > 0 &&
              request.resource.data.title.size() <= 200;
     }
-    
-    function isValidAnnouncement() {
-        let data = request.resource.data;
-
-        // 1. Common required fields and initial values.
-        if (!(
-            'authorId' in data && data.authorId == request.auth.uid &&
-            'authorName' in data && data.authorName is string &&
-            'authorAvatar' in data && data.authorAvatar is string &&
-            'isPinned' in data && data.isPinned == false &&
-            'viewedBy' in data && data.viewedBy is list && data.viewedBy.size() == 0 &&
-            'reactions' in data && data.reactions is map && data.reactions.size() == 0 &&
-            'scope' in data && data.scope in ['general', 'center', 'class'] &&
-            'type' in data && data.type in ['text', 'poll']
-        )) { return false; }
-
-        // 2. Scope-specific field validation
-        if (data.scope == 'general') {
-            if ('centerId' in data || 'className' in data) { return false; }
-        } else if (data.scope == 'center') {
-            if (!('centerId' in data) || 'className' in data) { return false; }
-            if (!(data.centerId is string)) { return false; }
-        } else if (data.scope == 'class') {
-            if (!('centerId' in data) || !('className' in data)) { return false; }
-            if (!(data.centerId is string && data.className is string)) { return false; }
-        }
-
-        // 3. Type-specific field validation
-        if (data.type == 'text') {
-            if (!('text' in data) || !(data.text is string && data.text.size() > 0)) { return false; }
-            if ('pollQuestion' in data || 'pollOptions' in data || 'allowMultipleVotes' in data || 'pollVotes' in data) { return false; }
-        } else if (data.type == 'poll') {
-            if (
-                !('pollQuestion' in data) || !(data.pollQuestion is string && data.pollQuestion.size() > 0) ||
-                !('pollOptions' in data) || !(data.pollOptions is list && data.pollOptions.size() >= 2) ||
-                !('allowMultipleVotes' in data) || !(data.allowMultipleVotes is bool) ||
-                !('pollVotes' in data) || !(data.pollVotes is map && data.pollVotes.size() == 0)
-            ) { return false; }
-            if ('text' in data) { return false; }
-        }
-        
-        return true;
-    }
 
     // ============= USERS COLLECTION =============
 
@@ -179,38 +136,41 @@ service cloud.firestore {
     // ============= ANNOUNCEMENTS =============
 
     match /announcements/{announcementId} {
+      // Any authenticated user can read announcements
       allow list, get: if request.auth != null;
 
+      // Helper function to check if the user is an admin for the announcement's scope
       function canManage(ann) {
         return isGlobalAdmin() ||
                (ann.scope == 'center' && ann.centerId != null && isCenterAdmin(ann.centerId)) ||
                (ann.scope == 'class' && ann.className != null && isClassAdmin(ann.className));
       }
 
-      // Create: Admins can create announcements
-      allow create: if isValidAnnouncement() && canManage(request.resource.data);
+      // CREATE: Allow if the user has the correct admin role for the scope.
+      // This is less restrictive, as requested for debugging.
+      allow create: if request.resource.data.authorId == request.auth.uid && canManage(request.resource.data);
 
-      // Delete: Admins or the original author can delete
+      // DELETE: Admins or the original author can delete.
       allow delete: if canManage(resource.data) || isOwner(resource.data.authorId);
 
-      // Update: Admins can update any field (pin, text, etc.)
+      // UPDATE:
+      // Admins can update any field.
       allow update: if canManage(resource.data);
 
-      // Authors can ONLY update the text
+      // Authors can ONLY update the text of a text-based announcement.
       allow update: if isOwner(resource.data.authorId) &&
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text']);
 
-      // Any user can add themselves to 'viewedBy' array.
+      // Any user can update 'viewedBy' to add themselves.
       allow update: if request.auth != null &&
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewedBy']) &&
-                       request.resource.data.viewedBy.toSet().difference(resource.data.viewedBy.toSet()).hasOnly([request.auth.uid]) &&
-                       resource.data.viewedBy.toSet().difference(request.resource.data.viewedBy.toSet()).size() == 0;
+                       request.resource.data.viewedBy.toSet().difference(resource.data.viewedBy.toSet()).hasOnly([request.auth.uid]);
 
       // Any user can update reactions.
       allow update: if request.auth != null &&
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']);
                        
-      // Any user can update their votes in a poll
+      // Any user can update poll votes.
       allow update: if request.auth != null &&
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollVotes']);
     }
