@@ -192,7 +192,7 @@ function AnnouncementsTab() {
   const handleReaction = async (announcementId: string, emoji: string) => {
     if (!firestore || !user) return;
     const announcementDocRef = doc(firestore, "announcements", announcementId);
-    
+
     try {
         await runTransaction(firestore, async (transaction) => {
             const annDoc = await transaction.get(announcementDocRef);
@@ -201,20 +201,33 @@ function AnnouncementsTab() {
             }
 
             const data = annDoc.data();
-            const currentReactions = data.reactions || {};
-            const existingReactors: string[] = currentReactions[emoji] || [];
-            
-            if (existingReactors.includes(user.uid)) {
-                // User is removing their reaction
-                currentReactions[emoji] = existingReactors.filter((uid: string) => uid !== user.uid);
-                if (currentReactions[emoji].length === 0) {
-                    delete currentReactions[emoji];
+            let currentReactions = data.reactions || {};
+
+            // Check if the user is un-reacting from the emoji they just clicked
+            const isUnreacting = (currentReactions[emoji] || []).includes(user.uid);
+
+            // First, remove the user's ID from ANY existing reaction
+            Object.keys(currentReactions).forEach(key => {
+                const reactors = currentReactions[key] as string[];
+                const userIndex = reactors.indexOf(user.uid);
+                if (userIndex > -1) {
+                    reactors.splice(userIndex, 1);
                 }
-            } else {
-                // User is adding a reaction
-                currentReactions[emoji] = [...existingReactors, user.uid];
+                // If no one is reacting with this emoji anymore, remove the key
+                if (reactors.length === 0) {
+                    delete currentReactions[key];
+                }
+            });
+
+            // If the user was not un-reacting (i.e., they are adding a new reaction or changing reaction),
+            // then add their new reaction.
+            if (!isUnreacting) {
+                if (!currentReactions[emoji]) {
+                    currentReactions[emoji] = [];
+                }
+                currentReactions[emoji].push(user.uid);
             }
-            
+
             transaction.update(announcementDocRef, { reactions: currentReactions });
         });
     } catch (error) {
@@ -407,22 +420,20 @@ function NewAnnouncementCard({ onSend }: { onSend: (text: string, scope: Announc
                 />
             </div>
             <div className="flex flex-col sm:flex-row justify-end items-stretch gap-2">
-                <Select onValueChange={(v: AnnouncementScope) => setScope(v)} value={scope} disabled={!isGlobalAdmin}>
+                <Select onValueChange={(v: AnnouncementScope) => setScope(v)} value={scope} disabled={!isGlobalAdmin && (isCenterAdmin || isClassAdmin)}>
                     <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue/>
                     </SelectTrigger>
                     <SelectContent>
-                        {isGlobalAdmin ? (
-                            <>
-                                <SelectItem value="general"><div className="flex items-center gap-2"><Globe className="h-4 w-4" /> General</div></SelectItem>
-                                <SelectItem value="center"><div className="flex items-center gap-2"><Building className="h-4 w-4" /> Centro</div></SelectItem>
-                                <SelectItem value="class"><div className="flex items-center gap-2"><Users className="h-4 w-4" /> {adminClassName || 'Clase'}</div></SelectItem>
-                            </>
-                        ) : isCenterAdmin ? (
-                            <SelectItem value="center"><div className="flex items-center gap-2"><Building className="h-4 w-4" /> Centro</div></SelectItem>
-                        ) : isClassAdmin && user?.organizationId ? (
-                           <SelectItem value="class"><div className="flex items-center gap-2"><Users className="h-4 w-4" /> {adminClassName || 'Clase'}</div></SelectItem>
-                        ) : null}
+                        {isGlobalAdmin && (
+                            <SelectItem value="general"><div className="flex items-center gap-2"><Globe className="h-4 w-4" /> General</div></SelectItem>
+                        )}
+                        {(isGlobalAdmin || isCenterAdmin) && user?.organizationId && (
+                           <SelectItem value="center"><div className="flex items-center gap-2"><Building className="h-4 w-4" /> Centro</div></SelectItem>
+                        )}
+                        {(isGlobalAdmin || isClassAdmin) && user?.organizationId && adminClassName && (
+                           <SelectItem value="class"><div className="flex items-center gap-2"><Users className="h-4 w-4" /> {adminClassName}</div></SelectItem>
+                        )}
                     </SelectContent>
                 </Select>
                 <Button onClick={handleSend} disabled={isLoading || !text.trim()} className="w-full sm:w-auto">
@@ -536,9 +547,9 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                 </div>
             )}
         </CardContent>
-        {(isAuthor || canManage) && !isEditing && (
-             <CardFooter className="p-4 pt-0 flex items-center justify-between">
-                <div className="flex items-center gap-1">
+        {(isAuthor || canManage || user) && !isEditing && (
+             <CardFooter className="p-4 pt-0 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
@@ -590,7 +601,9 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                     {isAuthor && (
                         <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>Editar</Button>
                     )}
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(announcement.uid)}>Eliminar</Button>
+                   {(isAuthor || canManage) && (
+                     <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(announcement.uid)}>Eliminar</Button>
+                   )}
                 </div>
             </CardFooter>
         )}
@@ -737,7 +750,7 @@ function NotesTab() {
       )}
       <div className="grid gap-4 md:grid-cols-2">
         {notes.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)).map((note) => (
-          <Card key={note.uid} className="flex flex-col">
+          <Card key={note.id} className="flex flex-col">
             <CardHeader>
               <CardTitle className="text-base">{note.title}</CardTitle>
             </CardHeader>
@@ -745,10 +758,10 @@ function NotesTab() {
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">{note.content}</p>
             </CardContent>
             <div className="p-4 pt-0 flex justify-end gap-2">
-               <NoteDialog note={note} onSave={(title, content) => handleUpdateNote(note.uid, title, content)} >
+               <NoteDialog note={note} onSave={(title, content) => handleUpdateNote(note.id, title, content)} >
                   <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
                </NoteDialog>
-               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteNote(note.uid)}>
+               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteNote(note.id)}>
                   <Trash2 className="h-4 w-4" />
                </Button>
             </div>
@@ -813,5 +826,3 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     </Dialog>
   )
 }
-
-    
