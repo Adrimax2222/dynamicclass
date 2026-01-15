@@ -45,6 +45,7 @@ import { doc, updateDoc, increment, collection, query, orderBy, getDocs, addDoc,
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { FullScheduleView } from "@/components/layout/full-schedule-view";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
+import { StreakRankingDialog } from "@/components/layout/streak-ranking-dialog";
 import CompleteProfileModal from "@/components/layout/complete-profile-modal";
 import { startOfWeek, endOfWeek, addWeeks, isWithinInterval, format, startOfToday, isToday, isTomorrow, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -490,10 +491,12 @@ export default function HomePage() {
                         </span>
                     </div>
                 </RankingDialog>
-                <Link href="/study" className={cn("flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors", streakCount > 0 ? "bg-orange-100/50 dark:bg-orange-900/20" : "")}>
-                    <Flame className={cn("h-5 w-5", streakCount > 0 ? "text-orange-500" : "text-muted-foreground")} />
-                    <span className="font-bold text-sm">{streakCount}</span>
-                </Link>
+                <StreakRankingDialog user={user}>
+                    <div className={cn("flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors", streakCount > 0 ? "bg-orange-100/50 dark:bg-orange-900/20" : "")}>
+                        <Flame className={cn("h-5 w-5", streakCount > 0 ? "text-orange-500" : "text-muted-foreground")} />
+                        <span className="font-bold text-sm">{streakCount}</span>
+                    </div>
+                </StreakRankingDialog>
             </div>
           <ThemeToggle />
         </div>
@@ -906,3 +909,6 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
     
 
 
+
+
+    

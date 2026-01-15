@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
 import { RankingDialog } from "@/components/layout/ranking-dialog";
+import { StreakRankingDialog } from "@/components/layout/streak-ranking-dialog";
 import { GradeCalculatorDialog } from "@/components/layout/grade-calculator-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -131,10 +132,12 @@ export default function ProfilePage() {
           Mi Perfil
         </h1>
         <div className="flex items-center gap-2">
-             <Link href="/study" className={cn("flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors", streakCount > 0 ? "bg-orange-100/50 dark:bg-orange-900/20" : "")}>
-                <Flame className={cn("h-5 w-5", streakCount > 0 ? "text-orange-500" : "text-muted-foreground")} />
-                <span className="font-bold text-sm">{streakCount}</span>
-            </Link>
+            <StreakRankingDialog user={user}>
+                 <div className={cn("flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors", streakCount > 0 ? "bg-orange-100/50 dark:bg-orange-900/20" : "")}>
+                    <Flame className={cn("h-5 w-5", streakCount > 0 ? "text-orange-500" : "text-muted-foreground")} />
+                    <span className="font-bold text-sm">{streakCount}</span>
+                </div>
+            </StreakRankingDialog>
             <RankingDialog user={user}>
                <div className="flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors">
                    <Trophy className="h-5 w-5 text-yellow-400" />
@@ -307,14 +310,14 @@ export default function ProfilePage() {
               />
             </Link>
 
-            <Link href="/study" className="cursor-pointer">
+            <StreakRankingDialog user={user}>
                 <AchievementCard 
                     title="Racha de Estudio"
                     value={streakCount}
                     icon={Flame}
                     color={streakCount > 0 ? "text-orange-500" : "text-muted-foreground"}
                 />
-            </Link>
+            </StreakRankingDialog>
 
             {achievements.map(card => (
               <HistoryDialog key={card.title} user={user} card={card} />
@@ -874,8 +877,19 @@ const handleSaveChanges = async () => {
                             {mode === 'create' && (
                                 <div className="space-y-4">
                                   <AlertDialog>
-                                    <AlertDialogTrigger asChild><Button variant="link" className="text-xs p-0 h-auto">¿Estás seguro de que tu centro no existe?</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Comprobación</AlertDialogTitle><AlertDialogDescription>Antes de crear un centro, asegúrate de que no exista ya en la plataforma para evitar duplicados.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction>Entendido</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
-                                  </AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="link" className="text-xs p-0 h-auto">¿Estás seguro de que tu centro no existe?</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Comprobación</AlertDialogTitle>
+                                            <AlertDialogDescription>Antes de crear un centro, asegúrate de que no exista ya en la plataforma para evitar duplicados.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogAction>Entendido</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                                 <div className="space-y-2">
                                     <Label>Nombre del Nuevo Centro</Label>
                                     <div className="flex items-center gap-2">
@@ -963,7 +977,7 @@ const handleSaveChanges = async () => {
 
 function AchievementCard({ title, value, icon: Icon, color }: { title: string; value: string | number; icon: React.ElementType; color: string; }) {
     return (
-      <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
+      <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
           <Icon className={cn("h-5 w-5 text-muted-foreground", color)} />
@@ -1095,5 +1109,8 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
     
 
     
+
+    
+
 
     
