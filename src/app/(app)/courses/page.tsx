@@ -24,7 +24,6 @@ import {
   File,
   Vote,
   PlusIcon,
-  Switch,
   CheckCircle2,
   EyeOff,
   ChevronDown,
@@ -93,6 +92,7 @@ import { FullScheduleView } from "@/components/layout/full-schedule-view";
 import { cn } from "@/lib/utils";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 
 
 export default function InfoPage() {
@@ -493,8 +493,8 @@ function NewAnnouncementCard({ onSend }: { onSend: (data: Partial<Announcement>)
                                     <PlusIcon className="h-4 w-4 mr-2"/>Añadir opción
                                </Button>
                                <div className="flex items-center space-x-2 pt-2">
-                                    <Switch id="multiple-votes" checked={allowMultipleVotes} onCheckedChange={setAllowMultipleVotes} />
-                                    <Label htmlFor="multiple-votes">Permitir múltiples respuestas</Label>
+                                     <Switch id="multiple-votes" checked={allowMultipleVotes} onCheckedChange={setAllowMultipleVotes} />
+                                     <Label htmlFor="multiple-votes">Permitir múltiples respuestas</Label>
                                </div>
                            </div>
                        )}
