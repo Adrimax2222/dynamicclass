@@ -57,61 +57,58 @@ service cloud.firestore {
     function isValidAnnouncement() {
       let data = request.resource.data;
 
-      // 1. Common value validations (always apply on create)
-      if (data.authorId != request.auth.uid ||
-          data.isPinned != false ||
-          data.viewedBy.size() != 0 ||
-          data.reactions.size() != 0) {
-        return false;
-      }
-
-      // 2. Base keys presence check
-      if (!data.keys().hasAll(['authorId', 'authorName', 'authorAvatar', 'scope', 'type'])) {
+      // -- Rule 1: Check required fields for ALL announcements --
+      // These fields MUST exist on the incoming request.
+      if (!('authorId' in data) || !('authorName' in data) || !('authorAvatar' in data) || !('scope' in data) || !('type' in data)) {
         return false;
       }
       
-      // 3. Type-specific validations
-      if (data.type == 'text') {
-        if (!data.keys().has('text') || !(data.text is string) || data.text.size() == 0 || data.text.size() >= 1000) {
+      // -- Rule 2: Check initial values --
+      // These fields must have these specific values on creation.
+      if (data.authorId != request.auth.uid || data.isPinned != false || data.viewedBy.size() != 0 || data.reactions.size() != 0) {
+        return false;
+      }
+
+      // -- Rule 3: Type-specific validation --
+      if (data.type == 'poll') {
+        // For polls, these fields MUST exist and be valid.
+        if (!('pollQuestion' in data) || !(data.pollQuestion is string) || data.pollQuestion.size() == 0 ||
+            !('pollOptions' in data) || !(data.pollOptions is list) || data.pollOptions.size() < 2 ||
+            !('allowMultipleVotes' in data) || !(data.allowMultipleVotes is bool) ||
+            !('pollVotes' in data) || !(data.pollVotes is map) || data.pollVotes.size() != 0) {
           return false;
         }
-        if (data.keys().hasAny(['pollQuestion', 'pollOptions', 'allowMultipleVotes', 'pollVotes'])) {
+        // And 'text' MUST NOT exist.
+        if ('text' in data) {
           return false;
         }
-      } else if (data.type == 'poll') {
-        if (!data.keys().hasAll(['pollQuestion', 'pollOptions', 'allowMultipleVotes', 'pollVotes'])) {
+      } else if (data.type == 'text') {
+        // For text, 'text' MUST exist and be valid.
+        if (!('text' in data) || !(data.text is string) || data.text.size() == 0) {
           return false;
         }
-        if (!(data.pollQuestion is string) || data.pollQuestion.size() == 0 ||
-            !(data.pollOptions is list) || data.pollOptions.size() < 2 ||
-            !(data.allowMultipleVotes is bool) ||
-            !(data.pollVotes is map) || data.pollVotes.size() != 0) {
-          return false;
-        }
-        if (data.keys().has('text')) {
+        // And poll fields MUST NOT exist.
+        if ('pollQuestion' in data || 'pollOptions' in data || 'allowMultipleVotes' in data || 'pollVotes' in data) {
           return false;
         }
       } else {
-        return false; // Invalid type
+        // No other types are allowed.
+        return false;
       }
-
-      // 4. Scope-specific validations
+      
+      // -- Rule 4: Scope-specific validation --
       if (data.scope == 'general') {
-        if (data.keys().hasAny(['centerId', 'className'])) {
-          return false;
-        }
+        if ('centerId' in data || 'className' in data) { return false; }
       } else if (data.scope == 'center') {
-        if (!data.keys().has('centerId') || data.keys().has('className')) {
-          return false;
-        }
+        if (!('centerId' in data) || 'className' in data) { return false; }
       } else if (data.scope == 'class') {
-        if (!data.keys().hasAll(['centerId', 'className'])) {
-          return false;
-        }
+        if (!('centerId' in data) || !('className' in data)) { return false; }
       } else {
-        return false; // Invalid scope
+        // No other scopes are allowed.
+        return false;
       }
 
+      // If all checks pass
       return true;
     }
 
