@@ -638,12 +638,17 @@ export default function HomePage() {
                             </div>
                             <div className="flex items-center justify-between mt-2">
                               <p className="text-sm italic text-muted-foreground line-clamp-2">{item.notes}</p>
-                              <Button asChild size="sm" className="bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-full ml-4 shrink-0">
-                                  <Link href="/study">
-                                      <BrainCircuit className="h-4 w-4 mr-2" />
-                                      Estudiar
-                                  </Link>
-                              </Button>
+                              <div className="flex items-center gap-2 ml-4 shrink-0">
+                                <Button size="sm" variant="secondary" className="rounded-full">
+                                    Ver horario
+                                </Button>
+                                <Button asChild size="sm" className="bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-full">
+                                    <Link href="/study">
+                                        <BrainCircuit className="h-4 w-4 mr-2" />
+                                        Estudiar
+                                    </Link>
+                                </Button>
+                              </div>
                             </div>
                         </div>
                     </Card>
@@ -915,6 +920,7 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
 
 
     
+
 
 
 
