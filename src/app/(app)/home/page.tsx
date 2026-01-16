@@ -638,16 +638,13 @@ export default function HomePage() {
                             </div>
                             <div className="flex items-center justify-between mt-2">
                               <p className="text-sm italic text-muted-foreground line-clamp-2">{item.notes}</p>
-                              <ArrowRight className="h-5 w-5 text-primary shrink-0 ml-4" />
+                              <Button asChild size="sm" className="bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-full ml-4 shrink-0">
+                                  <Link href="/study">
+                                      <BrainCircuit className="h-4 w-4 mr-2" />
+                                      Estudiar
+                                  </Link>
+                              </Button>
                             </div>
-                        </div>
-                        <div className="px-4 pb-4 flex justify-end">
-                            <Button asChild size="sm" className="bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-full">
-                                <Link href="/study">
-                                    <BrainCircuit className="h-4 w-4 mr-2" />
-                                    Estudiar
-                                </Link>
-                            </Button>
                         </div>
                     </Card>
                 </ScheduleDialog>
@@ -918,6 +915,7 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
 
 
     
+
 
 
 
