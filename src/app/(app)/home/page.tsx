@@ -466,39 +466,39 @@ export default function HomePage() {
         <WelcomeModal onClose={handleWelcomeModalClose} />
       ) : null}
 
-      <header className="mb-8 flex items-center justify-between">
-        <div>
+      <header className="mb-8 space-y-2">
+        <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl">
                 Dynamic Class
             </h1>
-            <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline">V3.0 - Beta</Badge>
-                {user.center && user.center !== 'default' && (
-                    <Badge>{userCenterName}</Badge>
-                )}
-                {user.role === 'admin' && (
-                    <Badge variant="destructive">Admin</Badge>
-                )}
+            <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-full border bg-card p-1 pr-2 shadow-sm">
+                    <RankingDialog user={user}>
+                        <div className="flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors">
+                            <Trophy className="h-5 w-5 text-yellow-400" />
+                            <span className="font-bold text-sm">
+                                {isAdmin ? <Infinity className="h-4 w-4" /> : user.trophies}
+                            </span>
+                        </div>
+                    </RankingDialog>
+                    <StreakRankingDialog user={user}>
+                        <div className={cn("flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors", streakCount > 0 ? "bg-orange-100/50 dark:bg-orange-900/20" : "")}>
+                            <Flame className={cn("h-5 w-5", streakCount > 0 ? "text-orange-500" : "text-muted-foreground")} />
+                            <span className="font-bold text-sm">{streakCount}</span>
+                        </div>
+                    </StreakRankingDialog>
+                </div>
+              <ThemeToggle />
             </div>
         </div>
         <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 rounded-full border bg-card p-1 pr-2 shadow-sm">
-                <RankingDialog user={user}>
-                    <div className="flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors">
-                        <Trophy className="h-5 w-5 text-yellow-400" />
-                        <span className="font-bold text-sm">
-                            {isAdmin ? <Infinity className="h-4 w-4" /> : user.trophies}
-                        </span>
-                    </div>
-                </RankingDialog>
-                <StreakRankingDialog user={user}>
-                    <div className={cn("flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors", streakCount > 0 ? "bg-orange-100/50 dark:bg-orange-900/20" : "")}>
-                        <Flame className={cn("h-5 w-5", streakCount > 0 ? "text-orange-500" : "text-muted-foreground")} />
-                        <span className="font-bold text-sm">{streakCount}</span>
-                    </div>
-                </StreakRankingDialog>
-            </div>
-          <ThemeToggle />
+            <Badge variant="outline">V3.0 - Beta</Badge>
+            {user.center && user.center !== 'default' && (
+                <Badge>{userCenterName}</Badge>
+            )}
+            {user.role === 'admin' && (
+                <Badge variant="destructive">Admin</Badge>
+            )}
         </div>
       </header>
 
@@ -920,6 +920,7 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
 
 
     
+
 
 
 
