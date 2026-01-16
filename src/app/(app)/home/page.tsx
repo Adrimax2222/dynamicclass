@@ -594,6 +594,12 @@ export default function HomePage() {
                     <div className="absolute top-0 right-0 bg-white/20 text-white text-xs font-bold py-1 px-2 rounded-full">
                         BETA
                     </div>
+                    <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-white/15 text-white py-0.5 px-2 rounded-full">Scanner</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-white/15 text-white py-0.5 px-2 rounded-full">Calculadora</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-white/15 text-white py-0.5 px-2 rounded-full">Focus</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-white/15 text-white py-0.5 px-2 rounded-full">Sonidos</span>
+                    </div>
                     <BrainCircuit className="h-8 w-8 mb-3" />
                     <h3 className="text-xl font-bold font-headline">Modo Estudio</h3>
                     <p className="opacity-80 text-sm">Concéntrate, organiza y gana recompensas.</p>
@@ -912,3 +918,4 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
 
 
     
+
