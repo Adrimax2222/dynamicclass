@@ -62,8 +62,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { GradeCalculatorDialog } from "@/components/layout/grade-calculator-dialog";
 import { useFirestore } from "@/firebase";
-import { doc, updateDoc, increment, getDoc } from "firebase/firestore";
-import { format as formatDate, subDays, isSameDay } from 'date-fns';
+import { doc, getDoc } from "firebase/firestore";
 import { WipDialog } from "@/components/layout/wip-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
@@ -73,12 +72,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import jsPDF from 'jspdf';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from 'next/link';
-import type { Center } from "@/lib/types";
+import type { Center, TimerMode, CustomMode } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
 
 
-type TimerMode = "pomodoro" | "long" | "deep" | "custom";
-type Phase = "focus" | "break";
 type Sound = {
     id: string;
     label: string;
@@ -90,11 +87,6 @@ interface Playlist {
     id: string;
     name: string;
     url: string;
-}
-
-interface CustomMode {
-  focus: number;
-  break: number;
 }
 
 const defaultPlaylists: Playlist[] = [
@@ -123,99 +115,90 @@ const sounds: Sound[] = [
 ];
 
 
-const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
-
 export default function StudyPage() {
-  const { user, updateUser } = useApp();
-  const router = useRouter();
-  const firestore = useFirestore();
-  const { toast } = useToast();
+    const { 
+        user, 
+        timerMode,
+        setTimerMode,
+        phase,
+        setPhase,
+        isActive,
+        setIsActive,
+        timeLeft,
+        customMode,
+        setCustomMode,
+        resetTimer,
+        skipPhase
+    } = useApp();
+    const router = useRouter();
+    const firestore = useFirestore();
+    const { toast } = useToast();
 
-  const [mode, setMode] = useState<TimerMode>("pomodoro");
-  const [phase, setPhase] = useState<Phase>("focus");
-  const [isActive, setIsActive] = useState(false);
-  const [selectedSound, setSelectedSound] = useState<Sound>(null);
-  const [volume, setVolume] = useState(100);
-  
-  const [userPlaylists, setUserPlaylists] = useState<Playlist[]>([]);
-  const [activePlaylist, setActivePlaylist] = useState<Playlist>(defaultPlaylists[0]);
-  const [isMounted, setIsMounted] = useState(false);
-  const [isScheduleAvailable, setIsScheduleAvailable] = useState(false);
-  const [isFocusMode, setIsFocusMode] = useState(false);
+    const [selectedSound, setSelectedSound] = useState<Sound>(null);
+    const [volume, setVolume] = useState(100);
+    
+    const [userPlaylists, setUserPlaylists] = useState<Playlist[]>([]);
+    const [activePlaylist, setActivePlaylist] = useState<Playlist>(defaultPlaylists[0]);
+    const [isMounted, setIsMounted] = useState(false);
+    const [isScheduleAvailable, setIsScheduleAvailable] = useState(false);
+    const [isFocusMode, setIsFocusMode] = useState(false);
 
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const lastLoggedMinuteRef = useRef<number | null>();
-  const streakUpdatedTodayRef = useRef<boolean>(false);
-  
-  const [customMode, setCustomMode] = useState<CustomMode>({ focus: 45, break: 15 });
+    const audioRef = useRef<HTMLAudioElement>(null);
 
-  const modes = useMemo(() => ({
-    pomodoro: { focus: 25, break: 5, label: "Pomodoro", icon: Timer, colors: "from-blue-400 to-blue-500" },
-    long: { focus: 50, break: 10, label: "Largo", icon: Brain, colors: "from-purple-400 to-purple-500" },
-    deep: { focus: 90, break: 20, label: "Deep Work", icon: Brain, colors: "from-indigo-400 to-indigo-500" },
-    custom: { focus: customMode.focus, break: customMode.break, label: "Personalizado", icon: Settings2, colors: "from-green-400 to-green-500" }
-  }), [customMode]);
+    const modes = useMemo(() => ({
+        pomodoro: { focus: 25, break: 5, label: "Pomodoro", icon: Timer, colors: "from-blue-400 to-blue-500" },
+        long: { focus: 50, break: 10, label: "Largo", icon: Brain, colors: "from-purple-400 to-purple-500" },
+        deep: { focus: 90, break: 20, label: "Deep Work", icon: Brain, colors: "from-indigo-400 to-indigo-500" },
+        custom: { focus: customMode.focus, break: customMode.break, label: "Personalizado", icon: Settings2, colors: "from-green-400 to-green-500" }
+    }), [customMode]);
   
-  useEffect(() => {
-    setIsMounted(true);
-    try {
-        const savedPlaylists = localStorage.getItem('userPlaylists');
-        if (savedPlaylists) {
-            setUserPlaylists(JSON.parse(savedPlaylists));
+    useEffect(() => {
+        setIsMounted(true);
+        try {
+            const savedPlaylists = localStorage.getItem('userPlaylists');
+            if (savedPlaylists) {
+                setUserPlaylists(JSON.parse(savedPlaylists));
+            }
+            const savedCustomMode = localStorage.getItem('customStudyMode');
+            if (savedCustomMode) {
+                setCustomMode(JSON.parse(savedCustomMode));
+            }
+        } catch (e) {
+            console.error("Failed to parse data from localStorage", e);
         }
-        const savedCustomMode = localStorage.getItem('customStudyMode');
-        if (savedCustomMode) {
-            setCustomMode(JSON.parse(savedCustomMode));
+    }, [setCustomMode]);
+
+    useEffect(() => {
+        if (isMounted) {
+            localStorage.setItem('userPlaylists', JSON.stringify(userPlaylists));
         }
-    } catch (e) {
-        console.error("Failed to parse data from localStorage", e);
-    }
-  }, []);
+    }, [userPlaylists, isMounted]);
 
-  useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('userPlaylists', JSON.stringify(userPlaylists));
-    }
-  }, [userPlaylists, isMounted]);
+    useEffect(() => {
+        if (isMounted) {
+            localStorage.setItem('customStudyMode', JSON.stringify(customMode));
+        }
+    }, [customMode, isMounted]);
 
-  useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('customStudyMode', JSON.stringify(customMode));
-    }
-  }, [customMode, isMounted]);
-
-  useEffect(() => {
-    if (!firestore || !user || !user.organizationId) {
-        setIsScheduleAvailable(false);
-        return;
-    }
-    const checkSchedule = async () => {
-        const centerDocRef = doc(firestore, 'centers', user.organizationId!);
-        const centerDoc = await getDoc(centerDocRef);
-        if (centerDoc.exists()) {
-            const centerData = centerDoc.data() as Center;
-            const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
-            const userClassDef = centerData.classes.find(c => c.name === userClassName);
-            setIsScheduleAvailable(!!userClassDef?.schedule);
-        } else {
+    useEffect(() => {
+        if (!firestore || !user || !user.organizationId) {
             setIsScheduleAvailable(false);
+            return;
         }
-    };
-    checkSchedule();
-  }, [firestore, user]);
-
-
-  const getInitialTime = useCallback(() => {
-    return modes[mode][phase] * 60;
-  }, [mode, phase, modes]);
-
-  const [timeLeft, setTimeLeft] = useState(getInitialTime);
-  
-  useEffect(() => {
-    if (!isActive) {
-      setTimeLeft(getInitialTime());
-    }
-  }, [mode, phase, getInitialTime, isActive]);
+        const checkSchedule = async () => {
+            const centerDocRef = doc(firestore, 'centers', user.organizationId!);
+            const centerDoc = await getDoc(centerDocRef);
+            if (centerDoc.exists()) {
+                const centerData = centerDoc.data() as Center;
+                const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
+                const userClassDef = centerData.classes.find(c => c.name === userClassName);
+                setIsScheduleAvailable(!!userClassDef?.schedule);
+            } else {
+                setIsScheduleAvailable(false);
+            }
+        };
+        checkSchedule();
+    }, [firestore, user]);
 
    useEffect(() => {
     const audio = audioRef.current;
@@ -233,224 +216,120 @@ export default function StudyPage() {
     }
   }, [selectedSound, isActive]);
 
-  const handleStreak = useCallback(async () => {
-    if (!firestore || !user || streakUpdatedTodayRef.current) return;
     
-    const today = new Date();
-    const todayStr = formatDate(today, 'yyyy-MM-dd');
-    const lastStudyDay = user.lastStudyDay ? new Date(user.lastStudyDay) : null;
-
-    if (lastStudyDay && isSameDay(today, lastStudyDay)) {
-        streakUpdatedTodayRef.current = true;
-        return;
-    }
-
-    const yesterday = subDays(today, 1);
-    let newStreak = user.streak || 0;
-
-    if (lastStudyDay && isSameDay(yesterday, lastStudyDay)) {
-        newStreak++;
-    } else {
-        newStreak = 1;
-    }
-    
-    const userDocRef = doc(firestore, 'users', user.uid);
-    try {
-        await updateDoc(userDocRef, {
-            streak: newStreak,
-            lastStudyDay: todayStr,
-        });
-        updateUser({ streak: newStreak, lastStudyDay: todayStr });
-        streakUpdatedTodayRef.current = true;
-    } catch (err) {
-        console.error("Failed to update streak:", err);
-    }
-  }, [firestore, user, updateUser]);
-
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (isActive && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (isActive && timeLeft === 0) {
-      const nextPhase = phase === "focus" ? "break" : "focus";
-      const nextPhaseDuration = modes[mode][nextPhase];
-      
-      toast({
-        title: `¡Tiempo de ${nextPhase === 'break' ? 'descanso' : 'enfoque'}!`,
-        description: `Comienza tu bloque de ${nextPhaseDuration} minutos.`,
-      });
-
-      setPhase(nextPhase);
-      setTimeLeft(modes[mode][nextPhase] * 60);
-      setIsActive(true); 
-    }
-    return () => {
-      if (interval) clearInterval(interval);
+    const handleToggleFocusMode = (checked: boolean) => {
+        if (!isActive) return;
+        setIsFocusMode(checked);
     };
-  }, [isActive, timeLeft, mode, phase, toast, modes]);
 
-  useEffect(() => {
-    if (!firestore || !user || !isActive || phase !== 'focus') return;
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                setIsActive(false); // Pause the timer
+                toast({
+                    title: "Enfoque Interrumpido",
+                    description: "El temporizador se ha pausado. Vuelve a la app para continuar.",
+                    variant: "destructive",
+                });
+            }
+        };
 
-    if (!streakUpdatedTodayRef.current) {
-        handleStreak();
-    }
+        const exitFullScreen = () => {
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(err => console.error(err));
+            }
+        };
 
-    const totalDuration = modes[mode].focus * 60;
-    const currentMinute = Math.floor((totalDuration - timeLeft) / 60);
-
-    if (currentMinute > 0 && currentMinute !== lastLoggedMinuteRef.current) {
-        lastLoggedMinuteRef.current = currentMinute;
-        
-        const userDocRef = doc(firestore, 'users', user.uid);
-        updateDoc(userDocRef, {
-            studyMinutes: increment(1)
-        }).then(() => {
-            updateUser({ studyMinutes: (user.studyMinutes || 0) + 1 });
-        }).catch(err => {
-            console.error("Failed to log study minute:", err);
-        });
-    }
-
-  }, [timeLeft, isActive, phase, firestore, user, mode, updateUser, handleStreak, modes]);
-  
-  const handleToggleFocusMode = (checked: boolean) => {
-    if (!isActive) return;
-    setIsFocusMode(checked);
-  };
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-        if (document.visibilityState === 'hidden') {
-            setIsActive(false); // Pause the timer
-            toast({
-                title: "Enfoque Interrumpido",
-                description: "El temporizador se ha pausado. Vuelve a la app para continuar.",
-                variant: "destructive",
+        if (isFocusMode && isActive) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.error(`Error al activar pantalla completa: ${err.message}`);
+                setIsFocusMode(false);
+                toast({
+                    title: "Error de Pantalla Completa",
+                    description: "Tu navegador no permitió entrar en pantalla completa.",
+                    variant: "destructive"
+                });
             });
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+        } else {
+            exitFullScreen();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
         }
-    };
 
-    const exitFullScreen = () => {
-        if (document.fullscreenElement) {
-            document.exitFullscreen().catch(err => console.error(err));
-        }
-    };
-
-    if (isFocusMode && isActive) {
-        document.documentElement.requestFullscreen().catch(err => {
-            console.error(`Error al activar pantalla completa: ${err.message}`);
-            setIsFocusMode(false);
-            toast({
-                title: "Error de Pantalla Completa",
-                description: "Tu navegador no permitió entrar en pantalla completa.",
-                variant: "destructive"
-            });
-        });
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-    } else {
-        exitFullScreen();
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }
-
-    return () => {
-        exitFullScreen();
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isFocusMode, isActive, toast]);
+        return () => {
+            exitFullScreen();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [isFocusMode, isActive, toast, setIsActive]);
 
 
-  const handleModeChange = (newMode: TimerMode) => {
-    setIsActive(false);
-    setIsFocusMode(false);
-    setMode(newMode);
-    setPhase("focus");
-  };
-
-  const handleToggle = () => {
-    const willBeActive = !isActive;
-    if (!willBeActive) {
+    const handleModeChange = (newMode: TimerMode) => {
+        setIsActive(false);
         setIsFocusMode(false);
-    }
-    if (!isActive) {
-      lastLoggedMinuteRef.current = Math.floor((modes[mode].focus * 60 - timeLeft) / 60);
-    }
-    setIsActive(!isActive);
-  };
+        setTimerMode(newMode);
+        setPhase("focus");
+    };
 
-  const handleReset = () => {
-    setIsActive(false);
-    setIsFocusMode(false);
-    setPhase("focus");
-    setTimeLeft(getInitialTime());
-    lastLoggedMinuteRef.current = null;
-  };
-
-  const handleSkip = () => {
-    setIsActive(false);
-    setIsFocusMode(false);
-    const nextPhase = phase === "focus" ? "break" : "focus";
-    setPhase(nextPhase);
-    lastLoggedMinuteRef.current = null;
-  };
+    const handleToggle = () => {
+        const willBeActive = !isActive;
+        if (!willBeActive) {
+            setIsFocusMode(false);
+        }
+        setIsActive(willBeActive);
+    };
   
-  const handleVolumeChange = (value: number[]) => {
-    const newVolume = value[0];
-    setVolume(newVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = newVolume / 100;
-    }
-  };
+    const handleVolumeChange = (value: number[]) => {
+        const newVolume = value[0];
+        setVolume(newVolume);
+        if (audioRef.current) {
+          audioRef.current.volume = newVolume / 100;
+        }
+    };
 
-  const handleSoundSelect = (sound: Sound) => {
-    if (selectedSound?.id === sound?.id) {
-        setSelectedSound(null);
-    } else {
-        setSelectedSound(sound);
+    const handleSoundSelect = (sound: Sound) => {
+        if (selectedSound?.id === sound?.id) {
+            setSelectedSound(null);
+        } else {
+            setSelectedSound(sound);
+        }
     }
-  }
 
-  const handlePlaylistChange = (playlistUrl: string) => {
+    const handlePlaylistChange = (playlistUrl: string) => {
       const allPlaylists = [...defaultPlaylists, ...userPlaylists];
       const newPlaylist = allPlaylists.find(p => p.url === playlistUrl);
       if (newPlaylist) {
           setActivePlaylist(newPlaylist);
       }
-  }
+    }
 
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${''}${String(mins).padStart(2, "0")}:${''}${String(secs).padStart(2, "0")}`;
-  };
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    };
 
-   const formatStudyTime = (totalMinutes: number = 0) => {
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${''}${hours}h ${''}${minutes}m`;
-  };
+    const formatStudyTime = (totalMinutes: number = 0) => {
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return `${hours}h ${minutes}m`;
+    };
 
-  const progress = useMemo(() => {
-    const totalDuration = modes[mode][phase] * 60;
-    if (totalDuration === 0) return 100;
-    return (timeLeft / totalDuration) * 100;
-  }, [timeLeft, mode, phase, modes]);
+    const progress = useMemo(() => {
+        const totalDuration = modes[timerMode][phase] * 60;
+        if (totalDuration === 0) return 100;
+        return (timeLeft / totalDuration) * 100;
+    }, [timeLeft, timerMode, phase, modes]);
   
-  if (!user) return null;
+    if (!user) return null;
 
-  const streakCount = user.streak || 0;
+    const streakCount = user.streak || 0;
 
-  const phaseColors = phase === 'focus' 
-    ? modes[mode].colors
-    : "from-green-400 to-emerald-500";
+    const phaseColors = phase === 'focus' 
+        ? modes[timerMode].colors
+        : "from-green-400 to-emerald-500";
   
-  const phaseProgressColor = phase === 'focus' ? "bg-primary" : "bg-green-500";
-
-  return (
+    return (
     <div className="flex flex-col h-screen bg-muted/30">
         <audio ref={audioRef} crossOrigin="anonymous" loop />
         <header className="p-4 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
@@ -498,8 +377,8 @@ export default function StudyPage() {
                                     onClick={() => handleModeChange(key as TimerMode)}
                                     className={cn(
                                         "w-full flex flex-col items-center justify-center gap-1 p-3 rounded-lg border-2 transition-all duration-300",
-                                        mode === key
-                                            ? `border-transparent bg-gradient-to-br text-white shadow-lg ${''}${modeData.colors}`
+                                        timerMode === key
+                                            ? `border-transparent bg-gradient-to-br text-white shadow-lg ${modeData.colors}`
                                             : "border-dashed bg-muted/50 hover:bg-muted"
                                     )}
                                 >
@@ -546,7 +425,7 @@ export default function StudyPage() {
                         </Label>
                     </div>
 
-                    <Progress value={100 - progress} className={cn("h-2", `[&>div]:bg-gradient-to-r ${''}${phaseColors}`)} />
+                    <Progress value={100 - progress} className={cn("h-2", `[&>div]:bg-gradient-to-r ${phaseColors}`)} />
 
                     <div className="flex justify-between items-center gap-2 mt-6">
                         <Dialog>
@@ -557,13 +436,13 @@ export default function StudyPage() {
                             </DialogTrigger>
                             <ScienceCalculatorDialog />
                         </Dialog>
-                        <Button variant="ghost" size="icon" onClick={handleReset} className="h-14 w-14 rounded-full bg-muted/50">
+                        <Button variant="ghost" size="icon" onClick={resetTimer} className="h-14 w-14 rounded-full bg-muted/50">
                             <RotateCcw className="h-6 w-6" />
                         </Button>
                         <Button onClick={handleToggle} className={cn("h-20 w-20 rounded-full shadow-lg bg-gradient-to-br", phaseColors)}>
                             {isActive ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={handleSkip} className="h-14 w-14 rounded-full bg-muted/50">
+                        <Button variant="ghost" size="icon" onClick={skipPhase} className="h-14 w-14 rounded-full bg-muted/50">
                             <SkipForward className="h-6 w-6" />
                         </Button>
                         <GradeCalculatorDialog isScheduleAvailable={isScheduleAvailable} user={user}>
@@ -1068,7 +947,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
               };
               savedDocs.push(newDoc);
               localStorage.setItem('scannedDocuments', JSON.stringify(savedDocs));
-              toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${''}${fileName}" en tu historial.` });
+              toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${fileName}" en tu historial.` });
             } else {
               toast({ title: 'PDF Descargado', description: `El guardado en el historial está desactivado.` });
             }
@@ -1168,7 +1047,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 onMouseUp={handleCropMouseUp}
                                 onMouseLeave={handleCropMouseUp}
                             >
-                                <img src={activePage.processedSrc} alt={`Page ${''}${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
+                                <img src={activePage.processedSrc} alt={`Page ${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
                                 {isCropping && activePage.crop && (
                                     <div
                                         className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
@@ -1196,7 +1075,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 <div key={p.id} className="relative group shrink-0" onClick={() => setActivePageId(p.id)}>
                                      <img 
                                         src={p.processedSrc} 
-                                        alt={`Thumbnail ${''}${index + 1}`}
+                                        alt={`Thumbnail ${index + 1}`}
                                         className={cn(
                                             "h-20 w-20 object-cover rounded-md border-2 cursor-pointer transition-all",
                                             activePageId === p.id ? "border-primary shadow-lg scale-105" : "border-transparent hover:border-primary/50"
@@ -1261,6 +1140,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
 }
 
 function CustomTimerDialog({ children, customMode, setCustomMode }: { children: React.ReactNode, customMode: CustomMode, setCustomMode: (mode: CustomMode) => void }) {
+    const { setCustomMode: setGlobalCustomMode } = useApp();
     const [focus, setFocus] = useState(customMode.focus.toString());
     const [rest, setRest] = useState(customMode.break.toString());
     const [isOpen, setIsOpen] = useState(false);
@@ -1270,7 +1150,7 @@ function CustomTimerDialog({ children, customMode, setCustomMode }: { children: 
         const restNum = parseInt(rest, 10);
 
         if (!isNaN(focusNum) && !isNaN(restNum) && focusNum > 0 && restNum > 0) {
-            setCustomMode({ focus: focusNum, break: restNum });
+            setGlobalCustomMode({ focus: focusNum, break: restNum });
             setIsOpen(false);
         }
     };
@@ -1350,10 +1230,10 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
             return;
         }
 
-        const embedUrl = `https://open.spotify.com/embed/playlist/${''}${playlistId}?utm_source=generator`;
+        const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator`;
         
         const newPlaylist: Playlist = {
-            id: `user-${''}${Date.now()}`,
+            id: `user-${Date.now()}`,
             name: newPlaylistName,
             url: embedUrl,
         };
@@ -1361,7 +1241,7 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
         setUserPlaylists(prev => [...prev, newPlaylist]);
         setNewPlaylistName("");
         setNewPlaylistUrl("");
-        toast({ title: "¡Playlist añadida!", description: `"${''}${newPlaylist.name}" se ha guardado.`});
+        toast({ title: "¡Playlist añadida!", description: `"${newPlaylist.name}" se ha guardado.`});
     };
     
     const handleDeletePlaylist = (id: string) => {
@@ -1485,7 +1365,7 @@ function ScienceCalculatorDialog() {
             const resultString = String(result);
             setDisplay(resultString);
             setExpression(resultString);
-            setHistory(prev => [`${''}${expression} = ${''}${resultString}`, ...prev].slice(0, 10));
+            setHistory(prev => [`${expression} = ${resultString}`, ...prev].slice(0, 10));
         } catch (e) {
             setDisplay("Error");
             setExpression("");

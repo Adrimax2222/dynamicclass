@@ -10,6 +10,7 @@ import { usePathname, useRouter } from "next/navigation";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { signOut } from "firebase/auth";
 import { useFcmToken } from '@/lib/hooks/use-fcm-token';
+import FloatingStudyTimer from "@/components/layout/floating-study-timer";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, theme, firebaseUser, auth } = useApp();
@@ -60,6 +61,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
         <ChatBubble />
         <ChatDrawer />
+        <FloatingStudyTimer />
       </div>
     </div>
   );

@@ -1,11 +1,14 @@
 
 "use client";
 
-import { createContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import type { User, Chat } from '@/lib/types';
+import { createContext, useState, useEffect, useCallback, type ReactNode, useMemo, useRef } from 'react';
+import type { User, Chat, TimerMode, Phase, CustomMode } from '@/lib/types';
 import { useAuth, useFirestore } from '@/firebase';
 import { onAuthStateChanged, type User as FirebaseUser, deleteUser } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, deleteDoc, collection, query, orderBy, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, deleteDoc, collection, query, orderBy, updateDoc, increment, getDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { format as formatDate, subDays, isSameDay } from 'date-fns';
+
 
 export type Theme = 'light' | 'dark';
 
@@ -35,6 +38,20 @@ export interface AppContextType {
   // Scanner settings
   saveScannedDocs: boolean;
   setSaveScannedDocs: (save: boolean) => void;
+
+  // Global Study Timer State
+  timerMode: TimerMode;
+  setTimerMode: (mode: TimerMode) => void;
+  phase: Phase;
+  setPhase: (phase: Phase) => void;
+  isActive: boolean;
+  setIsActive: (isActive: boolean) => void;
+  timeLeft: number;
+  setTimeLeft: (time: number) => void;
+  customMode: CustomMode;
+  setCustomMode: (mode: CustomMode) => void;
+  resetTimer: () => void;
+  skipPhase: () => void;
 }
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
@@ -42,6 +59,7 @@ const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null | undefined>(undefined); // Start as undefined
   const [theme, setThemeState] = useState<Theme>('light');
@@ -53,6 +71,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isChatsLoading, setIsChatsLoading] = useState(true);
+
+  // Global Study Timer State
+  const [timerMode, setTimerMode] = useState<TimerMode>("pomodoro");
+  const [phase, setPhase] = useState<Phase>("focus");
+  const [isActive, setIsActive] = useState(false);
+  const [customMode, setCustomMode] = useState<CustomMode>({ focus: 45, break: 15 });
+
+  const modes = useMemo(() => ({
+    pomodoro: { focus: 25, break: 5 },
+    long: { focus: 50, break: 10 },
+    deep: { focus: 90, break: 20 },
+    custom: { focus: customMode.focus, break: customMode.break }
+  }), [customMode]);
+
+  const getInitialTime = useCallback(() => {
+    return modes[timerMode][phase] * 60;
+  }, [timerMode, phase, modes]);
+  
+  const [timeLeft, setTimeLeft] = useState(getInitialTime());
+
+  const lastLoggedMinuteRef = useRef<number | null>();
+  const streakUpdatedTodayRef = useRef<boolean>(false);
 
   const auth = useAuth();
   const firestore = useFirestore();
@@ -198,6 +238,110 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setIsChatBubbleVisible(prev => !prev);
   };
 
+  // ----- GLOBAL TIMER LOGIC -----
+
+  useEffect(() => {
+    if (!isActive) {
+      setTimeLeft(getInitialTime());
+    }
+  }, [timerMode, phase, getInitialTime, isActive]);
+
+  const handleStreak = useCallback(async () => {
+    if (!firestore || !user || streakUpdatedTodayRef.current) return;
+    
+    const today = new Date();
+    const todayStr = formatDate(today, 'yyyy-MM-dd');
+    const lastStudyDay = user.lastStudyDay ? new Date(user.lastStudyDay) : null;
+
+    if (lastStudyDay && isSameDay(today, lastStudyDay)) {
+        streakUpdatedTodayRef.current = true;
+        return;
+    }
+
+    const yesterday = subDays(today, 1);
+    let newStreak = user.streak || 0;
+
+    if (lastStudyDay && isSameDay(yesterday, lastStudyDay)) {
+        newStreak++;
+    } else {
+        newStreak = 1;
+    }
+    
+    const userDocRef = doc(firestore, 'users', user.uid);
+    try {
+        await updateDoc(userDocRef, {
+            streak: newStreak,
+            lastStudyDay: todayStr,
+        });
+        updateUser({ streak: newStreak, lastStudyDay: todayStr });
+        streakUpdatedTodayRef.current = true;
+    } catch (err) {
+        console.error("Failed to update streak:", err);
+    }
+  }, [firestore, user, updateUser]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (isActive && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (isActive && timeLeft === 0) {
+      const nextPhase = phase === "focus" ? "break" : "focus";
+      const nextPhaseDuration = modes[timerMode][nextPhase];
+      
+      toast({
+        title: `¡Tiempo de ${nextPhase === 'break' ? 'descanso' : 'enfoque'}!`,
+        description: `Comienza tu bloque de ${nextPhaseDuration} minutos.`,
+      });
+
+      setPhase(nextPhase);
+      setTimeLeft(modes[timerMode][nextPhase] * 60);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isActive, timeLeft, timerMode, phase, toast, modes]);
+  
+  useEffect(() => {
+    if (!firestore || !user || !isActive || phase !== 'focus') return;
+
+    if (!streakUpdatedTodayRef.current) {
+        handleStreak();
+    }
+
+    const totalDuration = modes[timerMode].focus * 60;
+    const currentMinute = Math.floor((totalDuration - timeLeft) / 60);
+
+    if (currentMinute > 0 && currentMinute !== lastLoggedMinuteRef.current) {
+        lastLoggedMinuteRef.current = currentMinute;
+        
+        const userDocRef = doc(firestore, 'users', user.uid);
+        updateDoc(userDocRef, {
+            studyMinutes: increment(1)
+        }).then(() => {
+            updateUser({ studyMinutes: (user.studyMinutes || 0) + 1 });
+        }).catch(err => {
+            console.error("Failed to log study minute:", err);
+        });
+    }
+  }, [timeLeft, isActive, phase, firestore, user, timerMode, updateUser, handleStreak, modes]);
+
+  const resetTimer = useCallback(() => {
+    setIsActive(false);
+    setPhase("focus");
+    setTimeLeft(getInitialTime());
+    lastLoggedMinuteRef.current = null;
+  }, [getInitialTime]);
+
+  const skipPhase = useCallback(() => {
+    setIsActive(false);
+    const nextPhase = phase === "focus" ? "break" : "focus";
+    setPhase(nextPhase);
+    lastLoggedMinuteRef.current = null;
+  }, [phase]);
+
+
   const value: AppContextType = {
     user,
     firebaseUser,
@@ -220,6 +364,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Scanner settings
     saveScannedDocs,
     setSaveScannedDocs,
+    // Global Timer
+    timerMode,
+    setTimerMode,
+    phase,
+    setPhase,
+    isActive,
+    setIsActive,
+    timeLeft,
+    setTimeLeft,
+    customMode,
+    setCustomMode,
+    resetTimer,
+    skipPhase,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

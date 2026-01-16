@@ -165,3 +165,11 @@ export type ScannedDocument = {
   thumbnail: string;
   pages: string[];
 }
+
+export type TimerMode = "pomodoro" | "long" | "deep" | "custom";
+export type Phase = "focus" | "break";
+
+export interface CustomMode {
+  focus: number;
+  break: number;
+}
