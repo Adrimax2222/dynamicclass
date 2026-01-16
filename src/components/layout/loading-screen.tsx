@@ -8,13 +8,38 @@ import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 
 const loadingMessages = [
+  // App specific
+  "¿Sabías que la idea de Dynamic Class salió en 2022?",
+  "¿Sabías que existieron 3 versiones de Dynamic Class antes que esta?",
+  "Estas leyendo esto :)",
+  "¿Sabías que esta app ha sido desarrollada por 2 estudiantes?",
   "Preparando tu aula virtual...",
   "Afinando los conceptos...",
-  "Organizando tus apuntes...",
-  "¿Sabías que aprender algo nuevo crea conexiones neuronales?",
-  "La curiosidad es el motor del aprendizaje.",
   "Calculando trayectorias de conocimiento...",
-  "Desempolvando los libros...",
+
+  // Science & Nature
+  "¿Sabías que el corazón de un colibrí late más de 1.200 veces por minuto?",
+  "El ADN humano es idéntico al de un plátano en un 50%.",
+  "En Júpiter y Saturno, la presión es tan fuerte que literalmente llueven diamantes.",
+  "Un rayo es cinco veces más caliente que la superficie del Sol.",
+
+  // History & Curiosities
+  "Las primeras almohadas en la antigua Mesopotamia eran de piedra.",
+  "El antiguo Egipto usaba moho de pan para tratar infecciones, ¡miles de años antes de la penicilina!",
+  "Las pirámides de Egipto eran originalmente de color blanco brillante.",
+  "El primer correo electrónico de la historia se envió en 1971.",
+
+  // Psychology & Learning
+  "Tu cerebro genera suficiente electricidad para encender una bombilla LED.",
+  "Aprender un nuevo idioma puede hacer que tu cerebro crezca físicamente.",
+  "Escribir a mano te ayuda a recordar mejor las cosas que escribir en teclado.",
+  "El cerebro procesa las imágenes 60.000 veces más rápido que el texto.",
+
+  // Random Facts
+  "Las abejas pueden reconocer rostros humanos.",
+  "Es físicamente imposible para los cerdos mirar al cielo.",
+  "El nombre oficial de la forma de una patata Pringles es paraboloide hiperbólico.",
+  "Un pulpo tiene tres corazones y su sangre es de color azul.",
   "¡Casi listo para empezar a aprender!",
 ];
 
@@ -31,18 +56,28 @@ export default function LoadingScreen() {
   const [currentMessage, setCurrentMessage] = useState(loadingMessages[0]);
   const [isFading, setIsFading] = useState(false);
 
-  // Effect for cycling messages
+  // Effect for cycling messages randomly
   useEffect(() => {
+    // Set an initial random message
+    setMessageIndex(Math.floor(Math.random() * loadingMessages.length));
+
     const interval = setInterval(() => {
       setIsFading(true);
       setTimeout(() => {
-        setMessageIndex((prevIndex) => (prevIndex + 1) % loadingMessages.length);
+        setMessageIndex((prevIndex) => {
+          let newIndex;
+          do {
+            newIndex = Math.floor(Math.random() * loadingMessages.length);
+          } while (newIndex === prevIndex); // Ensure the new message is different
+          return newIndex;
+        });
         setIsFading(false);
       }, 500); // Half a second for fade-out
-    }, 2500); // Change message every 2.5 seconds
+    }, 3500); // Change message every 3.5 seconds to give enough reading time
 
     return () => clearInterval(interval);
   }, []);
+
 
   useEffect(() => {
     setCurrentMessage(loadingMessages[messageIndex]);
