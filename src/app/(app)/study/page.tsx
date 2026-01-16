@@ -223,17 +223,6 @@ export default function StudyPage() {
     };
 
     useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'hidden') {
-                setIsActive(false); // Pause the timer
-                toast({
-                    title: "Enfoque Interrumpido",
-                    description: "El temporizador se ha pausado. Vuelve a la app para continuar.",
-                    variant: "destructive",
-                });
-            }
-        };
-
         const exitFullScreen = () => {
             if (document.fullscreenElement) {
                 document.exitFullscreen().catch(err => console.error(err));
@@ -250,17 +239,14 @@ export default function StudyPage() {
                     variant: "destructive"
                 });
             });
-            document.addEventListener('visibilitychange', handleVisibilityChange);
         } else {
             exitFullScreen();
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
         }
 
         return () => {
             exitFullScreen();
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [isFocusMode, isActive, toast, setIsActive]);
+    }, [isFocusMode, isActive, toast]);
 
 
     const handleModeChange = (newMode: TimerMode) => {

@@ -241,10 +241,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ----- GLOBAL TIMER LOGIC -----
 
   useEffect(() => {
+    // This effect resets the timer display when the user
+    // changes mode or phase *while the timer is paused*.
+    // It does NOT run just because the timer is paused.
     if (!isActive) {
       setTimeLeft(getInitialTime());
     }
   }, [timerMode, phase, getInitialTime, isActive]);
+
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // Pausa el temporizador si la página se oculta y el temporizador está activo
+      if (document.visibilityState === 'hidden' && isActive) {
+        setIsActive(false);
+        toast({
+          title: "Estudio en pausa",
+          description: "El temporizador se detuvo porque cambiaste de pestaña. Vuelve para continuar.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isActive, setIsActive, toast]);
 
   const handleStreak = useCallback(async () => {
     if (!firestore || !user || streakUpdatedTodayRef.current) return;
