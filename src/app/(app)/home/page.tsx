@@ -641,8 +641,8 @@ export default function HomePage() {
                               <ArrowRight className="h-5 w-5 text-primary shrink-0 ml-4" />
                             </div>
                         </div>
-                        <div className="px-4 pb-4">
-                            <Button asChild size="sm" className="w-full bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-full">
+                        <div className="px-4 pb-4 flex justify-end">
+                            <Button asChild size="sm" className="bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-full">
                                 <Link href="/study">
                                     <BrainCircuit className="h-4 w-4 mr-2" />
                                     Estudiar
@@ -918,5 +918,6 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
 
 
     
+
 
 
