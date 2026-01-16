@@ -241,13 +241,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ----- GLOBAL TIMER LOGIC -----
 
   useEffect(() => {
-    // This effect resets the timer display when the user
-    // changes mode or phase *while the timer is paused*.
-    // It does NOT run just because the timer is paused.
+    // This effect resets the timer display ONLY when the user
+    // changes the mode or the phase is manually skipped. It is designed
+    // NOT to run when the timer is simply paused.
     if (!isActive) {
       setTimeLeft(getInitialTime());
     }
-  }, [timerMode, phase, getInitialTime, isActive]);
+  }, [timerMode, phase, getInitialTime]);
 
 
   useEffect(() => {
