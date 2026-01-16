@@ -318,12 +318,15 @@ export default function ProfilePage() {
             </Link>
 
             <StreakRankingDialog user={user}>
-                <AchievementCard 
-                    title="Racha de Estudio"
-                    value={streakCount}
-                    icon={Flame}
-                    color={streakCount > 0 ? "text-orange-500" : "text-muted-foreground"}
-                />
+              <Card className="hover:border-primary/50 transition-colors duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg cursor-pointer">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Racha de Estudio</CardTitle>
+                  <Flame className={cn("h-5 w-5 text-muted-foreground", streakCount > 0 ? "text-orange-500" : "text-muted-foreground")} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{streakCount}</div>
+                </CardContent>
+              </Card>
             </StreakRankingDialog>
 
             {achievements.map(card => (
@@ -1222,6 +1225,7 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
 
 
