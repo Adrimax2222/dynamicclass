@@ -20,6 +20,14 @@
         { "fieldPath": "className", "order": "ASCENDING" },
         { "fieldPath": "streak", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "notes",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "isPinned", "order": "DESCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ]
 }
