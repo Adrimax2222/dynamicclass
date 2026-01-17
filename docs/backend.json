@@ -86,9 +86,14 @@
             "required": ["id", "text"]
           }
         },
-        "pollVotes": {
+        "pollVoteCounts": {
           "type": "object",
-          "description": "A map of option IDs to a list of user UIDs who voted."
+          "description": "A map of option IDs to their vote counts."
+        },
+        "votedUserIds": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "A list of user UIDs who have voted."
         },
         "allowMultipleVotes": { "type": "boolean" }
       },

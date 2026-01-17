@@ -71,6 +71,7 @@ import {
   getDoc,
   arrayUnion,
   runTransaction,
+  increment,
 } from "firebase/firestore";
 import type { Note, Announcement, AnnouncementScope, Schedule, Center, AnnouncementType, PollOption, User as AppUser } from "@/lib/types";
 import {
@@ -180,7 +181,8 @@ function AnnouncementsTab() {
     };
 
     if (newAnnouncement.type === 'poll') {
-        newAnnouncement.pollVotes = {};
+        newAnnouncement.pollVoteCounts = {};
+        newAnnouncement.votedUserIds = [];
     }
     
     await addDoc(announcementsCollectionRef, newAnnouncement);
@@ -444,7 +446,8 @@ function NewAnnouncementCard({ onSend }: { onSend: (data: Partial<Announcement>)
                 announcementData.pollQuestion = pollQuestion;
                 announcementData.pollOptions = validOptions.map((opt, index) => ({ id: (index + 1).toString(), text: opt.text })); // Re-ID to be safe
                 announcementData.allowMultipleVotes = allowMultipleVotes;
-                announcementData.pollVotes = {};
+                announcementData.pollVoteCounts = {};
+                announcementData.votedUserIds = [];
             }
 
             await onSend(announcementData);
@@ -639,7 +642,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
         </CardHeader>
         <CardContent className="p-4 pt-0">
             {announcement.type === 'poll' ? (
-                <PollDisplay announcement={announcement} allUsers={allUsersInCenter} canManage={canManage} />
+                <PollDisplay announcement={announcement} allUsers={allUsersInCenter} />
             ) : isEditing ? (
                  <div className="space-y-2">
                     <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={3} />
@@ -718,26 +721,20 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
   );
 }
 
-function PollDisplay({ announcement, allUsers, canManage }: { announcement: Announcement, allUsers: AppUser[], canManage: boolean }) {
+function PollDisplay({ announcement, allUsers }: { announcement: Announcement, allUsers: AppUser[]}) {
     const { user, firestore } = useApp();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
-    const userVotes = useMemo(() => {
-        if (!user || !announcement.pollVotes) return [];
-        const votes: string[] = [];
-        for (const optionId in announcement.pollVotes) {
-            if (announcement.pollVotes[optionId]?.includes(user.uid)) {
-                votes.push(optionId);
-            }
-        }
-        return votes;
-    }, [user, announcement.pollVotes]);
+    const hasUserVoted = useMemo(() => {
+        if (!user || !announcement.votedUserIds) return false;
+        return announcement.votedUserIds.includes(user.uid);
+    }, [user, announcement.votedUserIds]);
     
     const totalVotes = useMemo(() => {
-        return Object.values(announcement.pollVotes || {}).reduce((acc, uids) => acc + uids.length, 0);
-    }, [announcement.pollVotes]);
+        return Object.values(announcement.pollVoteCounts || {}).reduce((acc, count) => acc + count, 0);
+    }, [announcement.pollVoteCounts]);
 
     const handleSelectOption = (optionId: string) => {
         const isMultiVote = announcement.allowMultipleVotes || false;
@@ -758,33 +755,16 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
         const announcementRef = doc(firestore, "announcements", announcement.uid);
     
         try {
-            const docSnap = await getDoc(announcementRef);
-            if (!docSnap.exists()) {
-                throw new Error("La encuesta ya no existe.");
-            }
-    
-            const currentVotes = docSnap.data().pollVotes || {};
-            // Create a deep copy to avoid modifying the state directly
-            const newVotes = JSON.parse(JSON.stringify(currentVotes));
-    
-            // Remove all of the user's existing votes to handle single-choice changes and multi-choice updates cleanly.
-            Object.keys(newVotes).forEach(optionId => {
-                if (Array.isArray(newVotes[optionId])) {
-                    newVotes[optionId] = newVotes[optionId].filter((uid: string) => uid !== user.uid);
-                }
-            });
-    
-            // Add the user's new selections.
+            const updateData: { [key: string]: any } = {
+                votedUserIds: arrayUnion(user.uid)
+            };
+
             selectedOptions.forEach(optionId => {
-                if (!newVotes[optionId]) {
-                    newVotes[optionId] = [];
-                }
-                newVotes[optionId].push(user.uid);
+                updateData[`pollVoteCounts.${optionId}`] = increment(1);
             });
             
-            await updateDoc(announcementRef, { pollVotes: newVotes });
+            await updateDoc(announcementRef, updateData);
             
-            setSelectedOptions([]);
             toast({
                 title: "¡Voto registrado!",
                 description: "Gracias por tu participación.",
@@ -801,8 +781,23 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
             setIsSubmitting(false);
         }
     };
-
-    const hasUserVoted = userVotes.length > 0;
+    
+    const canUserSeePollResults = (ann: Announcement): boolean => {
+        if (!user) return false;
+        if (user.role === 'admin') {
+            return true;
+        }
+        if (user.role === 'center-admin') {
+            return ann.scope === 'center' && user.organizationId === ann.centerId;
+        }
+        if (user.role.startsWith('admin-')) {
+            const adminClassName = user.role.split('admin-')[1];
+            return ann.scope === 'class' && user.organizationId === ann.centerId && adminClassName === ann.className;
+        }
+        return false;
+    };
+    
+    const showAdminResultsButton = canUserSeePollResults(announcement);
 
     if (hasUserVoted) {
         return (
@@ -810,9 +805,8 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
                 <h4 className="font-bold text-base">{announcement.pollQuestion}</h4>
                 <div className="space-y-2">
                     {announcement.pollOptions?.map(option => {
-                        const votesForOption = announcement.pollVotes?.[option.id] || [];
-                        const percentage = totalVotes > 0 ? (votesForOption.length / totalVotes) * 100 : 0;
-                        const isSelectedByCurrentUser = userVotes.includes(option.id);
+                        const votesForOption = announcement.pollVoteCounts?.[option.id] || 0;
+                        const percentage = totalVotes > 0 ? (votesForOption / totalVotes) * 100 : 0;
 
                         return (
                              <div
@@ -823,20 +817,13 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
                                     className="absolute top-0 left-0 h-full bg-primary/10 transition-all duration-500" 
                                     style={{ width: `${percentage}%` }} 
                                 />
-                                <div className={cn("relative p-3 flex items-center gap-3", isSelectedByCurrentUser && "bg-primary/20")}>
-                                    <div className={cn("h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center", isSelectedByCurrentUser && "bg-primary")}>
-                                       {isSelectedByCurrentUser && <CheckCircle2 className="h-3 w-3 text-white"/>}
-                                    </div>
+                                <div className="relative p-3 flex items-center gap-3">
                                     <span className="flex-1 font-semibold">{option.text}</span>
                                     <div className="flex items-center gap-4">
-                                        {canManage ? (
-                                            <VotersDisplay uids={votesForOption} allUsers={allUsers} />
-                                        ) : (
-                                            <div className="flex items-center text-sm text-muted-foreground">
-                                                <Users className="h-4 w-4 mr-1.5" />
-                                                <span>{votesForOption.length}</span>
-                                            </div>
-                                        )}
+                                        <div className="flex items-center text-sm text-muted-foreground">
+                                            <Users className="h-4 w-4 mr-1.5" />
+                                            <span>{votesForOption}</span>
+                                        </div>
                                         <span className="text-sm font-bold w-12 text-right">{percentage.toFixed(0)}%</span>
                                     </div>
                                 </div>
@@ -844,7 +831,7 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
                         )
                     })}
                 </div>
-                {canManage && <PollResultsDialog announcement={announcement} allUsers={allUsers} />}
+                {showAdminResultsButton && <PollResultsDialog announcement={announcement} allUsers={allUsers} />}
             </div>
         )
     }
@@ -876,7 +863,7 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
                 Enviar Respuesta
              </Button>
-            {canManage && (
+            {showAdminResultsButton && totalVotes > 0 && (
                 <div className="text-center pt-2">
                      <PollResultsDialog announcement={announcement} allUsers={allUsers} />
                 </div>
@@ -885,36 +872,12 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
     )
 }
 
-function VotersDisplay({ uids, allUsers }: { uids: string[], allUsers: AppUser[] }) {
-    const voters = useMemo(() => uids.map(uid => allUsers.find(u => u.uid === uid)).filter(Boolean) as AppUser[], [uids, allUsers]);
-    
-    if (voters.length === 0) {
-         return (
-            <div className="flex items-center text-sm text-muted-foreground">
-                <Users className="h-4 w-4 mr-1.5" />
-                <span>0</span>
-            </div>
-        );
-    }
-    
-    const votersToShow = voters.slice(0, 3);
-    const remainingCount = voters.length - votersToShow.length;
-
-    return (
-        <div className="flex -space-x-2">
-            {votersToShow.map(voter => (
-                <AvatarDisplay key={voter.uid} user={voter} className="h-6 w-6 border-2 border-background" />
-            ))}
-            {remainingCount > 0 && (
-                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold border-2 border-background">
-                    +{remainingCount}
-                </div>
-            )}
-        </div>
-    );
-}
-
 function PollResultsDialog({ announcement, allUsers }: { announcement: Announcement, allUsers: AppUser[]}) {
+     const voters = useMemo(() => {
+        const voterUids = announcement.votedUserIds || [];
+        return voterUids.map(uid => allUsers.find(u => u.uid === uid)).filter(Boolean) as AppUser[];
+    }, [announcement.votedUserIds, allUsers]);
+
     return (
         <Dialog>
             <DialogTrigger asChild>
@@ -922,33 +885,21 @@ function PollResultsDialog({ announcement, allUsers }: { announcement: Announcem
             </DialogTrigger>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Resultados de la Votación</DialogTitle>
+                    <DialogTitle>Participantes de la Votación</DialogTitle>
                     <DialogDescription>{announcement.pollQuestion}</DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[60vh] -mx-6 px-6">
-                    <div className="space-y-4">
-                        {announcement.pollOptions?.map(option => {
-                            const voterUids = announcement.pollVotes?.[option.id] || [];
-                            const voters = voterUids.map(uid => allUsers.find(u => u.uid === uid)).filter(Boolean) as AppUser[];
-
-                            return (
-                                <div key={option.id}>
-                                    <h4 className="font-semibold text-sm mb-2">{option.text} <Badge>{voters.length} Votos</Badge></h4>
-                                    {voters.length > 0 ? (
-                                        <div className="space-y-2">
-                                            {voters.map(voter => (
-                                                <div key={voter.uid} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md text-sm">
-                                                    <AvatarDisplay user={voter} className="h-6 w-6"/>
-                                                    <span>{voter.name}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-xs text-muted-foreground">Nadie ha votado por esta opción todavía.</p>
-                                    )}
+                    <div className="space-y-2">
+                        {voters.length > 0 ? (
+                            voters.map(voter => (
+                                <div key={voter.uid} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md text-sm">
+                                    <AvatarDisplay user={voter} className="h-6 w-6"/>
+                                    <span>{voter.name}</span>
                                 </div>
-                            )
-                        })}
+                            ))
+                        ) : (
+                            <p className="text-xs text-muted-foreground text-center py-8">Nadie ha participado en esta votación todavía.</p>
+                        )}
                     </div>
                 </ScrollArea>
                  <DialogFooter>
@@ -1181,6 +1132,7 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     
 
     
+
 
 
 

@@ -141,7 +141,8 @@ export type Announcement = {
   type: AnnouncementType;
   pollQuestion?: string;
   pollOptions?: PollOption[];
-  pollVotes?: { [optionId: string]: string[] }; // optionId -> [userId]
+  pollVoteCounts?: { [optionId: string]: number };
+  votedUserIds?: string[];
   allowMultipleVotes?: boolean;
 };
 
