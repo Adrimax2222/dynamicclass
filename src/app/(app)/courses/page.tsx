@@ -740,38 +740,39 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
                 if (!annDoc.exists()) throw "Document does not exist!";
                 
                 const currentData = annDoc.data() as Announcement;
-                const votes = JSON.parse(JSON.stringify(currentData.pollVotes || {})); 
+                const newPollVotes = { ...(currentData.pollVotes || {}) };
                 const userId = user.uid;
 
                 if (currentData.allowMultipleVotes) {
-                    const optionVotes: string[] = votes[optionId] || [];
-                    const userVoteIndex = optionVotes.indexOf(userId);
+                    const optionVoters = newPollVotes[optionId] || [];
+                    const userVoteIndex = optionVoters.indexOf(userId);
 
                     if (userVoteIndex > -1) {
-                        optionVotes.splice(userVoteIndex, 1);
+                        optionVoters.splice(userVoteIndex, 1);
                     } else {
-                        optionVotes.push(userId);
+                        optionVoters.push(userId);
                     }
-                    votes[optionId] = optionVotes;
+                    newPollVotes[optionId] = optionVoters;
                 } else { // Single vote logic
-                    const currentVoteKey = Object.keys(votes).find(key => (votes[key] || []).includes(userId));
+                    const currentVoteKey = Object.keys(newPollVotes).find(key => (newPollVotes[key] || []).includes(userId));
                     
-                    if (currentVoteKey) {
-                        votes[currentVoteKey] = (votes[currentVoteKey] || []).filter((id: string) => id !== userId);
-                    }
-
-                    if (currentVoteKey !== optionId) {
-                        votes[optionId] = [...(votes[optionId] || []), userId];
+                    if (currentVoteKey === optionId) {
+                        newPollVotes[optionId] = (newPollVotes[optionId] || []).filter(id => id !== userId);
+                    } else {
+                        if (currentVoteKey) {
+                            newPollVotes[currentVoteKey] = (newPollVotes[currentVoteKey] || []).filter(id => id !== userId);
+                        }
+                        newPollVotes[optionId] = [...(newPollVotes[optionId] || []), userId];
                     }
                 }
 
-                Object.keys(votes).forEach(optId => {
-                    if (!votes[optId] || votes[optId].length === 0) {
-                        delete votes[optId];
+                Object.keys(newPollVotes).forEach(optId => {
+                    if (!newPollVotes[optId] || newPollVotes[optId].length === 0) {
+                        delete newPollVotes[optId];
                     }
                 });
 
-                transaction.update(announcementRef, { pollVotes: votes });
+                transaction.update(announcementRef, { pollVotes: newPollVotes });
             });
         } catch (error) {
             console.error("Poll vote transaction failed: ", error);
@@ -825,13 +826,13 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
                     )
                 })}
             </div>
+             {canManage && <PollResultsDialog announcement={announcement} allUsers={allUsers} />}
              {!hasUserVoted && (
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-2">
                     <EyeOff className="h-4 w-4"/>
                     <span>Vota para ver los resultados de la encuesta.</span>
                 </div>
             )}
-             {canManage && <PollResultsDialog announcement={announcement} allUsers={allUsers} />}
         </div>
     )
 }
@@ -1128,5 +1129,7 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
   )
 }
 
+
+    
 
     
