@@ -1,6 +1,6 @@
-
 'use client';
 
+import * as React from 'react';
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/lib/hooks/use-app';
