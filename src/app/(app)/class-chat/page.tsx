@@ -152,6 +152,9 @@ export default function ClassChatPage() {
                                         )}
                                     </div>
                                 </div>
+                                {msg.authorId === user.uid && (
+                                    <AvatarDisplay user={user} className="h-8 w-8" />
+                                )}
                             </div>
                         ))
                     )}
