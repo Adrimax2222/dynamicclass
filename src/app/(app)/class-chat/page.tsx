@@ -8,7 +8,7 @@ import { collection, query, orderBy, addDoc, serverTimestamp, Timestamp } from '
 import type { ClassChatMessage } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle, CheckCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AvatarDisplay } from '@/components/profile/avatar-creator';
@@ -26,6 +26,7 @@ export default function ClassChatPage() {
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const chatPath = useMemo(() => {
         if (!user || !user.organizationId || user.center === 'personal' || !user.course || !user.className) return null;
@@ -48,6 +49,16 @@ export default function ClassChatPage() {
         }, 100);
       }
     }, [messages, isLoading]);
+
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = 'auto'; // Reset height
+            const scrollHeight = textarea.scrollHeight;
+            const maxHeight = 128; // max-h-32 (8rem)
+            textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+        }
+    }, [message]);
 
     const handleSend = async () => {
         if (!message.trim() || !user || !chatPath || !firestore) return;
@@ -73,8 +84,8 @@ export default function ClassChatPage() {
         }
     };
     
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend();
         }
@@ -140,7 +151,7 @@ export default function ClassChatPage() {
                                 )}
                                 <div className={cn("max-w-[75%] p-3 rounded-xl shadow-sm", msg.authorId === user.uid ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none")}>
                                      <p className={cn("text-xs font-bold mb-1", msg.authorId === user.uid ? "text-primary-foreground/80" : "text-primary")}>
-                                        {msg.authorName.split(' ')[0]}
+                                        {msg.authorName}
                                      </p>
                                     <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                                      <div className="flex items-center justify-end gap-1.5 text-xs opacity-70 mt-1.5">
@@ -148,7 +159,7 @@ export default function ClassChatPage() {
                                             {msg.timestamp ? format(msg.timestamp.toDate(), 'HH:mm') : ''}
                                         </span>
                                         {msg.authorId === user.uid && (
-                                            <CheckCheck className="h-4 w-4 text-green-400" />
+                                            <CheckCheck className="h-4 w-4 text-sky-400" />
                                         )}
                                     </div>
                                 </div>
@@ -162,15 +173,17 @@ export default function ClassChatPage() {
             </div>
             
             <footer className="p-4 border-t bg-background">
-                <div className="flex items-center gap-2 bg-muted p-2 rounded-xl">
+                <div className="flex items-end gap-2 bg-muted p-2 rounded-xl">
                     <WipDialog>
                         <Button variant="ghost" size="icon" className="shrink-0">
                             <PlusCircle className="h-5 w-5 text-muted-foreground" />
                         </Button>
                     </WipDialog>
-                    <Input 
+                    <Textarea 
+                        ref={textareaRef}
                         placeholder="Escribe un mensaje..."
-                        className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-10 px-2"
+                        className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none overflow-y-auto max-h-32"
+                        rows={1}
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyDown={handleKeyDown}
