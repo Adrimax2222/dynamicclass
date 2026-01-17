@@ -193,21 +193,21 @@ function AnnouncementsTab() {
     await addDoc(announcementsCollectionRef, newAnnouncement);
   }
 
-  const handleUpdateAnnouncement = async (uid: string, text: string) => {
+  const handleUpdateAnnouncement = async (id: string, text: string) => {
     if (!firestore) return;
-    const announcementDocRef = doc(firestore, "announcements", uid);
+    const announcementDocRef = doc(firestore, "announcements", id);
     await updateDoc(announcementDocRef, { text });
   }
 
-  const handleDeleteAnnouncement = async (uid: string) => {
+  const handleDeleteAnnouncement = async (id: string) => {
       if (!firestore) return;
-      const announcementDocRef = doc(firestore, "announcements", uid);
+      const announcementDocRef = doc(firestore, "announcements", id);
       await deleteDoc(announcementDocRef);
   }
   
-  const handlePinAnnouncement = async (uid: string, currentStatus: boolean) => {
+  const handlePinAnnouncement = async (id: string, currentStatus: boolean) => {
     if (!firestore) return;
-    const announcementDocRef = doc(firestore, "announcements", uid);
+    const announcementDocRef = doc(firestore, "announcements", id);
     await updateDoc(announcementDocRef, { isPinned: !currentStatus });
   };
   
@@ -368,13 +368,13 @@ function AnnouncementsTab() {
       <div className="space-y-4">
         {sortedAndFilteredAnnouncements.map((announcement) => (
           <AnnouncementItem
-              key={announcement.uid}
+              key={announcement.id}
               announcement={announcement}
               isAuthor={user?.uid === announcement.authorId}
               canManage={canUserManageAnnouncement(announcement)}
               onUpdate={handleUpdateAnnouncement}
               onDelete={handleDeleteAnnouncement}
-              onPin={() => handlePinAnnouncement(announcement.uid, !!announcement.isPinned)}
+              onPin={() => handlePinAnnouncement(announcement.id, !!announcement.isPinned)}
               onReaction={handleReaction}
               allUsersInCenter={usersInCenter}
           />
@@ -574,10 +574,10 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
     announcement: Announcement, 
     isAuthor: boolean, 
     canManage: boolean, 
-    onUpdate: (uid: string, text: string) => void, 
-    onDelete: (uid: string) => void, 
+    onUpdate: (id: string, text: string) => void, 
+    onDelete: (id: string) => void, 
     onPin: () => void,
-    onReaction: (uid: string, emoji: string) => void,
+    onReaction: (id: string, emoji: string) => void,
     allUsersInCenter: AppUser[]
 }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -597,7 +597,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          const announcementDocRef = doc(firestore, "announcements", announcement.uid);
+          const announcementDocRef = doc(firestore, "announcements", announcement.id);
           updateDoc(announcementDocRef, {
             viewedBy: arrayUnion(user.uid)
           }).catch(err => console.error("Failed to update view count", err));
@@ -610,7 +610,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
     observer.observe(node);
 
     return () => observer.disconnect();
-  }, [announcement.uid, announcement.viewedBy, firestore, user]);
+  }, [announcement.id, announcement.viewedBy, firestore, user]);
 
   const formatTimestamp = (timestamp: { seconds: number }) => {
     if (!timestamp) return "";
@@ -619,7 +619,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
   };
   
   const handleUpdate = () => {
-    onUpdate(announcement.uid, editText);
+    onUpdate(announcement.id, editText);
     setIsEditing(false);
   }
 
@@ -690,7 +690,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                                         variant="ghost"
                                         size="icon"
                                         className="text-xl rounded-full h-9 w-9"
-                                        onClick={() => onReaction(announcement.uid, emoji)}
+                                        onClick={() => onReaction(announcement.id, emoji)}
                                     >
                                         {emoji}
                                     </Button>
@@ -708,7 +708,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                                     key={emoji}
                                     variant={userHasReacted ? "default" : "secondary"}
                                     className="cursor-pointer transition-transform hover:scale-110 py-0.5 px-1.5"
-                                    onClick={() => onReaction(announcement.uid, emoji)}
+                                    onClick={() => onReaction(announcement.id, emoji)}
                                 >
                                     <span className="text-sm mr-1">{emoji}</span>
                                     <span className="font-bold text-xs">{uids.length}</span>
@@ -728,7 +728,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                         <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>Editar</Button>
                     )}
                    {(isAuthor || canManage) && (
-                     <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(announcement.uid)}>Eliminar</Button>
+                     <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(announcement.id)}>Eliminar</Button>
                    )}
                 </div>
             </CardFooter>
@@ -784,14 +784,14 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
             return;
         }
     
-        if (!announcement.uid) {
+        if (!announcement.id) {
             alert("ERROR: El anuncio no tiene ID");
             return;
         }
-        console.log("Intentando escribir en: anuncios/" + announcement.uid);
+        console.log("Intentando escribir en: anuncios/" + announcement.id);
     
         setIsSubmitting(true);
-        const announcementRef = doc(firestore, "announcements", announcement.uid);
+        const announcementRef = doc(firestore, "announcements", announcement.id);
         
         try {
             alert('Iniciando envío...');
