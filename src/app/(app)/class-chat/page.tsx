@@ -324,6 +324,7 @@ function MessageItem({ msg, user, chatPath, onDelete }: MessageItemProps) {
     }, [msg.id, msg.viewedBy, firestore, user, chatPath]);
 
     const formatRole = (role: string) => {
+        if (!role) return 'Usuario';
         if (role === 'student') return 'Estudiante';
         if (role === 'admin') return 'Admin Global';
         if (role === 'center-admin') return 'Admin Centro';
