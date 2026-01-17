@@ -25,7 +25,8 @@
         "studyMinutes": { "type": "number" },
         "streak": { "type": "number" },
         "lastStudyDay": { "type": "string", "format": "date" },
-        "ownedAvatars": { "type": "array", "items": { "type": "string" } }
+        "ownedAvatars": { "type": "array", "items": { "type": "string" } },
+        "isChatBanned": { "type": "boolean", "description": "If true, the user is banned from using the class chat." }
       },
       "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange", "isNewUser"]
     },
@@ -164,6 +165,7 @@
               "name": { "type": "string" },
               "icalUrl": { "type": "string", "format": "uri" },
               "imageUrl": { "type": "string", "format": "uri" },
+              "description": { "type": "string", "description": "A short description for the class." },
               "schedule": {
                 "type": "object",
                 "properties": {
@@ -242,3 +244,5 @@
     }
   }
 }
+
+    

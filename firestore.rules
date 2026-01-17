@@ -76,7 +76,8 @@ service cloud.firestore {
       // Allow user to update their own profile, but not their role or banned status
       allow update: if isOwner(userId) && 
                       request.resource.data.role == resource.data.role &&
-                      (!('isBanned' in request.resource.data) || request.resource.data.isBanned == resource.data.isBanned);
+                      (!('isBanned' in request.resource.data) || request.resource.data.isBanned == resource.data.isBanned) &&
+                      (!('isChatBanned' in request.resource.data) || request.resource.data.isChatBanned == resource.data.isChatBanned);
 
 
       // Notes subcollection
@@ -205,10 +206,12 @@ service cloud.firestore {
                        message.timestamp == request.time;
             }
             
-            allow create: if isClassMember() && isValidClassMessage();
+            allow create: if isClassMember() && isValidClassMessage() && getUserData().isChatBanned != true;
             
             allow update, delete: if false; // Immutable history
         }
     }
   }
 }
+
+    

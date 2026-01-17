@@ -10,7 +10,7 @@ import type { Center, User as CenterUser, ClassDefinition } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, Loader2, Crown, User, ShieldCheck, Users, Replace, UserX } from "lucide-react";
+import { ChevronLeft, Search, Loader2, Crown, User, ShieldCheck, Users, Replace, UserX, MicOff } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -64,13 +64,9 @@ export default function ManageClassMembersPage() {
     const classAdminRole = `admin-${course.toUpperCase()}-${classLetter}`;
 
     const handleRoleChange = async (member: CenterUser | null, newRole: string) => {
-         if (!firestore || !member) return;
-         if (!member.uid) {
-            console.error("Error: el miembro no tiene un UID válido.", member);
-            toast({ title: "Error", description: "No se puede actualizar el rol de un usuario sin identificador.", variant: "destructive" });
-            return;
-        }
-         console.log("Datos del miembro recibidos:", member);
+         if (!firestore || !member?.uid) return;
+         
+         setIsProcessing(true);
          try {
             const userDocRef = doc(firestore, 'users', member.uid);
             await updateDoc(userDocRef, { role: newRole });
@@ -79,11 +75,35 @@ export default function ManageClassMembersPage() {
          } catch (error) {
              console.error("Error updating role:", error);
              toast({ title: "Error", description: "No se pudo actualizar el rol.", variant: "destructive" });
+         } finally {
+            setIsProcessing(false);
          }
+    };
+    
+    const handleMuteToggle = async (member: CenterUser | null) => {
+        if (!firestore || !member?.uid) return;
+        
+        setIsProcessing(true);
+        const newBanStatus = !member.isChatBanned;
+
+        try {
+            const userDocRef = doc(firestore, 'users', member.uid);
+            await updateDoc(userDocRef, { isChatBanned: newBanStatus });
+            toast({
+                title: `Usuario ${newBanStatus ? 'Silenciado' : 'Reactivado'}`,
+                description: `${member.name} ${newBanStatus ? 'no podrá' : 'ahora puede'} enviar mensajes en el chat de clase.`
+            });
+            setSelectedMember(prev => prev ? { ...prev, isChatBanned: newBanStatus } : null);
+        } catch (error) {
+             console.error("Error toggling chat ban:", error);
+             toast({ title: "Error", description: "No se pudo cambiar el estado de silencio del usuario.", variant: "destructive" });
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     const handleKickFromClass = async (member: CenterUser | null) => {
-        if (!firestore || !member || !member.uid) return;
+        if (!firestore || !member?.uid) return;
         setIsProcessing(true);
         try {
             const userDocRef = doc(firestore, 'users', member.uid);
@@ -182,7 +202,10 @@ export default function ManageClassMembersPage() {
                                                 <p className="font-semibold">{member.name}</p>
                                                 <p className="text-xs text-muted-foreground">{member.email}</p>
                                             </div>
-                                            <RoleIcon role={member.role} />
+                                            <div className="flex items-center gap-2">
+                                                {member.isChatBanned && <MicOff className="h-4 w-4 text-destructive" />}
+                                                <RoleIcon role={member.role} />
+                                            </div>
                                         </button>
                                     </DialogTrigger>
                                 ))}
@@ -194,22 +217,49 @@ export default function ManageClassMembersPage() {
                                                 <AvatarDisplay user={selectedMember} className="h-24 w-24 mb-4" />
                                                 <DialogTitle>{selectedMember.name}</DialogTitle>
                                                 <DialogDescription>{selectedMember.email}</DialogDescription>
-                                                 <Badge variant={selectedMember.role === 'admin' ? 'destructive' : selectedMember.role === 'center-admin' ? 'secondary' : selectedMember.role.startsWith('admin-') ? 'default' : 'secondary'} className={cn(selectedMember.role === 'center-admin' && 'bg-purple-100 text-purple-800')}>
-                                                    {selectedMember.role === 'admin' ? "Admin Global" : selectedMember.role === 'center-admin' ? "Admin Centro" : selectedMember.role.startsWith('admin-') ? "Admin Clase" : "Estudiante"}
-                                                </Badge>
+                                                 <div className="flex gap-2 items-center">
+                                                    <Badge variant={selectedMember.role === 'admin' ? 'destructive' : selectedMember.role === 'center-admin' ? 'secondary' : selectedMember.role.startsWith('admin-') ? 'default' : 'secondary'} className={cn(selectedMember.role === 'center-admin' && 'bg-purple-100 text-purple-800')}>
+                                                        {selectedMember.role === 'admin' ? "Admin Global" : selectedMember.role === 'center-admin' ? "Admin Centro" : selectedMember.role.startsWith('admin-') ? "Admin Clase" : "Estudiante"}
+                                                    </Badge>
+                                                    {selectedMember.isChatBanned && <Badge variant="destructive">Silenciado</Badge>}
+                                                 </div>
                                             </DialogHeader>
                                             <div className="pt-4 space-y-2">
                                                 {canPromote && selectedMember.role !== 'admin' && selectedMember.role !== 'center-admin' && (
                                                     selectedMember.role.startsWith('admin-') ? (
-                                                        <Button variant="outline" onClick={() => handleRoleChange(selectedMember, 'student')} className="w-full">
-                                                            <Crown className="mr-2 h-4 w-4" /> Quitar Admin de Clase
+                                                        <Button variant="outline" onClick={() => handleRoleChange(selectedMember, 'student')} className="w-full" disabled={isProcessing}>
+                                                            {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} <Crown className="mr-2 h-4 w-4" /> Quitar Admin de Clase
                                                         </Button>
                                                    ) : (
-                                                        <Button onClick={() => handleRoleChange(selectedMember, classAdminRole)} className="w-full">
-                                                            <Crown className="mr-2 h-4 w-4" /> Hacer Admin de Clase
+                                                        <Button onClick={() => handleRoleChange(selectedMember, classAdminRole)} className="w-full" disabled={isProcessing}>
+                                                            {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} <Crown className="mr-2 h-4 w-4" /> Hacer Admin de Clase
                                                         </Button>
                                                    )
                                                )}
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="outline" className="w-full" disabled={isProcessing}>
+                                                          <MicOff className="mr-2 h-4 w-4"/> {selectedMember.isChatBanned ? 'Reactivar en el Chat' : 'Silenciar en el Chat'}
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>¿{selectedMember.isChatBanned ? 'Reactivar' : 'Silenciar'} a {selectedMember.name}?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                {selectedMember.isChatBanned
+                                                                    ? `El usuario podrá volver a enviar mensajes en el chat de la clase.`
+                                                                    : `El usuario no podrá enviar mensajes en el chat de la clase hasta que se le reactive.`
+                                                                }
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleMuteToggle(selectedMember)}>
+                                                                {selectedMember.isChatBanned ? 'Sí, reactivar' : 'Sí, silenciar'}
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
                                                <MoveUserDialog 
                                                     member={selectedMember} 
                                                     center={centerData}
@@ -348,9 +398,5 @@ function MoveUserDialog({ member, center, children, onMove }: { member: CenterUs
         </Dialog>
     );
 }
-
-    
-
-    
 
     

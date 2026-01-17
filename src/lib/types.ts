@@ -25,10 +25,11 @@ export type User = {
   isNewUser?: boolean;
   ownedAvatars?: string[];
   isBanned?: boolean;
+  isChatBanned?: boolean;
 };
 
 // Simplified user type for center management
-export type CenterUser = Pick<User, 'uid' | 'name' | 'email' | 'avatar' | 'role' | 'course' | 'className'>;
+export type CenterUser = Pick<User, 'uid' | 'name' | 'email' | 'avatar' | 'role' | 'course' | 'className' | 'isChatBanned'>;
 
 
 export type ClassDefinition = {
@@ -36,6 +37,7 @@ export type ClassDefinition = {
   icalUrl?: string;
   schedule?: Schedule;
   imageUrl?: string;
+  description?: string;
 }
 
 export type Center = {
@@ -184,3 +186,5 @@ export interface CustomMode {
   focus: number;
   break: number;
 }
+
+    

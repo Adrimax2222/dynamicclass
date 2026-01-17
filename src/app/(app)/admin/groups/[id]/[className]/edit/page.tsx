@@ -1,16 +1,17 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, collection, writeBatch, getDocs } from "firebase/firestore";
 import type { Center, ClassDefinition } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, ChevronLeft, Image as ImageIcon, Upload, Link as LinkIcon, Palette } from "lucide-react";
+import { Loader2, Save, ChevronLeft, Image as ImageIcon, Upload, Link as LinkIcon, Palette, Trash2, History } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { useApp } from "@/lib/hooks/use-app";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
@@ -19,6 +20,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WipDialog } from "@/components/layout/wip-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // Constants for avatar creation
 const AVATAR_COLORS = [
@@ -53,7 +56,9 @@ export default function EditClassPage() {
     const [classData, setClassData] = useState<ClassDefinition | null>(null);
     const [name, setName] = useState("");
     const [imageUrl, setImageUrl] = useState("");
+    const [description, setDescription] = useState("");
     const [isSaving, setIsSaving] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
     
     // For custom avatar creation
     const [tempImageUrl, setTempImageUrl] = useState("");
@@ -67,6 +72,7 @@ export default function EditClassPage() {
             if (foundClass) {
                 setClassData(foundClass);
                 setName(foundClass.name);
+                setDescription(foundClass.description || "");
                 const initialImageUrl = foundClass.imageUrl || `letter_${foundClass.name.charAt(0) || 'A'}_60A5FA`;
                 setImageUrl(initialImageUrl);
                 setTempImageUrl(initialImageUrl);
@@ -86,7 +92,7 @@ export default function EditClassPage() {
         try {
             const updatedClasses = center.classes.map(c => 
                 c.name === className 
-                ? { ...c, imageUrl: imageUrl }
+                ? { ...c, imageUrl: imageUrl, description: description }
                 : c
             );
 
@@ -100,6 +106,36 @@ export default function EditClassPage() {
             setIsSaving(false);
         }
     };
+
+    const handleResetChat = async () => {
+        if (!firestore || !centerId || !className) return;
+        setIsResetting(true);
+        try {
+            const messagesPath = `centers/${centerId}/classes/${className}/messages`;
+            const messagesRef = collection(firestore, messagesPath);
+            const messagesSnapshot = await getDocs(messagesRef);
+
+            if (messagesSnapshot.empty) {
+                toast({ title: "Chat Vacío", description: "El historial de chat ya estaba vacío." });
+                setIsResetting(false);
+                return;
+            }
+            
+            const batch = writeBatch(firestore);
+            messagesSnapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+
+            toast({ title: "Chat Reiniciado", description: "Se ha borrado todo el historial de mensajes de la clase." });
+
+        } catch (error) {
+            console.error("Error resetting chat:", error);
+            toast({ title: "Error", description: "No se pudo reiniciar el chat. Revisa los permisos.", variant: "destructive" });
+        } finally {
+            setIsResetting(false);
+        }
+    };
     
     const handleSetCustomAvatar = () => {
         const newImageUrl = `letter_${customAvatarLetter}_${customAvatarColor}`;
@@ -108,9 +144,10 @@ export default function EditClassPage() {
     };
     
     const isGlobalAdmin = currentUser?.role === 'admin';
+    const isCenterAdmin = currentUser?.role === 'center-admin' && currentUser?.organizationId === centerId;
     const classAdminRoleName = currentUser?.role.startsWith('admin-') ? currentUser.role.substring('admin-'.length) : null;
     const isClassAdminForThisClass = classAdminRoleName === className;
-    const canEdit = isGlobalAdmin || isClassAdminForThisClass;
+    const canEdit = isGlobalAdmin || isCenterAdmin || isClassAdminForThisClass;
 
     if (isLoadingCenter || !currentUser) {
         return <LoadingScreen />;
@@ -157,92 +194,131 @@ export default function EditClassPage() {
                 </Button>
             </header>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Información de la Clase</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="class-name">Nombre de la Clase</Label>
-                        <Input id="class-name" value={name} disabled />
-                        <p className="text-xs text-muted-foreground">El nombre de la clase no se puede cambiar para mantener la integridad de los permisos de administrador.</p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                         <Label>Imagen del Grupo</Label>
-                         <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border rounded-lg bg-muted/30">
-                            <AvatarDisplay user={{ avatar: imageUrl, name: name }} className="h-24 w-24 flex-shrink-0" />
-                            <div className="flex-1 w-full">
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="outline" className="w-full">
-                                            <ImageIcon className="mr-2 h-4 w-4" />
-                                            Cambiar Imagen
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-80 p-0">
-                                        <Tabs defaultValue="custom" className="w-full">
-                                            <TabsList className="grid w-full grid-cols-3">
-                                                <TabsTrigger value="custom"><Palette className="h-4 w-4"/></TabsTrigger>
-                                                <TabsTrigger value="url"><LinkIcon className="h-4 w-4"/></TabsTrigger>
-                                                <TabsTrigger value="upload"><Upload className="h-4 w-4"/></TabsTrigger>
-                                            </TabsList>
-                                            <TabsContent value="custom" className="p-4">
-                                                <div className="space-y-4">
-                                                    <h4 className="font-medium leading-none">Crear Avatar</h4>
-                                                    <p className="text-sm text-muted-foreground">Personaliza un avatar para el grupo.</p>
-                                                    <div className="space-y-2">
-                                                        <Label>Letra</Label>
-                                                        <Select value={customAvatarLetter} onValueChange={setCustomAvatarLetter}>
-                                                            <SelectTrigger><SelectValue/></SelectTrigger>
-                                                            <SelectContent>
-                                                                {ALPHABET.map(letter => <SelectItem key={letter} value={letter}>{letter}</SelectItem>)}
-                                                            </SelectContent>
-                                                        </Select>
+            <div className="space-y-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Información de la Clase</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="class-name">Nombre de la Clase</Label>
+                            <Input id="class-name" value={name} disabled />
+                            <p className="text-xs text-muted-foreground">El nombre de la clase no se puede cambiar para mantener la integridad de los permisos de administrador.</p>
+                        </div>
+
+                         <div className="space-y-2">
+                            <Label htmlFor="class-description">Descripción</Label>
+                            <Textarea id="class-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Añade una descripción corta para el chat de la clase..."/>
+                        </div>
+                        
+                        <div className="space-y-2">
+                             <Label>Imagen del Grupo</Label>
+                             <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border rounded-lg bg-muted/30">
+                                <AvatarDisplay user={{ avatar: imageUrl, name: name }} className="h-24 w-24 flex-shrink-0" />
+                                <div className="flex-1 w-full">
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" className="w-full">
+                                                <ImageIcon className="mr-2 h-4 w-4" />
+                                                Cambiar Imagen
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-80 p-0">
+                                            <Tabs defaultValue="custom" className="w-full">
+                                                <TabsList className="grid w-full grid-cols-3">
+                                                    <TabsTrigger value="custom"><Palette className="h-4 w-4"/></TabsTrigger>
+                                                    <TabsTrigger value="url"><LinkIcon className="h-4 w-4"/></TabsTrigger>
+                                                    <TabsTrigger value="upload"><Upload className="h-4 w-4"/></TabsTrigger>
+                                                </TabsList>
+                                                <TabsContent value="custom" className="p-4">
+                                                    <div className="space-y-4">
+                                                        <h4 className="font-medium leading-none">Crear Avatar</h4>
+                                                        <p className="text-sm text-muted-foreground">Personaliza un avatar para el grupo.</p>
+                                                        <div className="space-y-2">
+                                                            <Label>Letra</Label>
+                                                            <Select value={customAvatarLetter} onValueChange={setCustomAvatarLetter}>
+                                                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                                                <SelectContent>
+                                                                    {ALPHABET.map(letter => <SelectItem key={letter} value={letter}>{letter}</SelectItem>)}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                         <div className="space-y-2">
+                                                            <Label>Color de Fondo</Label>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {AVATAR_COLORS.map(color => (
+                                                                    <button
+                                                                        key={color.value}
+                                                                        type="button"
+                                                                        onClick={() => setCustomAvatarColor(color.value)}
+                                                                        className={cn("h-7 w-7 rounded-full border-2 transition-transform hover:scale-110", customAvatarColor === color.value ? 'border-ring' : 'border-transparent')}
+                                                                        style={{ backgroundColor: `#${color.value}` }}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                        <Button className="w-full" onClick={handleSetCustomAvatar}>Aplicar Avatar</Button>
                                                     </div>
-                                                     <div className="space-y-2">
-                                                        <Label>Color de Fondo</Label>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {AVATAR_COLORS.map(color => (
-                                                                <button
-                                                                    key={color.value}
-                                                                    type="button"
-                                                                    onClick={() => setCustomAvatarColor(color.value)}
-                                                                    className={cn("h-7 w-7 rounded-full border-2 transition-transform hover:scale-110", customAvatarColor === color.value ? 'border-ring' : 'border-transparent')}
-                                                                    style={{ backgroundColor: `#${color.value}` }}
-                                                                />
-                                                            ))}
+                                                </TabsContent>
+                                                <TabsContent value="url" className="p-4">
+                                                    <div className="space-y-4">
+                                                        <h4 className="font-medium leading-none">Usar URL</h4>
+                                                        <p className="text-sm text-muted-foreground">Pega un enlace a una imagen.</p>
+                                                        <div className="flex gap-2">
+                                                            <Input value={tempImageUrl.startsWith('letter_') ? '' : tempImageUrl} onChange={(e) => setTempImageUrl(e.target.value)} placeholder="https://ejemplo.com/logo.png" />
+                                                            <Button onClick={() => setImageUrl(tempImageUrl)}>Aplicar</Button>
                                                         </div>
                                                     </div>
-                                                    <Button className="w-full" onClick={handleSetCustomAvatar}>Aplicar Avatar</Button>
-                                                </div>
-                                            </TabsContent>
-                                            <TabsContent value="url" className="p-4">
-                                                <div className="space-y-4">
-                                                    <h4 className="font-medium leading-none">Usar URL</h4>
-                                                    <p className="text-sm text-muted-foreground">Pega un enlace a una imagen.</p>
-                                                    <div className="flex gap-2">
-                                                        <Input value={tempImageUrl.startsWith('letter_') ? '' : tempImageUrl} onChange={(e) => setTempImageUrl(e.target.value)} placeholder="https://ejemplo.com/logo.png" />
-                                                        <Button onClick={() => setImageUrl(tempImageUrl)}>Aplicar</Button>
+                                                </TabsContent>
+                                                <TabsContent value="upload" className="p-4">
+                                                    <div className="space-y-4 text-center">
+                                                        <h4 className="font-medium leading-none">Subir Imagen</h4>
+                                                         <WipDialog>
+                                                            <Button className="w-full" variant="outline">Subir (Próximamente)</Button>
+                                                        </WipDialog>
                                                     </div>
-                                                </div>
-                                            </TabsContent>
-                                            <TabsContent value="upload" className="p-4">
-                                                <div className="space-y-4 text-center">
-                                                    <h4 className="font-medium leading-none">Subir Imagen</h4>
-                                                     <WipDialog>
-                                                        <Button className="w-full" variant="outline">Subir (Próximamente)</Button>
-                                                    </WipDialog>
-                                                </div>
-                                            </TabsContent>
-                                        </Tabs>
-                                    </PopoverContent>
-                                </Popover>
+                                                </TabsContent>
+                                            </Tabs>
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-destructive/50">
+                    <CardHeader>
+                         <CardTitle className="text-destructive">Zona Peligrosa</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" className="w-full justify-start gap-2">
+                                    <History className="h-4 w-4"/> Reiniciar Historial del Chat
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Reiniciar el chat de la clase?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                       Esta acción es permanente. Se eliminarán **todos los mensajes** del chat para todos los miembros de la clase. Es útil para empezar de cero un nuevo curso.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel disabled={isResetting}>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleResetChat} className="bg-destructive hover:bg-destructive/90" disabled={isResetting}>
+                                        {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                        Sí, borrar todo
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }
+
+    

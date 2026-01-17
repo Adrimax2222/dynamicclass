@@ -10,7 +10,7 @@ import type { ClassChatMessage, Center } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle, CheckCheck, Pencil } from 'lucide-react';
+import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle, CheckCheck, Pencil, MicOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AvatarDisplay } from '@/components/profile/avatar-creator';
 import { format } from 'date-fns';
@@ -35,13 +35,14 @@ export default function ClassChatPage() {
     }, [user, firestore]);
     const { data: centerData } = useDoc<Center>(centerDocRef);
 
-    const { className: constructedClassName, classImageUrl } = useMemo(() => {
-        if (!user || !centerData) return { className: '', classImageUrl: '' };
+    const { className: constructedClassName, classImageUrl, classDescription } = useMemo(() => {
+        if (!user || !centerData) return { className: '', classImageUrl: '', classDescription: '' };
         const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
         const classDef = centerData.classes.find(c => c.name === userClassName);
         return {
             className: userClassName,
-            classImageUrl: classDef?.imageUrl || ''
+            classImageUrl: classDef?.imageUrl || '',
+            classDescription: classDef?.description || 'Chat de Clase'
         };
     }, [user, centerData]);
     
@@ -151,7 +152,7 @@ export default function ClassChatPage() {
                     <AvatarDisplay user={{ avatar: classImageUrl, name: constructedClassName }} className="h-10 w-10 shrink-0" />
                     <div className="text-left">
                         <h1 className="font-bold text-lg">{getFormattedClassName()}</h1>
-                        <p className="text-xs text-muted-foreground">Chat de Clase</p>
+                        <p className="text-xs text-muted-foreground truncate">{classDescription}</p>
                     </div>
                 </div>
 
@@ -182,7 +183,7 @@ export default function ClassChatPage() {
                                     <AvatarDisplay user={{ name: msg.authorName, avatar: msg.authorAvatar }} className="h-8 w-8" />
                                 )}
                                 <div className={cn("max-w-[75%] p-3 rounded-xl shadow-sm", msg.authorId === user.uid ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none")}>
-                                     <p className="text-xs font-bold mb-1 text-primary">
+                                     <p className="text-xs font-bold text-primary">
                                         {msg.authorName}
                                      </p>
                                     <p className="whitespace-pre-wrap break-words">{msg.content}</p>
@@ -191,7 +192,7 @@ export default function ClassChatPage() {
                                             {msg.timestamp ? format(msg.timestamp.toDate(), 'HH:mm') : ''}
                                         </span>
                                         {msg.authorId === user.uid && (
-                                            <CheckCheck className="h-4 w-4 text-green-400" />
+                                            <CheckCheck className="h-4 w-4 text-sky-400" />
                                         )}
                                     </div>
                                 </div>
@@ -205,52 +206,64 @@ export default function ClassChatPage() {
             </div>
             
             <footer className="p-4 border-t bg-background">
-                 <div className="flex items-end gap-2 bg-muted p-2 rounded-xl">
-                    <WipDialog>
-                        <Button variant="ghost" size="icon" className="shrink-0">
-                            <PlusCircle className="h-5 w-5 text-muted-foreground" />
-                        </Button>
-                    </WipDialog>
-                    <Textarea 
-                        ref={textareaRef}
-                        placeholder="Escribe un mensaje..."
-                        className="min-h-0 flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none overflow-y-auto max-h-32"
-                        rows={1}
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        disabled={isSending}
-                    />
-                     <Popover>
-                        <PopoverTrigger asChild>
+                {user.isChatBanned ? (
+                    <Alert variant="destructive" className="items-center">
+                        <MicOff className="h-4 w-4" />
+                        <AlertTitle>Has sido silenciado</AlertTitle>
+                        <AlertDescription>
+                            No puedes enviar mensajes en este chat.
+                        </AlertDescription>
+                    </Alert>
+                ) : (
+                    <div className="flex items-end gap-2 bg-muted p-2 rounded-xl">
+                        <WipDialog>
                             <Button variant="ghost" size="icon" className="shrink-0">
-                                <Smile className="h-5 w-5 text-muted-foreground" />
+                                <PlusCircle className="h-5 w-5 text-muted-foreground" />
                             </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-2 border-0 shadow-lg mb-2">
-                            <div className="grid grid-cols-8 gap-1">
-                                {'😀 😂 ❤️ 👍 🙏 🎉 😭 🤔 🤯 😊 🥺 🔥 ❄️'.split(' ').map(emoji => (
-                                    <button
-                                    key={emoji}
-                                    onClick={() => setMessage(prev => prev + emoji)}
-                                    className="text-2xl rounded-md p-1 hover:bg-accent transition-colors"
-                                    >
-                                    {emoji}
-                                    </button>
-                                ))}
-                            </div>
-                        </PopoverContent>
-                    </Popover>
-                    <Button 
-                        size="icon" 
-                        className="shrink-0"
-                        onClick={handleSend}
-                        disabled={isSending || !message.trim()}
-                    >
-                        {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-4 w-4" />}
-                    </Button>
-                </div>
+                        </WipDialog>
+                        <Textarea 
+                            ref={textareaRef}
+                            placeholder="Escribe un mensaje..."
+                            className="min-h-0 flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none overflow-y-auto max-h-32"
+                            rows={1}
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            disabled={isSending}
+                        />
+                         <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="ghost" size="icon" className="shrink-0">
+                                    <Smile className="h-5 w-5 text-muted-foreground" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-2 border-0 shadow-lg mb-2">
+                                <div className="grid grid-cols-8 gap-1">
+                                    {'😀 😂 ❤️ 👍 🙏 🎉 😭 🤔 🤯 😊 🥺 🔥 ❄️'.split(' ').map(emoji => (
+                                        <button
+                                        key={emoji}
+                                        onClick={() => setMessage(prev => prev + emoji)}
+                                        className="text-2xl rounded-md p-1 hover:bg-accent transition-colors"
+                                        >
+                                        {emoji}
+                                        </button>
+                                    ))}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                        <Button 
+                            size="icon" 
+                            className="shrink-0"
+                            onClick={handleSend}
+                            disabled={isSending || !message.trim()}
+                        >
+                            {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-4 w-4" />}
+                        </Button>
+                    </div>
+                )}
             </footer>
         </div>
     );
 }
+
+    
