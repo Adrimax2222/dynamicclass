@@ -762,13 +762,13 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     };
 
     const handleSubmitVote = async () => {
+        // Force session check
         if (!auth || !auth.currentUser) {
           alert("Error crítico: Firebase dice que no hay un usuario logueado actualmente.");
           return;
         }
-
-        const currentUser = auth.currentUser;
-
+        alert("UID Usuario: " + (auth.currentUser?.uid || 'DESCONOCIDO'));
+        
         if (selectedOptions.length === 0) {
             toast({ title: "Selecciona una opción", description: "Debes elegir al menos una respuesta.", variant: "destructive" });
             return;
@@ -777,54 +777,49 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
             toast({ title: "Error de conexión", description: "No se pudo conectar con la base de datos.", variant: "destructive" });
             return;
         }
-        
+    
+        // Verify path
         if (!announcement.uid) {
             alert("ERROR: El anuncio no tiene ID");
             return;
         }
-        alert("Ruta destino: anuncios/" + announcement.uid);
-        
+        console.log("Intentando escribir en: anuncios/" + announcement.uid);
+    
         setIsSubmitting(true);
         const announcementRef = doc(firestore, "announcements", announcement.uid);
-        
-        alert('Iniciando envío...');
-
+    
         try {
-            const annDoc = await getDoc(announcementRef);
-            if (!annDoc.exists()) {
-                throw { code: 'not-found', message: 'La encuesta ya no existe.' };
+            // First, check if user has already voted if it's not a multi-vote poll
+            if (!announcement.allowMultipleVotes) {
+                 const annDoc = await getDoc(announcementRef);
+                 if (annDoc.exists() && annDoc.data().votedUserIds?.includes(auth.currentUser.uid)) {
+                     toast({
+                        title: "Ya has votado",
+                        description: "No puedes votar más de una vez en esta encuesta.",
+                        variant: "destructive"
+                    });
+                    setIsSubmitting(false);
+                    return;
+                 }
             }
-
-            const currentData = annDoc.data() as Announcement;
-            if (currentData.votedUserIds?.includes(currentUser.uid) && !currentData.allowMultipleVotes) {
-                 toast({
-                    title: "Ya has votado",
-                    description: "No puedes votar más de una vez en esta encuesta.",
-                    variant: "destructive"
-                });
-                setIsSubmitting(false);
-                return;
-            }
-
+            
             const updateData: { [key: string]: any } = {};
+            // Use exact field names
             selectedOptions.forEach(optionId => {
                 updateData[`pollVoteCounts.${optionId}`] = increment(1);
             });
-
-            updateData.votedUserIds = arrayUnion(currentUser.uid);
+            updateData.votedUserIds = arrayUnion(auth.currentUser.uid);
             
             await updateDoc(announcementRef, updateData);
-            
-            alert('¡Voto guardado!');
-
+    
         } catch (error: any) {
-            window.alert("DEBUG - Code: " + (error.code || 'UNKNOWN') + " | Message: " + error.message);
-            console.error("ERROR COMPLETO:", error);
+            // Detailed error logging
+            console.error("🔥 ERROR DETALLADO:", error);
+            alert("DEBUG: " + error.code + " | " + error.message);
         } finally {
             setIsSubmitting(false);
         }
     };
-
     
     const canUserManageAnnouncement = (ann: Announcement): boolean => {
         if (!user) return false;
@@ -912,7 +907,7 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
             <div className="flex items-center justify-between mt-3">
               <button
                   type="button"
-                  onClick={() => { console.log("EJECUTANDO VOTO"); handleSubmitVote(); }}
+                  onClick={handleSubmitVote}
                   disabled={isSubmitting || selectedOptions.length === 0}
                   className="w-full bg-primary text-primary-foreground p-2 rounded-md disabled:opacity-50 cursor-pointer pointer-events-auto z-[9999] relative"
               >
