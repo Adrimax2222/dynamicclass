@@ -251,15 +251,14 @@ function AnnouncementsTab() {
 
   const canUserManageAnnouncement = (ann: Announcement) => {
     if (!user) return false;
-    if (user.role === 'admin') return true;
+    if (user.role === 'admin') return true; // Global admin can manage all
     if (user.role === 'center-admin') {
-      // Center admin can manage announcements for their center and general announcements
-      if (ann.scope === 'center' && user.organizationId === ann.centerId) return true;
-      if (ann.scope === 'general') return true;
+      // Center admin can manage announcements for their center ONLY.
+      return ann.scope === 'center' && user.organizationId === ann.centerId;
     }
-    if (user.role.startsWith('admin-') && ann.scope === 'class') {
+    if (user.role.startsWith('admin-')) {
       const adminClassName = user.role.split('admin-')[1];
-      return user.organizationId === ann.centerId && adminClassName === ann.className;
+      return ann.scope === 'class' && user.organizationId === ann.centerId && adminClassName === ann.className;
     }
     return false;
   };
@@ -755,16 +754,31 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
         const announcementRef = doc(firestore, "announcements", announcement.uid);
     
         try {
-            const updateData: { [key: string]: any } = {
-                votedUserIds: arrayUnion(user.uid)
-            };
+            await runTransaction(firestore, async (transaction) => {
+                const annDoc = await transaction.get(announcementRef);
+                if (!annDoc.exists()) {
+                    throw "La encuesta ya no existe.";
+                }
+                
+                const data = annDoc.data();
+                
+                const pollVoteCounts = { ...(data.pollVoteCounts || {}) };
+                const votedUserIds = [...(data.votedUserIds || [])];
 
-            selectedOptions.forEach(optionId => {
-                updateData[`pollVoteCounts.${optionId}`] = increment(1);
+                selectedOptions.forEach(optionId => {
+                    pollVoteCounts[optionId] = (pollVoteCounts[optionId] || 0) + 1;
+                });
+                
+                if (!votedUserIds.includes(user.uid)) {
+                    votedUserIds.push(user.uid);
+                }
+                
+                transaction.update(announcementRef, { 
+                    pollVoteCounts,
+                    votedUserIds
+                });
             });
-            
-            await updateDoc(announcementRef, updateData);
-            
+
             toast({
                 title: "¡Voto registrado!",
                 description: "Gracias por tu participación.",
@@ -784,12 +798,15 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     
     const canUserSeePollResults = (ann: Announcement): boolean => {
         if (!user) return false;
+        // Global admin can see all
         if (user.role === 'admin') {
             return true;
         }
+        // Center admin can only see their center's announcements
         if (user.role === 'center-admin') {
             return ann.scope === 'center' && user.organizationId === ann.centerId;
         }
+        // Class admin can only see their class's announcements
         if (user.role.startsWith('admin-')) {
             const adminClassName = user.role.split('admin-')[1];
             return ann.scope === 'class' && user.organizationId === ann.centerId && adminClassName === ann.className;
@@ -863,7 +880,7 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
                 Enviar Respuesta
              </Button>
-            {showAdminResultsButton && totalVotes > 0 && (
+            {showAdminResultsButton && (
                 <div className="text-center pt-2">
                      <PollResultsDialog announcement={announcement} allUsers={allUsers} />
                 </div>
@@ -1132,6 +1149,7 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     
 
     
+
 
 
 
