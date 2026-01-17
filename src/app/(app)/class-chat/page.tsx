@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/lib/hooks/use-app';
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp, Timestamp, doc, updateDoc, arrayUnion, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, serverTimestamp, Timestamp, doc, updateDoc, arrayUnion, deleteDoc, writeBatch } from 'firebase/firestore';
 import type { ClassChatMessage, Center, User } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle, CheckCheck, Pencil, MicOff, MoreHorizontal, Copy, Trash2, Pin, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AvatarDisplay } from '@/components/profile/avatar-creator';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -30,6 +30,7 @@ export default function ClassChatPage() {
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const messageRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const { toast } = useToast();
 
@@ -61,6 +62,7 @@ export default function ClassChatPage() {
     }, [chatPath, firestore]);
 
     const { data: messages = [], isLoading } = useCollection<ClassChatMessage>(messagesQuery);
+    const pinnedMessage = useMemo(() => messages.find(m => m.isPinned), [messages]);
     
     useEffect(() => {
       const scrollContainer = scrollAreaRef.current;
@@ -86,7 +88,7 @@ export default function ClassChatPage() {
         
         setIsSending(true);
 
-        const newMessage: Omit<ClassChatMessage, 'id'> = {
+        const newMessage: Omit<ClassChatMessage, 'id' | 'editedAt'> = {
             content: message,
             authorId: user.uid,
             authorName: user.name,
@@ -108,6 +110,44 @@ export default function ClassChatPage() {
         }
     };
 
+    const handleUpdateMessage = async (messageId: string, newContent: string) => {
+        if (!chatPath || !firestore) return;
+        const messageRef = doc(firestore, chatPath, messageId);
+        try {
+            await updateDoc(messageRef, {
+                content: newContent,
+                editedAt: serverTimestamp()
+            });
+            toast({ title: "Mensaje editado" });
+        } catch (error) {
+            console.error("Error updating message:", error);
+            toast({ variant: "destructive", title: "Error", description: "No se pudo editar el mensaje." });
+        }
+    };
+    
+    const handlePinMessage = async (messageId: string, currentStatus: boolean) => {
+        if (!chatPath || !firestore) return;
+        const batch = writeBatch(firestore);
+    
+        // If a message is already pinned, unpin it first
+        if (pinnedMessage && pinnedMessage.id !== messageId) {
+            const oldPinRef = doc(firestore, chatPath, pinnedMessage.id);
+            batch.update(oldPinRef, { isPinned: false });
+        }
+    
+        // Pin/unpin the target message
+        const newPinRef = doc(firestore, chatPath, messageId);
+        batch.update(newPinRef, { isPinned: !currentStatus });
+    
+        try {
+            await batch.commit();
+            toast({ title: !currentStatus ? "Mensaje fijado" : "Mensaje desfijado" });
+        } catch (error) {
+            console.error("Error pinning message:", error);
+            toast({ variant: "destructive", title: "Error", description: "No se pudo gestionar el mensaje fijado." });
+        }
+    };
+
     const handleDeleteMessage = async (messageId: string) => {
         if (!chatPath || !firestore) return;
         try {
@@ -124,6 +164,10 @@ export default function ClassChatPage() {
             e.preventDefault();
             handleSend();
         }
+    };
+    
+    const scrollToMessage = (id: string) => {
+        messageRefs.current.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     };
     
     const getFormattedClassName = () => {
@@ -183,6 +227,19 @@ export default function ClassChatPage() {
                     </Button>
                 )}
             </header>
+
+            {pinnedMessage && (
+                <div 
+                    className="p-3 border-b bg-amber-500/10 text-amber-900 dark:text-amber-200 cursor-pointer hover:bg-amber-500/20 transition-colors flex items-start gap-3 sticky top-[73px] z-10"
+                    onClick={() => scrollToMessage(pinnedMessage.id)}
+                >
+                    <Pin className="h-5 w-5 shrink-0 mt-0.5"/>
+                    <div className="flex-1 text-sm">
+                        <p className="font-bold">Mensaje Fijado</p>
+                        <p className="line-clamp-1">{pinnedMessage.content}</p>
+                    </div>
+                </div>
+            )}
             
             <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
                 <div className="p-4 space-y-6">
@@ -198,11 +255,14 @@ export default function ClassChatPage() {
                     ) : (
                         messages.map((msg) => (
                            <MessageItem
+                                ref={el => messageRefs.current.set(msg.id, el)}
                                 key={msg.id}
                                 msg={msg}
                                 user={user}
                                 chatPath={chatPath || ''}
                                 onDelete={handleDeleteMessage}
+                                onUpdate={handleUpdateMessage}
+                                onPin={handlePinMessage}
                            />
                         ))
                     )}
@@ -276,26 +336,37 @@ interface MessageItemProps {
     user: User;
     chatPath: string;
     onDelete: (messageId: string) => void;
+    onUpdate: (messageId: string, newContent: string) => void;
+    onPin: (messageId: string, currentStatus: boolean) => void;
 }
 
-function MessageItem({ msg, user, chatPath, onDelete }: MessageItemProps) {
+const MessageItem = React.forwardRef<HTMLDivElement, MessageItemProps>(
+  ({ msg, user, chatPath, onDelete, onUpdate, onPin }, ref) => {
     const firestore = useFirestore();
-    const msgRef = useRef<HTMLDivElement>(null);
     const { toast } = useToast();
+    const [isEditing, setIsEditing] = useState(false);
+    const [editText, setEditText] = useState(msg.content);
+
     const isCurrentUser = msg.authorId === user.uid;
     const { data: centerData } = useDoc<Center>(user.organizationId ? doc(firestore, 'centers', user.organizationId) : null);
-
-    const canDelete = useMemo(() => {
+    
+    const canManage = useMemo(() => {
         if (user.role === 'admin') return true;
         if (user.role === 'center-admin' && user.organizationId === centerData?.uid) return true;
         const className = user.role.startsWith('admin-') ? user.role.substring('admin-'.length) : null;
-        if (className && user.course && user.className && `${user.course.toUpperCase()}-${user.className}` === className) return true;
-        return isCurrentUser;
-    }, [user, isCurrentUser, centerData]);
-
+        if (className) {
+            const [course, classLetter] = className.split('-');
+            if (user.course === course.toLowerCase() && user.className === classLetter) return true;
+        }
+        return false;
+    }, [user, centerData]);
+    
+    const canDelete = isCurrentUser || canManage;
+    const canEdit = isCurrentUser;
+    const canPin = canManage;
 
     useEffect(() => {
-        const observerRef = msgRef.current;
+        const observerRef = (ref as React.RefObject<HTMLDivElement>)?.current;
         if (!observerRef || !firestore || !user || !msg.id || !chatPath) return;
 
         if (msg.viewedBy?.includes(user.uid)) return;
@@ -321,7 +392,7 @@ function MessageItem({ msg, user, chatPath, onDelete }: MessageItemProps) {
             }
             observer.disconnect();
         };
-    }, [msg.id, msg.viewedBy, firestore, user, chatPath]);
+    }, [msg.id, msg.viewedBy, firestore, user, chatPath, ref]);
 
     const formatRole = (role: string) => {
         if (!role) return 'Usuario';
@@ -340,17 +411,22 @@ function MessageItem({ msg, user, chatPath, onDelete }: MessageItemProps) {
         toast({ title: "Mensaje copiado" });
     }
 
+    const handleSaveEdit = () => {
+        if (editText.trim() && editText !== msg.content) {
+            onUpdate(msg.id, editText);
+        }
+        setIsEditing(false);
+    };
+
     return (
-        <div ref={msgRef} className={cn("flex items-end gap-2", isCurrentUser ? "justify-end" : "justify-start")}>
+        <div ref={ref} className={cn("flex items-end gap-2", isCurrentUser ? "justify-end" : "justify-start")}>
             {!isCurrentUser && (
                 <AvatarDisplay user={{ name: msg.authorName, avatar: msg.authorAvatar }} className="h-8 w-8" />
             )}
-            <div className={cn("max-w-[75%] p-3 rounded-xl shadow-sm group", isCurrentUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none")}>
+            <div className={cn("max-w-[75%] p-3 rounded-xl shadow-sm group", isCurrentUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none", msg.isPinned && "border-2 border-amber-500/50 bg-amber-500/5")}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-baseline gap-2">
-                        <p className={cn("font-bold", isCurrentUser ? "text-primary-foreground" : "text-foreground")}>
-                            {msg.authorName}
-                        </p>
+                        <p className="font-bold text-base">{msg.authorName}</p>
                         <p className={cn("text-xs opacity-70", isCurrentUser ? "text-primary-foreground" : "text-muted-foreground")}>
                             - {formatRole(msg.authorRole)}
                         </p>
@@ -363,8 +439,8 @@ function MessageItem({ msg, user, chatPath, onDelete }: MessageItemProps) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
                             <DropdownMenuItem onClick={handleCopy}><Copy className="mr-2 h-4 w-4"/>Copiar</DropdownMenuItem>
-                            <WipDialog><DropdownMenuItem onSelect={(e) => e.preventDefault()}><Pencil className="mr-2 h-4 w-4"/>Editar</DropdownMenuItem></WipDialog>
-                            <WipDialog><DropdownMenuItem onSelect={(e) => e.preventDefault()}><Pin className="mr-2 h-4 w-4"/>Fijar</DropdownMenuItem></WipDialog>
+                            {canEdit && <DropdownMenuItem onSelect={() => setIsEditing(true)}><Pencil className="mr-2 h-4 w-4"/>Editar</DropdownMenuItem>}
+                            {canPin && <DropdownMenuItem onSelect={() => onPin(msg.id, !!msg.isPinned)}><Pin className="mr-2 h-4 w-4"/>{msg.isPinned ? "Desfijar" : "Fijar"}</DropdownMenuItem>}
                             {canDelete && (
                                 <>
                                     <DropdownMenuSeparator />
@@ -390,15 +466,31 @@ function MessageItem({ msg, user, chatPath, onDelete }: MessageItemProps) {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-                <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                {isEditing ? (
+                    <div className="space-y-2 mt-2">
+                        <Textarea 
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); } }}
+                            className="bg-background text-foreground"
+                        />
+                        <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancelar</Button>
+                            <Button size="sm" onClick={handleSaveEdit}>Guardar</Button>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                )}
                 <div className="flex items-center justify-end gap-3 text-xs opacity-70 mt-1.5">
+                    {msg.editedAt && <span>(editado)</span>}
                     <div className="flex items-center gap-1">
                         <Eye className="h-3 w-3" />
                         <span>{msg.viewedBy?.length || 0}</span>
                     </div>
-                    <span>{msg.timestamp ? format(msg.timestamp.toDate(), 'HH:mm') : ''}</span>
+                    <span>{msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), { locale: es, addSuffix: true }) : ''}</span>
                     {isCurrentUser && (
-                        <CheckCheck className="h-4 w-4 text-sky-400" />
+                        <CheckCheck className={cn("h-4 w-4", (msg.viewedBy?.length ?? 0) > 0 ? "text-sky-400" : "")} />
                     )}
                 </div>
             </div>
@@ -407,4 +499,5 @@ function MessageItem({ msg, user, chatPath, onDelete }: MessageItemProps) {
             )}
         </div>
     );
-}
+});
+MessageItem.displayName = "MessageItem";

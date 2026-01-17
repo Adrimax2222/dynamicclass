@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -185,6 +186,10 @@ service cloud.firestore {
         // ============= CLASS CHAT =============
         match /classes/{className}/messages/{messageId} {
             
+            function canManageClass() {
+                return isGlobalAdmin() || isCenterAdmin(centerId) || isClassAdmin(className);
+            }
+
             function isClassMember() {
                 let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
                 // Path variable `className` is formatted as "4ESO-B"
@@ -195,7 +200,7 @@ service cloud.firestore {
             }
             
             function canReadChat() {
-                return isGlobalAdmin() || isCenterAdmin(centerId) || isClassMember();
+                return canManageClass() || isClassMember();
             }
 
             allow read: if canReadChat();
@@ -214,14 +219,14 @@ service cloud.firestore {
             
             allow create: if isClassMember() && isValidClassMessage() && getUserData().isChatBanned != true;
             
-            allow delete: if isGlobalAdmin() || isCenterAdmin(centerId) || isClassAdmin(className) || request.auth.uid == resource.data.authorId;
+            allow delete: if canManageClass() || request.auth.uid == resource.data.authorId;
             
             allow update: if 
-              // Rule for editing message content
-              (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['content']) && request.auth.uid == resource.data.authorId) ||
-              // Rule for pinning a message
-              (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isPinned']) && (isGlobalAdmin() || isCenterAdmin(centerId) || isClassAdmin(className))) ||
-              // Rule for marking a message as seen
+              // Rule for editing message content by the author
+              (request.resource.data.diff(resource.data).affectedKeys().hasAll(['content', 'editedAt']) && request.auth.uid == resource.data.authorId) ||
+              // Rule for pinning/unpinning a message by an admin
+              (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isPinned']) && canManageClass()) ||
+              // Rule for marking a message as seen by anyone who can read it
               (canReadChat() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewedBy']) && request.resource.data.viewedBy.toSet().difference(resource.data.viewedBy.toSet()).hasOnly([request.auth.uid]));
         }
     }

@@ -136,7 +136,8 @@
         "content": { "type": "string" },
         "timestamp": { "type": "string", "format": "date-time" },
         "viewedBy": { "type": "array", "items": { "type": "string" } },
-        "isPinned": { "type": "boolean" }
+        "isPinned": { "type": "boolean", "description": "True if the message is pinned in the chat." },
+        "editedAt": { "type": "string", "format": "date-time", "description": "Timestamp of when the message was last edited." }
       },
       "required": ["authorId", "authorName", "authorAvatar", "authorRole", "content", "timestamp"]
     },

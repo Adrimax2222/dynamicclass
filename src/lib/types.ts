@@ -119,6 +119,7 @@ export type ClassChatMessage = {
   timestamp: Timestamp;
   viewedBy?: string[];
   isPinned?: boolean;
+  editedAt?: Timestamp;
 };
 
 export type Note = {
