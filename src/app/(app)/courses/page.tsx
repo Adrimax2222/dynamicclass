@@ -56,6 +56,7 @@ import {
   useFirestore,
   useCollection,
   useMemoFirebase,
+  useDoc,
 } from "@/firebase";
 import {
   collection,
@@ -99,6 +100,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default function InfoPage() {
@@ -1070,6 +1072,25 @@ function MySchedule() {
 
 function ClassChatPreview() {
     const { user } = useApp();
+    const firestore = useFirestore();
+
+    const centerDocRef = useMemoFirebase(() => {
+        if (!user || !user.organizationId) return null;
+        return doc(firestore, 'centers', user.organizationId);
+    }, [user, firestore]);
+
+    const { data: centerData, isLoading: isCenterLoading } = useDoc<Center>(centerDocRef);
+
+    const classInfo = useMemo(() => {
+        if (!user || !centerData) return null;
+        const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
+        const classDef = centerData.classes.find(c => c.name === userClassName);
+        return {
+            name: userClassName,
+            description: classDef?.description,
+            imageUrl: classDef?.imageUrl,
+        };
+    }, [user, centerData]);
 
     if (!user || user.center === 'personal') {
         return (
@@ -1083,20 +1104,41 @@ function ClassChatPreview() {
         )
     }
 
+    const courseMap: Record<string, string> = {
+      "1eso": "1º ESO", "2eso": "2º ESO", "3eso": "3º ESO", "4eso": "4º ESO",
+      "1bach": "1º Bachillerato", "2bach": "2º Bachillerato",
+    };
+    const formattedCourse = courseMap[user.course] || user.course.toUpperCase();
+
     return (
-         <Card className="shadow-lg hover:shadow-xl transition-shadow">
+         <Card className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
             <CardHeader>
-                <CardTitle>Chat de Clase: {user.course.toUpperCase()}-{user.className}</CardTitle>
-                <CardDescription>Conéctate con tus compañeros y profesores.</CardDescription>
+                <CardTitle>Chat de Clase: {formattedCourse}-{user.className}</CardTitle>
+                 {isCenterLoading ? (
+                  <div className="space-y-2 mt-1">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                ) : (
+                    <CardDescription className="line-clamp-2 h-[2.5rem] pt-1">
+                        {classInfo?.description || 'Conéctate con tus compañeros y profesores.'}
+                    </CardDescription>
+                )}
             </CardHeader>
-            <CardContent className="text-center">
+            <CardContent className="text-center flex-1 flex flex-col justify-center items-center">
                  <div className="p-8 bg-muted/50 rounded-lg flex flex-col items-center gap-4">
-                    <div className="flex -space-x-4">
-                        <AvatarDisplay user={{name: 'A', avatar: 'letter_A_34D399'}} className="h-12 w-12 ring-2 ring-background"/>
-                        <AvatarDisplay user={{name: 'B', avatar: 'letter_B_F87171'}} className="h-12 w-12 ring-2 ring-background"/>
-                        <AvatarDisplay user={{name: 'C', avatar: 'letter_C_60A5FA'}} className="h-12 w-12 ring-2 ring-background"/>
-                    </div>
-                    <p className="text-sm text-muted-foreground">Únete a la conversación de tu clase.</p>
+                    {isCenterLoading ? (
+                        <Skeleton className="h-20 w-20 rounded-full" />
+                    ) : classInfo?.imageUrl ? (
+                        <AvatarDisplay user={{ name: classInfo.name, avatar: classInfo.imageUrl }} className="h-20 w-20" />
+                    ) : (
+                        <div className="flex -space-x-4">
+                            <AvatarDisplay user={{name: 'A', avatar: 'letter_A_34D399'}} className="h-12 w-12 ring-2 ring-background"/>
+                            <AvatarDisplay user={{name: 'B', avatar: 'letter_B_F87171'}} className="h-12 w-12 ring-2 ring-background"/>
+                            <AvatarDisplay user={{name: 'C', avatar: 'letter_C_60A5FA'}} className="h-12 w-12 ring-2 ring-background"/>
+                        </div>
+                    )}
+                    <p className="text-sm text-muted-foreground mt-2">Únete a la conversación de tu clase.</p>
                 </div>
             </CardContent>
             <CardFooter>
