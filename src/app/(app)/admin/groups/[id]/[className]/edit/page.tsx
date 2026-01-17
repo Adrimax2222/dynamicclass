@@ -1,24 +1,24 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import { doc, updateDoc, collection, writeBatch, getDocs } from "firebase/firestore";
-import type { Center, ClassDefinition } from "@/lib/types";
+import { useFirestore, useDoc, useMemoFirebase, useCollection } from "@/firebase";
+import { doc, updateDoc, collection, writeBatch, getDocs, query, where } from "firebase/firestore";
+import type { Center, ClassDefinition, User as CenterUser } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, ChevronLeft, Image as ImageIcon, Upload, Link as LinkIcon, Palette, Trash2, History } from "lucide-react";
+import { Loader2, Save, ChevronLeft, Image as ImageIcon, Upload, Link as LinkIcon, Palette, Trash2, History, MicOff } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { useApp } from "@/lib/hooks/use-app";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WipDialog } from "@/components/layout/wip-dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -65,6 +65,35 @@ export default function EditClassPage() {
     const [customAvatarLetter, setCustomAvatarLetter] = useState('A');
     const [customAvatarColor, setCustomAvatarColor] = useState('60A5FA');
 
+    // State for moderation
+    const [members, setMembers] = useState<CenterUser[]>([]);
+    const [isLoadingMembers, setIsLoadingMembers] = useState(true);
+    const [selectedMember, setSelectedMember] = useState<CenterUser | null>(null);
+    const [isMuting, setIsMuting] = useState(false);
+    
+    const [course, classLetter] = useMemo(() => {
+        const parts = className.split('-');
+        return [parts[0]?.toLowerCase(), parts[1]];
+    }, [className]);
+
+    const membersQuery = useMemoFirebase(() => {
+        if (!firestore || !centerId || !course || !classLetter) return null;
+        return query(
+            collection(firestore, 'users'),
+            where('organizationId', '==', centerId),
+            where('course', '==', course),
+            where('className', '==', classLetter)
+        );
+    }, [firestore, centerId, course, classLetter]);
+
+    const { data: classMembers, isLoading: isMembersLoading } = useCollection<CenterUser>(membersQuery);
+
+    useEffect(() => {
+        if (classMembers) {
+            setMembers(classMembers);
+        }
+        setIsLoadingMembers(isMembersLoading);
+    }, [classMembers, isMembersLoading]);
 
     useEffect(() => {
         if (center) {
@@ -141,6 +170,37 @@ export default function EditClassPage() {
         const newImageUrl = `letter_${customAvatarLetter}_${customAvatarColor}`;
         setImageUrl(newImageUrl);
         toast({ title: 'Avatar aplicado', description: 'Pulsa "Guardar" para confirmar el cambio.' });
+    };
+
+    const handleSelectMember = (uid: string) => {
+        const member = members.find(m => m.uid === uid);
+        setSelectedMember(member || null);
+    };
+
+    const handleMuteToggle = async () => {
+        if (!firestore || !selectedMember) return;
+        setIsMuting(true);
+
+        const newBanStatus = !selectedMember.isChatBanned;
+        const userDocRef = doc(firestore, 'users', selectedMember.uid);
+
+        try {
+            await updateDoc(userDocRef, { isChatBanned: newBanStatus });
+            toast({
+                title: `Usuario ${newBanStatus ? 'Silenciado' : 'Reactivado'}`,
+                description: `${selectedMember.name} ${newBanStatus ? 'ya no puede' : 'ahora puede'} enviar mensajes.`,
+            });
+            
+            // Update local state
+            const updatedMembers = members.map(m => m.uid === selectedMember.uid ? { ...m, isChatBanned: newBanStatus } : m);
+            setMembers(updatedMembers);
+            setSelectedMember(prev => prev ? { ...prev, isChatBanned: newBanStatus } : null);
+        } catch (error) {
+            console.error("Error toggling mute status:", error);
+            toast({ title: "Error", description: "No se pudo actualizar el estado del usuario.", variant: "destructive" });
+        } finally {
+            setIsMuting(false);
+        }
     };
     
     const isGlobalAdmin = currentUser?.role === 'admin';
@@ -287,6 +347,82 @@ export default function EditClassPage() {
                     </CardContent>
                 </Card>
 
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Moderación del Chat</CardTitle>
+                        <CardDescription>Silencia o reactiva a miembros específicos en el chat de la clase.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {isLoadingMembers ? (
+                            <div className="flex items-center justify-center p-4">
+                                <Loader2 className="h-6 w-6 animate-spin" />
+                            </div>
+                        ) : members.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center">No hay miembros en esta clase.</p>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="member-select">Seleccionar Miembro</Label>
+                                    <Select onValueChange={handleSelectMember}>
+                                        <SelectTrigger id="member-select">
+                                            <SelectValue placeholder="Elige un usuario..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                {members.map(member => (
+                                                    <SelectItem key={member.uid} value={member.uid}>
+                                                        <div className="flex items-center gap-2">
+                                                            <AvatarDisplay user={member} className="h-6 w-6"/>
+                                                            <span>{member.name}</span>
+                                                            {member.isChatBanned && <MicOff className="h-4 w-4 text-destructive" />}
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                {selectedMember && (
+                                    <div className="p-4 border rounded-lg bg-muted/30 flex items-center justify-between">
+                                        <div>
+                                            <p className="font-semibold">{selectedMember.name}</p>
+                                            <p className={cn("text-sm", selectedMember.isChatBanned ? "text-destructive" : "text-muted-foreground")}>
+                                                {selectedMember.isChatBanned ? "Actualmente silenciado" : "Puede enviar mensajes"}
+                                            </p>
+                                        </div>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant={selectedMember.isChatBanned ? "secondary" : "destructive"}>
+                                                    <MicOff className="mr-2 h-4 w-4"/>
+                                                    {selectedMember.isChatBanned ? "Reactivar" : "Silenciar"}
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>¿{selectedMember.isChatBanned ? 'Reactivar' : 'Silenciar'} a {selectedMember.name}?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        {selectedMember.isChatBanned
+                                                            ? `El usuario podrá volver a enviar mensajes en el chat de la clase.`
+                                                            : `El usuario no podrá enviar mensajes en el chat de la clase hasta que se le reactive.`
+                                                        }
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel disabled={isMuting}>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={handleMuteToggle} disabled={isMuting}>
+                                                        {isMuting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                                        {selectedMember.isChatBanned ? 'Sí, reactivar' : 'Sí, silenciar'}
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
                 <Card className="border-destructive/50">
                     <CardHeader>
                          <CardTitle className="text-destructive">Zona Peligrosa</CardTitle>
@@ -320,5 +456,3 @@ export default function EditClassPage() {
         </div>
     );
 }
-
-    
