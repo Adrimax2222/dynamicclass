@@ -186,6 +186,7 @@ function AnnouncementsTab() {
         newAnnouncement.pollOptions?.forEach(opt => {
             newAnnouncement.pollVoteCounts![opt.id] = 0;
         });
+        newAnnouncement.votedUserIds = [];
     }
     
     await addDoc(announcementsCollectionRef, newAnnouncement);
@@ -260,8 +261,8 @@ function AnnouncementsTab() {
   const canUserManageAnnouncement = (ann: Announcement) => {
     if (!user) return false;
     if (user.role === 'admin') return true; 
-    if (user.role === 'center-admin') {
-      return ann.scope === 'center' || ann.scope === 'general';
+    if (user.role === 'center-admin' && ann.scope === 'center') {
+      return ann.centerId === user.organizationId;
     }
     if (user.role.startsWith('admin-')) {
       const adminClassName = user.role.split('admin-')[1];
@@ -758,16 +759,17 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     };
 
     const handleSubmitVote = async () => {
-        alert('Iniciando envío...'); // Debugging alert
+        alert('Iniciando envío...');
 
         if (selectedOptions.length === 0) {
             toast({ title: "Selecciona una opción", description: "Debes elegir al menos una respuesta.", variant: "destructive" });
             return;
         }
         if (!firestore || !user) {
-            toast({ title: "Error", description: "No se ha podido identificar al usuario.", variant: "destructive" });
+            toast({ title: "Error de autenticación", description: "No se ha podido identificar al usuario.", variant: "destructive" });
             return;
         }
+        
         setIsSubmitting(true);
 
         const announcementRef = doc(firestore, "announcements", announcement.uid);
@@ -782,29 +784,26 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
                 const currentData = annDoc.data() as Announcement;
                 
                 if (currentData.votedUserIds?.includes(user.uid) && !currentData.allowMultipleVotes) {
-                    // This is a safeguard. The UI should prevent this.
                     throw new Error("Ya has votado en esta encuesta.");
                 }
 
-                const newVoteCounts = { ...(currentData.pollVoteCounts || {}) };
+                const updateData: { [key: string]: any } = {};
                 
                 selectedOptions.forEach(optionId => {
-                    newVoteCounts[optionId] = (newVoteCounts[optionId] || 0) + 1;
+                    const fieldPath = `pollVoteCounts.${optionId}`;
+                    updateData[fieldPath] = increment(1);
                 });
+
+                updateData.votedUserIds = arrayUnion(user.uid);
                 
-                const newVotedUserIds = Array.from(new Set([...(currentData.votedUserIds || []), user.uid]));
-                
-                transaction.update(announcementRef, {
-                    pollVoteCounts: newVoteCounts,
-                    votedUserIds: newVotedUserIds
-                });
+                transaction.update(announcementRef, updateData);
             });
 
-            alert('¡Voto guardado!'); // Debugging alert
+            alert('¡Voto guardado!');
             toast({ title: "¡Voto registrado!", description: "Gracias por tu participación." });
         } catch (error: any) {
             console.error("Error al registrar el voto:", error);
-            alert('Error al votar: ' + error.message); // Debugging alert
+            alert(`Error al votar: ${error.message}`); 
             toast({ title: 'Error al votar', description: error.message || 'No se pudo registrar tu voto.', variant: 'destructive' });
         } finally {
             setIsSubmitting(false);
@@ -814,12 +813,12 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     const canUserManageAnnouncement = (ann: Announcement): boolean => {
         if (!user) return false;
         if (user.role === 'admin') return true;
-        if (user.role === 'center-admin') {
-            return ann.scope === 'center' || ann.scope === 'general';
+        if (user.role === 'center-admin' && ann.scope === 'center') {
+          return ann.centerId === user.organizationId;
         }
         if (user.role.startsWith('admin-')) {
           const adminClassName = user.role.split('admin-')[1];
-          return ann.scope === 'class' && ann.centerId === user.organizationId && ann.className === adminClassName;
+          return ann.scope === 'class' && ann.centerId === user.organizationId && adminClassName === ann.className;
         }
         return false;
     };
@@ -894,6 +893,7 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
             
             <div className="flex items-center justify-between mt-3">
               <Button
+                  type="button"
                   onClick={handleSubmitVote}
                   disabled={isSubmitting || selectedOptions.length === 0}
                   className="w-full"
