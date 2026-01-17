@@ -27,7 +27,7 @@ export default function ClassChatPage() {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     const chatPath = useMemo(() => {
-        if (!user || !user.organizationId || user.center === 'personal') return null;
+        if (!user || !user.organizationId || user.center === 'personal' || !user.course || !user.className) return null;
         const className = `${user.course.replace('eso','ESO')}-${user.className}`;
         return `centers/${user.organizationId}/classes/${className}/messages`;
     }, [user]);

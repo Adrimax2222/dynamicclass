@@ -137,7 +137,7 @@ service cloud.firestore {
 
     match /announcements/{announcementId} {
       // Any authenticated user can read announcements
-      allow list, get: if request.auth != null;
+      allow read: if request.auth != null;
 
       // Helper function to check if the user is an admin for the announcement's scope
       function canManage(ann) {
@@ -147,8 +147,7 @@ service cloud.firestore {
       }
 
       // CREATE: Allow if the user has the correct admin role for the scope.
-      // This is less restrictive, as requested for debugging.
-      allow create: if request.resource.data.authorId == request.auth.uid && canManage(request.resource.data);
+      allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid && canManage(request.resource.data);
 
       // DELETE: Admins or the original author can delete.
       allow delete: if canManage(resource.data) || isOwner(resource.data.authorId);
@@ -184,29 +183,31 @@ service cloud.firestore {
       allow list, get: if true;
       
         // ============= CLASS CHAT =============
-        function isMemberOfClass(className) {
-          let userData = getUserData();
-          let [course, classLetter] = className.split('-');
-          return userData.organizationId == centerId &&
-                 userData.course == course.toLowerCase() &&
-                 userData.className == classLetter;
-        }
-
         match /classes/{className}/messages/{messageId} {
-          allow read: if isMemberOfClass(className) || isCenterAdmin(centerId) || isGlobalAdmin();
+            
+            function isClassMember() {
+                let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+                // Path variable `className` is formatted as "4ESO-B"
+                // User data `course` is "4eso" and `className` is "B"
+                return userData.organizationId == centerId &&
+                       userData.course == className.split('-')[0].lower() &&
+                       userData.className == className.split('-')[1];
+            }
 
-          function isValidClassMessage() {
-            let message = request.resource.data;
-            return message.authorId == request.auth.uid &&
-                   message.authorName is string &&
-                   message.authorAvatar is string &&
-                   message.content is string && message.content.size() > 0 && message.content.size() <= 2000 &&
-                   message.timestamp == request.time;
-          }
+            allow read: if isGlobalAdmin() || isCenterAdmin(centerId) || isClassMember();
           
-          allow create: if isMemberOfClass(className) && isValidClassMessage();
-          
-          allow update, delete: if false; // Immutable history
+            function isValidClassMessage() {
+                let message = request.resource.data;
+                return message.authorId == request.auth.uid &&
+                       message.authorName is string &&
+                       message.authorAvatar is string &&
+                       message.content is string && message.content.size() > 0 && message.content.size() <= 2000 &&
+                       message.timestamp == request.time;
+            }
+            
+            allow create: if isClassMember() && isValidClassMessage();
+            
+            allow update, delete: if false; // Immutable history
         }
     }
   }
