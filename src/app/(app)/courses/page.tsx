@@ -737,39 +737,40 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
         try {
             await runTransaction(firestore, async (transaction) => {
                 const annDoc = await transaction.get(announcementRef);
-                if (!annDoc.exists()) {
-                    throw "Document does not exist!";
-                }
-    
+                if (!annDoc.exists()) throw "Document does not exist!";
+                
                 const currentData = annDoc.data() as Announcement;
-                const votes = { ...(currentData.pollVotes || {}) };
+                const votes = JSON.parse(JSON.stringify(currentData.pollVotes || {})); 
                 const userId = user.uid;
-    
+
                 if (currentData.allowMultipleVotes) {
-                    const optionVotes = votes[optionId] || [];
-                    if (optionVotes.includes(userId)) {
-                        votes[optionId] = optionVotes.filter(uid => uid !== userId);
+                    const optionVotes: string[] = votes[optionId] || [];
+                    const userVoteIndex = optionVotes.indexOf(userId);
+
+                    if (userVoteIndex > -1) {
+                        optionVotes.splice(userVoteIndex, 1);
                     } else {
-                        votes[optionId] = [...optionVotes, userId];
+                        optionVotes.push(userId);
                     }
-                } else {
-                    const userCurrentVoteId = Object.keys(votes).find(optId => (votes[optId] || []).includes(userId));
-    
-                    if (userCurrentVoteId) {
-                        votes[userCurrentVoteId] = votes[userCurrentVoteId].filter(uid => uid !== userId);
+                    votes[optionId] = optionVotes;
+                } else { // Single vote logic
+                    const currentVoteKey = Object.keys(votes).find(key => (votes[key] || []).includes(userId));
+                    
+                    if (currentVoteKey) {
+                        votes[currentVoteKey] = (votes[currentVoteKey] || []).filter((id: string) => id !== userId);
                     }
-    
-                    if (userCurrentVoteId !== optionId) {
+
+                    if (currentVoteKey !== optionId) {
                         votes[optionId] = [...(votes[optionId] || []), userId];
                     }
                 }
-    
+
                 Object.keys(votes).forEach(optId => {
-                    if (votes[optId]?.length === 0) {
+                    if (!votes[optId] || votes[optId].length === 0) {
                         delete votes[optId];
                     }
                 });
-    
+
                 transaction.update(announcementRef, { pollVotes: votes });
             });
         } catch (error) {
@@ -1126,3 +1127,6 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     </Dialog>
   )
 }
+
+
+    
