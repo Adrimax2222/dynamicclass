@@ -260,13 +260,15 @@ function AnnouncementsTab() {
 
   const canUserManageAnnouncement = (ann: Announcement) => {
     if (!user) return false;
-    if (user.role === 'admin') return true; 
+    if (user.role === 'admin') return true;
     if (user.role === 'center-admin' && ann.scope === 'center') {
-      return ann.centerId === user.organizationId;
+        return ann.centerId === user.organizationId;
     }
     if (user.role.startsWith('admin-')) {
-      const adminClassName = user.role.split('admin-')[1];
-      return ann.scope === 'class' && ann.centerId === user.organizationId && adminClassName === ann.className;
+        const adminClassName = user.role.split('admin-')[1];
+        if (ann.scope === 'class' && ann.centerId === user.organizationId && adminClassName === ann.className) {
+            return true;
+        }
     }
     return false;
   };
@@ -759,13 +761,10 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     };
 
     const handleSubmitVote = async () => {
-        alert('Iniciando envío...');
-
         if (!auth || !auth.currentUser) {
-          alert("Error crítico: Firebase dice que no hay un usuario logueado actualmente.");
-          return;
+            alert("Error crítico: Firebase dice que no hay un usuario logueado actualmente.");
+            return;
         }
-        alert("Usuario detectado correctamente: " + auth.currentUser.uid);
         
         const currentUser = auth.currentUser;
 
@@ -779,20 +778,20 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
         }
         
         setIsSubmitting(true);
-
+        console.log("Intentando escribir en: anuncios/" + announcement.uid);
         const announcementRef = doc(firestore, "announcements", announcement.uid);
         
         try {
             await runTransaction(firestore, async (transaction) => {
                 const annDoc = await transaction.get(announcementRef);
                 if (!annDoc.exists()) {
-                    throw new Error("La encuesta ya no existe.");
+                    throw { code: 'not-found', message: 'La encuesta ya no existe.' };
                 }
 
                 const currentData = annDoc.data() as Announcement;
                 
                 if (currentData.votedUserIds?.includes(currentUser.uid) && !currentData.allowMultipleVotes) {
-                    throw new Error("Ya has votado en esta encuesta.");
+                    throw { code: 'already-voted', message: 'Ya has votado en esta encuesta.' };
                 }
 
                 const updateData: { [key: string]: any } = {};
@@ -807,11 +806,10 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
                 transaction.update(announcementRef, updateData);
             });
 
-            alert('¡Voto guardado!');
             toast({ title: "¡Voto registrado!", description: "Gracias por tu participación." });
         } catch (error: any) {
             console.error("Error al registrar el voto:", error);
-            alert(`Error al votar: ${error.message}`); 
+            alert("Error técnico de Firebase: " + (error.code || 'UNKNOWN') + " - " + error.message);
             toast({ title: 'Error al votar', description: `No se pudo registrar tu voto. Error: ${error.message}`, variant: 'destructive' });
         } finally {
             setIsSubmitting(false);
@@ -822,11 +820,11 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
         if (!user) return false;
         if (user.role === 'admin') return true;
         if (user.role === 'center-admin' && ann.scope === 'center') {
-          return ann.centerId === user.organizationId;
+            return ann.centerId === user.organizationId;
         }
         if (user.role.startsWith('admin-')) {
-          const adminClassName = user.role.split('admin-')[1];
-          return ann.scope === 'class' && ann.centerId === user.organizationId && adminClassName === ann.className;
+            const adminClassName = user.role.split('admin-')[1];
+            return ann.scope === 'class' && ann.centerId === user.organizationId && adminClassName === ann.className;
         }
         return false;
     };
