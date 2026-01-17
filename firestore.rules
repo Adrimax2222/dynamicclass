@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -194,8 +193,12 @@ service cloud.firestore {
                        userData.course == className.split('-')[0].lower() &&
                        userData.className == className.split('-')[1];
             }
+            
+            function canReadChat() {
+                return isGlobalAdmin() || isCenterAdmin(centerId) || isClassMember();
+            }
 
-            allow read: if isGlobalAdmin() || isCenterAdmin(centerId) || isClassMember();
+            allow read: if canReadChat();
           
             function isValidClassMessage() {
                 let message = request.resource.data;
@@ -219,7 +222,7 @@ service cloud.firestore {
               // Rule for pinning a message
               (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isPinned']) && (isGlobalAdmin() || isCenterAdmin(centerId) || isClassAdmin(className))) ||
               // Rule for marking a message as seen
-              (isClassMember() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewedBy']) && request.resource.data.viewedBy.toSet().difference(resource.data.viewedBy.toSet()).hasOnly([request.auth.uid]));
+              (canReadChat() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewedBy']) && request.resource.data.viewedBy.toSet().difference(resource.data.viewedBy.toSet()).hasOnly([request.auth.uid]));
         }
     }
   }
