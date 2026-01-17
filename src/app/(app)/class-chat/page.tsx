@@ -139,9 +139,9 @@ export default function ClassChatPage() {
                                     <AvatarDisplay user={{ name: msg.authorName, avatar: msg.authorAvatar }} className="h-8 w-8" />
                                 )}
                                 <div className={cn("max-w-[75%] p-3 rounded-xl shadow-sm", msg.authorId === user.uid ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none")}>
-                                     {msg.authorId !== user.uid && (
-                                        <p className="text-xs font-bold mb-1 text-primary">{msg.authorName.split(' ')[0]}</p>
-                                     )}
+                                     <p className={cn("text-xs font-bold mb-1", msg.authorId === user.uid ? "text-primary-foreground/80" : "text-primary")}>
+                                        {msg.authorName.split(' ')[0]}
+                                     </p>
                                     <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                                      <div className="flex items-center justify-end gap-1.5 text-xs opacity-70 mt-1.5">
                                         <span>
