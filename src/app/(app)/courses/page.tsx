@@ -732,6 +732,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
 }
 
 function PollDisplay({ announcement, allUsers }: { announcement: Announcement, allUsers: AppUser[]}) {
+    console.log("RENDERIZANDO COMPONENTE PollDisplay");
     const { user, firestore, auth } = useApp();
     const { toast } = useToast();
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
@@ -762,10 +763,10 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
 
     const handleSubmitVote = async () => {
         if (!auth || !auth.currentUser) {
-            alert("Error crítico: Firebase dice que no hay un usuario logueado actualmente.");
-            return;
+          alert("Error crítico: Firebase dice que no hay un usuario logueado actualmente.");
+          return;
         }
-        
+
         const currentUser = auth.currentUser;
 
         if (selectedOptions.length === 0) {
@@ -777,54 +778,65 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
             return;
         }
         
+        if (!announcement.uid) {
+            alert("ERROR: El anuncio no tiene ID");
+            return;
+        }
+        alert("Ruta destino: anuncios/" + announcement.uid);
+        
         setIsSubmitting(true);
-        console.log("Intentando escribir en: anuncios/" + announcement.uid);
         const announcementRef = doc(firestore, "announcements", announcement.uid);
         
+        alert('Iniciando envío...');
+
         try {
-            await runTransaction(firestore, async (transaction) => {
-                const annDoc = await transaction.get(announcementRef);
-                if (!annDoc.exists()) {
-                    throw { code: 'not-found', message: 'La encuesta ya no existe.' };
-                }
+            const annDoc = await getDoc(announcementRef);
+            if (!annDoc.exists()) {
+                throw { code: 'not-found', message: 'La encuesta ya no existe.' };
+            }
 
-                const currentData = annDoc.data() as Announcement;
-                
-                if (currentData.votedUserIds?.includes(currentUser.uid) && !currentData.allowMultipleVotes) {
-                    throw { code: 'already-voted', message: 'Ya has votado en esta encuesta.' };
-                }
-
-                const updateData: { [key: string]: any } = {};
-                
-                selectedOptions.forEach(optionId => {
-                    const fieldPath = `pollVoteCounts.${optionId}`;
-                    updateData[fieldPath] = increment(1);
+            const currentData = annDoc.data() as Announcement;
+            if (currentData.votedUserIds?.includes(currentUser.uid) && !currentData.allowMultipleVotes) {
+                 toast({
+                    title: "Ya has votado",
+                    description: "No puedes votar más de una vez en esta encuesta.",
+                    variant: "destructive"
                 });
+                setIsSubmitting(false);
+                return;
+            }
 
-                updateData.votedUserIds = arrayUnion(currentUser.uid);
-                
-                transaction.update(announcementRef, updateData);
+            const updateData: { [key: string]: any } = {};
+            selectedOptions.forEach(optionId => {
+                updateData[`pollVoteCounts.${optionId}`] = increment(1);
             });
 
-            toast({ title: "¡Voto registrado!", description: "Gracias por tu participación." });
+            updateData.votedUserIds = arrayUnion(currentUser.uid);
+            
+            await updateDoc(announcementRef, updateData);
+            
+            alert('¡Voto guardado!');
+
         } catch (error: any) {
-            console.error("Error al registrar el voto:", error);
-            alert("Error técnico de Firebase: " + (error.code || 'UNKNOWN') + " - " + error.message);
-            toast({ title: 'Error al votar', description: `No se pudo registrar tu voto. Error: ${error.message}`, variant: 'destructive' });
+            window.alert("DEBUG - Code: " + (error.code || 'UNKNOWN') + " | Message: " + error.message);
+            console.error("ERROR COMPLETO:", error);
         } finally {
             setIsSubmitting(false);
         }
     };
+
     
     const canUserManageAnnouncement = (ann: Announcement): boolean => {
         if (!user) return false;
         if (user.role === 'admin') return true;
-        if (user.role === 'center-admin' && ann.scope === 'center') {
-            return ann.centerId === user.organizationId;
+        if (user.role === 'center-admin' && ann.scope === 'center' && ann.centerId === user.organizationId) {
+            return true;
         }
         if (user.role.startsWith('admin-')) {
             const adminClassName = user.role.split('admin-')[1];
-            return ann.scope === 'class' && ann.centerId === user.organizationId && adminClassName === ann.className;
+            if (ann.scope === 'class' && ann.centerId === user.organizationId && adminClassName === ann.className) {
+                return true;
+            }
         }
         return false;
     };
@@ -898,15 +910,18 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
             </div>
             
             <div className="flex items-center justify-between mt-3">
-              <Button
+              <button
                   type="button"
-                  onClick={handleSubmitVote}
+                  onClick={() => { console.log("EJECUTANDO VOTO"); handleSubmitVote(); }}
                   disabled={isSubmitting || selectedOptions.length === 0}
-                  className="w-full"
+                  className="w-full bg-primary text-primary-foreground p-2 rounded-md disabled:opacity-50 cursor-pointer pointer-events-auto z-[9999] relative"
               >
-                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                  {isSubmitting ? "Enviando..." : "Enviar Respuesta"}
-              </Button>
+                  {isSubmitting ? (
+                    <span className="flex items-center justify-center">
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin"/> Enviando...
+                    </span>
+                  ) : "Enviar Respuesta"}
+              </button>
               {showAdminResultsButton && (
                   <PollResultsDialog announcement={announcement} allUsers={allUsers} />
               )}
@@ -1170,5 +1185,3 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     </Dialog>
   )
 }
-
-    
