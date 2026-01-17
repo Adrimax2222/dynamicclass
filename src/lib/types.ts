@@ -35,6 +35,7 @@ export type ClassDefinition = {
   name: string;
   icalUrl?: string;
   schedule?: Schedule;
+  imageUrl?: string;
 }
 
 export type Center = {

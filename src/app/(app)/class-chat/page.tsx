@@ -4,13 +4,13 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/lib/hooks/use-app';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import type { ClassChatMessage } from '@/lib/types';
+import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, query, orderBy, addDoc, serverTimestamp, Timestamp, doc } from 'firebase/firestore';
+import type { ClassChatMessage, Center } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle, CheckCheck } from 'lucide-react';
+import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle, CheckCheck, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AvatarDisplay } from '@/components/profile/avatar-creator';
 import { format } from 'date-fns';
@@ -29,11 +29,26 @@ export default function ClassChatPage() {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+    const centerDocRef = useMemoFirebase(() => {
+        if (!user || !user.organizationId) return null;
+        return doc(firestore, 'centers', user.organizationId);
+    }, [user, firestore]);
+    const { data: centerData } = useDoc<Center>(centerDocRef);
+
+    const { className: constructedClassName, classImageUrl } = useMemo(() => {
+        if (!user || !centerData) return { className: '', classImageUrl: '' };
+        const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
+        const classDef = centerData.classes.find(c => c.name === userClassName);
+        return {
+            className: userClassName,
+            classImageUrl: classDef?.imageUrl || ''
+        };
+    }, [user, centerData]);
+    
     const chatPath = useMemo(() => {
-        if (!user || !user.organizationId || user.center === 'personal' || !user.course || !user.className) return null;
-        const className = `${user.course.replace('eso','ESO')}-${user.className}`;
-        return `centers/${user.organizationId}/classes/${className}/messages`;
-    }, [user]);
+        if (!user || !user.organizationId || user.center === 'personal' || !constructedClassName) return null;
+        return `centers/${user.organizationId}/classes/${constructedClassName}/messages`;
+    }, [user, constructedClassName]);
 
     const messagesQuery = useMemoFirebase(() => {
         if (!chatPath || !firestore) return null;
@@ -91,6 +106,22 @@ export default function ClassChatPage() {
             handleSend();
         }
     };
+    
+    const getFormattedClassName = () => {
+        if (!constructedClassName) return '';
+        const [course, classLetter] = constructedClassName.split('-');
+        const courseMap: Record<string, string> = {
+            "1ESO": "1º ESO", "2ESO": "2º ESO", "3ESO": "3º ESO", "4ESO": "4º ESO",
+            "1BACH": "1º Bach.", "2BACH": "2º Bach.",
+        };
+        const formattedCourse = courseMap[course] || course.toUpperCase();
+        return `${formattedCourse} - ${classLetter}`;
+    };
+
+    const isGlobalAdmin = user?.role === 'admin';
+    const classAdminRoleName = user?.role.startsWith('admin-') ? user.role.substring('admin-'.length) : null;
+    const isClassAdminForThisClass = classAdminRoleName === constructedClassName;
+    const canEdit = isGlobalAdmin || isClassAdminForThisClass;
 
     if (!user || user.center === 'personal') {
         return (
@@ -110,27 +141,27 @@ export default function ClassChatPage() {
         );
     }
     
-    const getFormattedClassName = () => {
-        if (!user || !user.course || !user.className) return '';
-        const courseMap: Record<string, string> = {
-            "1eso": "1º ESO", "2eso": "2º ESO", "3eso": "3º ESO", "4eso": "4º ESO",
-            "1bach": "1º Bach.", "2bach": "2º Bach.",
-        };
-        const formattedCourse = courseMap[user.course] || user.course.toUpperCase();
-        return `${formattedCourse} - ${user.className}`;
-    };
-
     return (
         <div className="flex flex-col h-screen bg-muted/20">
             <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
                 <Button variant="ghost" size="icon" onClick={() => router.push('/courses')}>
                     <ChevronLeft />
                 </Button>
-                <div className="text-center">
-                    <h1 className="font-bold text-lg">{getFormattedClassName()}</h1>
-                    <p className="text-xs text-muted-foreground">Chat de Clase</p>
+                <div className="flex items-center gap-3 flex-1">
+                    <AvatarDisplay user={{ avatar: classImageUrl, name: constructedClassName }} className="h-10 w-10 shrink-0" />
+                    <div className="text-left">
+                        <h1 className="font-bold text-lg">{getFormattedClassName()}</h1>
+                        <p className="text-xs text-muted-foreground">Chat de Clase</p>
+                    </div>
                 </div>
-                <div className="w-9 h-9" /> {/* Placeholder for alignment */}
+
+                {canEdit && (
+                    <Button asChild variant="ghost" size="icon">
+                        <Link href={`/admin/groups/${user.organizationId}/${encodeURIComponent(constructedClassName)}/edit`}>
+                            <Pencil className="h-5 w-5" />
+                        </Link>
+                    </Button>
+                )}
             </header>
             
             <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
@@ -151,7 +182,7 @@ export default function ClassChatPage() {
                                     <AvatarDisplay user={{ name: msg.authorName, avatar: msg.authorAvatar }} className="h-8 w-8" />
                                 )}
                                 <div className={cn("max-w-[75%] p-3 rounded-xl shadow-sm", msg.authorId === user.uid ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none")}>
-                                     <p className={cn("text-xs font-bold mb-1", msg.authorId === user.uid ? "hidden" : "text-primary")}>
+                                     <p className="text-xs font-bold mb-1 text-primary">
                                         {msg.authorName}
                                      </p>
                                     <p className="whitespace-pre-wrap break-words">{msg.content}</p>
@@ -160,7 +191,7 @@ export default function ClassChatPage() {
                                             {msg.timestamp ? format(msg.timestamp.toDate(), 'HH:mm') : ''}
                                         </span>
                                         {msg.authorId === user.uid && (
-                                            <CheckCheck className="h-4 w-4 text-sky-400" />
+                                            <CheckCheck className="h-4 w-4 text-green-400" />
                                         )}
                                     </div>
                                 </div>
@@ -174,7 +205,7 @@ export default function ClassChatPage() {
             </div>
             
             <footer className="p-4 border-t bg-background">
-                <div className="flex items-end gap-2 bg-muted p-2 rounded-xl">
+                 <div className="flex items-end gap-2 bg-muted p-2 rounded-xl">
                     <WipDialog>
                         <Button variant="ghost" size="icon" className="shrink-0">
                             <PlusCircle className="h-5 w-5 text-muted-foreground" />

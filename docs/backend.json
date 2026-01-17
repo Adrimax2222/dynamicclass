@@ -163,6 +163,7 @@
             "properties": {
               "name": { "type": "string" },
               "icalUrl": { "type": "string", "format": "uri" },
+              "imageUrl": { "type": "string", "format": "uri" },
               "schedule": {
                 "type": "object",
                 "properties": {
