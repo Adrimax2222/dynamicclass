@@ -134,7 +134,7 @@ export default function ClassChatPage() {
                         </div>
                     ) : (
                         messages.map((msg) => (
-                            <div key={msg.id} className={cn("flex items-end gap-2", msg.authorId === user.uid ? "justify-end" : "justify-start")}>
+                            <div key={(msg as any).uid} className={cn("flex items-end gap-2", msg.authorId === user.uid ? "justify-end" : "justify-start")}>
                                 {msg.authorId !== user.uid && (
                                     <AvatarDisplay user={{ name: msg.authorName, avatar: msg.authorAvatar }} className="h-8 w-8" />
                                 )}
@@ -148,7 +148,7 @@ export default function ClassChatPage() {
                                             {msg.timestamp ? format(msg.timestamp.toDate(), 'HH:mm') : ''}
                                         </span>
                                         {msg.authorId === user.uid && (
-                                            <CheckCheck className="h-4 w-4 text-blue-500" />
+                                            <CheckCheck className="h-4 w-4 text-sky-400" />
                                         )}
                                     </div>
                                 </div>
