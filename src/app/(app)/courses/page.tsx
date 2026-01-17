@@ -734,7 +734,7 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
     const handleVote = async (optionId: string) => {
         if (!firestore || !user) return;
         const announcementRef = doc(firestore, "announcements", announcement.uid);
-
+    
         try {
             await runTransaction(firestore, async (transaction) => {
                 const annDoc = await transaction.get(announcementRef);
@@ -743,42 +743,35 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
                 const currentData = annDoc.data() as Announcement;
                 let votes = { ...(currentData.pollVotes || {}) };
                 const userId = user.uid;
-
+    
                 if (currentData.allowMultipleVotes) {
-                    if (votes[optionId]?.includes(userId)) {
+                    const alreadyVoted = votes[optionId]?.includes(userId);
+                    if (alreadyVoted) {
                         votes[optionId] = votes[optionId].filter(uid => uid !== userId);
                     } else {
-                        if (!votes[optionId]) {
-                            votes[optionId] = [];
-                        }
-                        votes[optionId].push(userId);
+                        votes[optionId] = [...(votes[optionId] || []), userId];
                     }
                 } else {
-                    let existingVote: string | null = null;
-                    Object.keys(votes).forEach(optId => {
-                        if (votes[optId]?.includes(userId)) {
-                            existingVote = optId;
-                        }
-                    });
-
+                    const existingVoteId = Object.keys(votes).find(optId => votes[optId]?.includes(userId));
+                    
+                    // Clear all previous votes for this user
                     Object.keys(votes).forEach(optId => {
                         votes[optId] = votes[optId].filter(uid => uid !== userId);
                     });
-
-                    if (existingVote !== optionId) {
-                        if (!votes[optionId]) {
-                            votes[optionId] = [];
-                        }
-                        votes[optionId].push(userId);
+    
+                    // If the user wasn't voting for this option before (or was un-voting), add the new vote.
+                    if (existingVoteId !== optionId) {
+                        votes[optionId] = [...(votes[optionId] || []), userId];
                     }
                 }
-
+    
+                // Clean up empty vote arrays
                 Object.keys(votes).forEach(optId => {
                     if (votes[optId]?.length === 0) {
                         delete votes[optId];
                     }
                 });
-
+    
                 transaction.update(announcementRef, { pollVotes: votes });
             });
         } catch (error) {
@@ -842,7 +835,14 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
 function VotersDisplay({ uids, allUsers }: { uids: string[], allUsers: AppUser[] }) {
     const voters = useMemo(() => uids.map(uid => allUsers.find(u => u.uid === uid)).filter(Boolean) as AppUser[], [uids, allUsers]);
     
-    if (voters.length === 0) return null;
+    if (voters.length === 0) {
+         return (
+            <div className="flex items-center text-sm text-muted-foreground">
+                <Users className="h-4 w-4 mr-1.5" />
+                <span>0</span>
+            </div>
+        );
+    }
     
     const votersToShow = voters.slice(0, 3);
     const remainingCount = voters.length - votersToShow.length;
