@@ -713,9 +713,13 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
   );
 }
 
-const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Announcement, allUsers: AppUser[], canManage: boolean }) => {
+function PollDisplay({ announcement, allUsers, canManage }: { announcement: Announcement, allUsers: AppUser[], canManage: boolean }) {
     const { user, firestore } = useApp();
     const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Local state for the user's selection before submitting
+    const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
     const userVotes = useMemo(() => {
         if (!user || !announcement.pollVotes) return [];
@@ -732,86 +736,88 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
         return Object.values(announcement.pollVotes || {}).reduce((acc, uids) => acc + uids.length, 0);
     }, [announcement.pollVotes]);
 
-    const handleVote = async (optionId: string) => {
-        if (!firestore || !user) return;
+    const handleSelectOption = (optionId: string) => {
+        const isMultiVote = announcement.allowMultipleVotes || false;
+
+        setSelectedOptions(prev => {
+            if (isMultiVote) {
+                // Toggle option in multi-vote
+                const newSelection = prev.includes(optionId)
+                    ? prev.filter(id => id !== optionId)
+                    : [...prev, optionId];
+                return newSelection;
+            } else {
+                // Replace option in single-vote
+                return prev.includes(optionId) ? [] : [optionId];
+            }
+        });
+    };
+
+    const handleSubmitVote = async () => {
+        if (!firestore || !user || selectedOptions.length === 0) return;
+        setIsSubmitting(true);
         const announcementRef = doc(firestore, "announcements", announcement.uid);
 
-        await runTransaction(firestore, async (transaction) => {
-            const annDoc = await transaction.get(announcementRef);
-            if (!annDoc.exists()) throw "Document does not exist!";
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                const annDoc = await transaction.get(announcementRef);
+                if (!annDoc.exists()) throw "Document does not exist!";
 
-            const currentData = annDoc.data();
-            const pollVotes = { ...(currentData.pollVotes || {}) };
-            const allowMultiple = currentData.allowMultipleVotes || false;
-            const userId = user.uid;
+                const pollVotes = { ...(annDoc.data().pollVotes || {}) };
+                
+                // This logic correctly handles adding one or more votes from the selection
+                selectedOptions.forEach(optionId => {
+                    if (!pollVotes[optionId]) {
+                        pollVotes[optionId] = [];
+                    }
+                    if (!pollVotes[optionId].includes(user.uid)) {
+                       pollVotes[optionId].push(user.uid);
+                    }
+                });
 
-            if (allowMultiple) {
-                const voters = pollVotes[optionId] || [];
-                if (voters.includes(userId)) {
-                    pollVotes[optionId] = voters.filter((id: string) => id !== userId);
-                } else {
-                    pollVotes[optionId] = [...voters, userId];
-                }
-            } else {
-                const existingVoteKey = Object.keys(pollVotes).find(key => pollVotes[key].includes(userId));
-
-                for (const key in pollVotes) {
-                     pollVotes[key] = pollVotes[key].filter((id: string) => id !== userId);
-                }
-
-                if (existingVoteKey !== optionId) {
-                    pollVotes[optionId] = [userId];
-                }
-            }
-
-            Object.keys(pollVotes).forEach(key => {
-                if (pollVotes[key].length === 0) {
-                    delete pollVotes[key];
-                }
+                transaction.update(announcementRef, { pollVotes });
             });
-
-            transaction.update(announcementRef, { pollVotes });
-        }).catch(error => {
+            setSelectedOptions([]); // Clear local selection after successful submission
+        } catch (error) {
              console.error("Poll vote transaction failed: ", error);
              toast({
                 title: 'Error al votar',
                 description: 'No se pudo registrar tu voto. Revisa tu conexión e inténtalo de nuevo.',
                 variant: 'destructive',
             });
-        });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const hasUserVoted = userVotes.length > 0;
 
-    return (
-        <div className="space-y-3">
-            <h4 className="font-bold text-base">{announcement.pollQuestion}</h4>
-            <div className="space-y-2">
-                {announcement.pollOptions?.map(option => {
-                    const votesForOption = announcement.pollVotes?.[option.id] || [];
-                    const percentage = totalVotes > 0 ? (votesForOption.length / totalVotes) * 100 : 0;
-                    const isSelected = userVotes.includes(option.id);
+    // VIEW 1: User has already voted, show results
+    if (hasUserVoted) {
+        return (
+            <div className="space-y-3">
+                <h4 className="font-bold text-base">{announcement.pollQuestion}</h4>
+                <div className="space-y-2">
+                    {announcement.pollOptions?.map(option => {
+                        const votesForOption = announcement.pollVotes?.[option.id] || [];
+                        const percentage = totalVotes > 0 ? (votesForOption.length / totalVotes) * 100 : 0;
+                        const isSelectedByCurrentUser = userVotes.includes(option.id);
 
-                    return (
-                        <button
-                            type="button"
-                            key={option.id}
-                            className="relative rounded-lg border overflow-hidden cursor-pointer text-left w-full block hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all"
-                            onClick={() => handleVote(option.id)}
-                        >
-                            {hasUserVoted && (
+                        return (
+                             <div
+                                key={option.id}
+                                className="relative rounded-lg border overflow-hidden text-left w-full"
+                            >
                                 <div 
                                     className="absolute top-0 left-0 h-full bg-primary/10 transition-all duration-500" 
                                     style={{ width: `${percentage}%` }} 
                                 />
-                            )}
-                            <div className={cn("relative p-3 flex items-center gap-3", isSelected && "bg-primary/20")}>
-                                <div className={cn("h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center", isSelected && "bg-primary")}>
-                                   {isSelected && <CheckCircle2 className="h-3 w-3 text-white"/>}
-                                </div>
-                                <span className="flex-1 font-semibold">{option.text}</span>
-                                {hasUserVoted && (
-                                    <div className="flex items-center gap-2">
+                                <div className={cn("relative p-3 flex items-center gap-3", isSelectedByCurrentUser && "bg-primary/20")}>
+                                    <div className={cn("h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center", isSelectedByCurrentUser && "bg-primary")}>
+                                       {isSelectedByCurrentUser && <CheckCircle2 className="h-3 w-3 text-white"/>}
+                                    </div>
+                                    <span className="flex-1 font-semibold">{option.text}</span>
+                                    <div className="flex items-center gap-4">
                                         {canManage ? (
                                             <VotersDisplay uids={votesForOption} allUsers={allUsers} />
                                         ) : (
@@ -822,17 +828,47 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
                                         )}
                                         <span className="text-sm font-bold w-12 text-right">{percentage.toFixed(0)}%</span>
                                     </div>
-                                )}
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+                {canManage && <PollResultsDialog announcement={announcement} allUsers={allUsers} />}
+            </div>
+        )
+    }
+
+    // VIEW 2: User has NOT voted yet, show selection UI
+    return (
+        <div className="space-y-3">
+            <h4 className="font-bold text-base">{announcement.pollQuestion}</h4>
+            <div className="space-y-2">
+                {announcement.pollOptions?.map(option => {
+                    const isSelected = selectedOptions.includes(option.id);
+                    return (
+                        <button
+                            type="button"
+                            key={option.id}
+                            className="relative rounded-lg border overflow-hidden cursor-pointer text-left w-full block hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all"
+                            onClick={() => handleSelectOption(option.id)}
+                        >
+                            <div className={cn("relative p-3 flex items-center gap-3", isSelected && "bg-primary/10")}>
+                                <div className={cn("h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center", isSelected && "bg-primary")}>
+                                   {isSelected && <CheckCircle2 className="h-3 w-3 text-white"/>}
+                                </div>
+                                <span className="flex-1 font-semibold">{option.text}</span>
                             </div>
                         </button>
                     )
                 })}
             </div>
-             {canManage && <PollResultsDialog announcement={announcement} allUsers={allUsers} />}
-             {!hasUserVoted && (
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-2">
-                    <EyeOff className="h-4 w-4"/>
-                    <span>Vota para ver los resultados de la encuesta.</span>
+             <Button onClick={handleSubmitVote} disabled={isSubmitting || selectedOptions.length === 0} className="w-full mt-4">
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
+                Enviar Respuesta
+             </Button>
+            {canManage && (
+                <div className="text-center pt-2">
+                     <PollResultsDialog announcement={announcement} allUsers={allUsers} />
                 </div>
             )}
         </div>
@@ -1135,3 +1171,4 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     
 
     
+
