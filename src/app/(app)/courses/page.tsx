@@ -735,40 +735,55 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
         if (!firestore || !user) return;
         const announcementRef = doc(firestore, "announcements", announcement.uid);
 
-        await runTransaction(firestore, async (transaction) => {
-            const annDoc = await transaction.get(announcementRef);
-            if (!annDoc.exists()) throw "Document does not exist!";
-            
-            const currentData = annDoc.data() as Announcement;
-            let votes = { ...(currentData.pollVotes || {}) };
-            
-            const isAlreadyVotedForThis = votes[optionId]?.includes(user.uid);
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                const annDoc = await transaction.get(announcementRef);
+                if (!annDoc.exists()) throw "Document does not exist!";
+                
+                const currentData = annDoc.data() as Announcement;
+                let votes = { ...(currentData.pollVotes || {}) };
+                const userId = user.uid;
 
-            if (!currentData.allowMultipleVotes) {
-                // If single vote, remove user from all other options before adding/removing the new one.
+                if (currentData.allowMultipleVotes) {
+                    if (votes[optionId]?.includes(userId)) {
+                        votes[optionId] = votes[optionId].filter(uid => uid !== userId);
+                    } else {
+                        if (!votes[optionId]) {
+                            votes[optionId] = [];
+                        }
+                        votes[optionId].push(userId);
+                    }
+                } else {
+                    let existingVote: string | null = null;
+                    Object.keys(votes).forEach(optId => {
+                        if (votes[optId]?.includes(userId)) {
+                            existingVote = optId;
+                        }
+                    });
+
+                    Object.keys(votes).forEach(optId => {
+                        votes[optId] = votes[optId].filter(uid => uid !== userId);
+                    });
+
+                    if (existingVote !== optionId) {
+                        if (!votes[optionId]) {
+                            votes[optionId] = [];
+                        }
+                        votes[optionId].push(userId);
+                    }
+                }
+
                 Object.keys(votes).forEach(optId => {
-                    if (votes[optId]?.includes(user.uid)) {
-                        votes[optId] = votes[optId].filter(uid => uid !== user.uid);
+                    if (votes[optId]?.length === 0) {
+                        delete votes[optId];
                     }
                 });
-            }
-            
-            if (isAlreadyVotedForThis) {
-                // Un-vote is handled by the clearing logic above if single-vote.
-                // For multi-vote, we still need to remove it.
-                if (currentData.allowMultipleVotes) {
-                   votes[optionId] = votes[optionId].filter(uid => uid !== user.uid);
-                }
-            } else {
-                // Vote:
-                if (!votes[optionId]) {
-                    votes[optionId] = [];
-                }
-                votes[optionId].push(user.uid);
-            }
 
-            transaction.update(announcementRef, { pollVotes: votes });
-        });
+                transaction.update(announcementRef, { pollVotes: votes });
+            });
+        } catch (error) {
+            console.error("Poll vote transaction failed: ", error);
+        }
     };
 
     const hasUserVoted = userVotes.length > 0;
@@ -797,7 +812,14 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
                                 <span className="flex-1 font-semibold">{option.text}</span>
                                 {hasUserVoted && (
                                     <div className="flex items-center gap-2">
-                                        <VotersDisplay uids={votesForOption} allUsers={allUsers} />
+                                        {canManage ? (
+                                            <VotersDisplay uids={votesForOption} allUsers={allUsers} />
+                                        ) : (
+                                            <div className="flex items-center text-sm text-muted-foreground">
+                                                <Users className="h-4 w-4 mr-1.5" />
+                                                <span>{votesForOption.length}</span>
+                                            </div>
+                                        )}
                                         <span className="text-sm font-bold w-12 text-right">{percentage.toFixed(0)}%</span>
                                     </div>
                                 )}
@@ -812,7 +834,7 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
                     <span>Vota para ver los resultados de la encuesta.</span>
                 </div>
             )}
-             {canManage && userVotes.length > 0 && <PollResultsDialog announcement={announcement} allUsers={allUsers} />}
+             {canManage && <PollResultsDialog announcement={announcement} allUsers={allUsers} />}
         </div>
     )
 }
