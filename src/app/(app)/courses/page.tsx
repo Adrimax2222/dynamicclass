@@ -251,15 +251,16 @@ function AnnouncementsTab() {
     if (!user) return false;
     if (user.role === 'admin') return true;
     if (user.role === 'center-admin') {
-        if (ann.scope === 'center' && user.organizationId === ann.centerId) return true;
-        if (ann.scope === 'general') return true;
+      // Center admin can manage announcements for their center and general announcements
+      if (ann.scope === 'center' && user.organizationId === ann.centerId) return true;
+      if (ann.scope === 'general') return true;
     }
     if (user.role.startsWith('admin-') && ann.scope === 'class') {
-        const adminClassName = user.role.split('admin-')[1];
-        return user.organizationId === ann.centerId && adminClassName === ann.className;
+      const adminClassName = user.role.split('admin-')[1];
+      return user.organizationId === ann.centerId && adminClassName === ann.className;
     }
     return false;
-  }
+  };
 
   const sortedAndFilteredAnnouncements = useMemo(() => {
     const sorted = [...announcements].sort((a, b) => {
@@ -757,32 +758,31 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
         const announcementRef = doc(firestore, "announcements", announcement.uid);
     
         try {
-            await runTransaction(firestore, async (transaction) => {
-                const annDoc = await transaction.get(announcementRef);
-                if (!annDoc.exists()) {
-                    throw new Error("El anuncio ya no existe.");
+            const docSnap = await getDoc(announcementRef);
+            if (!docSnap.exists()) {
+                throw new Error("La encuesta ya no existe.");
+            }
+    
+            const currentVotes = docSnap.data().pollVotes || {};
+            // Create a deep copy to avoid modifying the state directly
+            const newVotes = JSON.parse(JSON.stringify(currentVotes));
+    
+            // Remove all of the user's existing votes to handle single-choice changes and multi-choice updates cleanly.
+            Object.keys(newVotes).forEach(optionId => {
+                if (Array.isArray(newVotes[optionId])) {
+                    newVotes[optionId] = newVotes[optionId].filter((uid: string) => uid !== user.uid);
                 }
-    
-                const currentVotes = annDoc.data().pollVotes || {};
-                const newVotes = JSON.parse(JSON.stringify(currentVotes));
-    
-                // Remove all of the user's existing votes to handle single-choice changes and multi-choice updates cleanly.
-                Object.keys(newVotes).forEach(optionId => {
-                    if (Array.isArray(newVotes[optionId])) {
-                        newVotes[optionId] = newVotes[optionId].filter((uid: string) => uid !== user.uid);
-                    }
-                });
-    
-                // Add the user's new selections.
-                selectedOptions.forEach(optionId => {
-                    if (!newVotes[optionId]) {
-                        newVotes[optionId] = [];
-                    }
-                    newVotes[optionId].push(user.uid);
-                });
-                
-                transaction.update(announcementRef, { pollVotes: newVotes });
             });
+    
+            // Add the user's new selections.
+            selectedOptions.forEach(optionId => {
+                if (!newVotes[optionId]) {
+                    newVotes[optionId] = [];
+                }
+                newVotes[optionId].push(user.uid);
+            });
+            
+            await updateDoc(announcementRef, { pollVotes: newVotes });
             
             setSelectedOptions([]);
             toast({
@@ -791,7 +791,7 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
             });
     
         } catch (error: any) {
-             console.error("Poll vote transaction failed: ", error);
+             console.error("Poll vote submission failed: ", error);
              toast({
                 title: 'Error al votar',
                 description: error.message || 'No se pudo registrar tu voto. Revisa tu conexión e inténtalo de nuevo.',
@@ -1181,6 +1181,7 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     
 
     
+
 
 
 
