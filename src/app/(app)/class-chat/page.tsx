@@ -9,10 +9,10 @@ import type { ClassChatMessage } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle } from 'lucide-react';
+import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle, CheckCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AvatarDisplay } from '@/components/profile/avatar-creator';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -134,7 +134,7 @@ export default function ClassChatPage() {
                         </div>
                     ) : (
                         messages.map((msg) => (
-                            <div key={(msg as any).uid} className={cn("flex items-end gap-2", msg.authorId === user.uid ? "justify-end" : "justify-start")}>
+                            <div key={msg.id} className={cn("flex items-end gap-2", msg.authorId === user.uid ? "justify-end" : "justify-start")}>
                                 {msg.authorId !== user.uid && (
                                     <AvatarDisplay user={{ name: msg.authorName, avatar: msg.authorAvatar }} className="h-8 w-8" />
                                 )}
@@ -143,9 +143,14 @@ export default function ClassChatPage() {
                                         <p className="text-xs font-bold mb-1 text-primary">{msg.authorName}</p>
                                      )}
                                     <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                                    <p className="text-xs opacity-70 mt-1.5 text-right">
-                                        {msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), { addSuffix: true, locale: es }) : 'enviando...'}
-                                    </p>
+                                     <div className="flex items-center justify-end gap-1.5 text-xs opacity-70 mt-1.5">
+                                        <span>
+                                            {msg.timestamp ? format(msg.timestamp.toDate(), 'HH:mm') : ''}
+                                        </span>
+                                        {msg.authorId === user.uid && (
+                                            <CheckCheck className="h-4 w-4 text-blue-500" />
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))

@@ -1,4 +1,3 @@
-
 // src/firebase/firestore/use-collection.tsx
 "use client";
 import {
@@ -49,7 +48,7 @@ export const useCollection = <T>(
       queryToExecute,
       (snapshot) => {
         const docs = snapshot.docs.map((doc) => ({
-          uid: doc.id,
+          id: doc.id,
           ...doc.data(),
         })) as T[];
         setData(docs);
