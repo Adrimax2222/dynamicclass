@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -261,8 +260,8 @@ function AnnouncementsTab() {
   const canUserManageAnnouncement = (ann: Announcement) => {
     if (!user) return false;
     if (user.role === 'admin') return true; 
-    if (user.role === 'center-admin' && ann.centerId === user.organizationId) {
-        return ann.scope === 'center' || ann.scope === 'general';
+    if (user.role === 'center-admin') {
+      return ann.scope === 'center' && ann.centerId === user.organizationId;
     }
     if (user.role.startsWith('admin-')) {
       const adminClassName = user.role.split('admin-')[1];
@@ -572,6 +571,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
     onReaction: (uid: string, emoji: string) => void,
     allUsersInCenter: AppUser[]
 }) {
+  console.log("CARGANDO ANUNCIO ID:", announcement.uid);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(announcement.text || '');
   const { user, firestore } = useApp();
@@ -730,7 +730,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
 }
 
 function PollDisplay({ announcement, allUsers }: { announcement: Announcement, allUsers: AppUser[]}) {
-    console.log("RENDERIZANDO COMPONENTE PollDisplay");
+    console.log("RENDERIZANDO COMPONENTE PollDisplay para el anuncio:", announcement.uid);
     const { user, firestore } = useApp();
     const { toast } = useToast();
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
@@ -754,47 +754,43 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
                     ? prev.filter(id => id !== optionId)
                     : [...prev, optionId];
             } else {
-                return prev.includes(optionId) ? [] : [optionId];
+                return [optionId];
             }
         });
     };
 
     const handleSubmitVote = async () => {
-        console.log("handleSubmitVote called with selected options:", selectedOptions);
-
+        console.log("Botón 'Enviar Respuesta' pulsado. Opciones seleccionadas:", selectedOptions);
         if (selectedOptions.length === 0) {
-            toast({
-              title: "Selecciona una opción",
-              description: "Debes elegir al menos una respuesta para poder enviar tu voto.",
-              variant: "destructive",
-            });
+            toast({ title: "Selecciona una opción", description: "Debes elegir al menos una respuesta.", variant: "destructive" });
             return;
         }
-  
         if (!firestore || !user) return;
         setIsSubmitting(true);
         const announcementRef = doc(firestore, "announcements", announcement.uid);
-        
-        try {
-            const updates: { [key: string]: any } = {};
-            selectedOptions.forEach(optionId => {
-                updates[`pollVoteCounts.${optionId}`] = increment(1);
-            });
-            updates['votedUserIds'] = arrayUnion(user.uid);
-            
-            await updateDoc(announcementRef, updates);
 
-            toast({
-              title: "¡Voto registrado!",
-              description: "Gracias por tu participación.",
+        try {
+            // Read-Modify-Write approach
+            const docSnap = await getDoc(announcementRef);
+            if (!docSnap.exists()) throw new Error("La encuesta ha sido eliminada.");
+
+            const currentData = docSnap.data() as Announcement;
+            const newVoteCounts = { ...(currentData.pollVoteCounts || {}) };
+            selectedOptions.forEach(optionId => {
+                newVoteCounts[optionId] = (newVoteCounts[optionId] || 0) + 1;
             });
+            
+            const newVotedUserIds = Array.from(new Set([...(currentData.votedUserIds || []), user.uid]));
+
+            await updateDoc(announcementRef, {
+                pollVoteCounts: newVoteCounts,
+                votedUserIds: newVotedUserIds
+            });
+            toast({ title: "¡Voto registrado!", description: "Gracias por tu participación." });
+
         } catch (error: any) {
-            console.error("Poll vote submission failed: ", error);
-            toast({
-              title: 'Error al votar',
-              description: error.message || 'No se pudo registrar tu voto. Revisa tu conexión e inténtalo de nuevo.',
-              variant: 'destructive',
-            });
+            console.error("Error al registrar el voto:", error);
+            toast({ title: 'Error al votar', description: error.message || 'No se pudo registrar tu voto.', variant: 'destructive' });
         } finally {
             setIsSubmitting(false);
         }
@@ -802,18 +798,54 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     
     const canUserManageAnnouncement = (ann: Announcement): boolean => {
         if (!user) return false;
-        if (user.role === 'admin') return true;
-        if (user.role === 'center-admin' && ann.centerId === user.organizationId) {
-            return ann.scope === 'center' || ann.scope === 'general';
+        if (user.role === 'admin') return true; 
+        if (user.role === 'center-admin') {
+            return ann.scope === 'center' && ann.centerId === user.organizationId;
         }
         if (user.role.startsWith('admin-')) {
-            const adminClassName = user.role.split('admin-')[1];
-            return ann.scope === 'class' && ann.centerId === user.organizationId && adminClassName === ann.className;
+          const adminClassName = user.role.split('admin-')[1];
+          return ann.scope === 'class' && ann.centerId === user.organizationId && adminClassName === ann.className;
         }
         return false;
     };
     
     const showAdminResultsButton = canUserManageAnnouncement(announcement);
+
+    if (hasUserVoted) {
+      return (
+        <div className="space-y-3">
+          <h4 className="font-bold text-base">{announcement.pollQuestion}</h4>
+          <p className="text-xs text-muted-foreground">
+              {totalVotes} {totalVotes === 1 ? 'voto' : 'votos'} en total. Gracias por participar.
+          </p>
+          <div className="space-y-2">
+              {announcement.pollOptions?.map(option => {
+                  const votes = announcement.pollVoteCounts?.[option.id] || 0;
+                  const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
+                  
+                  return (
+                      <div key={option.id} className="relative rounded-lg border p-3 overflow-hidden bg-muted/50">
+                          <div
+                              className="absolute left-0 top-0 h-full bg-primary/20 transition-all duration-500"
+                              style={{ width: `${percentage}%` }}
+                          />
+                          <div className="relative flex items-center justify-between z-10">
+                              <span className="font-semibold">{option.text}</span>
+                              <div className="flex items-center gap-2">
+                                  <span className="text-sm font-bold">{votes}</span>
+                                  <span className="text-xs text-muted-foreground">{percentage.toFixed(0)}%</span>
+                              </div>
+                          </div>
+                      </div>
+                  )
+              })}
+          </div>
+          {showAdminResultsButton && (
+              <PollResultsDialog announcement={announcement} allUsers={allUsers} />
+          )}
+        </div>
+      )
+    }
 
     return (
         <div className="space-y-3">
@@ -825,11 +857,15 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
                         <button
                             type="button"
                             key={option.id}
-                            className="relative rounded-lg border overflow-hidden cursor-pointer text-left w-full block hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all"
+                            className={cn(
+                                "relative rounded-lg border overflow-hidden cursor-pointer text-left w-full block hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all",
+                                isSelected && "border-primary"
+                            )}
                             onClick={() => handleSelectOption(option.id)}
+                            disabled={isSubmitting}
                         >
                             <div className={cn("relative p-3 flex items-center gap-3", isSelected && "bg-primary/10")}>
-                                <div className={cn("h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center", isSelected && "bg-primary")}>
+                                <div className={cn("h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center transition-colors", isSelected && "bg-primary")}>
                                    {isSelected && <CheckCircle2 className="h-3 w-3 text-white"/>}
                                 </div>
                                 <span className="flex-1 font-semibold">{option.text}</span>
@@ -841,7 +877,7 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
             
             <button
               type="button"
-              onClick={() => { alert("¡EL BOTÓN FUNCIONA!"); handleSubmitVote(); }}
+              onClick={() => { console.log("Botón de prueba pulsado"); alert("¡EL BOTÓN ROJO FUNCIONA!"); handleSubmitVote(); }}
               className="bg-red-500 text-white p-4 z-50 relative w-full"
             >
               PRUEBA DE CLICK
@@ -1105,17 +1141,3 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     </Dialog>
   )
 }
-
-
-    
-
-    
-
-
-
-
-
-
-
-
-
