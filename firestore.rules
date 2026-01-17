@@ -202,16 +202,25 @@ service cloud.firestore {
                 return message.authorId == request.auth.uid &&
                        message.authorName is string &&
                        message.authorAvatar is string &&
+                       message.authorRole is string &&
                        message.content is string && message.content.size() > 0 && message.content.size() <= 2000 &&
-                       message.timestamp == request.time;
+                       message.timestamp == request.time &&
+                       message.viewedBy == [] &&
+                       message.isPinned == false;
             }
             
             allow create: if isClassMember() && isValidClassMessage() && getUserData().isChatBanned != true;
             
-            allow update, delete: if false; // Immutable history
+            allow delete: if isGlobalAdmin() || isCenterAdmin(centerId) || isClassAdmin(className) || request.auth.uid == resource.data.authorId;
+            
+            allow update: if 
+              // Rule for editing message content
+              (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['content']) && request.auth.uid == resource.data.authorId) ||
+              // Rule for pinning a message
+              (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isPinned']) && (isGlobalAdmin() || isCenterAdmin(centerId) || isClassAdmin(className))) ||
+              // Rule for marking a message as seen
+              (isClassMember() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewedBy']) && request.resource.data.viewedBy.toSet().difference(resource.data.viewedBy.toSet()).hasOnly([request.auth.uid]));
         }
     }
   }
 }
-
-    

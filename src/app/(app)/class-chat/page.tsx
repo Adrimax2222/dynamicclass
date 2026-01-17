@@ -1,16 +1,16 @@
 
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/lib/hooks/use-app';
-import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp, Timestamp, doc } from 'firebase/firestore';
-import type { ClassChatMessage, Center } from '@/lib/types';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, addDoc, serverTimestamp, Timestamp, doc, updateDoc, arrayUnion, deleteDoc } from 'firebase/firestore';
+import type { ClassChatMessage, Center, User } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle, CheckCheck, Pencil, MicOff } from 'lucide-react';
+import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle, CheckCheck, Pencil, MicOff, MoreHorizontal, Copy, Trash2, Pin, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AvatarDisplay } from '@/components/profile/avatar-creator';
 import { format } from 'date-fns';
@@ -19,6 +19,9 @@ import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { WipDialog } from '@/components/layout/wip-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
 
 export default function ClassChatPage() {
     const { user } = useApp();
@@ -28,6 +31,7 @@ export default function ClassChatPage() {
     const [isSending, setIsSending] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const { toast } = useToast();
 
     const centerDocRef = useMemoFirebase(() => {
         if (!user || !user.organizationId) return null;
@@ -35,7 +39,7 @@ export default function ClassChatPage() {
     }, [user, firestore]);
     const { data: centerData } = useDoc<Center>(centerDocRef);
 
-    const { className: constructedClassName, classImageUrl, classDescription } = useMemo(() => {
+    const { constructedClassName, classImageUrl, classDescription } = useMemo(() => {
         if (!user || !centerData) return { className: '', classImageUrl: '', classDescription: '' };
         const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
         const classDef = centerData.classes.find(c => c.name === userClassName);
@@ -87,19 +91,33 @@ export default function ClassChatPage() {
             authorId: user.uid,
             authorName: user.name,
             authorAvatar: user.avatar,
+            authorRole: user.role,
             timestamp: serverTimestamp() as Timestamp,
+            viewedBy: [],
+            isPinned: false
         };
 
         try {
-            await addDoc(collection(firestore, chatPath), newMessage);
+            await addDoc(collection(firestore, chatPath), newMessage as any);
             setMessage('');
         } catch (error) {
             console.error("Error sending message:", error);
-            // Optionally, show a toast notification
+            toast({ variant: "destructive", title: "Error", description: "No se pudo enviar el mensaje." });
         } finally {
             setIsSending(false);
         }
     };
+
+    const handleDeleteMessage = async (messageId: string) => {
+        if (!chatPath || !firestore) return;
+        try {
+            await deleteDoc(doc(firestore, chatPath, messageId));
+            toast({ title: "Mensaje eliminado" });
+        } catch (error) {
+            console.error("Error deleting message:", error);
+            toast({ variant: "destructive", title: "Error", description: "No se pudo eliminar el mensaje." });
+        }
+    }
     
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -120,9 +138,10 @@ export default function ClassChatPage() {
     };
 
     const isGlobalAdmin = user?.role === 'admin';
-    const classAdminRoleName = user?.role.startsWith('admin-') ? user.role.substring('admin-'.length) : null;
-    const isClassAdminForThisClass = classAdminRoleName === constructedClassName;
-    const canEdit = isGlobalAdmin || isClassAdminForThisClass;
+    const isCenterAdmin = user?.role === 'center-admin' && user?.organizationId === centerData?.uid;
+    const isClassAdmin = user?.role.startsWith('admin-');
+    const isClassAdminForThisClass = isClassAdmin && user.role.substring('admin-'.length) === constructedClassName;
+    const canEdit = isGlobalAdmin || isCenterAdmin || isClassAdminForThisClass;
 
     if (!user || user.center === 'personal') {
         return (
@@ -178,28 +197,13 @@ export default function ClassChatPage() {
                         </div>
                     ) : (
                         messages.map((msg) => (
-                            <div key={msg.id} className={cn("flex items-end gap-2", msg.authorId === user.uid ? "justify-end" : "justify-start")}>
-                                {msg.authorId !== user.uid && (
-                                    <AvatarDisplay user={{ name: msg.authorName, avatar: msg.authorAvatar }} className="h-8 w-8" />
-                                )}
-                                <div className={cn("max-w-[75%] p-3 rounded-xl shadow-sm", msg.authorId === user.uid ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none")}>
-                                     <p className="text-xs font-bold text-primary">
-                                        {msg.authorName}
-                                     </p>
-                                    <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                                     <div className="flex items-center justify-end gap-1.5 text-xs opacity-70 mt-1.5">
-                                        <span>
-                                            {msg.timestamp ? format(msg.timestamp.toDate(), 'HH:mm') : ''}
-                                        </span>
-                                        {msg.authorId === user.uid && (
-                                            <CheckCheck className="h-4 w-4 text-sky-400" />
-                                        )}
-                                    </div>
-                                </div>
-                                {msg.authorId === user.uid && (
-                                    <AvatarDisplay user={user} className="h-8 w-8" />
-                                )}
-                            </div>
+                           <MessageItem
+                                key={msg.id}
+                                msg={msg}
+                                user={user}
+                                chatPath={chatPath || ''}
+                                onDelete={handleDeleteMessage}
+                           />
                         ))
                     )}
                 </div>
@@ -266,4 +270,142 @@ export default function ClassChatPage() {
     );
 }
 
-    
+
+interface MessageItemProps {
+    msg: ClassChatMessage;
+    user: User;
+    chatPath: string;
+    onDelete: (messageId: string) => void;
+}
+
+function MessageItem({ msg, user, chatPath, onDelete }: MessageItemProps) {
+    const firestore = useFirestore();
+    const msgRef = useRef<HTMLDivElement>(null);
+    const { toast } = useToast();
+    const isCurrentUser = msg.authorId === user.uid;
+
+    const canDelete = useMemo(() => {
+        if (user.role === 'admin') return true;
+        if (user.role === 'center-admin' && user.organizationId === centerData?.uid) return true;
+        const className = user.role.startsWith('admin-') ? user.role.substring('admin-'.length) : null;
+        if (className && className === msg.className) return true;
+        return isCurrentUser;
+    }, [user, msg, centerData]);
+
+
+    useEffect(() => {
+        const observerRef = msgRef.current;
+        if (!observerRef || !firestore || !user || !msg.id || !chatPath) return;
+
+        if (msg.viewedBy?.includes(user.uid)) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    const messageDocRef = doc(firestore, chatPath, msg.id);
+                    updateDoc(messageDocRef, {
+                        viewedBy: arrayUnion(user.uid)
+                    }).catch(err => console.error("Failed to mark as seen:", err));
+                    observer.disconnect();
+                }
+            },
+            { threshold: 0.8 }
+        );
+
+        observer.observe(observerRef);
+
+        return () => {
+            if (observerRef) {
+                observer.unobserve(observerRef);
+            }
+            observer.disconnect();
+        };
+    }, [msg.id, msg.viewedBy, firestore, user, chatPath]);
+
+    const formatRole = (role: string) => {
+        if (role === 'student') return 'Estudiante';
+        if (role === 'admin') return 'Admin Global';
+        if (role === 'center-admin') return 'Admin Centro';
+        if (role.startsWith('admin-')) {
+            const className = role.substring('admin-'.length);
+            return `Admin ${className}`;
+        }
+        return 'Usuario';
+    }
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(msg.content);
+        toast({ title: "Mensaje copiado" });
+    }
+
+    return (
+        <div ref={msgRef} className={cn("flex items-end gap-2", isCurrentUser ? "justify-end" : "justify-start")}>
+            {!isCurrentUser && (
+                <AvatarDisplay user={{ name: msg.authorName, avatar: msg.authorAvatar }} className="h-8 w-8" />
+            )}
+            <div className={cn("max-w-[75%] p-3 rounded-xl shadow-sm group", isCurrentUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none")}>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-baseline gap-2">
+                        <p className={cn("font-bold", isCurrentUser ? "text-primary-foreground" : "text-foreground")}>
+                            {msg.authorName}
+                        </p>
+                        <p className={cn("text-xs opacity-70", isCurrentUser ? "text-primary-foreground" : "text-muted-foreground")}>
+                            - {formatRole(msg.authorRole)}
+                        </p>
+                    </div>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className={cn("h-6 w-6 opacity-0 group-hover:opacity-100", isCurrentUser ? "text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/20" : "text-muted-foreground")}>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onClick={handleCopy}><Copy className="mr-2 h-4 w-4"/>Copiar</DropdownMenuItem>
+                            <WipDialog><DropdownMenuItem onSelect={(e) => e.preventDefault()}><Pencil className="mr-2 h-4 w-4"/>Editar</DropdownMenuItem></WipDialog>
+                            <WipDialog><DropdownMenuItem onSelect={(e) => e.preventDefault()}><Pin className="mr-2 h-4 w-4"/>Fijar</DropdownMenuItem></WipDialog>
+                            {canDelete && (
+                                <>
+                                    <DropdownMenuSeparator />
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={(e) => e.preventDefault()}>
+                                                <Trash2 className="mr-2 h-4 w-4"/>Eliminar
+                                            </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>¿Eliminar este mensaje?</AlertDialogTitle>
+                                                <AlertDialogDescription>Esta acción no se puede deshacer y lo eliminará para todos.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => onDelete(msg.id)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+                <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                <div className="flex items-center justify-end gap-3 text-xs opacity-70 mt-1.5">
+                    <div className="flex items-center gap-1">
+                        <Eye className="h-3 w-3" />
+                        <span>{msg.viewedBy?.length || 0}</span>
+                    </div>
+                    <span>{msg.timestamp ? format(msg.timestamp.toDate(), 'HH:mm') : ''}</span>
+                    {isCurrentUser && (
+                        <CheckCheck className="h-4 w-4 text-sky-400" />
+                    )}
+                </div>
+            </div>
+            {isCurrentUser && (
+                <AvatarDisplay user={user} className="h-8 w-8" />
+            )}
+        </div>
+    );
+}
+
+// Dummy centerData for useMemo dependency check
+const centerData = {};

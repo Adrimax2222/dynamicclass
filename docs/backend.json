@@ -132,10 +132,13 @@
         "authorId": { "type": "string" },
         "authorName": { "type": "string" },
         "authorAvatar": { "type": "string", "format": "uri" },
+        "authorRole": { "type": "string" },
         "content": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "timestamp": { "type": "string", "format": "date-time" },
+        "viewedBy": { "type": "array", "items": { "type": "string" } },
+        "isPinned": { "type": "boolean" }
       },
-      "required": ["authorId", "authorName", "authorAvatar", "content", "timestamp"]
+      "required": ["authorId", "authorName", "authorAvatar", "authorRole", "content", "timestamp"]
     },
     "CompletedItem": {
       "title": "Completed Item",
@@ -244,5 +247,3 @@
     }
   }
 }
-
-    

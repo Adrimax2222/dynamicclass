@@ -114,8 +114,11 @@ export type ClassChatMessage = {
   authorId: string;
   authorName: string;
   authorAvatar: string;
+  authorRole: string;
   content: string;
   timestamp: Timestamp;
+  viewedBy?: string[];
+  isPinned?: boolean;
 };
 
 export type Note = {
@@ -186,5 +189,3 @@ export interface CustomMode {
   focus: number;
   break: number;
 }
-
-    
