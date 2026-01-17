@@ -94,6 +94,7 @@ import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 
 
 export default function InfoPage() {
@@ -714,6 +715,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
 
 const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Announcement, allUsers: AppUser[], canManage: boolean }) => {
     const { user, firestore } = useApp();
+    const { toast } = useToast();
 
     const userVotes = useMemo(() => {
         if (!user || !announcement.pollVotes) return [];
@@ -733,50 +735,50 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
     const handleVote = async (optionId: string) => {
         if (!firestore || !user) return;
         const announcementRef = doc(firestore, "announcements", announcement.uid);
-    
-        try {
-            await runTransaction(firestore, async (transaction) => {
-                const annDoc = await transaction.get(announcementRef);
-                if (!annDoc.exists()) throw "Document does not exist!";
-                
-                const currentData = annDoc.data() as Announcement;
-                const newPollVotes = { ...(currentData.pollVotes || {}) };
-                const userId = user.uid;
 
-                if (currentData.allowMultipleVotes) {
-                    const optionVoters = newPollVotes[optionId] || [];
-                    const userVoteIndex = optionVoters.indexOf(userId);
+        await runTransaction(firestore, async (transaction) => {
+            const annDoc = await transaction.get(announcementRef);
+            if (!annDoc.exists()) throw "Document does not exist!";
 
-                    if (userVoteIndex > -1) {
-                        optionVoters.splice(userVoteIndex, 1);
-                    } else {
-                        optionVoters.push(userId);
-                    }
-                    newPollVotes[optionId] = optionVoters;
-                } else { // Single vote logic
-                    const currentVoteKey = Object.keys(newPollVotes).find(key => (newPollVotes[key] || []).includes(userId));
-                    
-                    if (currentVoteKey === optionId) {
-                        newPollVotes[optionId] = (newPollVotes[optionId] || []).filter(id => id !== userId);
-                    } else {
-                        if (currentVoteKey) {
-                            newPollVotes[currentVoteKey] = (newPollVotes[currentVoteKey] || []).filter(id => id !== userId);
-                        }
-                        newPollVotes[optionId] = [...(newPollVotes[optionId] || []), userId];
-                    }
+            const currentData = annDoc.data();
+            const pollVotes = { ...(currentData.pollVotes || {}) };
+            const allowMultiple = currentData.allowMultipleVotes || false;
+            const userId = user.uid;
+
+            if (allowMultiple) {
+                const voters = pollVotes[optionId] || [];
+                if (voters.includes(userId)) {
+                    pollVotes[optionId] = voters.filter((id: string) => id !== userId);
+                } else {
+                    pollVotes[optionId] = [...voters, userId];
+                }
+            } else {
+                const existingVoteKey = Object.keys(pollVotes).find(key => pollVotes[key].includes(userId));
+
+                for (const key in pollVotes) {
+                     pollVotes[key] = pollVotes[key].filter((id: string) => id !== userId);
                 }
 
-                Object.keys(newPollVotes).forEach(optId => {
-                    if (!newPollVotes[optId] || newPollVotes[optId].length === 0) {
-                        delete newPollVotes[optId];
-                    }
-                });
+                if (existingVoteKey !== optionId) {
+                    pollVotes[optionId] = [userId];
+                }
+            }
 
-                transaction.update(announcementRef, { pollVotes: newPollVotes });
+            Object.keys(pollVotes).forEach(key => {
+                if (pollVotes[key].length === 0) {
+                    delete pollVotes[key];
+                }
             });
-        } catch (error) {
-            console.error("Poll vote transaction failed: ", error);
-        }
+
+            transaction.update(announcementRef, { pollVotes });
+        }).catch(error => {
+             console.error("Poll vote transaction failed: ", error);
+             toast({
+                title: 'Error al votar',
+                description: 'No se pudo registrar tu voto. Revisa tu conexión e inténtalo de nuevo.',
+                variant: 'destructive',
+            });
+        });
     };
 
     const hasUserVoted = userVotes.length > 0;
