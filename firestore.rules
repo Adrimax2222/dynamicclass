@@ -26,7 +26,7 @@ service cloud.firestore {
     function isCenterAdmin(centerId) {
         let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
         return request.auth != null && 
-               userData.role == 'center-admin' && 
+               (userData.role == 'center-admin' || userData.role == 'admin') &&
                userData.organizationId == centerId;
     }
 
@@ -172,7 +172,7 @@ service cloud.firestore {
                        
       // Any user can update poll votes.
       allow update: if request.auth != null &&
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollVotes']);
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollVoteCounts', 'votedUserIds']);
     }
 
     // ============= CENTERS =============

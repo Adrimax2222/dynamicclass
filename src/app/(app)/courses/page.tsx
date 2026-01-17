@@ -261,7 +261,7 @@ function AnnouncementsTab() {
     if (!user) return false;
     if (user.role === 'admin') return true; 
     if (user.role === 'center-admin') {
-      return ann.scope === 'center' && ann.centerId === user.organizationId;
+      return ann.scope === 'center' || ann.scope === 'general';
     }
     if (user.role.startsWith('admin-')) {
       const adminClassName = user.role.split('admin-')[1];
@@ -571,7 +571,6 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
     onReaction: (uid: string, emoji: string) => void,
     allUsersInCenter: AppUser[]
 }) {
-  console.log("CARGANDO ANUNCIO ID:", announcement.uid);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(announcement.text || '');
   const { user, firestore } = useApp();
@@ -730,7 +729,6 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
 }
 
 function PollDisplay({ announcement, allUsers }: { announcement: Announcement, allUsers: AppUser[]}) {
-    console.log("RENDERIZANDO COMPONENTE PollDisplay para el anuncio:", announcement.uid);
     const { user, firestore } = useApp();
     const { toast } = useToast();
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
@@ -760,6 +758,8 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     };
 
     const handleSubmitVote = async () => {
+        alert('Iniciando envío...'); // Debugging alert
+
         if (selectedOptions.length === 0) {
             toast({ title: "Selecciona una opción", description: "Debes elegir al menos una respuesta.", variant: "destructive" });
             return;
@@ -781,28 +781,30 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
 
                 const currentData = annDoc.data() as Announcement;
                 
-                // Use a map for easier updates
-                const newVoteCounts = new Map(Object.entries(currentData.pollVoteCounts || {}));
+                if (currentData.votedUserIds?.includes(user.uid) && !currentData.allowMultipleVotes) {
+                    // This is a safeguard. The UI should prevent this.
+                    throw new Error("Ya has votado en esta encuesta.");
+                }
 
+                const newVoteCounts = { ...(currentData.pollVoteCounts || {}) };
+                
                 selectedOptions.forEach(optionId => {
-                    newVoteCounts.set(optionId, (newVoteCounts.get(optionId) || 0) + 1);
+                    newVoteCounts[optionId] = (newVoteCounts[optionId] || 0) + 1;
                 });
                 
-                // Add user to voted list
                 const newVotedUserIds = Array.from(new Set([...(currentData.votedUserIds || []), user.uid]));
                 
-                // Convert map back to object for Firestore
-                const updatedVoteCountsObject = Object.fromEntries(newVoteCounts);
-
                 transaction.update(announcementRef, {
-                    pollVoteCounts: updatedVoteCountsObject,
+                    pollVoteCounts: newVoteCounts,
                     votedUserIds: newVotedUserIds
                 });
             });
 
+            alert('¡Voto guardado!'); // Debugging alert
             toast({ title: "¡Voto registrado!", description: "Gracias por tu participación." });
         } catch (error: any) {
             console.error("Error al registrar el voto:", error);
+            alert('Error al votar: ' + error.message); // Debugging alert
             toast({ title: 'Error al votar', description: error.message || 'No se pudo registrar tu voto.', variant: 'destructive' });
         } finally {
             setIsSubmitting(false);
@@ -813,7 +815,7 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
         if (!user) return false;
         if (user.role === 'admin') return true;
         if (user.role === 'center-admin') {
-            return ann.scope === 'center' && ann.centerId === user.organizationId;
+            return ann.scope === 'center' || ann.scope === 'general';
         }
         if (user.role.startsWith('admin-')) {
           const adminClassName = user.role.split('admin-')[1];
@@ -891,17 +893,14 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
             </div>
             
             <div className="flex items-center justify-between mt-3">
-              <button
-                  type="button"
-                  onClick={() => {
-                      console.log("EJECUTANDO VOTO");
-                      handleSubmitVote();
-                  }}
+              <Button
+                  onClick={handleSubmitVote}
                   disabled={isSubmitting || selectedOptions.length === 0}
-                  className="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-lg cursor-pointer pointer-events-auto z-[9999] relative disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-blue-600"
+                  className="w-full"
               >
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
                   {isSubmitting ? "Enviando..." : "Enviar Respuesta"}
-              </button>
+              </Button>
               {showAdminResultsButton && (
                   <PollResultsDialog announcement={announcement} allUsers={allUsers} />
               )}
