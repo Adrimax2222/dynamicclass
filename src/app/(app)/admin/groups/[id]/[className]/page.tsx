@@ -42,7 +42,10 @@ export default function ManageClassMembersPage() {
     }, [firestore, centerId]);
     const { data: centerData, isLoading: isCenterLoading } = useDoc<Center>(centerDocRef);
     
-    const [course, classLetter] = className.split('-');
+    const [course, classLetter] = useMemo(() => {
+        const parts = className.split('-');
+        return [parts[0]?.toLowerCase(), parts[1]];
+    }, [className]);
     
     const membersQuery = useMemoFirebase(() => {
         if (!firestore || !course || !classLetter) return null;
@@ -61,7 +64,7 @@ export default function ManageClassMembersPage() {
         (member.email && member.email.toLowerCase().includes(searchTerm.toLowerCase()))
     );
     
-    const classAdminRole = `admin-${course.toUpperCase()}-${classLetter}`;
+    const classAdminRole = useMemo(() => `admin-${course.toUpperCase()}-${classLetter}`, [course, classLetter]);
 
     const handleRoleChange = async (member: CenterUser | null, newRole: string) => {
          if (!firestore || !member?.uid) return;
@@ -348,3 +351,5 @@ function MoveUserDialog({ member, center, children, onMove }: { member: CenterUs
         </Dialog>
     );
 }
+
+    

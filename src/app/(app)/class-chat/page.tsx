@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/lib/hooks/use-app';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, query, orderBy, addDoc, serverTimestamp, Timestamp, doc, updateDoc, arrayUnion, deleteDoc } from 'firebase/firestore';
 import type { ClassChatMessage, Center, User } from '@/lib/types';
 
@@ -44,7 +44,7 @@ export default function ClassChatPage() {
         const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
         const classDef = centerData.classes.find(c => c.name === userClassName);
         return {
-            className: userClassName,
+            constructedClassName: userClassName,
             classImageUrl: classDef?.imageUrl || '',
             classDescription: classDef?.description || 'Chat de Clase'
         };
@@ -283,14 +283,15 @@ function MessageItem({ msg, user, chatPath, onDelete }: MessageItemProps) {
     const msgRef = useRef<HTMLDivElement>(null);
     const { toast } = useToast();
     const isCurrentUser = msg.authorId === user.uid;
+    const { data: centerData } = useDoc<Center>(user.organizationId ? doc(firestore, 'centers', user.organizationId) : null);
 
     const canDelete = useMemo(() => {
         if (user.role === 'admin') return true;
         if (user.role === 'center-admin' && user.organizationId === centerData?.uid) return true;
         const className = user.role.startsWith('admin-') ? user.role.substring('admin-'.length) : null;
-        if (className && className === msg.className) return true;
+        if (className && user.course && user.className && `${user.course.toUpperCase()}-${user.className}` === className) return true;
         return isCurrentUser;
-    }, [user, msg, centerData]);
+    }, [user, isCurrentUser, centerData]);
 
 
     useEffect(() => {
@@ -406,6 +407,3 @@ function MessageItem({ msg, user, chatPath, onDelete }: MessageItemProps) {
         </div>
     );
 }
-
-// Dummy centerData for useMemo dependency check
-const centerData = {};
