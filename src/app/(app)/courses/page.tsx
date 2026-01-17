@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -717,8 +718,6 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
     const { user, firestore } = useApp();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // Local state for the user's selection before submitting
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
     const userVotes = useMemo(() => {
@@ -738,16 +737,12 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
 
     const handleSelectOption = (optionId: string) => {
         const isMultiVote = announcement.allowMultipleVotes || false;
-
         setSelectedOptions(prev => {
             if (isMultiVote) {
-                // Toggle option in multi-vote
-                const newSelection = prev.includes(optionId)
+                return prev.includes(optionId)
                     ? prev.filter(id => id !== optionId)
                     : [...prev, optionId];
-                return newSelection;
             } else {
-                // Replace option in single-vote
                 return prev.includes(optionId) ? [] : [optionId];
             }
         });
@@ -761,23 +756,46 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
         try {
             await runTransaction(firestore, async (transaction) => {
                 const annDoc = await transaction.get(announcementRef);
-                if (!annDoc.exists()) throw "Document does not exist!";
+                if (!annDoc.exists()) {
+                    throw "Document does not exist!";
+                }
 
-                const pollVotes = { ...(annDoc.data().pollVotes || {}) };
+                // Perform a deep copy to safely mutate the votes object
+                const pollVotes = JSON.parse(JSON.stringify(annDoc.data().pollVotes || {}));
+
+                // For single-vote polls, remove all previous votes by the user first.
+                if (!announcement.allowMultipleVotes) {
+                    for (const optionId in pollVotes) {
+                        if (Array.isArray(pollVotes[optionId])) {
+                            pollVotes[optionId] = pollVotes[optionId].filter((uid: string) => uid !== user.uid);
+                        }
+                    }
+                }
                 
-                // This logic correctly handles adding one or more votes from the selection
+                // Add the new votes from the current selection
                 selectedOptions.forEach(optionId => {
                     if (!pollVotes[optionId]) {
                         pollVotes[optionId] = [];
                     }
-                    if (!pollVotes[optionId].includes(user.uid)) {
-                       pollVotes[optionId].push(user.uid);
+                    const alreadyVoted = pollVotes[optionId].includes(user.uid);
+
+                    if (announcement.allowMultipleVotes && alreadyVoted) {
+                        // In multi-vote, clicking again deselects
+                        pollVotes[optionId] = pollVotes[optionId].filter((uid: string) => uid !== user.uid);
+                    } else if (!alreadyVoted) {
+                        pollVotes[optionId].push(user.uid);
                     }
                 });
 
                 transaction.update(announcementRef, { pollVotes });
             });
-            setSelectedOptions([]); // Clear local selection after successful submission
+
+            setSelectedOptions([]);
+            toast({
+                title: "¡Voto registrado!",
+                description: "Gracias por tu participación.",
+            });
+
         } catch (error) {
              console.error("Poll vote transaction failed: ", error);
              toast({
@@ -790,9 +808,9 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
         }
     };
 
+
     const hasUserVoted = userVotes.length > 0;
 
-    // VIEW 1: User has already voted, show results
     if (hasUserVoted) {
         return (
             <div className="space-y-3">
@@ -838,7 +856,6 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
         )
     }
 
-    // VIEW 2: User has NOT voted yet, show selection UI
     return (
         <div className="space-y-3">
             <h4 className="font-bold text-base">{announcement.pollQuestion}</h4>
@@ -1171,4 +1188,5 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     
 
     
+
 
