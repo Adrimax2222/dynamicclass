@@ -723,8 +723,8 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
 function PollDisplay({ announcement, allUsers }: { announcement: Announcement, allUsers: AppUser[]}) {
     const { user, firestore } = useApp();
     const { toast } = useToast();
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const hasUserVoted = useMemo(() => {
         if (!user || !announcement.votedUserIds) return false;
@@ -749,35 +749,27 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     };
 
     const handleSubmitVote = async () => {
-        if (!firestore || !user || selectedOptions.length === 0) return;
+        if (selectedOptions.length === 0) {
+            toast({
+                title: "Selecciona una opción",
+                description: "Debes elegir al menos una respuesta para poder enviar tu voto.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        if (!firestore || !user) return;
         setIsSubmitting(true);
         const announcementRef = doc(firestore, "announcements", announcement.uid);
     
         try {
-            await runTransaction(firestore, async (transaction) => {
-                const annDoc = await transaction.get(announcementRef);
-                if (!annDoc.exists()) {
-                    throw "La encuesta ya no existe.";
-                }
-                
-                const data = annDoc.data();
-                
-                const pollVoteCounts = { ...(data.pollVoteCounts || {}) };
-                const votedUserIds = [...(data.votedUserIds || [])];
-
-                selectedOptions.forEach(optionId => {
-                    pollVoteCounts[optionId] = (pollVoteCounts[optionId] || 0) + 1;
-                });
-                
-                if (!votedUserIds.includes(user.uid)) {
-                    votedUserIds.push(user.uid);
-                }
-                
-                transaction.update(announcementRef, { 
-                    pollVoteCounts,
-                    votedUserIds
-                });
+            const updates: { [key: string]: any } = {};
+            selectedOptions.forEach(optionId => {
+                updates[`pollVoteCounts.${optionId}`] = increment(1);
             });
+            updates['votedUserIds'] = arrayUnion(user.uid);
+
+            await updateDoc(announcementRef, updates);
 
             toast({
                 title: "¡Voto registrado!",
@@ -798,15 +790,12 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     
     const canUserSeePollResults = (ann: Announcement): boolean => {
         if (!user) return false;
-        // Global admin can see all
         if (user.role === 'admin') {
             return true;
         }
-        // Center admin can only see their center's announcements
         if (user.role === 'center-admin') {
             return ann.scope === 'center' && user.organizationId === ann.centerId;
         }
-        // Class admin can only see their class's announcements
         if (user.role.startsWith('admin-')) {
             const adminClassName = user.role.split('admin-')[1];
             return ann.scope === 'class' && user.organizationId === ann.centerId && adminClassName === ann.className;
@@ -876,7 +865,7 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
                     )
                 })}
             </div>
-             <Button onClick={handleSubmitVote} disabled={isSubmitting || selectedOptions.length === 0} className="w-full mt-4">
+             <Button onClick={handleSubmitVote} disabled={isSubmitting || selectedOptions.length === 0} className="w-full mt-4" type="button">
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
                 Enviar Respuesta
              </Button>
@@ -1149,6 +1138,7 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     
 
     
+
 
 
 
