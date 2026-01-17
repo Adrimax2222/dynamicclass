@@ -1,17 +1,17 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useApp } from "@/lib/hooks/use-app";
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from "@/firebase";
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, writeBatch } from "firebase/firestore";
 import type { Center, User as CenterUser, ClassDefinition, Schedule } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit, Group } from "lucide-react";
+import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit, Group, User, ShieldCheck, Replace, UserX, Move } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { TeacherInfoDialog } from "@/components/layout/teacher-info-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 export default function ManageGroupPage() {
     const { user: currentUser } = useApp();
@@ -39,6 +41,12 @@ export default function ManageGroupPage() {
 
     const { data: center, isLoading } = useDoc<Center>(centerDocRef);
     
+    const allCentersCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, "centers");
+    }, [firestore]);
+    const { data: allCenters } = useCollection<Center>(allCentersCollection);
+    
     const isGlobalAdmin = currentUser?.role === 'admin';
     const isCenterAdmin = currentUser?.role === 'center-admin' && currentUser.organizationId === centerId;
     const classAdminRoleName = currentUser?.role.startsWith('admin-') ? currentUser.role.split('admin-')[1] : null;
@@ -51,7 +59,7 @@ export default function ManageGroupPage() {
         }
     }, [isLoading, center, router, toast]);
     
-    if (isLoading || !currentUser) {
+    if (isLoading || !currentUser || !allCenters) {
         return <LoadingScreen />;
     }
 
@@ -124,7 +132,13 @@ export default function ManageGroupPage() {
                     </TabsContent>
                     {canManageAllClasses && (
                         <TabsContent value="all-members">
-                            <MembersTab centerId={center.uid} />
+                            <MembersTab
+                                centerId={center.uid}
+                                center={center}
+                                allCenters={allCenters}
+                                isGlobalAdmin={isGlobalAdmin}
+                                isCenterAdmin={isCenterAdmin}
+                            />
                         </TabsContent>
                     )}
                 </div>
@@ -147,9 +161,13 @@ function CopyButton({ text }: { text: string }) {
     )
 }
 
-function MembersTab({ centerId }: { centerId: string }) {
+function MembersTab({ centerId, center, allCenters, isGlobalAdmin, isCenterAdmin }: { centerId: string; center: Center, allCenters: Center[], isGlobalAdmin: boolean, isCenterAdmin: boolean }) {
     const firestore = useFirestore();
+    const { user: currentUser } = useApp();
+    const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedMember, setSelectedMember] = useState<CenterUser | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const membersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -163,6 +181,44 @@ function MembersTab({ centerId }: { centerId: string }) {
         (member.email && member.email.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
+    const handleKickFromCenter = async (member: CenterUser | null) => {
+        if (!firestore || !member?.uid) return;
+        setIsProcessing(true);
+        try {
+            const userDocRef = doc(firestore, 'users', member.uid);
+            await updateDoc(userDocRef, {
+                organizationId: "",
+                center: "personal",
+                course: "personal",
+                className: "personal",
+                role: 'student'
+            });
+            toast({ title: "Usuario Expulsado", description: `${member.name} ha sido expulsado del centro.`, variant: "destructive"});
+            setSelectedMember(null);
+        } catch (error) {
+            console.error("Error kicking user from center:", error);
+            toast({ title: "Error", description: "No se pudo expulsar al usuario.", variant: "destructive" });
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleRoleChange = async (member: CenterUser | null, newRole: string) => {
+        if (!firestore || !member?.uid) return;
+        setIsProcessing(true);
+        try {
+            const userDocRef = doc(firestore, 'users', member.uid);
+            await updateDoc(userDocRef, { role: newRole });
+            toast({ title: "Rol Actualizado", description: `${member.name} ahora es ${newRole === 'center-admin' ? 'Admin de Centro' : 'Estudiante'}.` });
+            setSelectedMember(prev => prev ? { ...prev, role: newRole } : null);
+        } catch (error) {
+            console.error("Error updating role:", error);
+            toast({ title: "Error", description: "No se pudo actualizar el rol.", variant: "destructive" });
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+    
     return (
         <Card>
             <CardHeader>
@@ -191,21 +247,288 @@ function MembersTab({ centerId }: { centerId: string }) {
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-                        {filteredMembers.map((member, i) => (
-                            <div key={member.uid || i} className="flex items-center gap-4 p-2 rounded-lg border">
-                                <AvatarDisplay user={member} className="h-10 w-10" />
-                                <div className="flex-1">
-                                    <p className="font-semibold">{member.name}</p>
-                                    <p className="text-xs text-muted-foreground">{member.email}</p>
-                                </div>
-                                <Badge variant={member.role === 'admin' ? 'destructive' : member.role?.startsWith('admin-') ? 'secondary' : 'outline'}>{member.role}</Badge>
-                            </div>
-                        ))}
-                    </div>
+                    <Dialog onOpenChange={(isOpen) => !isOpen && setSelectedMember(null)}>
+                        <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+                            {filteredMembers.map((member) => (
+                                <DialogTrigger asChild key={member.uid}>
+                                    <button onClick={() => setSelectedMember(member)} className="w-full flex items-center gap-4 p-2 rounded-lg border text-left hover:bg-muted/50 transition-colors">
+                                        <AvatarDisplay user={member} className="h-10 w-10" />
+                                        <div className="flex-1">
+                                            <p className="font-semibold">{member.name}</p>
+                                            <p className="text-xs text-muted-foreground">{member.email}</p>
+                                        </div>
+                                        <Badge variant={member.role === 'admin' ? 'destructive' : member.role === 'center-admin' ? 'secondary' : member.role.startsWith('admin-') ? 'default' : 'outline'} className={cn(member.role === 'center-admin' && "bg-purple-100 text-purple-800")}>{member.role}</Badge>
+                                    </button>
+                                </DialogTrigger>
+                            ))}
+                        </div>
+
+                        <DialogContent>
+                             {selectedMember && (
+                                <>
+                                    <DialogHeader className="items-center text-center">
+                                        <AvatarDisplay user={selectedMember} className="h-24 w-24 mb-4" />
+                                        <DialogTitle>{selectedMember.name}</DialogTitle>
+                                        <DialogDescription>{selectedMember.email}</DialogDescription>
+                                        <div className="flex flex-wrap justify-center items-center gap-2 pt-2">
+                                            <Badge variant={selectedMember.role === 'admin' ? 'destructive' : selectedMember.role === 'center-admin' ? 'secondary' : selectedMember.role.startsWith('admin-') ? 'default' : 'secondary'} className={cn(selectedMember.role === 'center-admin' && 'bg-purple-100 text-purple-800')}>
+                                                {selectedMember.role === 'admin' ? "Admin Global" : selectedMember.role === 'center-admin' ? "Admin Centro" : selectedMember.role.startsWith('admin-') ? `Admin ${selectedMember.course.toUpperCase()}-${selectedMember.className}` : "Estudiante"}
+                                            </Badge>
+                                            <Badge variant="outline">{center.name}</Badge>
+                                            <Badge variant="outline">{selectedMember.course.toUpperCase()}-{selectedMember.className}</Badge>
+                                        </div>
+                                    </DialogHeader>
+                                    <div className="pt-4 space-y-2">
+                                        {isGlobalAdmin && selectedMember.uid !== currentUser?.uid && selectedMember.role !== 'admin' && (
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                     <Button variant="outline" className="w-full justify-start gap-2">
+                                                        <ShieldCheck className="h-4 w-4"/> {selectedMember.role === 'center-admin' ? 'Quitar Admin de Centro' : 'Hacer Admin de Centro'}
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>¿Confirmar cambio de rol?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Vas a {selectedMember.role === 'center-admin' ? 'quitarle el rol de administrador de centro' : 'hacer administrador de centro'} a {selectedMember.name}.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleRoleChange(selectedMember, selectedMember.role === 'center-admin' ? 'student' : 'center-admin')}>Confirmar</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        )}
+                                        {(isGlobalAdmin || isCenterAdmin) && (
+                                            <ChangeClassDialog member={selectedMember} center={center} onMove={() => setSelectedMember(null)}>
+                                                <Button variant="outline" className="w-full justify-start gap-2">
+                                                    <Replace className="h-4 w-4"/> Mover de Clase
+                                                </Button>
+                                            </ChangeClassDialog>
+                                        )}
+                                        {isGlobalAdmin && selectedMember.uid !== currentUser?.uid && (
+                                             <MoveCenterDialog member={selectedMember} allCenters={allCenters} onMove={() => setSelectedMember(null)}>
+                                                <Button variant="outline" className="w-full justify-start gap-2">
+                                                    <Move className="h-4 w-4"/> Mover de Centro
+                                                </Button>
+                                            </MoveCenterDialog>
+                                        )}
+                                        {(isGlobalAdmin || isCenterAdmin) && selectedMember.uid !== currentUser?.uid && selectedMember.role !== 'admin' && (
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                     <Button variant="destructive" className="w-full justify-start gap-2">
+                                                        <UserX className="h-4 w-4"/> Expulsar del Centro
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>¿Expulsar a {selectedMember.name}?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Esta acción desvinculará permanentemente al usuario de este centro y lo pasará a modo "Uso Personal".
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleKickFromCenter(selectedMember)} className="bg-destructive hover:bg-destructive/90">Sí, expulsar</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        )}
+                                    </div>
+                                    <DialogFooter className="pt-2">
+                                        <DialogClose asChild>
+                                            <Button variant="outline" className="w-full">Cerrar</Button>
+                                        </DialogClose>
+                                    </DialogFooter>
+                                </>
+                            )}
+                        </DialogContent>
+                    </Dialog>
                 )}
             </CardContent>
         </Card>
+    );
+}
+
+function ChangeClassDialog({ member, center, children, onMove }: { member: CenterUser, center: Center | null, children: React.ReactNode, onMove: () => void }) {
+    const [targetCourse, setTargetCourse] = useState("");
+    const [targetClass, setTargetClass] = useState("");
+    const [isMoving, setIsMoving] = useState(false);
+    const firestore = useFirestore();
+    const { toast } = useToast();
+
+    if (!center) return <>{children}</>;
+
+    const availableClasses = useMemo(() => {
+        const classMap = new Map<string, Set<string>>();
+        center.classes.forEach(c => {
+            const [course, className] = c.name.split('-');
+            if (course && className) {
+                const courseKey = course.toLowerCase();
+                if (!classMap.has(courseKey)) {
+                    classMap.set(courseKey, new Set());
+                }
+                classMap.get(courseKey)!.add(className);
+            }
+        });
+        return classMap;
+    }, [center.classes]);
+
+    const handleMoveUser = async () => {
+        if (!firestore || !member.uid || !targetCourse || !targetClass) return;
+
+        setIsMoving(true);
+        try {
+            const userDocRef = doc(firestore, 'users', member.uid);
+            await updateDoc(userDocRef, {
+                course: targetCourse,
+                className: targetClass
+            });
+            toast({ title: "Usuario Movido", description: `${member.name} ha sido movido a la clase ${targetCourse.toUpperCase()}-${targetClass}.` });
+            onMove();
+        } catch (error) {
+            console.error("Error moving user:", error);
+            toast({ title: "Error", description: "No se pudo mover al usuario.", variant: "destructive" });
+        } finally {
+            setIsMoving(false);
+        }
+    };
+    
+    const courseOptions = Array.from(availableClasses.keys());
+    const classOptions = targetCourse ? Array.from(availableClasses.get(targetCourse) || []) : [];
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Mover a {member.name}</DialogTitle>
+                    <DialogDescription>
+                        Selecciona la nueva clase para este usuario dentro del centro {center.name}.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="target-course">Nuevo Curso</Label>
+                        <Select onValueChange={(value) => { setTargetCourse(value); setTargetClass(""); }}>
+                            <SelectTrigger id="target-course"><SelectValue placeholder="Seleccionar curso..."/></SelectTrigger>
+                            <SelectContent>
+                                {courseOptions.map(course => (
+                                    <SelectItem key={course} value={course}>{course.toUpperCase()}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="target-class">Nueva Clase</Label>
+                        <Select onValueChange={setTargetClass} value={targetClass} disabled={!targetCourse}>
+                            <SelectTrigger id="target-class"><SelectValue placeholder="Seleccionar clase..."/></SelectTrigger>
+                            <SelectContent>
+                                {classOptions.map(cls => (
+                                    <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline" disabled={isMoving}>Cancelar</Button></DialogClose>
+                    <Button onClick={handleMoveUser} disabled={isMoving || !targetCourse || !targetClass}>
+                        {isMoving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        Confirmar Movimiento
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function MoveCenterDialog({ member, allCenters, children, onMove }: { member: CenterUser, allCenters: Center[], children: React.ReactNode, onMove: () => void }) {
+    const [targetCode, setTargetCode] = useState("");
+    const [verifiedCenter, setVerifiedCenter] = useState<Center | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const firestore = useFirestore();
+    const { toast } = useToast();
+
+    const handleVerify = () => {
+        const found = allCenters.find(c => c.code === targetCode);
+        if (found) {
+            setVerifiedCenter(found);
+            toast({ title: "Centro encontrado", description: `Centro: ${found.name}` });
+        } else {
+            setVerifiedCenter(null);
+            toast({ title: "Error", description: "No se encontró ningún centro con ese código.", variant: "destructive" });
+        }
+    };
+
+    const handleMove = async () => {
+        if (!firestore || !member.uid || !verifiedCenter) return;
+        setIsProcessing(true);
+        try {
+            const userDocRef = doc(firestore, 'users', member.uid);
+            await updateDoc(userDocRef, {
+                organizationId: verifiedCenter.uid,
+                center: verifiedCenter.code,
+                course: "default",
+                className: "default",
+                role: "student" // Demote on move
+            });
+            toast({ title: "Usuario Movido", description: `${member.name} ha sido movido a ${verifiedCenter.name}.` });
+            onMove();
+        } catch (error) {
+            console.error("Error moving user between centers:", error);
+            toast({ title: "Error", description: "No se pudo mover al usuario.", variant: "destructive" });
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Mover {member.name} a otro centro</DialogTitle>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="dest-code">Código del Centro de Destino</Label>
+                        <div className="flex gap-2">
+                            <Input id="dest-code" placeholder="000-000" value={targetCode} onChange={e => setTargetCode(e.target.value)} disabled={!!verifiedCenter} />
+                            <Button onClick={handleVerify} disabled={!targetCode || !!verifiedCenter || isProcessing}>
+                                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Verificar'}
+                            </Button>
+                        </div>
+                    </div>
+                    {verifiedCenter && (
+                        <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-center">
+                            <p className="font-semibold text-sm text-green-700">Centro Verificado: {verifiedCenter.name}</p>
+                        </div>
+                    )}
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline" disabled={isProcessing}>Cancelar</Button></DialogClose>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button disabled={!verifiedCenter || isProcessing}>Mover Usuario</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Confirmar movimiento?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Vas a mover a {member.name} al centro "{verifiedCenter?.name}". Será desvinculado de su clase actual y su rol se reiniciará a 'student'. Esta acción es irreversible.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleMove}>Sí, mover</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
 
@@ -244,12 +567,33 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
         setIsProcessing(true);
         const centerDocRef = doc(firestore, 'centers', center.uid);
         try {
-            await updateDoc(centerDocRef, {
+            
+            const usersInClassQuery = query(collection(firestore, 'users'), 
+                where('organizationId', '==', center.uid), 
+                where('course', '==', classObj.name.split('-')[0].toLowerCase()), 
+                where('className', '==', classObj.name.split('-')[1])
+            );
+            const usersSnapshot = await getDocs(usersInClassQuery);
+            
+            const batch = writeBatch(firestore);
+
+            usersSnapshot.forEach(userDoc => {
+                batch.update(userDoc.ref, {
+                    course: "default",
+                    className: "default"
+                });
+            });
+            
+            batch.update(centerDocRef, {
                 classes: arrayRemove(classObj)
             });
-            toast({ title: "Clase eliminada", description: `La clase "${classObj.name}" ha sido eliminada.` });
+
+            await batch.commit();
+
+            toast({ title: "Clase eliminada", description: `La clase "${classObj.name}" ha sido eliminada y sus miembros desasignados.`, variant: "destructive" });
         } catch (error) {
-            toast({ title: "Error", description: "No se pudo eliminar la clase.", variant: "destructive" });
+            console.error("Error removing class and updating users:", error);
+            toast({ title: "Error", description: "No se pudo eliminar la clase. Revisa los permisos.", variant: "destructive" });
         } finally {
             setIsProcessing(false);
         }
@@ -351,14 +695,14 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
                                      </AlertDialogTrigger>
                                      <AlertDialogContent>
                                        <AlertDialogHeader>
-                                         <AlertDialogTitle>¿Eliminar clase?</AlertDialogTitle>
+                                         <AlertDialogTitle>¿Eliminar clase "{classObj.name}"?</AlertDialogTitle>
                                          <AlertDialogDescription>
-                                           Vas a eliminar la clase "{classObj.name}". Esta acción no se puede deshacer.
+                                           Esta acción no se puede deshacer. Los miembros de esta clase serán desasignados y pasarán a un estado "sin clase".
                                          </AlertDialogDescription>
                                        </AlertDialogHeader>
                                        <AlertDialogFooter>
                                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                         <AlertDialogAction onClick={() => handleRemoveClass(classObj)}>Sí, eliminar</AlertDialogAction>
+                                         <AlertDialogAction onClick={() => handleRemoveClass(classObj)} className="bg-destructive hover:bg-destructive/90">Sí, eliminar</AlertDialogAction>
                                        </AlertDialogFooter>
                                      </AlertDialogContent>
                                    </AlertDialog>
@@ -372,7 +716,3 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
         </Card>
     );
 }
-
-    
-
-    
