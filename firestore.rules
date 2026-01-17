@@ -212,7 +212,6 @@ service cloud.firestore {
                        message.authorAvatar is string &&
                        message.authorRole is string &&
                        message.content is string && message.content.size() > 0 && message.content.size() <= 2000 &&
-                       message.timestamp == request.time &&
                        message.viewedBy == [] &&
                        message.isPinned == false;
             }
