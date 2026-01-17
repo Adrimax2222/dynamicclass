@@ -716,14 +716,15 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
 const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Announcement, allUsers: AppUser[], canManage: boolean }) => {
     const { user, firestore } = useApp();
 
-    const userVote = useMemo(() => {
-        if (!user || !announcement.pollVotes) return null;
+    const userVotes = useMemo(() => {
+        if (!user || !announcement.pollVotes) return [];
+        const votes: string[] = [];
         for (const optionId in announcement.pollVotes) {
-            if (announcement.pollVotes[optionId].includes(user.uid)) {
-                return optionId;
+            if (announcement.pollVotes[optionId]?.includes(user.uid)) {
+                votes.push(optionId);
             }
         }
-        return null;
+        return votes;
     }, [user, announcement.pollVotes]);
     
     const totalVotes = useMemo(() => {
@@ -739,24 +740,27 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
             if (!annDoc.exists()) throw "Document does not exist!";
             
             const currentData = annDoc.data() as Announcement;
-            const votes = { ...(currentData.pollVotes || {}) };
+            let votes = { ...(currentData.pollVotes || {}) };
             
             const isAlreadyVotedForThis = votes[optionId]?.includes(user.uid);
 
             if (!currentData.allowMultipleVotes) {
-                 // Remove user from all other options
+                // If single vote, remove user from all other options before adding/removing the new one.
                 Object.keys(votes).forEach(optId => {
-                    if (optId !== optionId && votes[optId]?.includes(user.uid)) {
+                    if (votes[optId]?.includes(user.uid)) {
                         votes[optId] = votes[optId].filter(uid => uid !== user.uid);
                     }
                 });
             }
             
             if (isAlreadyVotedForThis) {
-                // Un-vote
-                votes[optionId] = votes[optionId].filter(uid => uid !== user.uid);
+                // Un-vote is handled by the clearing logic above if single-vote.
+                // For multi-vote, we still need to remove it.
+                if (currentData.allowMultipleVotes) {
+                   votes[optionId] = votes[optionId].filter(uid => uid !== user.uid);
+                }
             } else {
-                // Vote
+                // Vote:
                 if (!votes[optionId]) {
                     votes[optionId] = [];
                 }
@@ -767,6 +771,8 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
         });
     };
 
+    const hasUserVoted = userVotes.length > 0;
+
     return (
         <div className="space-y-3">
             <h4 className="font-bold text-base">{announcement.pollQuestion}</h4>
@@ -774,40 +780,39 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
                 {announcement.pollOptions?.map(option => {
                     const votesForOption = announcement.pollVotes?.[option.id] || [];
                     const percentage = totalVotes > 0 ? (votesForOption.length / totalVotes) * 100 : 0;
-                    
-                    if (!userVote) {
-                        return (
-                            <Button key={option.id} variant="outline" className="w-full justify-start h-auto p-3" onClick={() => handleVote(option.id)}>
-                                <div className="h-5 w-5 rounded-full border-2 border-primary mr-3 shrink-0"/>
-                                <span className="flex-1 text-left whitespace-normal">{option.text}</span>
-                            </Button>
-                        )
-                    }
+                    const isSelected = userVotes.includes(option.id);
 
                     return (
-                        <div key={option.id} className="relative p-3 rounded-lg border overflow-hidden cursor-pointer" onClick={() => handleVote(option.id)}>
-                            <div className="absolute top-0 left-0 bottom-0 bg-primary/10" style={{ width: `${percentage}%` }} />
-                            <div className="relative flex items-center gap-3">
-                                <div className={cn("h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center", userVote === option.id && "bg-primary")}>
-                                   {userVote === option.id && <CheckCircle2 className="h-3 w-3 text-white"/>}
+                        <div key={option.id} className="relative rounded-lg border overflow-hidden cursor-pointer" onClick={() => handleVote(option.id)}>
+                            {hasUserVoted && (
+                                <div 
+                                    className="absolute top-0 left-0 h-full bg-primary/10 transition-all duration-500" 
+                                    style={{ width: `${percentage}%` }} 
+                                />
+                            )}
+                            <div className={cn("relative p-3 flex items-center gap-3", isSelected && "bg-primary/20")}>
+                                <div className={cn("h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center", isSelected && "bg-primary")}>
+                                   {isSelected && <CheckCircle2 className="h-3 w-3 text-white"/>}
                                 </div>
                                 <span className="flex-1 font-semibold">{option.text}</span>
-                                <div className="flex items-center gap-2">
-                                    <VotersDisplay uids={votesForOption} allUsers={allUsers} />
-                                    <span className="text-sm font-bold w-12 text-right">{percentage.toFixed(0)}%</span>
-                                </div>
+                                {hasUserVoted && (
+                                    <div className="flex items-center gap-2">
+                                        <VotersDisplay uids={votesForOption} allUsers={allUsers} />
+                                        <span className="text-sm font-bold w-12 text-right">{percentage.toFixed(0)}%</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )
                 })}
             </div>
-             {!userVote && (
+             {!hasUserVoted && (
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-2">
                     <EyeOff className="h-4 w-4"/>
                     <span>Vota para ver los resultados de la encuesta.</span>
                 </div>
             )}
-             {canManage && <PollResultsDialog announcement={announcement} allUsers={allUsers} />}
+             {canManage && userVotes.length > 0 && <PollResultsDialog announcement={announcement} allUsers={allUsers} />}
         </div>
     )
 }
@@ -1097,3 +1102,6 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
   )
 }
 
+
+
+    
