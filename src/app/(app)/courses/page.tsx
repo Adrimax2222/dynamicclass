@@ -730,15 +730,15 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
 }
 
 function PollDisplay({ announcement, allUsers }: { announcement: Announcement, allUsers: AppUser[]}) {
-    const { user, firestore } = useApp();
+    const { user, firestore, auth } = useApp();
     const { toast } = useToast();
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const hasUserVoted = useMemo(() => {
-        if (!user || !announcement.votedUserIds) return false;
-        return announcement.votedUserIds.includes(user.uid);
-    }, [user, announcement.votedUserIds]);
+        if (!auth?.currentUser || !announcement.votedUserIds) return false;
+        return announcement.votedUserIds.includes(auth.currentUser.uid);
+    }, [auth?.currentUser, announcement.votedUserIds]);
     
     const totalVotes = useMemo(() => {
         if (!announcement.pollVoteCounts) return 0;
@@ -761,12 +761,20 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     const handleSubmitVote = async () => {
         alert('Iniciando envío...');
 
+        if (!auth || !auth.currentUser) {
+          alert("Error crítico: Firebase dice que no hay un usuario logueado actualmente.");
+          return;
+        }
+        alert("Usuario detectado correctamente: " + auth.currentUser.uid);
+        
+        const currentUser = auth.currentUser;
+
         if (selectedOptions.length === 0) {
             toast({ title: "Selecciona una opción", description: "Debes elegir al menos una respuesta.", variant: "destructive" });
             return;
         }
-        if (!firestore || !user) {
-            toast({ title: "Error de autenticación", description: "No se ha podido identificar al usuario.", variant: "destructive" });
+        if (!firestore) {
+            toast({ title: "Error de conexión", description: "No se pudo conectar con la base de datos.", variant: "destructive" });
             return;
         }
         
@@ -783,7 +791,7 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
 
                 const currentData = annDoc.data() as Announcement;
                 
-                if (currentData.votedUserIds?.includes(user.uid) && !currentData.allowMultipleVotes) {
+                if (currentData.votedUserIds?.includes(currentUser.uid) && !currentData.allowMultipleVotes) {
                     throw new Error("Ya has votado en esta encuesta.");
                 }
 
@@ -794,7 +802,7 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
                     updateData[fieldPath] = increment(1);
                 });
 
-                updateData.votedUserIds = arrayUnion(user.uid);
+                updateData.votedUserIds = arrayUnion(currentUser.uid);
                 
                 transaction.update(announcementRef, updateData);
             });
@@ -804,7 +812,7 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
         } catch (error: any) {
             console.error("Error al registrar el voto:", error);
             alert(`Error al votar: ${error.message}`); 
-            toast({ title: 'Error al votar', description: error.message || 'No se pudo registrar tu voto.', variant: 'destructive' });
+            toast({ title: 'Error al votar', description: `No se pudo registrar tu voto. Error: ${error.message}`, variant: 'destructive' });
         } finally {
             setIsSubmitting(false);
         }
