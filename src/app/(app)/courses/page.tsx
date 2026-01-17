@@ -754,40 +754,53 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
                     ? prev.filter(id => id !== optionId)
                     : [...prev, optionId];
             } else {
-                return [optionId];
+                return prev.includes(optionId) ? [] : [optionId];
             }
         });
     };
 
     const handleSubmitVote = async () => {
-        console.log("Botón 'Enviar Respuesta' pulsado. Opciones seleccionadas:", selectedOptions);
         if (selectedOptions.length === 0) {
             toast({ title: "Selecciona una opción", description: "Debes elegir al menos una respuesta.", variant: "destructive" });
             return;
         }
-        if (!firestore || !user) return;
+        if (!firestore || !user) {
+            toast({ title: "Error", description: "No se ha podido identificar al usuario.", variant: "destructive" });
+            return;
+        }
         setIsSubmitting(true);
+
         const announcementRef = doc(firestore, "announcements", announcement.uid);
-
+        
         try {
-            // Read-Modify-Write approach
-            const docSnap = await getDoc(announcementRef);
-            if (!docSnap.exists()) throw new Error("La encuesta ha sido eliminada.");
+            await runTransaction(firestore, async (transaction) => {
+                const annDoc = await transaction.get(announcementRef);
+                if (!annDoc.exists()) {
+                    throw new Error("La encuesta ya no existe.");
+                }
 
-            const currentData = docSnap.data() as Announcement;
-            const newVoteCounts = { ...(currentData.pollVoteCounts || {}) };
-            selectedOptions.forEach(optionId => {
-                newVoteCounts[optionId] = (newVoteCounts[optionId] || 0) + 1;
-            });
-            
-            const newVotedUserIds = Array.from(new Set([...(currentData.votedUserIds || []), user.uid]));
+                const currentData = annDoc.data() as Announcement;
+                
+                // Use a map for easier updates
+                const newVoteCounts = new Map(Object.entries(currentData.pollVoteCounts || {}));
 
-            await updateDoc(announcementRef, {
-                pollVoteCounts: newVoteCounts,
-                votedUserIds: newVotedUserIds
+                selectedOptions.forEach(optionId => {
+                    newVoteCounts.set(optionId, (newVoteCounts.get(optionId) || 0) + 1);
+                });
+                
+                // Add user to voted list
+                const newVotedUserIds = Array.from(new Set([...(currentData.votedUserIds || []), user.uid]));
+                
+                // Convert map back to object for Firestore
+                const updatedVoteCountsObject = Object.fromEntries(newVoteCounts);
+
+                transaction.update(announcementRef, {
+                    pollVoteCounts: updatedVoteCountsObject,
+                    votedUserIds: newVotedUserIds
+                });
             });
+
             toast({ title: "¡Voto registrado!", description: "Gracias por tu participación." });
-
         } catch (error: any) {
             console.error("Error al registrar el voto:", error);
             toast({ title: 'Error al votar', description: error.message || 'No se pudo registrar tu voto.', variant: 'destructive' });
@@ -798,13 +811,13 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     
     const canUserManageAnnouncement = (ann: Announcement): boolean => {
         if (!user) return false;
-        if (user.role === 'admin') return true; 
+        if (user.role === 'admin') return true;
         if (user.role === 'center-admin') {
             return ann.scope === 'center' && ann.centerId === user.organizationId;
         }
         if (user.role.startsWith('admin-')) {
           const adminClassName = user.role.split('admin-')[1];
-          return ann.scope === 'class' && ann.centerId === user.organizationId && adminClassName === ann.className;
+          return ann.scope === 'class' && ann.centerId === user.organizationId && ann.className === adminClassName;
         }
         return false;
     };
@@ -815,9 +828,14 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
       return (
         <div className="space-y-3">
           <h4 className="font-bold text-base">{announcement.pollQuestion}</h4>
-          <p className="text-xs text-muted-foreground">
-              {totalVotes} {totalVotes === 1 ? 'voto' : 'votos'} en total. Gracias por participar.
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+                {totalVotes} {totalVotes === 1 ? 'voto' : 'votos'} en total. Gracias por participar.
+            </p>
+            {showAdminResultsButton && (
+                <PollResultsDialog announcement={announcement} allUsers={allUsers} />
+            )}
+          </div>
           <div className="space-y-2">
               {announcement.pollOptions?.map(option => {
                   const votes = announcement.pollVoteCounts?.[option.id] || 0;
@@ -840,9 +858,6 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
                   )
               })}
           </div>
-          {showAdminResultsButton && (
-              <PollResultsDialog announcement={announcement} allUsers={allUsers} />
-          )}
         </div>
       )
     }
@@ -866,7 +881,7 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
                         >
                             <div className={cn("relative p-3 flex items-center gap-3", isSelected && "bg-primary/10")}>
                                 <div className={cn("h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center transition-colors", isSelected && "bg-primary")}>
-                                   {isSelected && <CheckCircle2 className="h-3 w-3 text-white"/>}
+                                  {isSelected && <CheckCircle2 className="h-3 w-3 text-white"/>}
                                 </div>
                                 <span className="flex-1 font-semibold">{option.text}</span>
                             </div>
@@ -875,13 +890,22 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
                 })}
             </div>
             
-            <button
-              type="button"
-              onClick={() => { console.log("Botón de prueba pulsado"); alert("¡EL BOTÓN ROJO FUNCIONA!"); handleSubmitVote(); }}
-              className="bg-red-500 text-white p-4 z-50 relative w-full"
-            >
-              PRUEBA DE CLICK
-            </button>
+            <div className="flex items-center justify-between mt-3">
+              <button
+                  type="button"
+                  onClick={() => {
+                      console.log("EJECUTANDO VOTO");
+                      handleSubmitVote();
+                  }}
+                  disabled={isSubmitting || selectedOptions.length === 0}
+                  className="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-lg cursor-pointer pointer-events-auto z-[9999] relative disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-blue-600"
+              >
+                  {isSubmitting ? "Enviando..." : "Enviar Respuesta"}
+              </button>
+              {showAdminResultsButton && (
+                  <PollResultsDialog announcement={announcement} allUsers={allUsers} />
+              )}
+            </div>
         </div>
     )
 }
@@ -895,7 +919,7 @@ function PollResultsDialog({ announcement, allUsers }: { announcement: Announcem
     return (
         <Dialog>
             <DialogTrigger asChild>
-                 <Button variant="secondary" size="sm" className="mt-2">Ver respuestas</Button>
+                 <Button variant="secondary" size="sm" className="ml-2">Ver respuestas</Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
                 <DialogHeader>
@@ -1141,3 +1165,5 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     </Dialog>
   )
 }
+
+    
