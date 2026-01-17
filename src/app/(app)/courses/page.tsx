@@ -961,7 +961,7 @@ function PollResultsDialog({ announcement, allUsers }: { announcement: Announcem
 
 function MyClassTab() {
   return (
-    <Tabs defaultValue="schedule" className="w-full">
+    <Tabs defaultValue="chat" className="w-full">
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="schedule">
           <GraduationCap className="h-4 w-4 mr-2" />
