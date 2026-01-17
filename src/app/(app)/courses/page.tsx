@@ -250,7 +250,10 @@ function AnnouncementsTab() {
   const canUserManageAnnouncement = (ann: Announcement) => {
     if (!user) return false;
     if (user.role === 'admin') return true;
-    if (user.role === 'center-admin' && user.organizationId === ann.centerId) return true;
+    if (user.role === 'center-admin') {
+        if (ann.scope === 'center' && user.organizationId === ann.centerId) return true;
+        if (ann.scope === 'general') return true;
+    }
     if (user.role.startsWith('admin-') && ann.scope === 'class') {
         const adminClassName = user.role.split('admin-')[1];
         return user.organizationId === ann.centerId && adminClassName === ann.className;
@@ -752,62 +755,52 @@ function PollDisplay({ announcement, allUsers, canManage }: { announcement: Anno
         if (!firestore || !user || selectedOptions.length === 0) return;
         setIsSubmitting(true);
         const announcementRef = doc(firestore, "announcements", announcement.uid);
-
+    
         try {
             await runTransaction(firestore, async (transaction) => {
                 const annDoc = await transaction.get(announcementRef);
                 if (!annDoc.exists()) {
-                    throw "Document does not exist!";
+                    throw new Error("El anuncio ya no existe.");
                 }
-
-                // Perform a deep copy to safely mutate the votes object
-                const pollVotes = JSON.parse(JSON.stringify(annDoc.data().pollVotes || {}));
-
-                // For single-vote polls, remove all previous votes by the user first.
-                if (!announcement.allowMultipleVotes) {
-                    for (const optionId in pollVotes) {
-                        if (Array.isArray(pollVotes[optionId])) {
-                            pollVotes[optionId] = pollVotes[optionId].filter((uid: string) => uid !== user.uid);
-                        }
-                    }
-                }
-                
-                // Add the new votes from the current selection
-                selectedOptions.forEach(optionId => {
-                    if (!pollVotes[optionId]) {
-                        pollVotes[optionId] = [];
-                    }
-                    const alreadyVoted = pollVotes[optionId].includes(user.uid);
-
-                    if (announcement.allowMultipleVotes && alreadyVoted) {
-                        // In multi-vote, clicking again deselects
-                        pollVotes[optionId] = pollVotes[optionId].filter((uid: string) => uid !== user.uid);
-                    } else if (!alreadyVoted) {
-                        pollVotes[optionId].push(user.uid);
+    
+                const currentVotes = annDoc.data().pollVotes || {};
+                const newVotes = JSON.parse(JSON.stringify(currentVotes));
+    
+                // Remove all of the user's existing votes to handle single-choice changes and multi-choice updates cleanly.
+                Object.keys(newVotes).forEach(optionId => {
+                    if (Array.isArray(newVotes[optionId])) {
+                        newVotes[optionId] = newVotes[optionId].filter((uid: string) => uid !== user.uid);
                     }
                 });
-
-                transaction.update(announcementRef, { pollVotes });
+    
+                // Add the user's new selections.
+                selectedOptions.forEach(optionId => {
+                    if (!newVotes[optionId]) {
+                        newVotes[optionId] = [];
+                    }
+                    newVotes[optionId].push(user.uid);
+                });
+                
+                transaction.update(announcementRef, { pollVotes: newVotes });
             });
-
+            
             setSelectedOptions([]);
             toast({
                 title: "¡Voto registrado!",
                 description: "Gracias por tu participación.",
             });
-
-        } catch (error) {
+    
+        } catch (error: any) {
              console.error("Poll vote transaction failed: ", error);
              toast({
                 title: 'Error al votar',
-                description: 'No se pudo registrar tu voto. Revisa tu conexión e inténtalo de nuevo.',
+                description: error.message || 'No se pudo registrar tu voto. Revisa tu conexión e inténtalo de nuevo.',
                 variant: 'destructive',
             });
         } finally {
             setIsSubmitting(false);
         }
     };
-
 
     const hasUserVoted = userVotes.length > 0;
 
@@ -1188,5 +1181,6 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     
 
     
+
 
 
