@@ -140,7 +140,7 @@ export default function ClassChatPage() {
                                 )}
                                 <div className={cn("max-w-[75%] p-3 rounded-xl shadow-sm", msg.authorId === user.uid ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none")}>
                                      {msg.authorId !== user.uid && (
-                                        <p className="text-xs font-bold mb-1 text-primary">{msg.authorName}</p>
+                                        <p className="text-xs font-bold mb-1 text-primary">{msg.authorName.split(' ')[0]}</p>
                                      )}
                                     <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                                      <div className="flex items-center justify-end gap-1.5 text-xs opacity-70 mt-1.5">
@@ -148,7 +148,7 @@ export default function ClassChatPage() {
                                             {msg.timestamp ? format(msg.timestamp.toDate(), 'HH:mm') : ''}
                                         </span>
                                         {msg.authorId === user.uid && (
-                                            <CheckCheck className="h-4 w-4 text-sky-400" />
+                                            <CheckCheck className="h-4 w-4 text-green-400" />
                                         )}
                                     </div>
                                 </div>
