@@ -98,6 +98,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 
 export default function InfoPage() {
@@ -120,8 +121,8 @@ export default function InfoPage() {
               <TabsTrigger value="announcements">
                 <Building className="h-4 w-4 mr-2" /> Anuncios
               </TabsTrigger>
-              <TabsTrigger value="my-classes">
-                <GraduationCap className="h-4 w-4 mr-2" /> Mis Clases
+              <TabsTrigger value="my-class">
+                <GraduationCap className="h-4 w-4 mr-2" /> Mi Clase
               </TabsTrigger>
               <TabsTrigger value="notes">
                 <Notebook className="h-4 w-4 mr-2" /> Anotaciones
@@ -133,8 +134,8 @@ export default function InfoPage() {
             <TabsContent value="announcements">
               <AnnouncementsTab />
             </TabsContent>
-            <TabsContent value="my-classes">
-              <MyClassesTab />
+            <TabsContent value="my-class">
+              <MyClassTab />
             </TabsContent>
             <TabsContent value="notes">
               <NotesTab />
@@ -260,16 +261,21 @@ function AnnouncementsTab() {
 
   const canUserManageAnnouncement = (ann: Announcement) => {
     if (!user) return false;
-    if (user.role === 'admin') return true;
-    if (user.role === 'center-admin' && ann.scope === 'center') {
-        return ann.centerId === user.organizationId;
+    if (user.role === 'admin') return true; // Global admin can manage everything
+    
+    // Center admin can manage center-scoped announcements in their center
+    if (user.role === 'center-admin' && ann.scope === 'center' && user.organizationId === ann.centerId) {
+      return true;
     }
+    
+    // Class admin can manage class-scoped announcements for their specific class
     if (user.role.startsWith('admin-')) {
         const adminClassName = user.role.split('admin-')[1];
-        if (ann.scope === 'class' && ann.centerId === user.organizationId && adminClassName === ann.className) {
+        if (ann.scope === 'class' && user.organizationId === ann.centerId && adminClassName === ann.className) {
             return true;
         }
     }
+    
     return false;
   };
 
@@ -762,12 +768,12 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     };
 
     const handleSubmitVote = async () => {
-        // Force session check
-        if (!auth || !auth.currentUser) {
+        console.log("EJECUTANDO VOTO");
+        if (!auth?.currentUser) {
           alert("Error crítico: Firebase dice que no hay un usuario logueado actualmente.");
           return;
         }
-        alert("UID Usuario: " + (auth.currentUser?.uid || 'DESCONOCIDO'));
+        alert("Usuario detectado correctamente: " + auth.currentUser.uid);
         
         if (selectedOptions.length === 0) {
             toast({ title: "Selecciona una opción", description: "Debes elegir al menos una respuesta.", variant: "destructive" });
@@ -778,7 +784,6 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
             return;
         }
     
-        // Verify path
         if (!announcement.uid) {
             alert("ERROR: El anuncio no tiene ID");
             return;
@@ -787,24 +792,11 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     
         setIsSubmitting(true);
         const announcementRef = doc(firestore, "announcements", announcement.uid);
-    
+        
         try {
-            // First, check if user has already voted if it's not a multi-vote poll
-            if (!announcement.allowMultipleVotes) {
-                 const annDoc = await getDoc(announcementRef);
-                 if (annDoc.exists() && annDoc.data().votedUserIds?.includes(auth.currentUser.uid)) {
-                     toast({
-                        title: "Ya has votado",
-                        description: "No puedes votar más de una vez en esta encuesta.",
-                        variant: "destructive"
-                    });
-                    setIsSubmitting(false);
-                    return;
-                 }
-            }
+            alert('Iniciando envío...');
             
             const updateData: { [key: string]: any } = {};
-            // Use exact field names
             selectedOptions.forEach(optionId => {
                 updateData[`pollVoteCounts.${optionId}`] = increment(1);
             });
@@ -812,8 +804,8 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
             
             await updateDoc(announcementRef, updateData);
     
+            alert('¡Voto guardado!');
         } catch (error: any) {
-            // Detailed error logging
             console.error("🔥 ERROR DETALLADO:", error);
             alert("DEBUG: " + error.code + " | " + error.message);
         } finally {
@@ -965,7 +957,30 @@ function PollResultsDialog({ announcement, allUsers }: { announcement: Announcem
     )
 }
 
-function MyClassesTab() {
+function MyClassTab() {
+  return (
+    <Tabs defaultValue="schedule" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="schedule">
+          <GraduationCap className="h-4 w-4 mr-2" />
+          Horario
+        </TabsTrigger>
+        <TabsTrigger value="chat">
+          <MessageSquare className="h-4 w-4 mr-2" />
+          Chat de Clase
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="schedule" className="mt-4">
+        <MySchedule />
+      </TabsContent>
+      <TabsContent value="chat" className="mt-4">
+        <ClassChatPreview />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function MySchedule() {
   const { user } = useApp();
   const firestore = useFirestore();
   const [schedule, setSchedule] = useState<Schedule | null>(null);
@@ -1004,7 +1019,7 @@ function MyClassesTab() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Mis Clases</CardTitle>
+          <CardTitle>Mi Horario</CardTitle>
           <CardDescription>Cargando tu horario...</CardDescription>
         </CardHeader>
         <CardContent>
@@ -1017,12 +1032,8 @@ function MyClassesTab() {
   const isScheduleAvailable = !!schedule;
 
   const courseMap: Record<string, string> = {
-    "1eso": "1º ESO",
-    "2eso": "2º ESO",
-    "3eso": "3º ESO",
-    "4eso": "4º ESO",
-    "1bach": "1º Bachillerato",
-    "2bach": "2º Bachillerato",
+    "1eso": "1º ESO", "2eso": "2º ESO", "3eso": "3º ESO", "4eso": "4º ESO",
+    "1bach": "1º Bachillerato", "2bach": "2º Bachillerato",
   };
 
   const formattedCourse = courseMap[user.course] || user.course;
@@ -1055,6 +1066,49 @@ function MyClassesTab() {
       </CardContent>
     </Card>
   );
+}
+
+function ClassChatPreview() {
+    const { user } = useApp();
+
+    if (!user || user.center === 'personal') {
+        return (
+             <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg bg-muted/30">
+                <MessageSquare className="h-12 w-12 text-muted-foreground/70 mb-4" />
+                <p className="font-semibold">El chat de clase no está disponible</p>
+                <p className="text-sm text-muted-foreground">
+                    Esta función es solo para usuarios que pertenecen a un centro educativo.
+                </p>
+            </div>
+        )
+    }
+
+    return (
+         <Card className="shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader>
+                <CardTitle>Chat de Clase: {user.course.toUpperCase()}-{user.className}</CardTitle>
+                <CardDescription>Conéctate con tus compañeros y profesores.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+                 <div className="p-8 bg-muted/50 rounded-lg flex flex-col items-center gap-4">
+                    <div className="flex -space-x-4">
+                        <AvatarDisplay user={{name: 'A', avatar: 'letter_A_34D399'}} className="h-12 w-12 ring-2 ring-background"/>
+                        <AvatarDisplay user={{name: 'B', avatar: 'letter_B_F87171'}} className="h-12 w-12 ring-2 ring-background"/>
+                        <AvatarDisplay user={{name: 'C', avatar: 'letter_C_60A5FA'}} className="h-12 w-12 ring-2 ring-background"/>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Únete a la conversación de tu clase.</p>
+                </div>
+            </CardContent>
+            <CardFooter>
+                 <Button asChild className="w-full">
+                    <Link href="/class-chat">
+                        <MessageSquare className="mr-2 h-4 w-4"/>
+                        Ir al Chat
+                    </Link>
+                </Button>
+            </CardFooter>
+        </Card>
+    );
 }
 
 

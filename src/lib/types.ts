@@ -106,6 +106,15 @@ export type ChatMessage = {
   timestamp: Timestamp;
 };
 
+export type ClassChatMessage = {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  content: string;
+  timestamp: Timestamp;
+};
+
 export type Note = {
     id: string;
     title: string;

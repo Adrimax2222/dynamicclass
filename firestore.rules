@@ -182,6 +182,32 @@ service cloud.firestore {
       allow create: if request.auth != null;
       allow update, delete: if isGlobalAdmin() || isCenterAdmin(centerId);
       allow list, get: if true;
+      
+        // ============= CLASS CHAT =============
+        function isMemberOfClass(className) {
+          let userData = getUserData();
+          let [course, classLetter] = className.split('-');
+          return userData.organizationId == centerId &&
+                 userData.course == course.toLowerCase() &&
+                 userData.className == classLetter;
+        }
+
+        match /classes/{className}/messages/{messageId} {
+          allow read: if isMemberOfClass(className) || isCenterAdmin(centerId) || isGlobalAdmin();
+
+          function isValidClassMessage() {
+            let message = request.resource.data;
+            return message.authorId == request.auth.uid &&
+                   message.authorName is string &&
+                   message.authorAvatar is string &&
+                   message.content is string && message.content.size() > 0 && message.content.size() <= 2000 &&
+                   message.timestamp == request.time;
+          }
+          
+          allow create: if isMemberOfClass(className) && isValidClassMessage();
+          
+          allow update, delete: if false; // Immutable history
+        }
     }
   }
 }
