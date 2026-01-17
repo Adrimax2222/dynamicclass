@@ -9,7 +9,6 @@ import type { ClassChatMessage } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AvatarDisplay } from '@/components/profile/avatar-creator';
@@ -42,10 +41,10 @@ export default function ClassChatPage() {
     const { data: messages = [], isLoading } = useCollection<ClassChatMessage>(messagesQuery);
     
     useEffect(() => {
-      const viewport = scrollAreaRef.current?.querySelector('div[data-radix-scroll-area-viewport]');
-      if (viewport) {
+      const scrollContainer = scrollAreaRef.current;
+      if (scrollContainer) {
         setTimeout(() => {
-            viewport.scrollTop = viewport.scrollHeight;
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
         }, 100);
       }
     }, [messages, isLoading]);
@@ -122,7 +121,7 @@ export default function ClassChatPage() {
                 <div className="w-9 h-9" /> {/* Placeholder for alignment */}
             </header>
             
-            <ScrollArea className="flex-1" ref={scrollAreaRef}>
+            <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
                 <div className="p-4 space-y-6">
                     {isLoading ? (
                         <div className="flex justify-center items-center h-64">
@@ -135,7 +134,7 @@ export default function ClassChatPage() {
                         </div>
                     ) : (
                         messages.map((msg) => (
-                            <div key={msg.id} className={cn("flex items-end gap-2", msg.authorId === user.uid ? "justify-end" : "justify-start")}>
+                            <div key={(msg as any).uid} className={cn("flex items-end gap-2", msg.authorId === user.uid ? "justify-end" : "justify-start")}>
                                 {msg.authorId !== user.uid && (
                                     <AvatarDisplay user={{ name: msg.authorName, avatar: msg.authorAvatar }} className="h-8 w-8" />
                                 )}
@@ -152,7 +151,7 @@ export default function ClassChatPage() {
                         ))
                     )}
                 </div>
-            </ScrollArea>
+            </div>
             
             <footer className="p-4 border-t bg-background">
                 <div className="flex items-center gap-2 bg-muted p-2 rounded-xl">
