@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -738,34 +737,33 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
         try {
             await runTransaction(firestore, async (transaction) => {
                 const annDoc = await transaction.get(announcementRef);
-                if (!annDoc.exists()) throw "Document does not exist!";
-                
+                if (!annDoc.exists()) {
+                    throw "Document does not exist!";
+                }
+    
                 const currentData = annDoc.data() as Announcement;
-                let votes = { ...(currentData.pollVotes || {}) };
+                const votes = { ...(currentData.pollVotes || {}) };
                 const userId = user.uid;
     
                 if (currentData.allowMultipleVotes) {
-                    const alreadyVoted = votes[optionId]?.includes(userId);
-                    if (alreadyVoted) {
-                        votes[optionId] = votes[optionId].filter(uid => uid !== userId);
+                    const optionVotes = votes[optionId] || [];
+                    if (optionVotes.includes(userId)) {
+                        votes[optionId] = optionVotes.filter(uid => uid !== userId);
                     } else {
-                        votes[optionId] = [...(votes[optionId] || []), userId];
+                        votes[optionId] = [...optionVotes, userId];
                     }
                 } else {
-                    const existingVoteId = Object.keys(votes).find(optId => votes[optId]?.includes(userId));
-                    
-                    // Clear all previous votes for this user
-                    Object.keys(votes).forEach(optId => {
-                        votes[optId] = votes[optId].filter(uid => uid !== userId);
-                    });
+                    const userCurrentVoteId = Object.keys(votes).find(optId => (votes[optId] || []).includes(userId));
     
-                    // If the user wasn't voting for this option before (or was un-voting), add the new vote.
-                    if (existingVoteId !== optionId) {
+                    if (userCurrentVoteId) {
+                        votes[userCurrentVoteId] = votes[userCurrentVoteId].filter(uid => uid !== userId);
+                    }
+    
+                    if (userCurrentVoteId !== optionId) {
                         votes[optionId] = [...(votes[optionId] || []), userId];
                     }
                 }
     
-                // Clean up empty vote arrays
                 Object.keys(votes).forEach(optId => {
                     if (votes[optId]?.length === 0) {
                         delete votes[optId];
@@ -791,7 +789,12 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
                     const isSelected = userVotes.includes(option.id);
 
                     return (
-                        <div key={option.id} className="relative rounded-lg border overflow-hidden cursor-pointer" onClick={() => handleVote(option.id)}>
+                        <button
+                            type="button"
+                            key={option.id}
+                            className="relative rounded-lg border overflow-hidden cursor-pointer text-left w-full block hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all"
+                            onClick={() => handleVote(option.id)}
+                        >
                             {hasUserVoted && (
                                 <div 
                                     className="absolute top-0 left-0 h-full bg-primary/10 transition-all duration-500" 
@@ -817,7 +820,7 @@ const PollDisplay = ({ announcement, allUsers, canManage }: { announcement: Anno
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </button>
                     )
                 })}
             </div>
@@ -1123,7 +1126,3 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     </Dialog>
   )
 }
-
-
-
-    
