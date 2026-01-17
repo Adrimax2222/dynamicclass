@@ -10,13 +10,15 @@ import type { ClassChatMessage } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ChevronLeft, Send, Loader2, Info } from 'lucide-react';
+import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AvatarDisplay } from '@/components/profile/avatar-creator';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { WipDialog } from '@/components/layout/wip-dialog';
 
 export default function ClassChatPage() {
     const { user } = useApp();
@@ -153,22 +155,47 @@ export default function ClassChatPage() {
             </ScrollArea>
             
             <footer className="p-4 border-t bg-background">
-                <div className="relative">
+                <div className="flex items-center gap-2 bg-muted p-2 rounded-xl">
+                    <WipDialog>
+                        <Button variant="ghost" size="icon" className="shrink-0">
+                            <PlusCircle className="h-5 w-5 text-muted-foreground" />
+                        </Button>
+                    </WipDialog>
                     <Input 
                         placeholder="Escribe un mensaje..."
-                        className="pr-12 h-12 rounded-full"
+                        className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-10 px-2"
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyDown={handleKeyDown}
                         disabled={isSending}
                     />
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="shrink-0">
+                                <Smile className="h-5 w-5 text-muted-foreground" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2 border-0 shadow-lg mb-2">
+                            <div className="grid grid-cols-8 gap-1">
+                                {'😀 😂 ❤️ 👍 🙏 🎉 😭 🤔 🤯 😊 🥺 🔥 ❄️'.split(' ').map(emoji => (
+                                    <button
+                                    key={emoji}
+                                    onClick={() => setMessage(prev => prev + emoji)}
+                                    className="text-2xl rounded-md p-1 hover:bg-accent transition-colors"
+                                    >
+                                    {emoji}
+                                    </button>
+                                ))}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
                     <Button 
                         size="icon" 
-                        className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full"
+                        className="shrink-0"
                         onClick={handleSend}
                         disabled={isSending || !message.trim()}
                     >
-                        {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                        {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
                 </div>
             </footer>
