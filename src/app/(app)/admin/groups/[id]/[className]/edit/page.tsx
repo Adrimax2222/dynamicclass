@@ -90,7 +90,9 @@ export default function EditClassPage() {
 
     useEffect(() => {
         if (classMembers) {
-            setMembers(classMembers);
+            // Fix for inconsistent key: Ensure uid is always present, falling back to doc id.
+            const membersWithUid = classMembers.map(m => ({ ...m, uid: m.uid || (m as any).id }));
+            setMembers(membersWithUid);
         }
         setIsLoadingMembers(isMembersLoading);
     }, [classMembers, isMembersLoading]);
