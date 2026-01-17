@@ -207,9 +207,11 @@ service cloud.firestore {
           
             function isValidClassMessage() {
                 let message = request.resource.data;
-                let expectedKeys = ['authorId', 'authorName', 'authorAvatar', 'authorRole', 'content', 'timestamp', 'viewedBy', 'isPinned'];
+                // Client sends: content, authorId, authorName, authorAvatar, authorRole, timestamp, viewedBy, isPinned
+                let expectedKeys = ['content', 'authorId', 'authorName', 'authorAvatar', 'authorRole', 'timestamp', 'viewedBy', 'isPinned'];
                 
-                return message.keys().hasOnly(expectedKeys) &&
+                return message.keys().hasAll(expectedKeys) &&
+                       message.keys().size() == 8 &&
                        message.authorId == request.auth.uid &&
                        message.authorName is string &&
                        message.authorAvatar is string &&
