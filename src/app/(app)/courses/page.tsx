@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -72,6 +71,7 @@ import {
   arrayUnion,
   runTransaction,
   increment,
+  writeBatch,
 } from "firebase/firestore";
 import type { Note, Announcement, AnnouncementScope, Schedule, Center, AnnouncementType, PollOption, User as AppUser } from "@/lib/types";
 import {
@@ -181,8 +181,9 @@ function AnnouncementsTab() {
     };
 
     if (newAnnouncement.type === 'poll') {
-        newAnnouncement.pollVoteCounts = {};
-        newAnnouncement.votedUserIds = [];
+        newAnnouncement.pollOptions?.forEach(opt => {
+            newAnnouncement.pollVoteCounts![opt.id] = 0;
+        });
     }
     
     await addDoc(announcementsCollectionRef, newAnnouncement);
@@ -253,15 +254,15 @@ function AnnouncementsTab() {
     if (!user) return false;
     if (user.role === 'admin') return true; // Global admin can manage all
     if (user.role === 'center-admin') {
-      // Center admin can manage announcements for their center ONLY.
-      return ann.scope === 'center' && user.organizationId === ann.centerId;
+      return ann.scope === 'center'; // Center admin can only manage announcements for their center.
     }
     if (user.role.startsWith('admin-')) {
       const adminClassName = user.role.split('admin-')[1];
-      return ann.scope === 'class' && user.organizationId === ann.centerId && adminClassName === ann.className;
+      return ann.scope === 'class' && adminClassName === ann.className;
     }
     return false;
   };
+
 
   const sortedAndFilteredAnnouncements = useMemo(() => {
     const sorted = [...announcements].sort((a, b) => {
@@ -445,8 +446,8 @@ function NewAnnouncementCard({ onSend }: { onSend: (data: Partial<Announcement>)
                 announcementData.pollQuestion = pollQuestion;
                 announcementData.pollOptions = validOptions.map((opt, index) => ({ id: (index + 1).toString(), text: opt.text })); // Re-ID to be safe
                 announcementData.allowMultipleVotes = allowMultipleVotes;
-                announcementData.pollVoteCounts = {};
-                announcementData.votedUserIds = [];
+                announcementData.pollVoteCounts = {}; // Initialize vote counts
+                announcementData.votedUserIds = []; // Initialize voted users
             }
 
             await onSend(announcementData);
@@ -732,7 +733,8 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     }, [user, announcement.votedUserIds]);
     
     const totalVotes = useMemo(() => {
-        return Object.values(announcement.pollVoteCounts || {}).reduce((acc, count) => acc + count, 0);
+        if (!announcement.pollVoteCounts) return 0;
+        return Object.values(announcement.pollVoteCounts).reduce((acc, count) => acc + count, 0);
     }, [announcement.pollVoteCounts]);
 
     const handleSelectOption = (optionId: string) => {
@@ -749,56 +751,63 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     };
 
     const handleSubmitVote = async () => {
-        if (selectedOptions.length === 0) {
-            toast({
-                title: "Selecciona una opción",
-                description: "Debes elegir al menos una respuesta para poder enviar tu voto.",
-                variant: "destructive",
-            });
-            return;
-        }
-
-        if (!firestore || !user) return;
-        setIsSubmitting(true);
-        const announcementRef = doc(firestore, "announcements", announcement.uid);
-    
-        try {
-            const updates: { [key: string]: any } = {};
-            selectedOptions.forEach(optionId => {
-                updates[`pollVoteCounts.${optionId}`] = increment(1);
-            });
-            updates['votedUserIds'] = arrayUnion(user.uid);
-
-            await updateDoc(announcementRef, updates);
-
-            toast({
-                title: "¡Voto registrado!",
-                description: "Gracias por tu participación.",
-            });
-    
-        } catch (error: any) {
-             console.error("Poll vote submission failed: ", error);
-             toast({
-                title: 'Error al votar',
-                description: error.message || 'No se pudo registrar tu voto. Revisa tu conexión e inténtalo de nuevo.',
-                variant: 'destructive',
-            });
-        } finally {
-            setIsSubmitting(false);
-        }
+      console.log("Submitting vote with selected options:", selectedOptions);
+      if (selectedOptions.length === 0) {
+        toast({
+          title: "Selecciona una opción",
+          description: "Debes elegir al menos una respuesta para poder enviar tu voto.",
+          variant: "destructive",
+        });
+        return;
+      }
+  
+      if (!firestore || !user) return;
+      setIsSubmitting(true);
+      const announcementRef = doc(firestore, "announcements", announcement.uid);
+  
+      try {
+        await runTransaction(firestore, async (transaction) => {
+          const annDoc = await transaction.get(announcementRef);
+          if (!annDoc.exists()) {
+            throw "El anuncio ya no existe.";
+          }
+  
+          const currentData = annDoc.data();
+          const newVoteCounts = { ...(currentData.pollVoteCounts || {}) };
+          
+          selectedOptions.forEach(optionId => {
+            newVoteCounts[optionId] = (newVoteCounts[optionId] || 0) + 1;
+          });
+  
+          transaction.update(announcementRef, {
+            pollVoteCounts: newVoteCounts,
+            votedUserIds: arrayUnion(user.uid),
+          });
+        });
+  
+        toast({
+          title: "¡Voto registrado!",
+          description: "Gracias por tu participación.",
+        });
+      } catch (error: any) {
+        console.error("Poll vote submission failed: ", error);
+        toast({
+          title: 'Error al votar',
+          description: error.message || 'No se pudo registrar tu voto. Revisa tu conexión e inténtalo de nuevo.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     };
     
     const canUserSeePollResults = (ann: Announcement): boolean => {
         if (!user) return false;
-        if (user.role === 'admin') {
-            return true;
-        }
-        if (user.role === 'center-admin') {
-            return ann.scope === 'center' && user.organizationId === ann.centerId;
-        }
+        if (user.role === 'admin') return true;
+        if (user.role === 'center-admin' && ann.scope === 'center' && user.organizationId === ann.centerId) return true;
         if (user.role.startsWith('admin-')) {
             const adminClassName = user.role.split('admin-')[1];
-            return ann.scope === 'class' && user.organizationId === ann.centerId && adminClassName === ann.className;
+            if (ann.scope === 'class' && user.organizationId === ann.centerId && adminClassName === ann.className) return true;
         }
         return false;
     };
@@ -865,10 +874,13 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
                     )
                 })}
             </div>
-             <Button onClick={handleSubmitVote} disabled={isSubmitting || selectedOptions.length === 0} className="w-full mt-4" type="button">
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
-                Enviar Respuesta
-             </Button>
+            <button
+              type="button"
+              onClick={() => { alert("¡EL BOTÓN FUNCIONA!"); handleSubmitVote(); }}
+              className="bg-red-500 text-white p-4 z-50 relative w-full"
+            >
+              PRUEBA DE CLICK
+            </button>
             {showAdminResultsButton && (
                 <div className="text-center pt-2">
                      <PollResultsDialog announcement={announcement} allUsers={allUsers} />
@@ -1138,6 +1150,7 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
     
 
     
+
 
 
 
