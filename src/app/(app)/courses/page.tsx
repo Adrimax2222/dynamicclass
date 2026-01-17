@@ -75,7 +75,7 @@ import {
   writeBatch,
   FieldValue,
 } from "firebase/firestore";
-import type { Note, Announcement, AnnouncementScope, Schedule, Center, AnnouncementType, PollOption, User as AppUser } from "@/lib/types";
+import type { Note, Announcement, AnnouncementScope, Schedule, Center, AnnouncementType, PollOption, User as AppUser, Timestamp } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -178,7 +178,7 @@ function AnnouncementsTab() {
         authorId: user.uid,
         authorName: user.name,
         authorAvatar: user.avatar,
-        createdAt: serverTimestamp(),
+        createdAt: serverTimestamp() as Timestamp,
         isPinned: false,
         viewedBy: [],
         reactions: {},
@@ -614,7 +614,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
     return () => observer.disconnect();
   }, [announcement.id, announcement.viewedBy, firestore, user]);
 
-  const formatTimestamp = (timestamp: { seconds: number }) => {
+  const formatTimestamp = (timestamp: Timestamp) => {
     if (!timestamp) return "";
     const date = new Date(timestamp.seconds * 1000);
     return formatDistanceToNow(date, { addSuffix: true, locale: es });
@@ -1160,20 +1160,20 @@ function NotesTab() {
 
   const notesCollection = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, `users/${user.uid}/notes`);
+    return query(collection(firestore, `users/${user.uid}/notes`), orderBy("isPinned", "desc"), orderBy("createdAt", "desc"));
   }, [firestore, user]);
 
   const { data: notes = [], isLoading } = useCollection<Note>(notesCollection);
 
-  const handleAddNote = async (title: string, content: string) => {
+  const handleAddNote = async (title: string, content: string, color: string) => {
     if (!notesCollection) return;
-    await addDoc(notesCollection, { title, content, createdAt: serverTimestamp() });
+    await addDoc(notesCollection, { title, content, color, createdAt: serverTimestamp(), isPinned: false, updatedAt: serverTimestamp() });
   };
   
-  const handleUpdateNote = async (id: string, title: string, content: string) => {
+  const handleUpdateNote = async (id: string, title: string, content: string, color: string) => {
     if (!notesCollection) return;
     const noteDoc = doc(notesCollection, id);
-    await updateDoc(noteDoc, { title, content });
+    await updateDoc(noteDoc, { title, content, color, updatedAt: serverTimestamp() });
   };
 
   const handleDeleteNote = async (id: string) => {
@@ -1181,6 +1181,22 @@ function NotesTab() {
     const noteDoc = doc(notesCollection, id);
     await deleteDoc(noteDoc);
   };
+
+  const handlePinNote = async (id: string, currentStatus: boolean) => {
+    if (!notesCollection) return;
+    const noteDoc = doc(notesCollection, id);
+    await updateDoc(noteDoc, { isPinned: !currentStatus });
+  };
+  
+  const sortedNotes = useMemo(() => {
+    return [...notes].sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        if (a.updatedAt && b.updatedAt) return b.updatedAt.seconds - a.updatedAt.seconds;
+        if (a.createdAt && b.createdAt) return b.createdAt.seconds - a.createdAt.seconds;
+        return 0;
+    });
+  }, [notes]);
   
   return (
     <div className="space-y-6">
@@ -1188,7 +1204,8 @@ function NotesTab() {
         <h2 className="text-lg font-semibold">Mis Anotaciones</h2>
         <NoteDialog onSave={handleAddNote} />
       </div>
-      {isLoading && <p>Cargando notas...</p>}
+      {isLoading && <Loader2 className="mx-auto my-8 h-8 w-8 animate-spin" />}
+      
       {!isLoading && notes.length === 0 && (
          <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
           <Notebook className="h-12 w-12 text-muted-foreground/50 mb-4" />
@@ -1198,23 +1215,32 @@ function NotesTab() {
           </p>
         </div>
       )}
-      <div className="grid gap-4 md:grid-cols-2">
-        {notes.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)).map((note) => (
-          <Card key={note.id} className="flex flex-col">
-            <CardHeader>
-              <CardTitle className="text-base">{note.title}</CardTitle>
+      
+      <div className="columns-1 md:columns-2 gap-4 space-y-4">
+        {sortedNotes.map((note) => (
+          <Card key={note.id} className="break-inside-avoid flex flex-col" style={{ borderTop: `4px solid ${note.color || 'hsl(var(--border))'}`}}>
+            <CardHeader className="flex-row items-start justify-between gap-2 pb-2">
+              <CardTitle className="text-base line-clamp-2">{note.title}</CardTitle>
+               <div className="flex items-center shrink-0">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handlePinNote(note.id, note.isPinned || false)}>
+                      <Pin className={cn("h-4 w-4 text-muted-foreground", note.isPinned && "fill-primary text-primary")} />
+                  </Button>
+                   <NoteDialog note={note} onSave={handleUpdateNote}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground"><Edit className="h-4 w-4" /></Button>
+                   </NoteDialog>
+               </div>
             </CardHeader>
-            <CardContent className="flex-1">
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{note.content}</p>
+            <CardContent className="flex-1 py-2">
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-6">{note.content}</p>
             </CardContent>
-            <div className="p-4 pt-0 flex justify-end gap-2">
-               <NoteDialog note={note} onSave={(title, content) => handleUpdateNote(note.id, title, content)} >
-                  <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
-               </NoteDialog>
-               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteNote(note.id)}>
+            <CardFooter className="pt-2 flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                    {note.updatedAt ? `Actualizado ${formatDistanceToNow(note.updatedAt.toDate(), { addSuffix: true, locale: es })}` : `Creado ${formatDistanceToNow(note.createdAt.toDate(), { addSuffix: true, locale: es })}`}
+                 </p>
+               <Button variant="ghost" size="icon" className="text-destructive/60 hover:text-destructive h-8 w-8" onClick={() => handleDeleteNote(note.id)}>
                   <Trash2 className="h-4 w-4" />
                </Button>
-            </div>
+            </CardFooter>
           </Card>
         ))}
       </div>
@@ -1222,37 +1248,36 @@ function NotesTab() {
   );
 }
 
-function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, note?: Note, onSave: (title: string, content: string) => void }) {
+const noteColors = ['#FFFFFF', '#FEE2E2', '#FEF3C7', '#D1FAE5', '#DBEAFE', '#E0E7FF', '#F3E8FF'];
+
+function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, note?: Note, onSave: (title: string, content: string, color: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [title, setTitle] = useState(note?.title || "");
-  const [content, setContent] = useState(note?.content || "");
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [color, setColor] = useState("");
   const isEditing = !!note;
+
+  useEffect(() => {
+    if (isOpen) {
+        setTitle(note?.title || "");
+        setContent(note?.content || "");
+        setColor(note?.color || noteColors[0]);
+    }
+  }, [isOpen, note]);
 
   const handleSave = () => {
     if (title) {
-        onSave(title, content);
+        onSave(title, content, color);
         setIsOpen(false);
-        if (!isEditing) {
-            setTitle("");
-            setContent("");
-        }
     }
   }
-
-  // Sync state if the note prop changes while dialog is open
-  useState(() => {
-    if (note) {
-      setTitle(note.title);
-      setContent(note.content);
-    }
-  });
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
             {children || <Button><PlusCircle className="mr-2 h-4 w-4" /> Nueva Nota</Button>}
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent style={{ borderTop: `4px solid ${color || 'hsl(var(--border))'}`}}>
             <DialogHeader>
             <DialogTitle>{isEditing ? 'Editar Anotación' : 'Nueva Anotación'}</DialogTitle>
             </DialogHeader>
@@ -1264,6 +1289,16 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
                  <div className="space-y-2">
                     <Label htmlFor="note-content">Contenido</Label>
                     <Textarea id="note-content" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Escribe lo que necesites recordar..." rows={6} />
+                </div>
+                <div className="space-y-2">
+                    <Label>Color</Label>
+                     <div className="flex flex-wrap gap-3">
+                        {noteColors.map(c => (
+                            <button key={c} type="button" onClick={() => setColor(c)} className={cn('h-8 w-8 rounded-full border-2 transition-transform hover:scale-110', color === c ? 'border-ring ring-2 ring-offset-2 ring-primary' : 'border-slate-300')}>
+                                <div className="w-full h-full rounded-full" style={{backgroundColor: c}}/>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
             <DialogFooter>

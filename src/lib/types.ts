@@ -126,7 +126,10 @@ export type Note = {
     id: string;
     title: string;
     content: string;
-    createdAt: { seconds: number, nanoseconds: number };
+    createdAt: Timestamp;
+    updatedAt?: Timestamp;
+    color?: string;
+    isPinned?: boolean;
 };
 
 export type AnnouncementScope = 'general' | 'center' | 'class';
@@ -143,7 +146,7 @@ export type Announcement = {
   authorId: string;
   authorName: string;
   authorAvatar: string;
-  createdAt: { seconds: number, nanoseconds: number };
+  createdAt: Timestamp;
   scope: AnnouncementScope;
   centerId?: string;
   className?: string;
