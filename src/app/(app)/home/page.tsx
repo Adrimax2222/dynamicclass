@@ -99,6 +99,22 @@ export default function HomePage() {
     }
   }, []);
     
+  useEffect(() => {
+    if (!firestore || !user) return;
+
+    // Increment accessCount for onboarding logic
+    const sessionKey = `accessIncremented_${user.uid}`;
+    const hasIncrementedInSession = sessionStorage.getItem(sessionKey);
+
+    if (!user.hasSeenOnboarding && !hasIncrementedInSession) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        updateDoc(userDocRef, {
+            accessCount: increment(1)
+        });
+        sessionStorage.setItem(sessionKey, 'true');
+    }
+  }, [firestore, user]);
+
   const getCategorizedEvents = (category: Category): (ParsedEvent | Announcement)[] => {
       const today = startOfToday();
       
@@ -920,6 +936,7 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
 
 
     
+
 
 
 

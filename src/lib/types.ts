@@ -26,6 +26,8 @@ export type User = {
   ownedAvatars?: string[];
   isBanned?: boolean;
   isChatBanned?: boolean;
+  accessCount?: number;
+  hasSeenOnboarding?: boolean;
 };
 
 // Simplified user type for center management

@@ -26,7 +26,9 @@
         "streak": { "type": "number" },
         "lastStudyDay": { "type": "string", "format": "date" },
         "ownedAvatars": { "type": "array", "items": { "type": "string" } },
-        "isChatBanned": { "type": "boolean", "description": "If true, the user is banned from using the class chat." }
+        "isChatBanned": { "type": "boolean", "description": "If true, the user is banned from using the class chat." },
+        "accessCount": { "type": "number", "description": "Tracks the number of times the user has accessed the app." },
+        "hasSeenOnboarding": { "type": "boolean", "description": "Whether the user has completed the onboarding tour." }
       },
       "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange", "isNewUser"]
     },
