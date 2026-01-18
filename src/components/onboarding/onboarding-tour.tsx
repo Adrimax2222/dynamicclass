@@ -246,16 +246,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             ],
             content: () => {
                 const activeItem = steps[1].items.find(item => item.title === activeExplanation);
-                 const getPanelPosition = (index: number) => {
-                    const positions = [
-                        { top: '0%', left: '0%', transform: 'translate(0, 0)' }, // Top-left
-                        { bottom: '0%', right: '0%', transform: 'translate(0, 0)' }, // Bottom-right
-                        { top: '0%', right: '0%', transform: 'translate(0, 0)' }, // Top-right
-                        { bottom: '0%', left: '0%', transform: 'translate(0, 0)' }, // Bottom-left
-                    ];
-                    return positions[index % positions.length];
-                };
-
                 return (
                     <div className="w-full h-[400px] flex items-center justify-center">
                         <div className="w-72 space-y-4">
@@ -474,8 +464,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                      <div className="w-full h-[400px] relative flex items-center justify-center">
                         <div className="w-full max-w-sm space-y-4">
                             
-                            <button
-                                type="button"
+                            <div
                                 onClick={() => {
                                     const newTheme = theme === 'dark' ? 'light' : 'dark';
                                     setTheme(newTheme);
@@ -488,9 +477,9 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     <p className="text-sm text-muted-foreground">Personaliza la apariencia de la app.</p>
                                 </div>
                                 <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Tema de la Aplicación")}}>
-                                    <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                     <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
                                 </Button>
-                            </button>
+                            </div>
 
                             <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
                                 <Sparkles className="h-6 w-6 text-primary flex-shrink-0"/>
