@@ -37,13 +37,6 @@ import {
     Sun,
     Moon
 } from 'lucide-react';
-import { 
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-} from "@/components/ui/sheet";
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { useApp } from '@/lib/hooks/use-app';
@@ -63,16 +56,16 @@ const introIcons = [
 const ExplanationCard = ({ title, description, icon: Icon, position }: { title: string; description: string; icon: React.ElementType; position: string; }) => {
     return (
         <motion.div
-            className={cn("absolute w-64 p-4 rounded-2xl shadow-2xl bg-white/50 backdrop-blur-2xl border border-white/40 text-center", position)}
+            className={cn("absolute w-64 p-4 rounded-2xl shadow-2xl bg-background/80 backdrop-blur-lg border border-border/50 text-center z-20", position)}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 400, damping: 25 } }}
             exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
         >
-            <div className="w-10 h-10 bg-white/50 rounded-lg flex items-center justify-center mx-auto mb-2">
-                <Icon className="h-6 w-6 text-slate-800" />
+            <div className="w-10 h-10 bg-background/50 rounded-lg flex items-center justify-center mx-auto mb-2 border">
+                <Icon className="h-6 w-6 text-slate-800 dark:text-slate-200" />
             </div>
-            <h3 className="font-bold text-sm text-slate-900 mb-1">{title}</h3>
-            <p className="text-xs text-slate-700">{description}</p>
+            <h3 className="font-bold text-sm text-foreground mb-1">{title}</h3>
+            <p className="text-xs text-muted-foreground">{description}</p>
         </motion.div>
     );
 };
@@ -176,7 +169,11 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: User, title: "Uso Personal", desc: "Disfruta de la app de forma individual.", explanation: "Disfruta de las herramientas de estudio sin conexión a un centro." },
             ],
             content: () => {
-                const positions = ["top-0 right-full mr-8", "top-1/2 left-full ml-8", "bottom-0 right-full mr-8"];
+                const positions = [
+                    "top-1/4 left-0 -translate-x-1/2", 
+                    "top-1/2 right-0 translate-x-1/2", 
+                    "bottom-1/4 left-0 -translate-x-1/2"
+                ];
                 return (
                      <div className="relative w-full h-[400px] flex items-center justify-center">
                         <motion.div 
@@ -185,7 +182,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             initial="hidden"
                             animate="visible"
                         >
-                            {steps[0].items.map((item, index) => (
+                            {steps[0].items.map((item) => (
                                 <motion.div
                                     key={item.title}
                                     variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
@@ -226,21 +223,19 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 </motion.div>
                             ))}
                         </motion.div>
-                        <div className="absolute inset-0 z-20 pointer-events-none">
-                            <AnimatePresence>
-                                {steps[0].items.map((item, index) => (
-                                    openSheet === item.title && (
-                                        <ExplanationCard 
-                                            key={item.title}
-                                            title={item.title}
-                                            description={item.explanation}
-                                            icon={item.icon}
-                                            position={positions[index]}
-                                        />
-                                    )
-                                ))}
-                            </AnimatePresence>
-                        </div>
+                        <AnimatePresence>
+                            {steps[0].items.map((item, index) => (
+                                openSheet === item.title && (
+                                    <ExplanationCard 
+                                        key={item.title}
+                                        title={item.title}
+                                        description={item.explanation}
+                                        icon={item.icon}
+                                        position={positions[index]}
+                                    />
+                                )
+                            ))}
+                        </AnimatePresence>
                     </div>
                 );
             }
@@ -256,7 +251,12 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: User, title: "Estudiante", desc: "Participa, aprende y compite.", explanation: "El rol principal. Accede a las herramientas de estudio, participa en clase y compite en los rankings para ganar recompensas." },
             ],
             content: () => {
-                const positions = ["top-0 left-0", "bottom-16 right-0", "top-16 right-0", "bottom-0 left-0"];
+                const positions = [
+                    "top-8 left-8 -translate-x-full", 
+                    "bottom-24 right-8 translate-x-full", 
+                    "top-16 right-8 translate-x-full", 
+                    "bottom-8 left-8 -translate-x-full"
+                ];
                 return (
                     <div className="relative w-full h-[400px] flex items-center justify-center">
                         <motion.div
@@ -265,7 +265,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             initial="hidden"
                             animate="visible"
                         >
-                            {steps[1].items.map((item, index) => (
+                            {steps[1].items.map((item) => (
                                 <motion.div
                                     key={item.title}
                                     variants={{ hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1 } }}
@@ -299,22 +299,19 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 </motion.div>
                             ))}
                         </motion.div>
-
-                        <div className="absolute inset-0 z-20 pointer-events-none">
-                            <AnimatePresence>
-                                {steps[1].items.map((item, index) => (
-                                    openSheet === item.title && (
-                                        <ExplanationCard 
-                                            key={item.title}
-                                            title={item.title}
-                                            description={item.explanation}
-                                            icon={item.icon}
-                                            position={positions[index]}
-                                        />
-                                    )
-                                ))}
-                            </AnimatePresence>
-                        </div>
+                        <AnimatePresence>
+                            {steps[1].items.map((item, index) => (
+                                openSheet === item.title && (
+                                    <ExplanationCard 
+                                        key={item.title}
+                                        title={item.title}
+                                        description={item.explanation}
+                                        icon={item.icon}
+                                        position={positions[index]}
+                                    />
+                                )
+                            ))}
+                        </AnimatePresence>
                     </div>
                 );
             }
@@ -333,17 +330,17 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             ],
             content: () => {
                 const positions = [
-                    "top-0 left-0 -translate-y-1/4 -translate-x-1/4", 
-                    "top-0 left-1/2 -translate-x-1/2 -translate-y-full",
-                    "top-0 right-0 -translate-y-1/4 translate-x-1/4", 
-                    "bottom-0 left-0 translate-y-1/4 -translate-x-1/4", 
-                    "bottom-0 left-1/2 -translate-x-1/2 translate-y-full",
-                    "bottom-0 right-0 translate-y-1/4 translate-x-1/4",
+                    "top-0 left-0 -translate-y-1/2 -translate-x-full", 
+                    "top-0 left-1/2 -translate-x-1/2 -translate-y-[120%]",
+                    "top-0 right-0 -translate-y-1/2 translate-x-full", 
+                    "bottom-0 left-0 translate-y-1/2 -translate-x-full", 
+                    "bottom-0 left-1/2 -translate-x-1/2 translate-y-[120%]",
+                    "bottom-0 right-0 translate-y-1/2 translate-x-full",
                 ];
                 return (
                     <div className="relative w-full h-[400px] flex items-center justify-center">
-                        <motion.div 
-                            className="grid grid-cols-3 gap-2 sm:gap-4 z-10"
+                        <motion.div
+                            className="w-full max-w-xs grid grid-cols-3 gap-2 sm:gap-4 z-10"
                             variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
                             initial="hidden"
                             animate="visible"
@@ -379,21 +376,19 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 </motion.div>
                             ))}
                         </motion.div>
-                        <div className="absolute inset-0 z-20 pointer-events-none">
-                            <AnimatePresence>
-                                {steps[2].items.map((item, index) => (
-                                    openSheet === item.title && (
-                                        <ExplanationCard 
-                                            key={item.title}
-                                            title={item.title}
-                                            description={item.explanation || ''}
-                                            icon={item.icon}
-                                            position={positions[index]}
-                                        />
-                                    )
-                                ))}
-                            </AnimatePresence>
-                        </div>
+                        <AnimatePresence>
+                            {steps[2].items.map((item, index) => (
+                                openSheet === item.title && (
+                                    <ExplanationCard 
+                                        key={item.title}
+                                        title={item.title}
+                                        description={item.explanation || ''}
+                                        icon={item.icon}
+                                        position={positions[index]}
+                                    />
+                                )
+                            ))}
+                        </AnimatePresence>
                     </div>
                 );
             }
@@ -406,39 +401,37 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             content: () => {
                 const item = steps[3].items[0];
                 return (
-                    <motion.div 
-                        className="w-full mt-6"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                         <motion.button
-                            type="button"
-                            onClick={() => setOpenSheet(openSheet === item.title ? null : item.title)}
-                            className="w-full p-6 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg text-left cursor-pointer"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
+                    <div className="relative w-full h-[400px] flex items-center justify-center">
+                        <motion.div 
+                            className="w-full mt-6 max-w-sm z-10"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.5 }}
                         >
-                            <h4 className="font-bold text-lg">{item.title}</h4>
-                            <p className="opacity-80 mt-1 text-sm">Tu asistente 24/7. Pídele que te explique un tema, te cree tarjetas de estudio o que te ponga a prueba con un cuestionario.</p>
-                            <motion.div 
-                                className="flex flex-wrap gap-2 mt-4"
-                                variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-                                initial="hidden"
-                                animate="visible"
+                            <div
+                                className="w-full p-6 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg text-left"
                             >
-                                {item.features.map(feat => (
-                                     <motion.span
-                                        key={feat}
-                                        className="text-xs font-bold bg-white/20 py-1 px-2 rounded-full"
-                                        variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
-                                    >
-                                        {feat}
-                                    </motion.span>
-                                ))}
-                            </motion.div>
-                        </motion.button>
-                    </motion.div>
+                                <h4 className="font-bold text-lg">{item.title}</h4>
+                                <p className="opacity-80 mt-1 text-sm">Tu asistente 24/7. Pídele que te explique un tema, te cree tarjetas de estudio o que te ponga a prueba con un cuestionario.</p>
+                                <motion.div 
+                                    className="flex flex-wrap gap-2 mt-4"
+                                    variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                                    initial="hidden"
+                                    animate="visible"
+                                >
+                                    {item.features.map(feat => (
+                                        <motion.span
+                                            key={feat}
+                                            className="text-xs font-bold bg-white/20 py-1 px-2 rounded-full"
+                                            variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                                        >
+                                            {feat}
+                                        </motion.span>
+                                    ))}
+                                </motion.div>
+                            </div>
+                        </motion.div>
+                    </div>
                 )
             }
         },
@@ -452,27 +445,29 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: Calendar, title: "Horario Integrado", explanation: "Consulta tus clases: asignatura, hora, profesor y aula. Todo en un mismo lugar y siempre accesible." },
             ],
             content: () => {
-                const positions = ["top-8 left-0", "bottom-8 right-0", "top-1/2 left-0 -translate-y-1/2"];
+                const positions = [
+                    "top-1/4 left-0 -translate-x-[90%]", 
+                    "bottom-1/4 right-0 translate-x-[90%]", 
+                    "top-1/2 left-0 -translate-x-[90%] -translate-y-1/2"
+                ];
                 return (
                     <div className="relative w-full h-[400px] flex items-center justify-center">
-                        <div className="absolute inset-0 z-20 pointer-events-none">
-                            <AnimatePresence>
-                                {steps[4].items.map((item, index) => (
-                                    openSheet === item.title && (
-                                        <ExplanationCard 
-                                            key={item.title}
-                                            title={item.title}
-                                            description={item.explanation}
-                                            icon={item.icon}
-                                            position={positions[index]}
-                                        />
-                                    )
-                                ))}
-                            </AnimatePresence>
-                        </div>
+                        <AnimatePresence>
+                            {steps[4].items.map((item, index) => (
+                                openSheet === item.title && (
+                                    <ExplanationCard 
+                                        key={item.title}
+                                        title={item.title}
+                                        description={item.explanation}
+                                        icon={item.icon}
+                                        position={positions[index]}
+                                    />
+                                )
+                            ))}
+                        </AnimatePresence>
     
                         <motion.div
-                            className="w-72 space-y-4"
+                            className="w-72 space-y-4 z-10"
                             initial="hidden"
                             animate="visible"
                             variants={{ visible: { transition: { staggerChildren: 0.1 } }}}
@@ -523,33 +518,36 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: Cat, title: "Avatares", value: "", explanation: "Usa tus trofeos para desbloquear iconos y avatares exclusivos para personalizar tu foto de perfil y destacar en la comunidad."},
             ],
             content: () => {
-                const positions = ["top-0 left-0", "top-0 right-0", "bottom-0 left-0", "bottom-0 right-0"];
+                const positions = [
+                    "top-0 left-0 -translate-y-1/4 -translate-x-3/4", 
+                    "top-0 right-0 -translate-y-1/4 translate-x-3/4", 
+                    "bottom-0 left-0 translate-y-1/4 -translate-x-3/4", 
+                    "bottom-0 right-0 translate-y-1/4 translate-x-3/4"
+                ];
                 return (
                     <div className="relative w-full h-[400px] flex items-center justify-center">
-                         <div className="absolute inset-0 z-20 pointer-events-none">
-                            <AnimatePresence>
-                                {steps[5].items.map((item, index) => (
-                                    openSheet === item.title && (
-                                        <ExplanationCard 
-                                            key={item.title}
-                                            title={item.title}
-                                            description={item.explanation || ''}
-                                            icon={item.icon}
-                                            position={positions[index]}
-                                        />
-                                    )
-                                ))}
-                            </AnimatePresence>
-                        </div>
+                        <AnimatePresence>
+                            {steps[5].items.map((item, index) => (
+                                openSheet === item.title && (
+                                    <ExplanationCard 
+                                        key={item.title}
+                                        title={item.title}
+                                        description={item.explanation || ''}
+                                        icon={item.icon}
+                                        position={positions[index]}
+                                    />
+                                )
+                            ))}
+                        </AnimatePresence>
                         <motion.div
-                            className="grid grid-cols-2 gap-4 mt-6 z-10"
+                            className="grid grid-cols-2 gap-4 mt-6 z-10 w-full max-w-sm"
                             variants={{ visible: { transition: { staggerChildren: 0.2 } } }}
                             initial="hidden"
                             animate="visible"
                         >
-                            {steps[5].items.map((item, index) => (
+                            {steps[5].items.map((item) => (
                                 <motion.div
-                                    key={index}
+                                    key={item.title}
                                     variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}}
                                 >
                                 <motion.button
@@ -580,52 +578,72 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             ],
             content: ({ setTheme, theme }: { setTheme: (theme: Theme) => void, theme: Theme }) => {
                 const ThemeIcon = theme === 'dark' ? Moon : Sun;
+                const positions = [
+                    "top-8 left-full ml-4",
+                    "bottom-8 right-full mr-4"
+                ];
+
                 return (
-                     <motion.div
-                        className="mt-6 space-y-4"
-                        initial="hidden"
-                        animate="visible"
-                        variants={{ visible: { transition: { staggerChildren: 0.2 } }}}
-                    >
-                        <motion.div 
-                            variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
-                         >
-                            <motion.button
-                                type="button"
-                                onClick={() => setOpenSheet("Resúmenes Semanales")}
-                                className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                             >
-                                <MailCheck className="h-6 w-6 text-primary flex-shrink-0"/>
-                                <div>
-                                    <h4 className="font-semibold">Resúmenes Semanales</h4>
-                                    <p className="text-sm text-muted-foreground">Recibe cada viernes un informe de tu progreso.</p>
-                                </div>
-                            </motion.button>
-                         </motion.div>
+                     <div className="relative w-full h-[400px] flex items-center justify-center">
+                         <AnimatePresence>
+                             {steps[6].items.map((item, index) => (
+                                 openSheet === item.title && (
+                                     <ExplanationCard 
+                                         key={item.title}
+                                         title={item.title}
+                                         description={item.explanation || ''}
+                                         icon={item.icon}
+                                         position={positions[index]}
+                                     />
+                                 )
+                             ))}
+                         </AnimatePresence>
                         <motion.div
-                            variants={{ hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 } }}
+                            className="mt-6 space-y-4 w-full max-w-sm"
+                            initial="hidden"
+                            animate="visible"
+                            variants={{ visible: { transition: { staggerChildren: 0.2 } }}}
                         >
-                            <motion.button
-                                type="button"
-                                onClick={() => {
-                                    const newTheme = theme === 'dark' ? 'light' : 'dark';
-                                    setTheme(newTheme);
-                                    setOpenSheet("Pre-configurar Tema");
-                                }}
-                                className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
+                            <motion.div 
+                                variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
                             >
-                                <ThemeIcon className="h-6 w-6 text-primary flex-shrink-0"/>
-                                <div>
-                                    <h4 className="font-semibold">Pre-configurar Tema</h4>
-                                    <p className="text-sm text-muted-foreground">Prueba el Modo Oscuro y elige tu vista preferida.</p>
-                                </div>
-                            </motion.button>
+                                <motion.button
+                                    type="button"
+                                    onClick={() => setOpenSheet("Resúmenes Semanales")}
+                                    className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                >
+                                    <MailCheck className="h-6 w-6 text-primary flex-shrink-0"/>
+                                    <div>
+                                        <h4 className="font-semibold">Resúmenes Semanales</h4>
+                                        <p className="text-sm text-muted-foreground">Recibe cada viernes un informe de tu progreso.</p>
+                                    </div>
+                                </motion.button>
+                            </motion.div>
+                            <motion.div
+                                variants={{ hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 } }}
+                            >
+                                <motion.button
+                                    type="button"
+                                    onClick={() => {
+                                        const newTheme = theme === 'dark' ? 'light' : 'dark';
+                                        setTheme(newTheme);
+                                        setOpenSheet("Pre-configurar Tema");
+                                    }}
+                                    className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                >
+                                    <ThemeIcon className="h-6 w-6 text-primary flex-shrink-0"/>
+                                    <div>
+                                        <h4 className="font-semibold">Pre-configurar Tema</h4>
+                                        <p className="text-sm text-muted-foreground">Prueba el Modo Oscuro y elige tu vista preferida.</p>
+                                    </div>
+                                </motion.button>
+                            </motion.div>
                         </motion.div>
-                    </motion.div>
+                     </div>
                 )
             }
         }
@@ -705,7 +723,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     
     return (
         <motion.div 
-            className="fixed inset-0 bg-background z-[100] flex flex-col p-6 overflow-hidden"
+            className="fixed inset-0 bg-background z-[100] flex flex-col p-6"
             initial={{ opacity: 1, scale: 1 }}
             animate={isExiting ? { opacity: 0, scale: 0.95 } : { opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
@@ -771,27 +789,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 </motion.div>
                             </AnimatePresence>
                         </div>
-                        
-                         <Sheet open={!!openSheet} onOpenChange={(isOpen) => !isOpen && setOpenSheet(null)}>
-                           <SheetContent>
-                               {currentItems.map(item => {
-                                   if (openSheet === item.title) {
-                                       return (
-                                           <React.Fragment key={item.title}>
-                                               <SheetHeader>
-                                                   <SheetTitle className="flex items-center gap-2">
-                                                       {item.icon && <item.icon className="h-5 w-5" />}
-                                                       {item.title}
-                                                   </SheetTitle>
-                                                   <SheetDescription>{item.explanation}</SheetDescription>
-                                               </SheetHeader>
-                                           </React.Fragment>
-                                       )
-                                   }
-                                   return null;
-                               })}
-                           </SheetContent>
-                       </Sheet>
                         
                         <footer className="space-y-4">
                             <Progress value={((step + 1) / steps.length) * 100} className="h-2 w-full max-w-xs mx-auto" />
