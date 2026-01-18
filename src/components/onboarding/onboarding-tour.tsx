@@ -32,7 +32,8 @@ import {
     BrainCircuit,
     ShieldCheck,
     MailCheck,
-    Sun
+    Sun,
+    Moon
 } from 'lucide-react';
 import { 
     Sheet,
@@ -63,7 +64,7 @@ const steps = [
         icon: School,
         title: "Elige tu Camino",
         description: "Dynamic Class se adapta a ti. Empieza uniéndote a un grupo, creando uno nuevo o usándolo de forma individual.",
-        content: ({}) => (
+        content: () => (
             <motion.div 
                 className="mt-6 space-y-3"
                 variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
@@ -106,7 +107,7 @@ const steps = [
         icon: Users,
         title: "Una Estructura Colaborativa",
         description: "Organizamos los roles para una gestión clara y segura, desde el administrador global hasta cada estudiante.",
-        content: ({}) => (
+        content: () => (
              <motion.div 
                 className="mt-6 space-y-2"
                 variants={{
@@ -153,16 +154,16 @@ const steps = [
         icon: BrainCircuit,
         title: "Tu Centro de Operaciones",
         description: "Todas tus herramientas de productividad, centralizadas en el Modo Estudio para que nada te distraiga.",
-        content: ({}) => {
+        content: () => {
             const tools = [
-                { icon: Timer, name: 'Pomodoro', explanation: "Técnica de gestión del tiempo para mantener la concentración en bloques de 25 minutos." },
-                { icon: ScanLine, name: 'Escáner', explanation: "Digitaliza tus apuntes y documentos físicos usando la cámara de tu dispositivo." },
-                { icon: Calculator, name: 'Calculadora', explanation: "Una calculadora científica integrada para resolver problemas complejos." },
-                { icon: Music, name: 'Música', explanation: "Conéctate a Spotify y escucha tus playlists favoritas mientras estudias." },
-                { icon: Target, name: 'Calcula Notas', explanation: "Calcula qué nota necesitas en tu próximo examen para alcanzar tu objetivo." },
-                { icon: Wand2, name: 'Editor Mágico', explanation: "Potencia tus apuntes con IA para resumir, traducir o corregir textos." },
-                { icon: MessageSquare, name: 'Chat de Clase', explanation: "Comunícate en tiempo real con tus compañeros y profesores." },
-                { icon: Sparkles, name: 'ADRIMAX AI', explanation: "Tu asistente personal 24/7 para resolver dudas y generar material de estudio." },
+                { icon: Timer, name: 'Pomodoro', explanation: "Utiliza la técnica Pomodoro para mantener la concentración en bloques de estudio (ej. 25 min) seguidos de descansos cortos." },
+                { icon: ScanLine, name: 'Escáner', explanation: "Digitaliza tus apuntes en papel. Haz una foto, mejora la imagen y guárdala como PDF en tu dispositivo." },
+                { icon: Calculator, name: 'Calculadora', explanation: "Una calculadora científica siempre a mano para resolver problemas complejos sin salir de la app." },
+                { icon: Music, name: 'Música', explanation: "Conéctate a Spotify y controla tu música de estudio favorita directamente desde el Modo Estudio." },
+                { icon: Target, name: 'Calcula Notas', explanation: "Introduce tus notas y sus porcentajes para calcular qué necesitas sacar en el próximo examen para aprobar." },
+                { icon: Wand2, name: 'Editor Mágico', explanation: "Potencia tus apuntes con IA. Pídele que resuma, traduzca, corrija la ortografía o incluso continúe tus textos." },
+                { icon: MessageSquare, name: 'Chat de Clase', explanation: "Comunícate en tiempo real con tus compañeros y profesores. Resuelve dudas y colabora en proyectos." },
+                { icon: Sparkles, name: 'ADRIMAX AI', explanation: "Tu asistente de estudio personal 24/7. Hazle cualquier pregunta académica y obtendrás una respuesta clara y concisa." },
             ];
             return (
                 <motion.div 
@@ -199,34 +200,45 @@ const steps = [
         icon: Sparkles,
         title: "Asistencia Inteligente",
         description: "Nuestra IA te ayuda a entender conceptos, generar resúmenes, crear tarjetas de estudio interactivas y mucho más.",
-        content: ({}) => {
+        content: () => {
              const aiFeatures = ["Resúmenes", "Flashcards", "Explicaciones", "Esquemas", "Cuestionarios"];
             return (
-                <motion.div 
-                    className="mt-6 p-6 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg text-left"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                >
-                    <h4 className="font-bold text-lg">ADRIMAX AI</h4>
-                    <p className="opacity-80 mt-1 text-sm">Tu asistente 24/7. Pídele que te explique un tema, que te cree tarjetas de estudio o que te ponga a prueba con un cuestionario.</p>
-                    <motion.div 
-                        className="flex flex-wrap gap-2 mt-4"
-                        variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-                        initial="hidden"
-                        animate="visible"
-                    >
-                        {aiFeatures.map(feat => (
-                             <motion.span
-                                key={feat}
-                                className="text-xs font-bold bg-white/20 py-1 px-2 rounded-full"
-                                variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                <Sheet>
+                    <SheetTrigger asChild>
+                        <motion.div
+                            className="mt-6 p-6 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg text-left cursor-pointer"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.5 }}
+                            whileHover={{ scale: 1.05 }}
+                        >
+                            <h4 className="font-bold text-lg">ADRIMAX AI</h4>
+                            <p className="opacity-80 mt-1 text-sm">Tu asistente 24/7. Pídele que te explique un tema, que te cree tarjetas de estudio o que te ponga a prueba con un cuestionario.</p>
+                            <motion.div 
+                                className="flex flex-wrap gap-2 mt-4"
+                                variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                                initial="hidden"
+                                animate="visible"
                             >
-                                {feat}
-                            </motion.span>
-                        ))}
-                    </motion.div>
-                </motion.div>
+                                {aiFeatures.map(feat => (
+                                     <motion.span
+                                        key={feat}
+                                        className="text-xs font-bold bg-white/20 py-1 px-2 rounded-full"
+                                        variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                                    >
+                                        {feat}
+                                    </motion.span>
+                                ))}
+                            </motion.div>
+                        </motion.div>
+                    </SheetTrigger>
+                    <SheetContent>
+                        <SheetHeader>
+                            <SheetTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5" />ADRIMAX AI</SheetTitle>
+                            <SheetDescription>ADRIMAX AI es un asistente educativo avanzado integrado en la app. Puedes chatear con él para pedirle que te explique conceptos difíciles, te haga un resumen de un texto largo, genere tarjetas de estudio interactivas para repasar, o incluso cree cuestionarios para que pongas a prueba tus conocimientos. ¡Es como tener un tutor personal en tu bolsillo!</SheetDescription>
+                        </SheetHeader>
+                    </SheetContent>
+                </Sheet>
             )
         }
     },
@@ -234,43 +246,41 @@ const steps = [
         icon: Vote,
         title: "Interactúa con tu Clase",
         description: "Consulta tu horario, participa en encuestas y mantente siempre al día con el chat de clase y los anuncios importantes.",
-        content: ({}) => (
+        content: () => (
             <motion.div
                 className="mt-6 space-y-4"
                 initial="hidden"
                 animate="visible"
                 variants={{ visible: { transition: { staggerChildren: 0.2 } }}}
             >
-                 <motion.div 
-                    className="flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left"
-                    variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
-                 >
-                    <MessageSquare className="h-6 w-6 text-primary flex-shrink-0"/>
-                    <div>
-                        <h4 className="font-semibold">Chat de Clase</h4>
-                        <p className="text-sm text-muted-foreground">Comunícate en tiempo real con compañeros y profesores.</p>
-                    </div>
-                 </motion.div>
-                  <motion.div 
-                    className="flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left"
-                    variants={{ hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 } }}
-                 >
-                    <Building className="h-6 w-6 text-primary flex-shrink-0"/>
-                    <div>
-                        <h4 className="font-semibold">Anuncios y Encuestas</h4>
-                        <p className="text-sm text-muted-foreground">Mantente al día de las novedades y da tu opinión.</p>
-                    </div>
-                 </motion.div>
-                 <motion.div 
-                    className="flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left"
-                    variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
-                 >
-                    <Calendar className="h-6 w-6 text-primary flex-shrink-0"/>
-                    <div>
-                        <h4 className="font-semibold">Horario Integrado</h4>
-                        <p className="text-sm text-muted-foreground">Consulta tus clases de un vistazo.</p>
-                    </div>
-                 </motion.div>
+                {[
+                    { icon: MessageSquare, title: "Chat de Clase", explanation: "Un espacio de chat en tiempo real, similar a WhatsApp, pero exclusivo para los miembros de tu clase. Ideal para resolver dudas rápidas, organizar trabajos en grupo o compartir información importante." },
+                    { icon: Building, title: "Anuncios y Encuestas", explanation: "Mantente al día con los comunicados de tus profesores o administradores. Puedes ver anuncios importantes y participar en encuestas para dar tu opinión sobre temas de clase." },
+                    { icon: Calendar, title: "Horario Integrado", explanation: "Consulta tus clases de un vistazo. Si tu administrador lo ha configurado, verás qué asignatura tienes, a qué hora, con qué profesor y en qué aula." },
+                ].map((item, index) => {
+                    const ItemIcon = item.icon;
+                    return(
+                        <Sheet key={index}>
+                            <SheetTrigger asChild>
+                                <motion.div 
+                                    className="flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                                    variants={{ hidden: { opacity: 0, x: index % 2 === 0 ? -20 : 20 }, visible: { opacity: 1, x: 0 } }}
+                                >
+                                    <ItemIcon className="h-6 w-6 text-primary flex-shrink-0"/>
+                                    <div>
+                                        <h4 className="font-semibold">{item.title}</h4>
+                                    </div>
+                                </motion.div>
+                            </SheetTrigger>
+                             <SheetContent>
+                                <SheetHeader>
+                                    <SheetTitle className="flex items-center gap-2"><ItemIcon className="h-5 w-5" />{item.title}</SheetTitle>
+                                    <SheetDescription>{item.explanation}</SheetDescription>
+                                </SheetHeader>
+                            </SheetContent>
+                        </Sheet>
+                    );
+                })}
             </motion.div>
         )
     },
@@ -278,31 +288,41 @@ const steps = [
         icon: Trophy,
         title: "Compite y Gana Recompensas",
         description: "Gana trofeos por tus logros y canjéalos por tarjetas regalo o avatares exclusivos para tu perfil.",
-         content: ({}) => (
+         content: () => (
             <motion.div
                 className="grid grid-cols-2 gap-4 mt-6"
                 variants={{ visible: { transition: { staggerChildren: 0.2 } } }}
                 initial="hidden"
                 animate="visible"
             >
-                <motion.div variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}} className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30">
-                    <Trophy className="h-8 w-8 text-amber-500"/>
-                    <span className="font-bold text-xl">125</span>
-                    <span className="text-xs font-semibold">Trofeos</span>
-                </motion.div>
-                 <motion.div variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}} className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-orange-400/10 border-orange-400/30">
-                    <Flame className="h-8 w-8 text-orange-500"/>
-                    <span className="font-bold text-xl">12 Días</span>
-                    <span className="text-xs font-semibold">Racha Actual</span>
-                </motion.div>
-                 <motion.div variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}} className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-green-400/10 border-green-400/30">
-                    <Gift className="h-8 w-8 text-green-500"/>
-                    <span className="font-bold text-base">Tarjetas Regalo</span>
-                </motion.div>
-                 <motion.div variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}} className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-purple-400/10 border-purple-400/30">
-                    <Cat className="h-8 w-8 text-purple-500"/>
-                    <span className="font-bold text-base">Avatares</span>
-                </motion.div>
+                {[
+                    { icon: Trophy, title: "Trofeos", value: "125", explanation: "Gana trofeos al completar tareas y exámenes. ¡Acumúlalos para subir en el ranking y canjearlos por premios!"},
+                    { icon: Flame, title: "Racha Actual", value: "12 Días", explanation: "Mantén tu racha de estudio diaria utilizando el Modo Estudio. ¡Compite con tus compañeros para ver quién tiene la racha más larga!"},
+                    { icon: Gift, title: "Tarjetas Regalo", value: "", explanation: "Canjea los trofeos que tanto te ha costado ganar por tarjetas regalo de tus tiendas favoritas como Amazon, GAME, y más."},
+                    { icon: Cat, title: "Avatares", value: "", explanation: "Usa tus trofeos para desbloquear iconos y avatares exclusivos para personalizar tu foto de perfil y destacar en la comunidad."},
+                ].map((item, index) => {
+                    const ItemIcon = item.icon;
+                    return (
+                        <Sheet key={index}>
+                            <SheetTrigger asChild>
+                                <motion.div
+                                    variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}}
+                                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30 cursor-pointer"
+                                >
+                                    <ItemIcon className="h-8 w-8 text-amber-500"/>
+                                    <span className="font-bold text-sm text-center">{item.title}</span>
+                                    {item.value && <span className="font-bold text-xl">{item.value}</span>}
+                                </motion.div>
+                            </SheetTrigger>
+                             <SheetContent>
+                                <SheetHeader>
+                                    <SheetTitle className="flex items-center gap-2"><ItemIcon className="h-5 w-5" />{item.title}</SheetTitle>
+                                    <SheetDescription>{item.explanation}</SheetDescription>
+                                </SheetHeader>
+                            </SheetContent>
+                        </Sheet>
+                    );
+                })}
             </motion.div>
         )
     },
@@ -310,7 +330,7 @@ const steps = [
         icon: MailCheck,
         title: "Notificaciones Inteligentes",
         description: "Recibe resúmenes semanales y mantente al día sin esfuerzo. Personaliza tu experiencia visual desde el principio.",
-        content: function Content({ setTheme }: { setTheme: (theme: Theme) => void; }) {
+        content: function Content({ theme, setTheme }: { theme?: Theme; setTheme?: (theme: Theme) => void; }) {
             return (
                  <motion.div
                     className="mt-6 space-y-4"
@@ -334,16 +354,20 @@ const steps = [
                         <SheetContent>
                             <SheetHeader>
                                 <SheetTitle className="flex items-center gap-2"><MailCheck className="h-5 w-5" />Resúmenes Semanales</SheetTitle>
-                                <SheetDescription>Cada viernes, recibirás un correo con tu rendimiento, tareas pendientes y eventos importantes de la próxima semana, extraídos de tu calendario. Podrás desactivar esta función cuando quieras desde los ajustes.</SheetDescription>
+                                <SheetDescription>Si lo activas, cada viernes recibirás en tu correo un resumen de tu rendimiento, tareas completadas y los próximos eventos de tu calendario. ¡Una forma perfecta de planificar tu semana!</SheetDescription>
                             </SheetHeader>
                         </SheetContent>
                     </Sheet>
                     <motion.div 
                         className="flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                         variants={{ hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 } }}
-                        onClick={() => setTheme('dark')}
+                        onClick={() => setTheme && setTheme(theme === 'dark' ? 'light' : 'dark')}
                     >
-                        <Sun className="h-6 w-6 text-primary flex-shrink-0"/>
+                        {theme === 'dark' ? (
+                            <Moon className="h-6 w-6 text-primary flex-shrink-0"/>
+                        ) : (
+                            <Sun className="h-6 w-6 text-primary flex-shrink-0"/>
+                        )}
                         <div>
                             <h4 className="font-semibold">Pre-configurar Tema</h4>
                             <p className="text-sm text-muted-foreground">Prueba el Modo Oscuro y elige tu vista preferida.</p>
@@ -423,7 +447,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [isIntro, setIsIntro] = useState(true);
     const [isFinishing, setIsFinishing] = useState(false);
     const [isExiting, setIsExiting] = useState(false);
-    const { setTheme } = useApp();
+    const { theme, setTheme } = useApp();
 
 
     useEffect(() => {
@@ -537,7 +561,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         className="absolute inset-0 flex flex-col items-center justify-center text-center z-20 bg-background"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5 }}
+                        transition={{ duration: 0.5, delay: 0.5 }}
                     >
                         <h2 className="text-2xl font-bold font-headline mb-6">Construyendo tu Espacio...</h2>
                         <BuildingWorkspaceScreen />
@@ -577,7 +601,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     <p className="text-muted-foreground mt-2">{steps[step].description}</p>
                                     
                                     <div className="min-h-[290px] flex items-center justify-center">
-                                        {steps[step].content({ setTheme })}
+                                        {steps[step].content({ theme, setTheme })}
                                     </div>
                                 </motion.div>
                             </AnimatePresence>
