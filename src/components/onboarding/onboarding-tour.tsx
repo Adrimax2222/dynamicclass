@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -134,6 +136,34 @@ const BuildingWorkspaceScreen = () => {
     );
 };
 
+const ExplanationCard = ({ title, description, icon: Icon, position, isVisible }: { title: string; description: string; icon: React.ElementType; position: string; isVisible: boolean }) => {
+    const variants = {
+        hidden: { opacity: 0, scale: 0.9, y: 20 },
+        visible: { opacity: 1, scale: 1, y: 0 },
+    };
+
+    return (
+        <AnimatePresence>
+            {isVisible && (
+                <motion.div
+                    className={cn("absolute w-56 p-5 rounded-2xl shadow-2xl bg-white/10 backdrop-blur-lg border border-white/20 text-center z-0", position)}
+                    variants={variants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                >
+                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+                        <Icon className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="font-bold text-sm text-white mb-1">{title}</h3>
+                    <p className="text-xs text-white/80">{description}</p>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+};
+
 
 export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [step, setStep] = useState(0);
@@ -142,6 +172,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [isExiting, setIsExiting] = useState(false);
     const [openSheet, setOpenSheet] = useState<string | null>(null);
     const { theme, setTheme } = useApp();
+    const [activeExplanation, setActiveExplanation] = useState<string | null>(null);
     
     useEffect(() => {
         const timer = setTimeout(() => setIsIntro(false), 4000); 
@@ -149,6 +180,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     }, []);
 
     const handleNext = () => {
+        setActiveExplanation(null); // Hide any open card when going to next step
         if (step < steps.length - 1) {
             setStep(step + 1);
         } else {
@@ -169,41 +201,68 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: PlusCircle, title: "Crear un Centro", desc: "Si tu centro no existe, créalo y compártelo.", explanation: "Conviértete en administrador de tu propio centro. Podrás crear clases, gestionar miembros y configurar todo el contenido para tus compañeros. Ideal para delegados o profesores." },
                 { icon: User, title: "Uso Personal", desc: "Utiliza la app de forma individual.", explanation: "Perfecto si quieres usar las herramientas de estudio como el Pomodoro, el escáner, la IA y las notas sin estar conectado a un centro. Siempre podrás unirte a uno más tarde." },
             ],
-            content: ({ setOpenSheet }: { setOpenSheet: (id: string | null) => void }) => (
-                <motion.div 
-                    className="mt-6 space-y-3"
-                    variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-                    initial="hidden"
-                    animate="visible"
-                >
-                    {steps[0].items.map((item) => {
-                        const ItemIcon = item.icon;
-                        return (
-                             <motion.div
-                                key={item.title}
-                                className="w-full flex items-center text-left gap-3 p-3 rounded-lg border bg-background/50 backdrop-blur-sm"
-                                variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
-                            >
-                                <div className="flex-1 flex items-center gap-4">
-                                    <ItemIcon className="h-6 w-6 text-primary flex-shrink-0"/>
-                                    <div>
-                                        <h4 className="font-semibold text-sm">{item.title}</h4>
-                                        <p className="text-xs text-muted-foreground">{item.desc}</p>
-                                    </div>
-                                </div>
-                                <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={() => setOpenSheet(item.title)}
-                                    className="flex-shrink-0 rounded-full h-10 w-10"
-                                    aria-label={`Más información sobre ${item.title}`}
+            content: () => (
+                 <div className="relative w-full h-[400px] flex items-center justify-center">
+                    {/* Floating Explanation Cards */}
+                    <ExplanationCard
+                        isVisible={activeExplanation === 'Unirse a un Centro'}
+                        title="Acceso para Alumnos"
+                        description="Introduce el código de tu clase para unirte a tu centro educativo y conectar con profesores y compañeros."
+                        icon={School}
+                        position="top-0 left-0 -translate-x-4"
+                    />
+                     <ExplanationCard
+                        isVisible={activeExplanation === 'Crear un Centro'}
+                        title="Para Profesores y Administradores"
+                        description="Crea un espacio educativo propio, gestiona clases y comparte recursos."
+                        icon={PlusCircle}
+                        position="top-0 right-0 translate-x-4"
+                    />
+                    <ExplanationCard
+                        isVisible={activeExplanation === 'Uso Personal'}
+                        title="Gestión Individual"
+                        description="Organiza tu calendario, tareas y accede a herramientas de IA y estudio personal."
+                        icon={User}
+                        position="bottom-0 right-0 translate-x-4"
+                    />
+
+                    {/* Central buttons */}
+                    <motion.div 
+                        className="mt-6 space-y-3 z-10"
+                        variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        {steps[0].items.map((item) => {
+                            const ItemIcon = item.icon;
+                            return (
+                                <motion.div
+                                    key={item.title}
+                                    className="w-full flex items-center text-left gap-3 p-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20"
+                                    variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
                                 >
-                                    <div className="h-2.5 w-2.5 bg-blue-500 rounded-full" />
-                                </Button>
-                            </motion.div>
-                        )
-                    })}
-                </motion.div>
+                                    <div className="flex-1 flex items-center gap-4">
+                                        <div className="p-2 bg-white/20 rounded-lg">
+                                            <ItemIcon className="h-5 w-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold text-sm text-white">{item.title}</h4>
+                                            <p className="text-xs text-white/80">{item.desc}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setActiveExplanation(prev => prev === item.title ? null : item.title)}
+                                        className="flex-shrink-0 rounded-full h-9 w-9 bg-white/20 flex items-center justify-center relative transition-transform hover:scale-110 active:scale-95"
+                                        aria-label={`Más información sobre ${item.title}`}
+                                    >
+                                        <span className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75 animate-ping"></span>
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                                    </button>
+                                </motion.div>
+                            )
+                        })}
+                    </motion.div>
+                </div>
             )
         },
         {
@@ -216,7 +275,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: GraduationCap, title: "Admin de Clase", desc: "Modera el chat y el horario de su clase.", explanation: "Un rol de delegado o profesor que puede fijar mensajes, gestionar miembros y editar el horario de su propia clase. Facilita la autogestión de cada grupo." },
                 { icon: User, title: "Estudiante", desc: "Participa, aprende y compite.", explanation: "El rol principal. Accede a todas las herramientas de estudio, participa en su clase y compite en los rankings para ganar recompensas." },
             ],
-            content: ({ setOpenSheet }: { setOpenSheet: (id: string | null) => void }) => (
+            content: () => (
                  <motion.div 
                     className="mt-6 space-y-2"
                     variants={{ visible: { opacity: 1, transition: { staggerChildren: 0.15 } } }}
@@ -256,7 +315,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: Target, title: 'Calcula Notas', explanation: "Introduce tus notas y sus porcentajes para calcular qué necesitas sacar en el próximo examen para aprobar." },
                 { icon: Wand2, title: 'Editor Mágico', explanation: "Potencia tus apuntes con IA. Pídele que resuma, traduzca, corrija la ortografía o incluso continúe tus textos." },
             ],
-            content: ({ setOpenSheet }: { setOpenSheet: (id: string | null) => void }) => (
+            content: () => (
                 <motion.div 
                     className="grid grid-cols-3 gap-2 sm:gap-4 mt-6 text-center"
                     variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
@@ -284,7 +343,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             title: "Asistencia Inteligente",
             description: "Nuestra IA te ayuda a entender conceptos, generar resúmenes y crear tarjetas de estudio interactivas.",
             items: [{ title: "ADRIMAX AI", features: ["Resúmenes", "Flashcards", "Explicaciones", "Esquemas", "Cuestionarios"], explanation: "ADRIMAX AI es un asistente educativo avanzado integrado en la app. Puedes chatear con él para pedirle que te explique conceptos difíciles, te haga un resumen de un texto largo, genere tarjetas de estudio interactivas para repasar, o incluso cree cuestionarios para que pongas a prueba tus conocimientos. ¡Es como tener un tutor personal en tu bolsillo!" }],
-            content: ({ setOpenSheet }: { setOpenSheet: (id: string | null) => void }) => {
+            content: () => {
                 const item = steps[3].items[0];
                 return (
                     <motion.button
@@ -327,7 +386,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: Building, title: "Anuncios y Encuestas", explanation: "Mantente al día con los comunicados de tus profesores o administradores. Puedes ver anuncios importantes y participar en encuestas para dar tu opinión sobre temas de clase." },
                 { icon: Calendar, title: "Horario Integrado", explanation: "Consulta tus clases de un vistazo. Si tu administrador lo ha configurado, verás qué asignatura tienes, a qué hora, con qué profesor y en qué aula." },
             ],
-            content: ({ setOpenSheet }: { setOpenSheet: (id: string | null) => void }) => (
+            content: () => (
                 <motion.div
                     className="mt-6 space-y-4"
                     initial="hidden"
@@ -362,7 +421,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: Gift, title: "Tarjetas Regalo", value: "", explanation: "Canjea los trofeos que tanto te ha costado ganar por tarjetas regalo de tus tiendas favoritas como Amazon, GAME, y más."},
                 { icon: Cat, title: "Avatares", value: "", explanation: "Usa tus trofeos para desbloquear iconos y avatares exclusivos para personalizar tu foto de perfil y destacar en la comunidad."},
             ],
-            content: ({ setOpenSheet }: { setOpenSheet: (id: string | null) => void }) => (
+            content: () => (
                 <motion.div
                     className="grid grid-cols-2 gap-4 mt-6"
                     variants={{ visible: { transition: { staggerChildren: 0.2 } } }}
@@ -394,7 +453,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: MailCheck, title: "Resúmenes Semanales", explanation: "Si lo activas, cada viernes recibirás en tu correo un resumen de tu rendimiento, tareas completadas y los próximos eventos de tu calendario. ¡Una forma perfecta de planificar tu semana!" },
                 { icon: Sun, title: "Pre-configurar Tema", explanation: "Elige tu tema preferido, claro u oscuro. Puedes cambiarlo en cualquier momento desde los ajustes de la aplicación." },
             ],
-            content: ({ theme, setTheme, setOpenSheet }: { theme: Theme; setTheme: (theme: Theme) => void, setOpenSheet: (id: string | null) => void }) => {
+            content: () => {
                 const ThemeIcon = theme === 'dark' ? Moon : Sun;
                 return (
                      <motion.div
@@ -420,7 +479,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             type="button"
                             onClick={() => {
                                 setTheme(theme === 'dark' ? 'light' : 'dark');
-                                setOpenSheet("Pre-configurar Tema");
                             }}
                             className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                             variants={{ hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 } }}
@@ -572,8 +630,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     <h2 className="text-2xl font-bold font-headline">{steps[step].title}</h2>
                                     <p className="text-muted-foreground mt-2">{steps[step].description}</p>
                                     
-                                    <div className="min-h-[290px] flex items-center justify-center">
-                                        <CurrentContent setOpenSheet={setOpenSheet} theme={theme} setTheme={setTheme} />
+                                    <div className="min-h-[400px] flex items-center justify-center">
+                                        <CurrentContent />
                                     </div>
                                 </motion.div>
                             </AnimatePresence>
@@ -604,3 +662,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         </motion.div>
     );
 }
+
+
+    
