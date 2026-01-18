@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -37,13 +38,15 @@ import {
     Moon,
     X,
     Save,
-    Settings2
+    Settings2,
+    Languages
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { useApp } from '@/lib/hooks/use-app';
-import type { Theme } from '@/lib/types';
+import type { Theme, Language } from '@/lib/types';
 import { Switch } from '../ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const introIcons = [
     { icon: BookOpenCheck, angle: 0 },
@@ -146,7 +149,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [isFinishing, setIsFinishing] = useState(false);
     const [isExiting, setIsExiting] = useState(false);
     const [activeExplanation, setActiveExplanation] = useState<string | null>(null);
-    const { theme, setTheme, isChatBubbleVisible, setIsChatBubbleVisible, saveScannedDocs, setSaveScannedDocs } = useApp();
     
     useEffect(() => {
         const timer = setTimeout(() => setIsIntro(false), 4000); 
@@ -174,7 +176,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     };
 
     const getPositionClass = (title: string, stepIndex: number): string => {
-        // Default for mobile: At the top of the container.
         const mobileClass = "top-0 left-1/2 -translate-x-1/2 mt-4 sm:translate-x-0";
         let desktopClass = "";
     
@@ -410,12 +411,20 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             title: "Configuración rápida del usuario",
             description: "Personaliza tu experiencia antes de empezar. Puedes cambiar esto más tarde en Ajustes.",
             items: [
-                { icon: MailCheck, title: "Resúmenes Semanales", explanation: "Función en desarrollo. Si la activas, cada viernes recibirás en tu correo un resumen de tu rendimiento y tus próximas tareas. ¡Una forma perfecta de planificar tu semana!" },
                 { icon: Sun, title: "Tema de la Aplicación", explanation: "Elige tu tema preferido, claro u oscuro. Puedes cambiarlo en cualquier momento desde los ajustes de la aplicación." },
+                { icon: Languages, title: "Idioma de la Aplicación", explanation: "Selecciona el idioma para la interfaz de la aplicación. (Función en desarrollo)" },
                 { icon: Sparkles, title: "Burbuja de IA", explanation: "Muestra un acceso directo flotante al chatbot de IA en todas las pantallas para una consulta rápida." },
                 { icon: Save, title: "Guardar Escaneos", explanation: "Guarda automáticamente los documentos que escanees en el historial de tu dispositivo para acceder a ellos más tarde." },
+                { icon: MailCheck, title: "Resúmenes Semanales", explanation: "Si la activas, cada viernes recibirás en tu correo un resumen de tu rendimiento y tus próximas tareas. ¡Una forma perfecta de planificar tu semana!" },
             ],
             content: () => {
+                const { 
+                    theme, setTheme, 
+                    isChatBubbleVisible, setIsChatBubbleVisible, 
+                    saveScannedDocs, setSaveScannedDocs,
+                    language, setLanguage,
+                    weeklySummary, setWeeklySummary
+                } = useApp();
                 const ThemeIcon = theme === 'dark' ? Moon : Sun;
                 
                 return (
@@ -433,6 +442,28 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 <p className="text-sm text-muted-foreground">Personaliza la apariencia de la app.</p>
                             </div>
                             <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Tema de la Aplicación")}}>
+                                 <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                            </Button>
+                        </div>
+
+                         <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
+                            <Languages className="h-6 w-6 text-primary flex-shrink-0"/>
+                            <div className="flex-1">
+                                <h4 className="font-semibold">Idioma</h4>
+                                <p className="text-sm text-muted-foreground">Selecciona el idioma de la app.</p>
+                            </div>
+                            <Select value={language} onValueChange={(v: Language) => setLanguage(v)}>
+                                <SelectTrigger className="w-32">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="esp">ESP - Español</SelectItem>
+                                    <SelectItem value="cat">CAT - Català</SelectItem>
+                                    <SelectItem value="eng">ENG - Inglés</SelectItem>
+                                    <SelectItem value="mad">MAD - Marroquí</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => handleShowInfo("Idioma de la Aplicación")}>
                                  <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
                             </Button>
                         </div>
@@ -461,13 +492,13 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             </Button>
                         </div>
 
-                        <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left opacity-50 cursor-not-allowed">
+                        <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
                             <MailCheck className="h-6 w-6 text-primary flex-shrink-0"/>
                             <div className="flex-1">
                                 <h4 className="font-semibold">Resúmenes Semanales</h4>
                                 <p className="text-sm text-muted-foreground">Recibe informes en tu correo.</p>
                             </div>
-                            <Switch disabled={true} />
+                            <Switch checked={weeklySummary} onCheckedChange={setWeeklySummary} />
                             <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.preventDefault(); e.stopPropagation(); handleShowInfo("Resúmenes Semanales")}}>
                                  <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
                             </Button>
@@ -619,8 +650,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     <div className="relative w-full max-w-4xl mx-auto min-h-[400px] flex items-center justify-center">
                                         <CurrentContent />
                                         
-                                        {/* This block handles all floating info panels except for step 0 */}
-                                        {step !== 0 && (
+                                        <div className="absolute inset-0 z-20 pointer-events-none">
                                             <AnimatePresence>
                                                 {activeExplanation && activeItem && (
                                                     <motion.div
@@ -643,7 +673,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                                     </motion.div>
                                                 )}
                                             </AnimatePresence>
-                                        )}
+                                        </div>
                                     </div>
                                 </motion.div>
                             </AnimatePresence>

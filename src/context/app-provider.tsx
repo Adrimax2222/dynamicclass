@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import { createContext, useState, useEffect, useCallback, type ReactNode, useMemo, useRef } from 'react';
-import type { User, Chat, TimerMode, Phase, CustomMode, Theme } from '@/lib/types';
+import type { User, Chat, TimerMode, Phase, CustomMode, Theme, Language } from '@/lib/types';
 import { useAuth, useFirestore } from '@/firebase';
 import { onAuthStateChanged, type User as FirebaseUser, deleteUser } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, deleteDoc, collection, query, orderBy, updateDoc, increment, getDoc } from 'firebase/firestore';
@@ -20,6 +21,10 @@ export interface AppContextType {
   deleteAccount: () => Promise<void>;
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  language: Language;
+  setLanguage: (language: Language) => void;
+  weeklySummary: boolean;
+  setWeeklySummary: (enabled: boolean) => void;
   
   isChatBubbleVisible: boolean;
   setIsChatBubbleVisible: (visible: boolean) => void;
@@ -61,6 +66,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null | undefined>(undefined); // Start as undefined
   const [theme, setThemeState] = useState<Theme>('light');
+  const [language, setLanguageState] = useState<Language>('esp');
+  const [weeklySummary, setWeeklySummaryState] = useState(false);
   const [isChatBubbleVisible, setIsChatBubbleVisibleState] = useState(true);
   const [isChatDrawerOpen, setChatDrawerOpen] = useState(false);
   const [saveScannedDocs, setSaveScannedDocsState] = useState(true);
@@ -142,6 +149,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 document.documentElement.classList.remove('light', 'dark');
                 document.documentElement.classList.add(userTheme);
                 
+                const userLang = userData.language || 'esp';
+                setLanguageState(userLang);
+
+                const userSummary = userData.weeklySummary ?? false;
+                setWeeklySummaryState(userSummary);
+
                 const userBubbleVisible = userData.isChatBubbleVisible ?? true;
                 setIsChatBubbleVisibleState(userBubbleVisible);
 
@@ -208,6 +221,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (user && firestore) {
         const userDocRef = doc(firestore, 'users', user.uid);
         updateDoc(userDocRef, { theme: newTheme }).catch(console.error);
+    }
+  }, [user, firestore]);
+
+  const setLanguage = useCallback((newLanguage: Language) => {
+    setLanguageState(newLanguage);
+    if (user && firestore) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        updateDoc(userDocRef, { language: newLanguage }).catch(console.error);
+    }
+  }, [user, firestore]);
+
+  const setWeeklySummary = useCallback((enabled: boolean) => {
+    setWeeklySummaryState(enabled);
+    if (user && firestore) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        updateDoc(userDocRef, { weeklySummary: enabled }).catch(console.error);
     }
   }, [user, firestore]);
 
@@ -400,6 +429,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteAccount,
     theme,
     setTheme,
+    language,
+    setLanguage,
+    weeklySummary,
+    setWeeklySummary,
     isChatBubbleVisible,
     setIsChatBubbleVisible,
     isChatDrawerOpen,

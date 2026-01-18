@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import type { Timestamp } from "firebase/firestore";
 
 export type Theme = 'light' | 'dark';
+export type Language = 'esp' | 'cat' | 'eng' | 'mad';
 
 export type User = {
   uid: string;
@@ -33,6 +34,8 @@ export type User = {
   theme?: Theme;
   isChatBubbleVisible?: boolean;
   saveScannedDocs?: boolean;
+  language?: Language;
+  weeklySummary?: boolean;
 };
 
 // Simplified user type for center management
