@@ -62,26 +62,26 @@ const introIcons = [
 
 const ExplanationCard = ({ title, description, icon: Icon, position, isVisible }: { title: string; description: string; icon: React.ElementType; position: string; isVisible: boolean }) => {
     const variants = {
-        hidden: { opacity: 0, scale: 0.9, y: 20 },
-        visible: { opacity: 1, scale: 1, y: 0 },
+        hidden: { opacity: 0, scale: 0.8, x: position.includes('left') ? 20 : -20 },
+        visible: { opacity: 1, scale: 1, x: 0 },
     };
 
     return (
         <AnimatePresence>
             {isVisible && (
                 <motion.div
-                    className={cn("absolute w-64 p-5 rounded-2xl shadow-2xl bg-white/80 backdrop-blur-lg border border-white/20 text-center text-slate-800 z-20", position)}
+                    className={cn("absolute w-64 p-4 rounded-2xl shadow-2xl bg-white/30 backdrop-blur-xl border border-white/40 text-center z-20", position)}
                     variants={variants}
                     initial="hidden"
                     animate="visible"
                     exit="hidden"
-                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                 >
-                    <div className="w-10 h-10 bg-white/50 rounded-lg flex items-center justify-center mx-auto mb-3">
-                        <Icon className="h-6 w-6 text-slate-700" />
+                    <div className="w-10 h-10 bg-white/50 rounded-lg flex items-center justify-center mx-auto mb-2">
+                        <Icon className="h-6 w-6 text-slate-800" />
                     </div>
-                    <h3 className="font-bold text-sm mb-1">{title}</h3>
-                    <p className="text-xs">{description}</p>
+                    <h3 className="font-bold text-sm text-slate-900 mb-1">{title}</h3>
+                    <p className="text-xs text-slate-700">{description}</p>
                 </motion.div>
             )}
         </AnimatePresence>
@@ -150,6 +150,22 @@ const BuildingWorkspaceScreen = () => {
     );
 };
 
+function ExplanationSheet({ open, onOpenChange, title, description, icon: Icon }: { open: boolean; onOpenChange: (open: boolean) => void; title: string; description: string; icon?: React.ElementType; }) {
+    return (
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent>
+                <SheetHeader>
+                    <SheetTitle className="flex items-center gap-2">
+                        {Icon && <Icon className="h-5 w-5" />}
+                        {title}
+                    </SheetTitle>
+                    <SheetDescription>{description}</SheetDescription>
+                </SheetHeader>
+            </SheetContent>
+        </Sheet>
+    );
+}
+
 export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [step, setStep] = useState(0);
     const [isIntro, setIsIntro] = useState(true);
@@ -182,37 +198,35 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             title: "Elige tu Camino",
             description: "Dynamic Class se adapta a ti. Pulsa en cada opción para saber más.",
             items: [
-                { icon: School, title: "Unirse a un Centro", desc: "Introduce el código de tu clase para acceder a tu centro.", explanation: "Si tu centro educativo ya usa Dynamic Class, solo necesitas un código para unirte y sincronizar todo tu contenido." },
-                { icon: PlusCircle, title: "Crear un Centro", desc: "Si tu centro no existe, créalo y compártelo.", explanation: "Conviértete en administrador, crea clases y gestiona el contenido. Ideal para delegados o profesores." },
-                { icon: User, title: "Uso Personal", desc: "Utiliza la app de forma individual.", explanation: "Perfecto si quieres usar las herramientas de estudio de forma personal. Siempre podrás unirte a un centro más tarde." },
+                { icon: School, title: "Unirse a un Centro", desc: "Introduce el código de tu clase." },
+                { icon: PlusCircle, title: "Crear un Centro", desc: "Si tu centro no existe, créalo." },
+                { icon: User, title: "Uso Personal", desc: "Utiliza la app de forma individual." },
             ],
             content: () => (
                  <div className="relative w-full h-[400px] flex items-center justify-center">
                     <div className="relative w-72">
-                         {/* Explanation Cards */}
                         <ExplanationCard
                             isVisible={activeExplanation === 'Unirse a un Centro'}
                             title="Unirse a un Centro"
-                            description="Usa el código de tu clase para conectar con tu centro educativo y sincronizar horarios y anuncios."
+                            description="Usa el código de tu clase para conectar con tu centro y sincronizar horarios."
                             icon={School}
-                            position="top-0 right-full mr-6"
+                            position="top-0 right-full mr-8"
                         />
                         <ExplanationCard
                             isVisible={activeExplanation === 'Crear un Centro'}
                             title="Crear un Centro"
-                            description="Si eres profesor o delegado, crea un espacio para tu centro, gestiona clases y comparte recursos."
+                            description="Si eres profesor o delegado, crea un espacio para tu centro y comparte recursos."
                             icon={PlusCircle}
-                            position="top-1/2 -translate-y-1/2 left-full ml-6"
+                            position="top-1/2 -translate-y-1/2 left-full ml-8"
                         />
                         <ExplanationCard
                             isVisible={activeExplanation === 'Uso Personal'}
                             title="Uso Personal"
-                            description="Disfruta de todas las herramientas de estudio de forma individual, sin conexión a un centro."
+                            description="Disfruta de las herramientas de estudio sin conexión a un centro."
                             icon={User}
-                            position="bottom-0 right-full mr-6"
+                            position="bottom-0 right-full mr-8"
                         />
 
-                        {/* Central buttons */}
                         <motion.div 
                             className="space-y-4 z-10"
                             variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
@@ -222,7 +236,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             {steps[0].items.map((item) => (
                                 <motion.div
                                     key={item.title}
-                                    className="w-full flex items-center text-left"
+                                    className="w-full flex items-center text-left p-4 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10"
                                     variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
                                 >
                                     <div className="flex-1 flex items-center gap-4">
@@ -234,15 +248,28 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                             <p className="text-xs text-white/80">{item.desc}</p>
                                         </div>
                                     </div>
-                                    <button
+                                    <motion.button
                                         type="button"
                                         onClick={() => setActiveExplanation(prev => prev === item.title ? null : item.title)}
-                                        className="flex-shrink-0 rounded-full h-8 w-8 bg-blue-500 flex items-center justify-center relative shadow-lg transition-transform hover:scale-110 active:scale-95"
+                                        className="flex-shrink-0 rounded-full h-8 w-8 bg-blue-500 flex items-center justify-center relative shadow-lg"
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
                                         aria-label={`Más información sobre ${item.title}`}
                                     >
-                                        <span className={cn("absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75", activeExplanation === item.title ? "animate-ping" : "")}></span>
+                                        <motion.span
+                                            className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"
+                                            animate={{
+                                                scale: [1, 1.6, 1],
+                                                opacity: [0.75, 0, 0.75],
+                                            }}
+                                            transition={{
+                                                duration: 1.5,
+                                                repeat: Infinity,
+                                                repeatType: "loop",
+                                            }}
+                                        />
                                         <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-                                    </button>
+                                    </motion.button>
                                 </motion.div>
                             ))}
                         </motion.div>
@@ -268,22 +295,29 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                     animate="visible"
                 >
                     {steps[1].items.map((item) => (
-                         <motion.button
+                         <motion.div
                             key={item.title}
-                            type="button"
-                            onClick={() => setOpenSheet(item.title)}
-                            className="w-full flex items-center text-left gap-4 p-3 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer hover:bg-muted/50"
                             variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-                            whileHover={{ scale: 1.03 }}
+                            className="w-full flex items-center text-left gap-4 p-3 rounded-lg border bg-background/50 backdrop-blur-sm"
                         >
-                            <div className="p-2 bg-primary/10 rounded-lg">
+                             <div className="p-2 bg-primary/10 rounded-lg">
                                 <item.icon className="h-5 w-5 text-primary"/>
                             </div>
-                            <div>
+                            <div className="flex-1">
                                 <h4 className="font-semibold text-sm">{item.title}</h4>
                                 <p className="text-xs text-muted-foreground">{item.desc}</p>
                             </div>
-                        </motion.button>
+                             <motion.button
+                                type="button"
+                                onClick={() => setOpenSheet(item.title)}
+                                className="flex-shrink-0 rounded-full h-8 w-8 bg-blue-500 flex items-center justify-center relative shadow-lg"
+                                whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
+                                aria-label={`Más información sobre ${item.title}`}
+                            >
+                                <motion.span className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" animate={{ scale: [1, 1.6, 1], opacity: [0.75, 0, 0.75]}} transition={{ duration: 1.5, repeat: Infinity }}/>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                            </motion.button>
+                        </motion.div>
                     ))}
                 </motion.div>
             )
@@ -308,17 +342,20 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                     animate="visible"
                 >
                     {steps[2].items.map((tool) => (
-                        <motion.button
+                        <motion.div
                             key={tool.title}
-                            type="button"
-                            onClick={() => setOpenSheet(tool.title)}
-                            className="w-full h-full flex flex-col items-center justify-center gap-2 p-2 sm:p-3 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer aspect-square hover:bg-muted"
+                            className="w-full h-full"
                             variants={{ hidden: { opacity: 0, scale: 0.5 }, visible: { opacity: 1, scale: 1 } }}
-                            whileHover={{ scale: 1.1 }}
                         >
-                            <tool.icon className="h-6 w-6 sm:h-7 sm:w-7 text-primary"/>
-                            <span className="text-[10px] sm:text-xs font-semibold leading-tight">{tool.title}</span>
-                        </motion.button>
+                            <button
+                                type="button"
+                                onClick={() => setOpenSheet(tool.title)}
+                                className="w-full h-full flex flex-col items-center justify-center gap-2 p-2 sm:p-3 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer aspect-square hover:bg-muted"
+                            >
+                                <tool.icon className="h-6 w-6 sm:h-7 sm:w-7 text-primary"/>
+                                <span className="text-[10px] sm:text-xs font-semibold leading-tight">{tool.title}</span>
+                            </button>
+                        </motion.div>
                     ))}
                 </motion.div>
             )
@@ -379,19 +416,21 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                     variants={{ visible: { transition: { staggerChildren: 0.2 } }}}
                 >
                     {steps[4].items.map((item, index) => (
-                        <motion.button 
+                        <motion.div
                             key={index}
-                            type="button"
-                            onClick={() => setOpenSheet(item.title)}
-                            className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                             variants={{ hidden: { opacity: 0, x: index % 2 === 0 ? -20 : 20 }, visible: { opacity: 1, x: 0 } }}
-                            whileHover={{ scale: 1.03 }}
                         >
-                            <item.icon className="h-6 w-6 text-primary flex-shrink-0"/>
-                            <div>
-                                <h4 className="font-semibold">{item.title}</h4>
-                            </div>
-                        </motion.button>
+                            <button 
+                                type="button"
+                                onClick={() => setOpenSheet(item.title)}
+                                className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                            >
+                                <item.icon className="h-6 w-6 text-primary flex-shrink-0"/>
+                                <div>
+                                    <h4 className="font-semibold">{item.title}</h4>
+                                </div>
+                            </button>
+                        </motion.div>
                     ))}
                 </motion.div>
             )
@@ -414,18 +453,20 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                     animate="visible"
                 >
                     {steps[5].items.map((item, index) => (
-                        <motion.button
+                        <motion.div
                             key={index}
-                            type="button"
-                            onClick={() => setOpenSheet(item.title)}
-                            className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30 cursor-pointer"
                             variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}}
-                            whileHover={{ scale: 1.1 }}
                         >
-                            <item.icon className="h-8 w-8 text-amber-500"/>
-                            <span className="font-bold text-sm text-center">{item.title}</span>
-                            {item.value && <span className="font-bold text-xl">{item.value}</span>}
-                        </motion.button>
+                           <button
+                                type="button"
+                                onClick={() => setOpenSheet(item.title)}
+                                className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30 cursor-pointer"
+                           >
+                                <item.icon className="h-8 w-8 text-amber-500"/>
+                                <span className="font-bold text-sm text-center">{item.title}</span>
+                                {item.value && <span className="font-bold text-xl">{item.value}</span>}
+                            </button>
+                        </motion.div>
                     ))}
                 </motion.div>
             )
@@ -436,7 +477,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             description: "Recibe resúmenes semanales y mantente al día sin esfuerzo. Personaliza tu experiencia visual desde el principio.",
             items: [
                 { icon: MailCheck, title: "Resúmenes Semanales", explanation: "Si lo activas, cada viernes recibirás en tu correo un resumen de tu rendimiento, tareas completadas y los próximos eventos de tu calendario. ¡Una forma perfecta de planificar tu semana!" },
-                { icon: Sun, title: "Pre-configurar Tema", explanation: "Elige tu tema preferido, claro u oscuro. Puedes cambiarlo en cualquier momento desde los ajustes de la aplicación." },
+                { icon: theme === 'dark' ? Moon : Sun, title: "Pre-configurar Tema", explanation: "Elige tu tema preferido, claro u oscuro. Puedes cambiarlo en cualquier momento desde los ajustes de la aplicación." },
             ],
             content: () => {
                 const ThemeIcon = theme === 'dark' ? Moon : Sun;
@@ -447,36 +488,40 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         animate="visible"
                         variants={{ visible: { transition: { staggerChildren: 0.2 } }}}
                     >
-                        <motion.button 
-                            type="button"
-                            onClick={() => setOpenSheet("Resúmenes Semanales")}
-                            className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                        <motion.div 
                             variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
-                            whileHover={{ scale: 1.03 }}
                          >
-                            <MailCheck className="h-6 w-6 text-primary flex-shrink-0"/>
-                            <div>
-                                <h4 className="font-semibold">Resúmenes Semanales</h4>
-                                <p className="text-sm text-muted-foreground">Recibe cada viernes un informe de tu progreso.</p>
-                            </div>
-                         </motion.button>
-                        <motion.button
-                            type="button"
-                            onClick={() => {
-                                const newTheme = theme === 'dark' ? 'light' : 'dark';
-                                setTheme(newTheme);
-                                setOpenSheet("Pre-configurar Tema");
-                            }}
-                            className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                            <button
+                                type="button"
+                                onClick={() => setOpenSheet("Resúmenes Semanales")}
+                                className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                             >
+                                <MailCheck className="h-6 w-6 text-primary flex-shrink-0"/>
+                                <div>
+                                    <h4 className="font-semibold">Resúmenes Semanales</h4>
+                                    <p className="text-sm text-muted-foreground">Recibe cada viernes un informe de tu progreso.</p>
+                                </div>
+                            </button>
+                         </motion.div>
+                        <motion.div
                             variants={{ hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 } }}
-                            whileHover={{ scale: 1.03 }}
                         >
-                            <ThemeIcon className="h-6 w-6 text-primary flex-shrink-0"/>
-                            <div>
-                                <h4 className="font-semibold">Pre-configurar Tema</h4>
-                                <p className="text-sm text-muted-foreground">Prueba el Modo Oscuro y elige tu vista preferida.</p>
-                            </div>
-                        </motion.button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const newTheme = theme === 'dark' ? 'light' : 'dark';
+                                    setTheme(newTheme);
+                                    setOpenSheet("Pre-configurar Tema");
+                                }}
+                                className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                            >
+                                <ThemeIcon className="h-6 w-6 text-primary flex-shrink-0"/>
+                                <div>
+                                    <h4 className="font-semibold">Pre-configurar Tema</h4>
+                                    <p className="text-sm text-muted-foreground">Prueba el Modo Oscuro y elige tu vista preferida.</p>
+                                </div>
+                            </button>
+                        </motion.div>
                     </motion.div>
                 )
             }
@@ -625,17 +670,14 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         </div>
                         
                         {currentItems.map(item => (
-                             <Sheet open={openSheet === item.title} onOpenChange={(isOpen) => !isOpen && setOpenSheet(null)} key={item.title}>
-                                <SheetContent>
-                                    <SheetHeader>
-                                        <SheetTitle className="flex items-center gap-2">
-                                            {item.icon && <item.icon className="h-5 w-5" />}
-                                            {item.title}
-                                        </SheetTitle>
-                                        <SheetDescription>{item.explanation}</SheetDescription>
-                                    </SheetHeader>
-                                </SheetContent>
-                            </Sheet>
+                            <ExplanationSheet
+                                key={item.title}
+                                open={openSheet === item.title}
+                                onOpenChange={(isOpen) => !isOpen && setOpenSheet(null)}
+                                title={item.title}
+                                description={item.explanation || ''}
+                                icon={item.icon}
+                            />
                         ))}
                         
                         <footer className="space-y-4">
