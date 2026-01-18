@@ -187,26 +187,26 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: User, title: "Uso Personal", desc: "Disfruta de la app de forma individual.", explanation: "Disfruta de las herramientas de estudio sin conexión a un centro." },
             ],
             content: () => (
-                 <div className="relative w-full h-[400px] flex items-center justify-center">
-                    <div className="relative w-72">
+                <div className="relative w-full h-[400px] flex items-center justify-center">
+                   <div className="relative w-72">
                         <ExplanationCard
                             isVisible={activeExplanation === 'Unirse a un Centro'}
                             title="Unirse a un Centro"
-                            description="Usa el código de tu clase para conectar con tu centro y sincronizar horarios."
+                            description="Usa el código de tu clase para conectar y sincronizar horarios."
                             icon={School}
                             position="top-0 right-full mr-8"
                         />
                         <ExplanationCard
                             isVisible={activeExplanation === 'Crear un Centro'}
                             title="Crear un Centro"
-                            description="Si eres profesor o delegado, crea un espacio para tu centro y comparte recursos."
+                            description="Crea un espacio para tu centro y comparte recursos."
                             icon={PlusCircle}
                             position="top-1/2 -translate-y-1/2 left-full ml-8"
                         />
                         <ExplanationCard
                             isVisible={activeExplanation === 'Uso Personal'}
                             title="Uso Personal"
-                            description="Disfruta de las herramientas de estudio sin conexión a un centro."
+                            description="Usa la app de forma individual, sin conexión a un centro."
                             icon={User}
                             position="bottom-0 right-full mr-8"
                         />
@@ -468,37 +468,70 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             title: "Interactúa con tu Clase",
             description: "Consulta tu horario, participa en encuestas y mantente siempre al día con el chat de clase y los anuncios.",
             items: [
-                { icon: MessageSquare, title: "Chat de Clase", explanation: "Un espacio de chat en tiempo real, similar a WhatsApp, pero exclusivo para los miembros de tu clase. Ideal para resolver dudas rápidas, organizar trabajos en grupo o compartir información importante." },
-                { icon: Building, title: "Anuncios y Encuestas", explanation: "Mantente al día con los comunicados de tus profesores o administradores. Puedes ver anuncios importantes y participar en encuestas para dar tu opinión sobre temas de clase." },
-                { icon: Calendar, title: "Horario Integrado", explanation: "Consulta tus clases de un vistazo. Si tu administrador lo ha configurado, verás qué asignatura tienes, a qué hora, con qué profesor y en qué aula." },
+                { icon: MessageSquare, title: "Chat de Clase", explanation: "Un espacio de chat en tiempo real para resolver dudas y organizar trabajos en grupo con tus compañeros." },
+                { icon: Building, title: "Anuncios y Encuestas", explanation: "Mantente al día con los comunicados de tus profesores y participa en encuestas para dar tu opinión." },
+                { icon: Calendar, title: "Horario Integrado", explanation: "Consulta tus clases: asignatura, hora, profesor y aula. Todo en un mismo lugar y siempre accesible." },
             ],
             content: () => (
-                <motion.div
-                    className="mt-6 space-y-4"
-                    initial="hidden"
-                    animate="visible"
-                    variants={{ visible: { transition: { staggerChildren: 0.2 } }}}
-                >
-                    {steps[4].items.map((item, index) => (
-                        <motion.div
-                            key={index}
-                            variants={{ hidden: { opacity: 0, x: index % 2 === 0 ? -20 : 20 }, visible: { opacity: 1, x: 0 } }}
-                        >
-                            <motion.button 
-                                type="button"
-                                onClick={() => setActiveExplanation(item.title)}
-                                className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
+                 <div className="relative w-full h-[400px] flex items-center justify-center">
+                    <ExplanationCard
+                        isVisible={activeExplanation === 'Chat de Clase'}
+                        title="Chat de Clase"
+                        description="Un chat en tiempo real, exclusivo para tu clase, para resolver dudas y organizar trabajos en grupo."
+                        icon={MessageSquare}
+                        position="top-0 left-full ml-8"
+                    />
+                    <ExplanationCard
+                        isVisible={activeExplanation === 'Anuncios y Encuestas'}
+                        title="Anuncios y Encuestas"
+                        description="Mantente al día con los comunicados y participa en encuestas para dar tu opinión."
+                        icon={Building}
+                        position="top-1/2 -translate-y-1/2 right-full mr-8"
+                    />
+                    <ExplanationCard
+                        isVisible={activeExplanation === 'Horario Integrado'}
+                        title="Horario Integrado"
+                        description="Consulta tus clases: asignatura, hora, profesor y aula. Todo en un mismo lugar."
+                        icon={Calendar}
+                        position="bottom-0 left-full ml-8"
+                    />
+                    <motion.div
+                        className="w-72 space-y-4"
+                        initial="hidden"
+                        animate="visible"
+                        variants={{ visible: { transition: { staggerChildren: 0.1 } }}}
+                    >
+                        {steps[4].items.map((item) => (
+                            <motion.div
+                                key={item.title}
+                                variants={{ hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1 } }}
+                                className="w-full flex items-center text-left p-3 rounded-lg border bg-background/50 backdrop-blur-sm gap-4"
                             >
-                                <item.icon className="h-6 w-6 text-primary flex-shrink-0"/>
-                                <div>
-                                    <h4 className="font-semibold">{item.title}</h4>
+                                <div className="flex-1 flex items-center gap-4">
+                                    <div className="p-2 bg-primary/10 rounded-lg">
+                                        <item.icon className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
                                 </div>
-                            </motion.button>
-                        </motion.div>
-                    ))}
-                </motion.div>
+                                <motion.button
+                                    type="button"
+                                    onClick={() => setActiveExplanation(prev => prev === item.title ? null : item.title)}
+                                    className="flex-shrink-0 rounded-full h-8 w-8 bg-blue-500 flex items-center justify-center relative shadow-lg cursor-pointer"
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    aria-label={`Más información sobre ${item.title}`}
+                                >
+                                    <motion.span
+                                        className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"
+                                        animate={{ scale: [1, 1.6, 1], opacity: [0.75, 0, 0.75]}}
+                                        transition={{ duration: 1.5, repeat: Infinity }}
+                                    />
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                                </motion.button>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                </div>
             )
         },
         {
@@ -741,19 +774,26 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             </AnimatePresence>
                         </div>
                         
-                        {currentItems.map((item, index) => (
-                           <Sheet key={`${step}-${item.title}-${index}`} open={activeExplanation === item.title} onOpenChange={() => setActiveExplanation(null)}>
-                               <SheetContent>
-                                   <SheetHeader>
-                                       <SheetTitle className="flex items-center gap-2">
-                                           {item.icon && <item.icon className="h-5 w-5" />}
-                                           {item.title}
-                                       </SheetTitle>
-                                       <SheetDescription>{item.explanation}</SheetDescription>
-                                   </SheetHeader>
-                               </SheetContent>
-                           </Sheet>
-                        ))}
+                        <Sheet open={!!activeExplanation} onOpenChange={(isOpen) => !isOpen && setActiveExplanation(null)}>
+                           <SheetContent>
+                               {currentItems.map(item => {
+                                   if (activeExplanation === item.title) {
+                                       return (
+                                           <React.Fragment key={item.title}>
+                                               <SheetHeader>
+                                                   <SheetTitle className="flex items-center gap-2">
+                                                       {item.icon && <item.icon className="h-5 w-5" />}
+                                                       {item.title}
+                                                   </SheetTitle>
+                                                   <SheetDescription>{item.explanation}</SheetDescription>
+                                               </SheetHeader>
+                                           </React.Fragment>
+                                       )
+                                   }
+                                   return null;
+                               })}
+                           </SheetContent>
+                       </Sheet>
                         
                         <footer className="space-y-4">
                             <Progress value={((step + 1) / steps.length) * 100} className="h-2 w-full max-w-xs mx-auto" />
