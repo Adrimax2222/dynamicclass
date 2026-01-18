@@ -39,8 +39,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         router.replace("/");
       } else {
         if (user) {
-          const accessCount = user.accessCount || 0;
-          const shouldShow = !user.hasSeenOnboarding && accessCount < 5;
+          // Temporarily set to true for testing purposes
+          const shouldShow = true;
           setShowOnboarding(shouldShow);
           setIsCheckingAuth(false);
         }

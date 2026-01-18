@@ -324,11 +324,10 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
 
     return (
         <div className="fixed inset-0 bg-background z-[100] flex flex-col p-6">
-            <header className="flex items-center justify-between">
+            <header className="flex items-center justify-between h-10">
                 <motion.div layoutId="onboarding-logo">
                     <Logo className="h-10 w-10 text-primary" />
                 </motion.div>
-                <Button variant="ghost" onClick={onComplete}>Saltar</Button>
             </header>
 
             <div className="flex-1 flex flex-col justify-center text-center">
