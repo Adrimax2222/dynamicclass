@@ -252,7 +252,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     {steps[0].items.map((item) => (
                                         <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
                                             <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
-                                            <div>
+                                            <div className="flex-1">
                                                 <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
                                                 <p className="text-xs text-muted-foreground">{item.desc}</p>
                                             </div>
