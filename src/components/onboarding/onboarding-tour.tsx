@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -32,19 +31,21 @@ import {
     Cat,
     BookOpenCheck,
     FlaskConical,
-    PencilRuler
+    PencilRuler,
+    Users,
+    BrainCircuit
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const introIcons = [
-    { icon: Calendar, className: "top-0 left-1/2 -translate-x-1/2" },
-    { icon: School, className: "top-1/3 right-0" },
-    { icon: Sparkles, className: "bottom-0 right-1/2 translate-x-1/2" },
-    { icon: Trophy, className: "bottom-1/3 left-0" },
-    { icon: Timer, className: "top-1/3 left-0" },
-    { icon: Calculator, className: "bottom-1/3 right-0" },
-    { icon: Music, className: "top-0 right-1/2 translate-x-1/2" },
-    { icon: ScanLine, className: "bottom-0 left-1/2 -translate-x-1/2" },
+    { icon: BookOpenCheck, angle: 0 },
+    { icon: GraduationCap, angle: 45 },
+    { icon: FlaskConical, angle: 90 },
+    { icon: PencilRuler, angle: 135 },
+    { icon: Calendar, angle: 180 },
+    { icon: School, angle: 225 },
+    { icon: Sparkles, angle: 270 },
+    { icon: Trophy, angle: 315 },
 ];
 
 const steps = [
@@ -97,14 +98,14 @@ const steps = [
         description: "Todas tus herramientas de productividad, centralizadas en el Modo Estudio para que nada te distraiga.",
         content: () => {
             const tools = [
-                { icon: Calendar, name: 'Calendario' },
+                { icon: Timer, name: 'Pomodoro' },
                 { icon: ScanLine, name: 'Escáner' },
                 { icon: Calculator, name: 'Calculadora' },
                 { icon: Music, name: 'Música' },
-                { icon: Timer, name: 'Pomodoro' },
-                { icon: Target, name: 'Notas' },
+                { icon: Target, name: 'Calcula Notas' },
                 { icon: Wand2, name: 'Editor Mágico'},
-                { icon: Sparkles, name: 'IA' },
+                { icon: MessageSquare, name: 'Chat de Clase' },
+                { icon: BrainCircuit, name: 'ADRIMAX AI' },
             ];
             return (
                 <motion.div 
@@ -179,35 +180,40 @@ const steps = [
         description: "Consulta tu horario, participa en encuestas y mantente siempre al día con el chat de clase y los anuncios importantes.",
         content: () => (
             <motion.div
-                className="mt-6 border rounded-lg p-4 space-y-4 bg-muted/50"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                className="mt-6 space-y-4"
+                initial="hidden"
+                animate="visible"
+                variants={{ visible: { transition: { staggerChildren: 0.2 } }}}
             >
                  <motion.div 
-                    className="flex items-center gap-2"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0, transition: { delay: 0.2 } }}
+                    className="flex items-center gap-4 p-4 rounded-lg border bg-muted/50"
+                    variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
                  >
-                    <Building className="h-5 w-5 text-primary"/>
-                    <h4 className="font-semibold">Anuncio del Centro</h4>
+                    <MessageSquare className="h-6 w-6 text-primary"/>
+                    <div>
+                        <h4 className="font-semibold">Chat de Clase</h4>
+                        <p className="text-sm text-muted-foreground">Comunícate en tiempo real con compañeros y profesores.</p>
+                    </div>
                  </motion.div>
-                 <motion.p
-                    className="text-sm"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0, transition: { delay: 0.4 } }}
-                >
-                    "Recordad que la fecha límite para la entrega del proyecto de Biología es este viernes."
-                </motion.p>
-                 <motion.div 
-                    className="pt-2"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0, transition: { delay: 0.6 } }}
+                  <motion.div 
+                    className="flex items-center gap-4 p-4 rounded-lg border bg-muted/50"
+                    variants={{ hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 } }}
                  >
-                     <h4 className="font-semibold text-sm mb-2">Encuesta: ¿Próxima tutoría?</h4>
-                     <div className="space-y-2">
-                         <div className="flex items-center justify-between text-sm p-2 rounded-md bg-background"><span>Repaso General</span> <span>68%</span></div>
-                         <div className="flex items-center justify-between text-sm p-2 rounded-md bg-background"><span>Dudas Individuales</span> <span>32%</span></div>
-                     </div>
+                    <Building className="h-6 w-6 text-primary"/>
+                    <div>
+                        <h4 className="font-semibold">Anuncios y Encuestas</h4>
+                        <p className="text-sm text-muted-foreground">Mantente al día de las novedades y da tu opinión.</p>
+                    </div>
+                 </motion.div>
+                 <motion.div 
+                    className="flex items-center gap-4 p-4 rounded-lg border bg-muted/50"
+                    variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
+                 >
+                    <Calendar className="h-6 w-6 text-primary"/>
+                    <div>
+                        <h4 className="font-semibold">Horario Integrado</h4>
+                        <p className="text-sm text-muted-foreground">Consulta tus clases de un vistazo.</p>
+                    </div>
                  </motion.div>
             </motion.div>
         )
@@ -249,6 +255,7 @@ const steps = [
 export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [step, setStep] = useState(0);
     const [isIntro, setIsIntro] = useState(true);
+    const [isExiting, setIsExiting] = useState(false);
 
     useEffect(() => {
         const timer = setTimeout(() => setIsIntro(false), 4000); 
@@ -259,42 +266,59 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         if (step < steps.length - 1) {
             setStep(step + 1);
         } else {
-            onComplete();
+            setIsExiting(true);
         }
     };
     
     const isLastStep = step === steps.length - 1;
 
-    if (isIntro) {
-        return (
-             <div className="fixed inset-0 bg-background z-[100] flex flex-col items-center justify-center p-6 overflow-hidden">
+    const introScreen = (
+         <div className="fixed inset-0 bg-background z-[100] flex flex-col items-center justify-center p-6 overflow-hidden">
+            <motion.div
+                layoutId="onboarding-logo"
+                className="relative h-24 w-24"
+            >
                 <motion.div
-                    layoutId="onboarding-logo"
+                    className="absolute inset-0"
                     initial={{ scale: 1 }}
-                    animate={{ scale: [1, 1.2, 1], transition: { duration: 1, delay: 0.5 } }}
-                    className="relative"
+                    animate={{ scale: [1, 1.2, 1], rotate: 360 }}
+                    transition={{ duration: 2, delay: 0.5, repeat: Infinity, repeatType: "loop", ease: "linear" }}
                 >
                     <Logo className="h-24 w-24 text-primary" />
-                    <motion.div 
-                        initial="hidden"
-                        animate="visible"
-                        variants={{
-                            visible: {
-                                transition: { staggerChildren: 0.1, delayChildren: 1.5 }
-                            }
-                        }}
-                        className="absolute inset-0"
-                    >
-                        {introIcons.map((item, i) => (
+                </motion.div>
+                
+                <motion.div 
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                        visible: {
+                            transition: { staggerChildren: 0.1, delayChildren: 1.5 }
+                        }
+                    }}
+                    className="absolute inset-0"
+                >
+                    {introIcons.map((item, i) => {
+                        const angleRad = (item.angle * Math.PI) / 180;
+                        const radius = 100; // pixels
+                        const x = Math.cos(angleRad) * radius;
+                        const y = Math.sin(angleRad) * radius;
+
+                        return (
                             <motion.div
                                 key={i}
-                                className={cn("absolute", item.className)}
+                                className="absolute top-1/2 left-1/2"
+                                style={{
+                                    x: "-50%",
+                                    y: "-50%",
+                                }}
                                 variants={{
-                                    hidden: { scale: 0, opacity: 0 },
+                                    hidden: { scale: 0, opacity: 0, x: "-50%", y: "-50%" },
                                     visible: {
+                                        x: `calc(-50% + ${x}px)`,
+                                        y: `calc(-50% + ${y}px)`,
                                         scale: 1,
                                         opacity: 1,
-                                        transition: { type: "spring", stiffness: 300, damping: 15 }
+                                        transition: { type: "spring", stiffness: 300, damping: 15, delay: i * 0.1 }
                                     }
                                 }}
                             >
@@ -302,28 +326,36 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     <item.icon className="h-5 w-5 text-primary" />
                                 </div>
                             </motion.div>
-                        ))}
-                    </motion.div>
+                        )
+                    })}
                 </motion.div>
+            </motion.div>
 
-                <motion.h1
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 3, duration: 0.7 }}
-                    className="text-2xl font-bold font-headline mt-12 text-center"
-                >
-                    Construyendo tu espacio en
-                    <br />
-                    <span className="text-primary">Dynamic Class</span>
-                </motion.h1>
-            </div>
-        );
-    }
-
-    const CurrentIcon = steps[step].icon;
-
-    return (
-        <div className="fixed inset-0 bg-background z-[100] flex flex-col p-6">
+            <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 3, duration: 0.7 }}
+                className="text-2xl font-bold font-headline mt-20 text-center"
+            >
+                Construyendo tu espacio en
+                <br />
+                <span className="text-primary">Dynamic Class</span>
+            </motion.h1>
+        </div>
+    );
+    
+    const tourScreen = (
+        <motion.div 
+            className="fixed inset-0 bg-background z-[100] flex flex-col p-6"
+            initial={{ opacity: 1, scale: 1 }}
+            animate={isExiting ? { opacity: 0, scale: 0.95 } : { opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            onAnimationComplete={() => {
+                if (isExiting) {
+                    onComplete();
+                }
+            }}
+        >
             <header className="flex items-center justify-between h-10">
                 <motion.div layoutId="onboarding-logo">
                     <Logo className="h-10 w-10 text-primary" />
@@ -351,7 +383,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         <h2 className="text-2xl font-bold font-headline">{steps[step].title}</h2>
                         <p className="text-muted-foreground mt-2">{steps[step].description}</p>
                         
-                        <div className="min-h-[260px] flex items-center justify-center">
+                        <div className="min-h-[290px] flex items-center justify-center">
                            {steps[step].content()}
                         </div>
                     </motion.div>
@@ -373,6 +405,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                     {!isLastStep && <ArrowRight className="h-4 w-4 ml-2"/>}
                 </Button>
             </footer>
-        </div>
+        </motion.div>
     );
+
+    return isIntro ? introScreen : tourScreen;
 }

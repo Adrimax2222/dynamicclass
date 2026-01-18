@@ -22,6 +22,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingCheckDone, setOnboardingCheckDone] = useState(false);
   
   // Hook to handle FCM token logic
   useFcmToken();
@@ -32,21 +33,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     document.documentElement.classList.toggle('dark', storedTheme === 'dark');
   }, [theme]);
   
-  // Auth status check
+  // Auth status check & Onboarding logic
   useEffect(() => {
-    if (firebaseUser !== undefined) {
-      if (firebaseUser === null) {
-        router.replace("/");
-      } else {
-        if (user) {
-          // Temporarily set to true for testing purposes
-          const shouldShow = true;
-          setShowOnboarding(shouldShow);
-          setIsCheckingAuth(false);
-        }
-      }
+    if (firebaseUser === undefined) {
+        return;
     }
-  }, [firebaseUser, user, router, auth]);
+    if (firebaseUser === null) {
+      router.replace("/");
+      return;
+    }
+    
+    if (user && !onboardingCheckDone) {
+        // For testing purposes, always show the onboarding tour.
+        const shouldShow = true; 
+        
+        // In production, this would be:
+        // const shouldShow = user.accessCount != null && user.accessCount <= 4 && !user.hasSeenOnboarding;
+
+        setShowOnboarding(shouldShow);
+        setOnboardingCheckDone(true);
+        setIsCheckingAuth(false);
+    } else if (user) {
+        setIsCheckingAuth(false);
+    }
+  }, [firebaseUser, user, router, onboardingCheckDone]);
 
   const handleOnboardingComplete = async () => {
     setShowOnboarding(false);
