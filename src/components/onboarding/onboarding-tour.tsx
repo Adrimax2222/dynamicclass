@@ -154,12 +154,12 @@ const steps = [
         title: "Tu Centro de Operaciones",
         description: "Todas tus herramientas de productividad, centralizadas en el Modo Estudio para que nada te distraiga.",
         items: [
-            { icon: Timer, name: 'Pomodoro', explanation: "Utiliza la técnica Pomodoro para mantener la concentración en bloques de estudio (ej. 25 min) seguidos de descansos cortos." },
-            { icon: ScanLine, name: 'Escáner', explanation: "Digitaliza tus apuntes en papel. Haz una foto, mejora la imagen y guárdala como PDF en tu dispositivo." },
-            { icon: Calculator, name: 'Calculadora', explanation: "Una calculadora científica siempre a mano para resolver problemas complejos sin salir de la app." },
-            { icon: Music, name: 'Música', explanation: "Conéctate a Spotify y controla tu música de estudio favorita directamente desde el Modo Estudio." },
-            { icon: Target, name: 'Calcula Notas', explanation: "Introduce tus notas y sus porcentajes para calcular qué necesitas sacar en el próximo examen para aprobar." },
-            { icon: Wand2, name: 'Editor Mágico', explanation: "Potencia tus apuntes con IA. Pídele que resuma, traduzca, corrija la ortografía o incluso continúe tus textos." },
+            { icon: Timer, title: 'Pomodoro', explanation: "Utiliza la técnica Pomodoro para mantener la concentración en bloques de estudio (ej. 25 min) seguidos de descansos cortos." },
+            { icon: ScanLine, title: 'Escáner', explanation: "Digitaliza tus apuntes en papel. Haz una foto, mejora la imagen y guárdala como PDF en tu dispositivo." },
+            { icon: Calculator, title: 'Calculadora', explanation: "Una calculadora científica siempre a mano para resolver problemas complejos sin salir de la app." },
+            { icon: Music, title: 'Música', explanation: "Conéctate a Spotify y controla tu música de estudio favorita directamente desde el Modo Estudio." },
+            { icon: Target, title: 'Calcula Notas', explanation: "Introduce tus notas y sus porcentajes para calcular qué necesitas sacar en el próximo examen para aprobar." },
+            { icon: Wand2, title: 'Editor Mágico', explanation: "Potencia tus apuntes con IA. Pídele que resuma, traduzca, corrija la ortografía o incluso continúe tus textos." },
         ],
         content: ({ setOpenSheet }: { setOpenSheet: (id: string | null) => void }) => (
             <motion.div 
@@ -170,15 +170,15 @@ const steps = [
             >
                 {steps[2].items.map((tool) => (
                     <motion.button
-                        key={tool.name}
+                        key={tool.title}
                         type="button"
-                        onClick={() => setOpenSheet(tool.name)}
+                        onClick={() => setOpenSheet(tool.title)}
                         className="flex flex-col items-center justify-center gap-2 p-2 sm:p-3 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer aspect-square"
                         variants={{ hidden: { opacity: 0, scale: 0.5 }, visible: { opacity: 1, scale: 1 } }}
                         whileHover={{ scale: 1.1, backgroundColor: 'hsl(var(--muted))' }}
                     >
                         <tool.icon className="h-6 w-6 sm:h-7 sm:w-7 text-primary"/>
-                        <span className="text-[10px] sm:text-xs font-semibold leading-tight">{tool.name}</span>
+                        <span className="text-[10px] sm:text-xs font-semibold leading-tight">{tool.title}</span>
                     </motion.button>
                 ))}
             </motion.div>
