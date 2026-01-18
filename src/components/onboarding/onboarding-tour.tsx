@@ -169,10 +169,10 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: User, title: "Uso Personal", desc: "Disfruta de la app de forma individual.", explanation: "Disfruta de las herramientas de estudio sin conexión a un centro." },
             ],
             content: () => {
-                const positions = [
-                    "top-1/4 left-0 -translate-x-1/2", 
-                    "top-1/2 right-0 translate-x-1/2", 
-                    "bottom-1/4 left-0 -translate-x-1/2"
+                 const positions = [
+                    "top-1/4 left-1/2 -translate-x-[calc(50%+10rem)] sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+15rem)] sm:-translate-y-1/2",
+                    "bottom-1/4 right-1/2 translate-x-[calc(50%+10rem)] sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+15rem)] sm:-translate-y-1/2",
+                    "bottom-0 left-1/2 -translate-x-1/2 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+15rem)] sm:translate-y-[calc(50%+4rem)]"
                 ];
                 return (
                      <div className="relative w-full h-[400px] flex items-center justify-center">
@@ -251,11 +251,11 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: User, title: "Estudiante", desc: "Participa, aprende y compite.", explanation: "El rol principal. Accede a las herramientas de estudio, participa en clase y compite en los rankings para ganar recompensas." },
             ],
             content: () => {
-                const positions = [
-                    "top-8 left-8 -translate-x-full", 
-                    "bottom-24 right-8 translate-x-full", 
-                    "top-16 right-8 translate-x-full", 
-                    "bottom-8 left-8 -translate-x-full"
+                 const positions = [
+                    "top-8 left-1/2 -translate-x-1/2 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+10rem)] sm:-translate-y-[130%]",
+                    "bottom-24 right-1/2 translate-x-1/2 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+10rem)] sm:translate-y-[30%]",
+                    "top-16 right-1/2 translate-x-1/2 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+10rem)] sm:-translate-y-[70%]",
+                    "bottom-8 left-1/2 -translate-x-1/2 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+10rem)] sm:translate-y-[70%]"
                 ];
                 return (
                     <div className="relative w-full h-[400px] flex items-center justify-center">
@@ -330,12 +330,12 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             ],
             content: () => {
                 const positions = [
-                    "top-0 left-0 -translate-y-1/2 -translate-x-full", 
-                    "top-0 left-1/2 -translate-x-1/2 -translate-y-[120%]",
-                    "top-0 right-0 -translate-y-1/2 translate-x-full", 
-                    "bottom-0 left-0 translate-y-1/2 -translate-x-full", 
-                    "bottom-0 left-1/2 -translate-x-1/2 translate-y-[120%]",
-                    "bottom-0 right-0 translate-y-1/2 translate-x-full",
+                    "top-0 -left-4 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+12rem)] sm:-translate-y-[150%]",
+                    "top-0 sm:top-0 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-[calc(100%+2rem)]",
+                    "top-0 -right-4 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+12rem)] sm:-translate-y-[150%]",
+                    "bottom-0 -left-4 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+12rem)] sm:translate-y-[50%]",
+                    "bottom-0 sm:bottom-0 sm:left-1/2 sm:-translate-x-1/2 sm:translate-y-[calc(100%+2rem)]",
+                    "bottom-0 -right-4 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+12rem)] sm:translate-y-[50%]",
                 ];
                 return (
                     <div className="relative w-full h-[400px] flex items-center justify-center">
@@ -446,9 +446,9 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             ],
             content: () => {
                 const positions = [
-                    "top-1/4 left-0 -translate-x-[90%]", 
-                    "bottom-1/4 right-0 translate-x-[90%]", 
-                    "top-1/2 left-0 -translate-x-[90%] -translate-y-1/2"
+                    "top-1/4 -left-4 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+10rem)] sm:-translate-y-[120%]",
+                    "bottom-1/4 -right-4 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+10rem)] sm:-translate-y-1/2",
+                    "top-1/2 -left-4 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+10rem)] sm:translate-y-[20%]"
                 ];
                 return (
                     <div className="relative w-full h-[400px] flex items-center justify-center">
@@ -518,11 +518,11 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: Cat, title: "Avatares", value: "", explanation: "Usa tus trofeos para desbloquear iconos y avatares exclusivos para personalizar tu foto de perfil y destacar en la comunidad."},
             ],
             content: () => {
-                const positions = [
-                    "top-0 left-0 -translate-y-1/4 -translate-x-3/4", 
-                    "top-0 right-0 -translate-y-1/4 translate-x-3/4", 
-                    "bottom-0 left-0 translate-y-1/4 -translate-x-3/4", 
-                    "bottom-0 right-0 translate-y-1/4 translate-x-3/4"
+                 const positions = [
+                    "top-0 -left-4 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+8rem)] sm:-translate-y-[130%]",
+                    "top-0 -right-4 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+8rem)] sm:-translate-y-[130%]",
+                    "bottom-0 -left-4 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+8rem)] sm:translate-y-[30%]",
+                    "bottom-0 -right-4 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+8rem)] sm:translate-y-[30%]"
                 ];
                 return (
                     <div className="relative w-full h-[400px] flex items-center justify-center">
@@ -579,8 +579,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             content: ({ setTheme, theme }: { setTheme: (theme: Theme) => void, theme: Theme }) => {
                 const ThemeIcon = theme === 'dark' ? Moon : Sun;
                 const positions = [
-                    "top-8 left-full ml-4",
-                    "bottom-8 right-full mr-4"
+                    "top-8 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+10rem)] sm:-translate-y-1/2",
+                    "bottom-8 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+10rem)] sm:-translate-y-1/2"
                 ];
 
                 return (
@@ -652,7 +652,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const isLastStep = step === steps.length - 1;
     const CurrentIcon = steps[step].icon;
     const CurrentContent = steps[step].content;
-    const currentItems = steps[step].items;
 
     const introScreen = (
          <div className="fixed inset-0 bg-background z-[100] flex flex-col items-center justify-center p-6 overflow-hidden">
