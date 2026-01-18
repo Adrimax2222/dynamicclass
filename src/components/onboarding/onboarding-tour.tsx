@@ -35,12 +35,15 @@ import {
     MailCheck,
     Sun,
     Moon,
-    X
+    X,
+    Save,
+    Settings2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { useApp } from '@/lib/hooks/use-app';
-import type { Theme } from '@/context/app-provider';
+import type { Theme } from '@/lib/types';
+import { Switch } from '../ui/switch';
 
 const introIcons = [
     { icon: BookOpenCheck, angle: 0 },
@@ -143,7 +146,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [isFinishing, setIsFinishing] = useState(false);
     const [isExiting, setIsExiting] = useState(false);
     const [activeExplanation, setActiveExplanation] = useState<string | null>(null);
-    const { theme, setTheme } = useApp();
+    const { theme, setTheme, isChatBubbleVisible, setIsChatBubbleVisible, saveScannedDocs, setSaveScannedDocs } = useApp();
     
     useEffect(() => {
         const timer = setTimeout(() => setIsIntro(false), 4000); 
@@ -273,8 +276,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             {activeExplanation && activeItem && (
                                 <motion.div
                                     key={activeItem?.title}
-                                    className="absolute z-20"
-                                    style={getPanelPosition(steps[1].items.findIndex(item => item.title === activeExplanation))}
+                                    className="absolute z-20 sm:left-full sm:ml-8"
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.8 }}
@@ -305,18 +307,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             content: () => {
                 const activeItem = steps[2].items.find(item => item.title === activeExplanation);
                 
-                const getPanelPosition = (index: number) => {
-                    const positions = [
-                        { top: '-10%', left: '50%', transform: 'translateX(-50%)' }, // Top-center
-                        { top: '50%', right: '0%', transform: 'translateY(-50%) translateX(25%)' }, // Right-center
-                        { bottom: '-10%', left: '50%', transform: 'translateX(-50%)' }, // Bottom-center
-                        { top: '50%', left: '0%', transform: 'translateY(-50%) translateX(-25%)' }, // Left-center
-                        { top: '15%', left: '0%', transform: 'translateY(-50%) translateX(-25%)' }, // Mid-left
-                        { bottom: '15%', right: '0%', transform: 'translateY(-50%) translateX(25%)' }, // Mid-right
-                    ];
-                    return positions[index % positions.length];
-                };
-
                  return (
                     <div className="w-full h-[400px] relative flex items-center justify-center">
                         <div className="grid grid-cols-3 gap-3 w-72">
@@ -336,9 +326,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             {activeExplanation && activeItem && (
                                 <motion.div
                                     key={activeItem?.title}
-                                    className="absolute z-20"
-                                    style={getPanelPosition(steps[2].items.findIndex(item => item.title === activeExplanation))}
-                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    className="absolute z-20 sm:top-0 sm:left-full sm:ml-8"
+                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.8 }}
                                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
@@ -469,29 +458,22 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             }
         },
         {
-            icon: MailCheck,
-            title: "Notificaciones y Tema",
-            description: "Recibe resúmenes semanales y mantente al día sin esfuerzo. Personaliza tu experiencia visual desde el principio.",
+            icon: Settings2,
+            title: "Configuración rápida del usuario",
+            description: "Personaliza tu experiencia antes de empezar. Puedes cambiar esto más tarde en Ajustes.",
             items: [
-                { icon: MailCheck, title: "Resúmenes Semanales", explanation: "Si lo activas, cada viernes recibirás en tu correo un resumen de tu rendimiento, tareas completadas y los próximos eventos de tu calendario. ¡Una forma perfecta de planificar tu semana!" },
-                { icon: theme === 'dark' ? Moon : Sun, title: "Pre-configurar Tema", explanation: "Elige tu tema preferido, claro u oscuro. Puedes cambiarlo en cualquier momento desde los ajustes de la aplicación." },
+                { icon: MailCheck, title: "Resúmenes Semanales", explanation: "Función en desarrollo. Si la activas, cada viernes recibirás en tu correo un resumen de tu rendimiento y tus próximas tareas. ¡Una forma perfecta de planificar tu semana!" },
+                { icon: Sun, title: "Tema de la Aplicación", explanation: "Elige tu tema preferido, claro u oscuro. Puedes cambiarlo en cualquier momento desde los ajustes de la aplicación." },
+                { icon: Sparkles, title: "Burbuja de IA", explanation: "Muestra un acceso directo flotante al chatbot de IA en todas las pantallas para una consulta rápida." },
+                { icon: Save, title: "Guardar Escaneos", explanation: "Guarda automáticamente los documentos que escanees en el historial de tu dispositivo para acceder a ellos más tarde." },
             ],
-            content: ({ setTheme, theme }: { setTheme: (theme: Theme) => void, theme: Theme }) => {
+            content: () => {
                 const ThemeIcon = theme === 'dark' ? Moon : Sun;
                 const activeItem = steps[6].items.find(item => item.title === activeExplanation);
                 return (
                      <div className="w-full h-[400px] relative flex items-center justify-center">
-                        <div className="w-72 space-y-4">
-                            <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
-                                <MailCheck className="h-6 w-6 text-primary flex-shrink-0"/>
-                                <div>
-                                    <h4 className="font-semibold">Resúmenes Semanales</h4>
-                                    <p className="text-sm text-muted-foreground">Recibe cada viernes un informe de tu progreso.</p>
-                                </div>
-                                <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo("Resúmenes Semanales")}>
-                                    <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                </Button>
-                            </div>
+                        <div className="w-full max-w-sm space-y-4">
+                            
                             <button
                                 type="button"
                                 onClick={() => {
@@ -502,23 +484,68 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             >
                                 <ThemeIcon className="h-6 w-6 text-primary flex-shrink-0"/>
                                 <div>
-                                    <h4 className="font-semibold">Pre-configurar Tema</h4>
-                                    <p className="text-sm text-muted-foreground">Prueba el Modo Oscuro y elige tu vista preferida.</p>
+                                    <h4 className="font-semibold">Tema {theme === 'dark' ? 'Oscuro' : 'Claro'}</h4>
+                                    <p className="text-sm text-muted-foreground">Personaliza la apariencia de la app.</p>
                                 </div>
+                                <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Tema de la Aplicación")}}>
+                                    <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                </Button>
                             </button>
+
+                            <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
+                                <Sparkles className="h-6 w-6 text-primary flex-shrink-0"/>
+                                <div className="flex-1">
+                                    <h4 className="font-semibold">Burbuja de IA</h4>
+                                    <p className="text-sm text-muted-foreground">Acceso rápido a ADRIMAX AI.</p>
+                                </div>
+                                <Switch checked={isChatBubbleVisible} onCheckedChange={setIsChatBubbleVisible} />
+                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => handleShowInfo("Burbuja de IA")}>
+                                     <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                </Button>
+                            </div>
+                            
+                            <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
+                                <Save className="h-6 w-6 text-primary flex-shrink-0"/>
+                                <div className="flex-1">
+                                    <h4 className="font-semibold">Guardar Escaneos</h4>
+                                    <p className="text-sm text-muted-foreground">Almacena documentos en el historial.</p>
+                                </div>
+                                <Switch checked={saveScannedDocs} onCheckedChange={setSaveScannedDocs} />
+                                 <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => handleShowInfo("Guardar Escaneos")}>
+                                     <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                </Button>
+                            </div>
+
+                            <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left opacity-50 cursor-not-allowed">
+                                <MailCheck className="h-6 w-6 text-primary flex-shrink-0"/>
+                                <div className="flex-1">
+                                    <h4 className="font-semibold">Resúmenes Semanales</h4>
+                                    <p className="text-sm text-muted-foreground">Recibe informes en tu correo.</p>
+                                </div>
+                                <Switch disabled={true} />
+                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.preventDefault(); e.stopPropagation(); handleShowInfo("Resúmenes Semanales")}}>
+                                     <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                </Button>
+                            </div>
+
                         </div>
                         <AnimatePresence>
                             {activeExplanation && activeItem && (
                                 <motion.div
                                     key={activeItem?.title}
                                     className="absolute z-20 sm:left-full sm:ml-8"
-                                     initial={{ opacity: 0, scale: 0.8 }}
+                                    initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.8 }}
                                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                                 >
-                                     <div className="w-56 h-auto">
-                                        <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
+                                    <div className="w-56 h-auto">
+                                        <InfoPanel 
+                                            title={activeItem.title} 
+                                            icon={activeItem.title === 'Tema de la Aplicación' ? ThemeIcon : activeItem.icon} 
+                                            description={activeItem.explanation} 
+                                            onClose={handleCloseInfo} 
+                                        />
                                     </div>
                                 </motion.div>
                             )}
@@ -663,7 +690,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     <p className="text-muted-foreground mt-2">{steps[step].description}</p>
                                     
                                     <div className="min-h-[400px] flex items-center justify-center">
-                                        <CurrentContent setTheme={setTheme} theme={theme} />
+                                        <CurrentContent />
                                     </div>
                                 </motion.div>
                             </AnimatePresence>

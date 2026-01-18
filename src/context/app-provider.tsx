@@ -2,15 +2,13 @@
 "use client";
 
 import { createContext, useState, useEffect, useCallback, type ReactNode, useMemo, useRef } from 'react';
-import type { User, Chat, TimerMode, Phase, CustomMode } from '@/lib/types';
+import type { User, Chat, TimerMode, Phase, CustomMode, Theme } from '@/lib/types';
 import { useAuth, useFirestore } from '@/firebase';
 import { onAuthStateChanged, type User as FirebaseUser, deleteUser } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, deleteDoc, collection, query, orderBy, updateDoc, increment, getDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { format as formatDate, subDays, isSameDay } from 'date-fns';
 
-
-export type Theme = 'light' | 'dark';
 
 export interface AppContextType {
   user: User | null;
@@ -24,7 +22,7 @@ export interface AppContextType {
   setTheme: (theme: Theme) => void;
   
   isChatBubbleVisible: boolean;
-  toggleChatBubble: () => void;
+  setIsChatBubbleVisible: (visible: boolean) => void;
   
   isChatDrawerOpen: boolean;
   setChatDrawerOpen: (isOpen: boolean) => void;
@@ -63,7 +61,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null | undefined>(undefined); // Start as undefined
   const [theme, setThemeState] = useState<Theme>('light');
-  const [isChatBubbleVisible, setIsChatBubbleVisible] = useState(true);
+  const [isChatBubbleVisible, setIsChatBubbleVisibleState] = useState(true);
   const [isChatDrawerOpen, setChatDrawerOpen] = useState(false);
   const [saveScannedDocs, setSaveScannedDocsState] = useState(true);
   
@@ -123,7 +121,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
               if (docSnap.exists()) {
                 let userData = { uid: docSnap.id, ...docSnap.data() } as User;
                 
-                // Ensure streak and studyMinutes are numbers
                 userData.streak = userData.streak || 0;
                 userData.studyMinutes = userData.studyMinutes || 0;
 
@@ -138,6 +135,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 }
 
                 setUser(userData);
+                
+                // Load settings from user profile, with fallbacks to localStorage or defaults
+                const userTheme = userData.theme || (localStorage.getItem('classconnect-theme') as Theme) || 'light';
+                setThemeState(userTheme);
+                document.documentElement.classList.remove('light', 'dark');
+                document.documentElement.classList.add(userTheme);
+                
+                const userBubbleVisible = userData.isChatBubbleVisible ?? true;
+                setIsChatBubbleVisibleState(userBubbleVisible);
+
+                const storedSaveDocs = localStorage.getItem('saveScannedDocs');
+                const userSaveDocs = userData.saveScannedDocs ?? (storedSaveDocs !== null ? JSON.parse(storedSaveDocs) : true);
+                setSaveScannedDocsState(userSaveDocs);
+
               } else {
                 console.warn("User document not found for authenticated user.");
               }
@@ -194,12 +205,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('classconnect-theme', newTheme);
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(newTheme);
-  }, []);
+    if (user && firestore) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        updateDoc(userDocRef, { theme: newTheme }).catch(console.error);
+    }
+  }, [user, firestore]);
 
   const setSaveScannedDocs = useCallback((save: boolean) => {
       setSaveScannedDocsState(save);
       localStorage.setItem('saveScannedDocs', JSON.stringify(save));
-  }, []);
+      if (user && firestore) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        updateDoc(userDocRef, { saveScannedDocs: save }).catch(console.error);
+    }
+  }, [user, firestore]);
+
+  const setIsChatBubbleVisible = useCallback((visible: boolean) => {
+      setIsChatBubbleVisibleState(visible);
+      if (user && firestore) {
+          const userDocRef = doc(firestore, 'users', user.uid);
+          updateDoc(userDocRef, { isChatBubbleVisible: visible }).catch(console.error);
+      }
+  }, [user, firestore]);
+
 
   const login = (userData: User) => {
     setUser(userData);
@@ -232,10 +260,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await deleteDoc(userDocRef);
 
     await deleteUser(currentUser);
-  };
-
-  const toggleChatBubble = () => {
-    setIsChatBubbleVisible(prev => !prev);
   };
 
   // ----- GLOBAL TIMER LOGIC -----
@@ -377,7 +401,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     theme,
     setTheme,
     isChatBubbleVisible,
-    toggleChatBubble,
+    setIsChatBubbleVisible,
     isChatDrawerOpen,
     setChatDrawerOpen,
     // Chat context values

@@ -3,6 +3,8 @@
 import type { LucideIcon } from "lucide-react";
 import type { Timestamp } from "firebase/firestore";
 
+export type Theme = 'light' | 'dark';
+
 export type User = {
   uid: string;
   name: string;
@@ -28,6 +30,9 @@ export type User = {
   isChatBanned?: boolean;
   accessCount?: number;
   hasSeenOnboarding?: boolean;
+  theme?: Theme;
+  isChatBubbleVisible?: boolean;
+  saveScannedDocs?: boolean;
 };
 
 // Simplified user type for center management
