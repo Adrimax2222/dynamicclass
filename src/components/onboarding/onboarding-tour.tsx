@@ -24,10 +24,28 @@ import {
     Flame, 
     Vote, 
     Building,
-    ArrowRight
+    ArrowRight,
+    Wand2,
+    Target,
+    MessageSquare,
+    Gift,
+    Cat,
+    BookOpenCheck,
+    FlaskConical,
+    PencilRuler
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Progress } from '../ui/progress';
+
+const introIcons = [
+    { icon: Calendar, className: "top-0 left-1/2 -translate-x-1/2" },
+    { icon: School, className: "top-1/3 right-0" },
+    { icon: Sparkles, className: "bottom-0 right-1/2 translate-x-1/2" },
+    { icon: Trophy, className: "bottom-1/3 left-0" },
+    { icon: Timer, className: "top-1/3 left-0" },
+    { icon: Calculator, className: "bottom-1/3 right-0" },
+    { icon: Music, className: "top-0 right-1/2 translate-x-1/2" },
+    { icon: ScanLine, className: "bottom-0 left-1/2 -translate-x-1/2" },
+];
 
 const steps = [
     {
@@ -35,29 +53,42 @@ const steps = [
         title: "Elige tu camino",
         description: "Dynamic Class se adapta a ti. Únete a un centro existente con un código, crea uno nuevo para tu clase, o úsalo de forma personal.",
         content: () => (
-            <div className="grid grid-cols-1 gap-4 mt-6">
-                <div className="flex items-center gap-4 p-4 rounded-lg border bg-muted/50">
-                    <School className="h-6 w-6 text-primary"/>
-                    <div>
-                        <h4 className="font-semibold">Unirse a un Centro</h4>
-                        <p className="text-sm text-muted-foreground">Usa un código para conectar con tu clase.</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-4 p-4 rounded-lg border bg-muted/50">
-                    <PlusCircle className="h-6 w-6 text-primary"/>
-                    <div>
-                        <h4 className="font-semibold">Crear un Centro</h4>
-                        <p className="text-sm text-muted-foreground">Administra tu propia clase y comparte.</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-4 p-4 rounded-lg border bg-muted/50">
-                    <User className="h-6 w-6 text-primary"/>
-                    <div>
-                        <h4 className="font-semibold">Uso Personal</h4>
-                        <p className="text-sm text-muted-foreground">Organiza tus estudios de forma individual.</p>
-                    </div>
-                </div>
-            </div>
+            <motion.div 
+                className="grid grid-cols-1 gap-4 mt-6"
+                variants={{
+                    hidden: { opacity: 0 },
+                    visible: {
+                        opacity: 1,
+                        transition: { staggerChildren: 0.1 }
+                    }
+                }}
+                initial="hidden"
+                animate="visible"
+            >
+                {[
+                    { icon: School, title: "Unirse a un Centro", desc: "Usa un código para conectar con tu clase." },
+                    { icon: PlusCircle, title: "Crear un Centro", desc: "Administra tu propia clase y comparte." },
+                    { icon: User, title: "Uso Personal", desc: "Organiza tus estudios de forma individual." },
+                ].map((item, i) => {
+                    const ItemIcon = item.icon;
+                    return (
+                        <motion.div
+                            key={i}
+                            className="flex items-center gap-4 p-4 rounded-lg border bg-muted/50"
+                            variants={{
+                                hidden: { opacity: 0, y: 20 },
+                                visible: { opacity: 1, y: 0 }
+                            }}
+                        >
+                            <ItemIcon className="h-6 w-6 text-primary"/>
+                            <div>
+                                <h4 className="font-semibold">{item.title}</h4>
+                                <p className="text-sm text-muted-foreground">{item.desc}</p>
+                            </div>
+                        </motion.div>
+                    )
+                })}
+            </motion.div>
         )
     },
     {
@@ -71,69 +102,146 @@ const steps = [
                 { icon: Calculator, name: 'Calculadora' },
                 { icon: Music, name: 'Música' },
                 { icon: Timer, name: 'Pomodoro' },
+                { icon: Target, name: 'Notas' },
+                { icon: Wand2, name: 'Editor Mágico'},
                 { icon: Sparkles, name: 'IA' },
             ];
             return (
-                <div className="grid grid-cols-3 gap-4 mt-6 text-center">
+                <motion.div 
+                    className="grid grid-cols-4 gap-2 sm:gap-4 mt-6 text-center"
+                    variants={{
+                        hidden: {},
+                        visible: { transition: { staggerChildren: 0.05 } }
+                    }}
+                    initial="hidden"
+                    animate="visible"
+                >
                     {tools.map((tool, i) => (
-                        <div key={i} className="flex flex-col items-center justify-center gap-2 p-3 rounded-lg border bg-muted/50">
-                            <tool.icon className="h-7 w-7 text-primary"/>
+                        <motion.div
+                            key={i}
+                            className="flex flex-col items-center justify-center gap-2 p-2 sm:p-3 rounded-lg border bg-muted/50 aspect-square"
+                            variants={{
+                                hidden: { opacity: 0, scale: 0.5 },
+                                visible: { opacity: 1, scale: 1 }
+                            }}
+                        >
+                            <tool.icon className="h-6 w-6 sm:h-7 sm:w-7 text-primary"/>
                             <span className="text-xs font-semibold">{tool.name}</span>
-                        </div>
+                        </motion.div>
                     ))}
-                </div>
+                </motion.div>
             )
         }
     },
     {
         icon: Sparkles,
         title: "Asistencia Inteligente",
-        description: "Nuestra IA integrada te ayuda a entender conceptos, generar resúmenes de tus apuntes y prepararte para los exámenes.",
-        content: () => (
-            <div className="mt-6 p-6 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg">
-                <h4 className="font-bold text-lg">ADRIMAX AI</h4>
-                <p className="opacity-80 mt-1">Tu asistente personal 24/7. Pregúntale cualquier cosa, desde resolver ecuaciones hasta obtener explicaciones detalladas sobre temas complejos.</p>
-            </div>
-        )
+        description: "Nuestra IA integrada te ayuda a entender conceptos, generar resúmenes, crear tarjetas de estudio interactivas, cuestionarios ¡y mucho más!",
+        content: () => {
+             const aiFeatures = ["Resúmenes", "Flashcards", "Explicaciones", "Esquemas", "Cuestionarios"];
+            return (
+                <motion.div 
+                    className="mt-6 p-6 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg text-left"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <h4 className="font-bold text-lg">ADRIMAX AI</h4>
+                    <p className="opacity-80 mt-1 text-sm">Tu asistente 24/7. Pídele que te explique un tema, que te cree tarjetas de estudio o que te ponga a prueba con un cuestionario.</p>
+                    <motion.div 
+                        className="flex flex-wrap gap-2 mt-4"
+                        variants={{
+                            visible: { transition: { staggerChildren: 0.1 } }
+                        }}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        {aiFeatures.map(feat => (
+                             <motion.span
+                                key={feat}
+                                className="text-xs font-bold bg-white/20 py-1 px-2 rounded-full"
+                                variants={{
+                                    hidden: { opacity: 0, y: 10 },
+                                    visible: { opacity: 1, y: 0 }
+                                }}
+                            >
+                                {feat}
+                            </motion.span>
+                        ))}
+                    </motion.div>
+                </motion.div>
+            )
+        }
     },
     {
         icon: Vote,
         title: "Interactúa con tu Clase",
-        description: "Mantente siempre informado con anuncios importantes y participa en encuestas en tiempo real para tomar decisiones en grupo.",
+        description: "Consulta tu horario, participa en encuestas y mantente siempre al día con el chat de clase y los anuncios importantes.",
         content: () => (
-            <div className="mt-6 border rounded-lg p-4 space-y-4 bg-muted/50">
-                 <div className="flex items-center gap-2">
+            <motion.div
+                className="mt-6 border rounded-lg p-4 space-y-4 bg-muted/50"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+            >
+                 <motion.div 
+                    className="flex items-center gap-2"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0, transition: { delay: 0.2 } }}
+                 >
                     <Building className="h-5 w-5 text-primary"/>
                     <h4 className="font-semibold">Anuncio del Centro</h4>
-                 </div>
-                 <p className="text-sm">"Recordad que la fecha límite para la entrega del proyecto de Biología es este viernes."</p>
-                 <div className="pt-2">
+                 </motion.div>
+                 <motion.p
+                    className="text-sm"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0, transition: { delay: 0.4 } }}
+                >
+                    "Recordad que la fecha límite para la entrega del proyecto de Biología es este viernes."
+                </motion.p>
+                 <motion.div 
+                    className="pt-2"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0, transition: { delay: 0.6 } }}
+                 >
                      <h4 className="font-semibold text-sm mb-2">Encuesta: ¿Próxima tutoría?</h4>
                      <div className="space-y-2">
                          <div className="flex items-center justify-between text-sm p-2 rounded-md bg-background"><span>Repaso General</span> <span>68%</span></div>
                          <div className="flex items-center justify-between text-sm p-2 rounded-md bg-background"><span>Dudas Individuales</span> <span>32%</span></div>
                      </div>
-                 </div>
-            </div>
+                 </motion.div>
+            </motion.div>
         )
     },
     {
         icon: Trophy,
-        title: "Compite y Gana",
-        description: "Gana trofeos completando tareas y exámenes. Mantén tu racha de estudio diaria para escalar en el ranking de tu centro.",
+        title: "Compite y Gana Recompensas",
+        description: "Gana trofeos por tus logros y canjéalos por tarjetas regalo o avatares exclusivos para tu perfil.",
          content: () => (
-            <div className="grid grid-cols-2 gap-4 mt-6">
-                <div className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30">
+            <motion.div
+                className="grid grid-cols-2 gap-4 mt-6"
+                variants={{ visible: { transition: { staggerChildren: 0.2 } } }}
+                initial="hidden"
+                animate="visible"
+            >
+                <motion.div variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}} className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30">
                     <Trophy className="h-8 w-8 text-amber-500"/>
                     <span className="font-bold text-xl">125</span>
                     <span className="text-xs font-semibold">Trofeos</span>
-                </div>
-                 <div className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-orange-400/10 border-orange-400/30">
+                </motion.div>
+                 <motion.div variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}} className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-orange-400/10 border-orange-400/30">
                     <Flame className="h-8 w-8 text-orange-500"/>
                     <span className="font-bold text-xl">12 Días</span>
                     <span className="text-xs font-semibold">Racha Actual</span>
-                </div>
-            </div>
+                </motion.div>
+                 <motion.div variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}} className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-green-400/10 border-green-400/30">
+                    <Gift className="h-8 w-8 text-green-500"/>
+                    <span className="font-bold text-base">Tarjetas Regalo</span>
+                </motion.div>
+                 <motion.div variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}} className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-purple-400/10 border-purple-400/30">
+                    <Cat className="h-8 w-8 text-purple-500"/>
+                    <span className="font-bold text-base">Avatares</span>
+                </motion.div>
+            </motion.div>
         )
     }
 ];
@@ -143,7 +251,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [isIntro, setIsIntro] = useState(true);
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsIntro(false), 2000); 
+        const timer = setTimeout(() => setIsIntro(false), 4000); 
         return () => clearTimeout(timer);
     }, []);
 
@@ -159,20 +267,57 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
 
     if (isIntro) {
         return (
-             <div className="fixed inset-0 bg-background z-[100] flex flex-col items-center justify-center p-6">
-                <motion.div layoutId="onboarding-logo">
+             <div className="fixed inset-0 bg-background z-[100] flex flex-col items-center justify-center p-6 overflow-hidden">
+                <motion.div
+                    layoutId="onboarding-logo"
+                    initial={{ scale: 1 }}
+                    animate={{ scale: [1, 1.2, 1], transition: { duration: 1, delay: 0.5 } }}
+                    className="relative"
+                >
                     <Logo className="h-24 w-24 text-primary" />
+                    <motion.div 
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                            visible: {
+                                transition: { staggerChildren: 0.1, delayChildren: 1.5 }
+                            }
+                        }}
+                        className="absolute inset-0"
+                    >
+                        {introIcons.map((item, i) => (
+                            <motion.div
+                                key={i}
+                                className={cn("absolute", item.className)}
+                                variants={{
+                                    hidden: { scale: 0, opacity: 0 },
+                                    visible: {
+                                        scale: 1,
+                                        opacity: 1,
+                                        transition: { type: "spring", stiffness: 300, damping: 15 }
+                                    }
+                                }}
+                            >
+                                <div className="p-2 bg-background rounded-full shadow-lg border">
+                                    <item.icon className="h-5 w-5 text-primary" />
+                                </div>
+                            </motion.div>
+                        ))}
+                    </motion.div>
                 </motion.div>
-                <motion.h1 
+
+                <motion.h1
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5, duration: 0.5 }}
-                    className="text-2xl font-bold font-headline mt-6"
+                    transition={{ delay: 3, duration: 0.7 }}
+                    className="text-2xl font-bold font-headline mt-12 text-center"
                 >
-                    Introducing Dynamic Class
+                    Construyendo tu espacio en
+                    <br />
+                    <span className="text-primary">Dynamic Class</span>
                 </motion.h1>
             </div>
-        )
+        );
     }
 
     const CurrentIcon = steps[step].icon;
@@ -196,13 +341,18 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         transition={{ duration: 0.4, ease: "easeInOut" }}
                         className="w-full max-w-sm mx-auto"
                     >
-                        <div className="bg-primary/10 p-4 rounded-full w-fit mx-auto mb-6">
+                        <motion.div 
+                            className="bg-primary/10 p-4 rounded-full w-fit mx-auto mb-6"
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                        >
                            <CurrentIcon className="h-8 w-8 text-primary" />
-                        </div>
+                        </motion.div>
                         <h2 className="text-2xl font-bold font-headline">{steps[step].title}</h2>
                         <p className="text-muted-foreground mt-2">{steps[step].description}</p>
                         
-                        <div className="min-h-[200px] flex items-center justify-center">
+                        <div className="min-h-[260px] flex items-center justify-center">
                            {steps[step].content()}
                         </div>
                     </motion.div>
@@ -214,7 +364,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                     {steps.map((_, i) => (
                         <div 
                             key={i} 
-                            className={cn("h-2 w-2 rounded-full bg-muted transition-all", i === step && "bg-primary w-6")}
+                            onClick={() => setStep(i)}
+                            className={cn("h-2 w-2 rounded-full bg-muted transition-all cursor-pointer", i === step && "bg-primary w-6")}
                         />
                     ))}
                 </div>
