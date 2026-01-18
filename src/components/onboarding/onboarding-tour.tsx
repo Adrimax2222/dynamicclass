@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -33,9 +34,12 @@ import {
     FlaskConical,
     PencilRuler,
     Users,
-    BrainCircuit
+    BrainCircuit,
+    ShieldCheck,
+    Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 const introIcons = [
     { icon: BookOpenCheck, angle: 0 },
@@ -49,42 +53,40 @@ const introIcons = [
 ];
 
 const steps = [
-    {
-        icon: School,
-        title: "Elige tu camino",
-        description: "Dynamic Class se adapta a ti. Únete a un centro existente con un código, crea uno nuevo para tu clase, o úsalo de forma personal.",
+     {
+        icon: Users,
+        title: "Una Estructura Colaborativa",
+        description: "Organizamos los roles para una gestión clara y segura, desde el administrador global hasta cada estudiante.",
         content: () => (
-            <motion.div 
-                className="grid grid-cols-1 gap-4 mt-6"
+             <motion.div 
+                className="mt-6 space-y-2"
                 variants={{
                     hidden: { opacity: 0 },
-                    visible: {
-                        opacity: 1,
-                        transition: { staggerChildren: 0.1 }
-                    }
+                    visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
                 }}
                 initial="hidden"
                 animate="visible"
             >
                 {[
-                    { icon: School, title: "Unirse a un Centro", desc: "Usa un código para conectar con tu clase." },
-                    { icon: PlusCircle, title: "Crear un Centro", desc: "Administra tu propia clase y comparte." },
-                    { icon: User, title: "Uso Personal", desc: "Organiza tus estudios de forma individual." },
+                    { icon: ShieldCheck, title: "Admin Global", desc: "Supervisa toda la plataforma.", color: "border-blue-500/50 bg-blue-500/10" },
+                    { icon: Building, title: "Admin de Centro", desc: "Gestiona un centro educativo y sus clases.", color: "border-purple-500/50 bg-purple-500/10" },
+                    { icon: GraduationCap, title: "Admin de Clase", desc: "Modera el chat y el horario de su clase.", color: "border-green-500/50 bg-green-500/10" },
+                    { icon: User, title: "Estudiante", desc: "Participa, aprende y compite.", color: "border-gray-500/50 bg-gray-500/10" },
                 ].map((item, i) => {
                     const ItemIcon = item.icon;
                     return (
                         <motion.div
                             key={i}
-                            className="flex items-center gap-4 p-4 rounded-lg border bg-muted/50"
+                            className={cn("flex items-center gap-4 p-3 rounded-lg border", item.color)}
                             variants={{
                                 hidden: { opacity: 0, y: 20 },
                                 visible: { opacity: 1, y: 0 }
                             }}
                         >
-                            <ItemIcon className="h-6 w-6 text-primary"/>
+                            <ItemIcon className="h-5 w-5 text-foreground"/>
                             <div>
-                                <h4 className="font-semibold">{item.title}</h4>
-                                <p className="text-sm text-muted-foreground">{item.desc}</p>
+                                <h4 className="font-semibold text-sm">{item.title}</h4>
+                                <p className="text-xs text-muted-foreground">{item.desc}</p>
                             </div>
                         </motion.div>
                     )
@@ -93,7 +95,7 @@ const steps = [
         )
     },
     {
-        icon: GraduationCap,
+        icon: BrainCircuit,
         title: "Tu Centro de Operaciones",
         description: "Todas tus herramientas de productividad, centralizadas en el Modo Estudio para que nada te distraiga.",
         content: () => {
@@ -105,7 +107,7 @@ const steps = [
                 { icon: Target, name: 'Calcula Notas' },
                 { icon: Wand2, name: 'Editor Mágico'},
                 { icon: MessageSquare, name: 'Chat de Clase' },
-                { icon: BrainCircuit, name: 'ADRIMAX AI' },
+                { icon: Sparkles, name: 'ADRIMAX AI' },
             ];
             return (
                 <motion.div 
@@ -125,9 +127,10 @@ const steps = [
                                 hidden: { opacity: 0, scale: 0.5 },
                                 visible: { opacity: 1, scale: 1 }
                             }}
+                            whileHover={{ scale: 1.1, backgroundColor: 'hsl(var(--muted))' }}
                         >
                             <tool.icon className="h-6 w-6 sm:h-7 sm:w-7 text-primary"/>
-                            <span className="text-xs font-semibold">{tool.name}</span>
+                            <span className="text-[10px] sm:text-xs font-semibold">{tool.name}</span>
                         </motion.div>
                     ))}
                 </motion.div>
@@ -255,6 +258,7 @@ const steps = [
 export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [step, setStep] = useState(0);
     const [isIntro, setIsIntro] = useState(true);
+    const [isFinishing, setIsFinishing] = useState(false);
     const [isExiting, setIsExiting] = useState(false);
 
     useEffect(() => {
@@ -266,11 +270,15 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         if (step < steps.length - 1) {
             setStep(step + 1);
         } else {
-            setIsExiting(true);
+            setIsFinishing(true);
+            setTimeout(() => {
+                setIsExiting(true);
+            }, 2000); // Duration of the finishing screen
         }
     };
     
     const isLastStep = step === steps.length - 1;
+    const CurrentIcon = steps[step].icon;
 
     const introScreen = (
          <div className="fixed inset-0 bg-background z-[100] flex flex-col items-center justify-center p-6 overflow-hidden">
@@ -307,10 +315,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             <motion.div
                                 key={i}
                                 className="absolute top-1/2 left-1/2"
-                                style={{
-                                    x: "-50%",
-                                    y: "-50%",
-                                }}
+                                style={{ x: "-50%", y: "-50%" }}
                                 variants={{
                                     hidden: { scale: 0, opacity: 0, x: "-50%", y: "-50%" },
                                     visible: {
@@ -344,11 +349,11 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         </div>
     );
     
-    const CurrentIcon = steps[step].icon;
-
-    const tourScreen = (
+    if (isIntro) return introScreen;
+    
+    return (
         <motion.div 
-            className="fixed inset-0 bg-background z-[100] flex flex-col p-6"
+            className="fixed inset-0 bg-background z-[100] flex flex-col p-6 overflow-hidden"
             initial={{ opacity: 1, scale: 1 }}
             animate={isExiting ? { opacity: 0, scale: 0.95 } : { opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
@@ -358,57 +363,79 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 }
             }}
         >
-            <header className="flex items-center justify-between h-10">
-                <motion.div layoutId="onboarding-logo">
-                    <Logo className="h-10 w-10 text-primary" />
-                </motion.div>
-            </header>
+             {/* Animated Background Blobs */}
+            <div className="absolute top-0 left-0 w-72 h-72 bg-blue-300/50 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+            <div className="absolute top-0 right-0 w-72 h-72 bg-purple-300/50 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+            <div className="absolute bottom-0 left-1/4 w-72 h-72 bg-pink-300/50 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
 
-            <div className="flex-1 flex flex-col justify-center text-center">
-                 <AnimatePresence mode="wait">
-                    <motion.div
-                        key={step}
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -50 }}
-                        transition={{ duration: 0.4, ease: "easeInOut" }}
-                        className="w-full max-w-sm mx-auto"
+            <AnimatePresence>
+                {isFinishing ? (
+                     <motion.div
+                        key="finishing"
+                        className="absolute inset-0 flex flex-col items-center justify-center text-center z-20 bg-background"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.5 }}
                     >
-                        <motion.div 
-                            className="bg-primary/10 p-4 rounded-full w-fit mx-auto mb-6"
-                            initial={{ scale: 0.5, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                        >
-                           <CurrentIcon className="h-8 w-8 text-primary" />
+                        <motion.div layoutId="onboarding-logo">
+                           <Logo className="h-16 w-16 text-primary" />
                         </motion.div>
-                        <h2 className="text-2xl font-bold font-headline">{steps[step].title}</h2>
-                        <p className="text-muted-foreground mt-2">{steps[step].description}</p>
-                        
-                        <div className="min-h-[290px] flex items-center justify-center">
-                           {steps[step].content()}
-                        </div>
+                        <h2 className="text-2xl font-bold font-headline mt-6">Configurando tu espacio...</h2>
+                        <p className="text-muted-foreground mt-2">Personalizando tu experiencia.</p>
+                        <Loader2 className="h-6 w-6 text-primary animate-spin mt-4" />
                     </motion.div>
-                </AnimatePresence>
-            </div>
-            
-            <footer className="space-y-4">
-                 <div className="flex justify-center gap-2">
-                    {steps.map((_, i) => (
-                        <div 
-                            key={i} 
-                            onClick={() => setStep(i)}
-                            className={cn("h-2 w-2 rounded-full bg-muted transition-all cursor-pointer", i === step && "bg-primary w-6")}
-                        />
-                    ))}
-                </div>
-                <Button onClick={handleNext} className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
-                    {isLastStep ? "Comenzar a Explorar" : "Siguiente"}
-                    {!isLastStep && <ArrowRight className="h-4 w-4 ml-2"/>}
-                </Button>
-            </footer>
+                ) : (
+                    <motion.div
+                        key="tour-content"
+                        className="relative z-10 flex flex-col flex-1"
+                        initial={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <header className="flex items-center justify-between h-10">
+                            <motion.div layoutId="onboarding-logo">
+                                <Logo className="h-10 w-10 text-primary" />
+                            </motion.div>
+                        </header>
+
+                        <div className="flex-1 flex flex-col justify-center text-center">
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={step}
+                                    initial={{ opacity: 0, x: 50 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -50 }}
+                                    transition={{ duration: 0.4, ease: "easeInOut" }}
+                                    className="w-full max-w-sm mx-auto"
+                                >
+                                    <motion.div 
+                                        className="bg-primary/10 p-4 rounded-full w-fit mx-auto mb-6"
+                                        initial={{ scale: 0.5, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                                    >
+                                    <CurrentIcon className="h-8 w-8 text-primary" />
+                                    </motion.div>
+                                    <h2 className="text-2xl font-bold font-headline">{steps[step].title}</h2>
+                                    <p className="text-muted-foreground mt-2">{steps[step].description}</p>
+                                    
+                                    <div className="min-h-[290px] flex items-center justify-center">
+                                    {steps[step].content()}
+                                    </div>
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
+                        
+                        <footer className="space-y-4">
+                            <Progress value={((step + 1) / steps.length) * 100} className="h-2 w-full max-w-xs mx-auto" />
+
+                            <Button onClick={handleNext} className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
+                                {isLastStep ? "Comenzar a Explorar" : "Siguiente"}
+                                {!isLastStep && <ArrowRight className="h-4 w-4 ml-2"/>}
+                            </Button>
+                        </footer>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </motion.div>
     );
-
-    return isIntro ? introScreen : tourScreen;
 }
