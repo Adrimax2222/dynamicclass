@@ -149,7 +149,7 @@ export default {
             opacity: '0.9',
           },
         },
-        blob: {
+         blob: {
             '0%': {
                 transform: 'translate(0px, 0px) scale(1)',
             },
@@ -164,11 +164,8 @@ export default {
             },
         },
         shimmer: {
-          '0%': {
-            backgroundPosition: '-200% 0',
-          },
           '100%': {
-            backgroundPosition: '200% 0',
+            transform: 'translateX(100%)',
           },
         },
       },
@@ -183,7 +180,7 @@ export default {
         'float-logo': 'float-logo 2s ease-in-out infinite',
         'pulse-slow': 'pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'blob': 'blob 7s infinite',
-        'shimmer': 'shimmer 2.5s linear infinite',
+        'shimmer': 'shimmer 2s infinite',
       },
     },
   },

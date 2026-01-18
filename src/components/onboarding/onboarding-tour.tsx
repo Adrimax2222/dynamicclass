@@ -42,7 +42,6 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
-import { Skeleton } from '../ui/skeleton';
 
 const introIcons = [
     { icon: BookOpenCheck, angle: 0 },
@@ -74,17 +73,26 @@ const steps = [
                 ].map((item, i) => {
                     const ItemIcon = item.icon;
                     return (
-                        <motion.div
-                            key={i}
-                            className="flex items-center text-left gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm"
-                            variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
-                        >
-                            <ItemIcon className="h-6 w-6 text-primary flex-shrink-0"/>
-                            <div>
-                                <h4 className="font-semibold text-sm">{item.title}</h4>
-                                <p className="text-xs text-muted-foreground">{item.desc}</p>
-                            </div>
-                        </motion.div>
+                        <Sheet key={i}>
+                            <SheetTrigger asChild>
+                                <motion.div
+                                    className="flex items-center text-left gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer hover:bg-muted/50"
+                                    variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
+                                >
+                                    <ItemIcon className="h-6 w-6 text-primary flex-shrink-0"/>
+                                    <div>
+                                        <h4 className="font-semibold text-sm">{item.title}</h4>
+                                        <p className="text-xs text-muted-foreground">{item.desc}</p>
+                                    </div>
+                                </motion.div>
+                            </SheetTrigger>
+                            <SheetContent>
+                                <SheetHeader>
+                                    <SheetTitle className="flex items-center gap-2"><ItemIcon className="h-5 w-5" />{item.title}</SheetTitle>
+                                    <SheetDescription>{item.desc}</SheetDescription>
+                                </SheetHeader>
+                            </SheetContent>
+                        </Sheet>
                     )
                 })}
             </motion.div>
@@ -296,36 +304,67 @@ const steps = [
     }
 ];
 
-const BuildingWorkspaceScreen = () => (
-    <motion.div
-        className="w-full max-w-sm mx-auto p-4 border rounded-lg bg-background shadow-2xl overflow-hidden"
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-    >
-        <div className="space-y-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <Skeleton className="h-8 w-1/2 shimmer-bg" />
-                <Skeleton className="h-8 w-8 rounded-full shimmer-bg" />
-            </div>
-            
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 gap-4">
-                <Skeleton className="h-20 w-full shimmer-bg" />
-                <Skeleton className="h-20 w-full shimmer-bg" />
-                <Skeleton className="h-20 w-full shimmer-bg" />
-                <Skeleton className="h-20 w-full shimmer-bg" />
-            </div>
-            
-            {/* Upcoming Class */}
-            <div className="space-y-2">
-                <Skeleton className="h-5 w-1/3 shimmer-bg" />
-                <Skeleton className="h-24 w-full shimmer-bg" />
-            </div>
+const BuildingWorkspaceScreen = () => {
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.15,
+            },
+        },
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                type: 'spring',
+                stiffness: 100,
+            },
+        },
+    };
+
+    const ShimmerBlock = ({ className }: { className?: string }) => (
+        <div className={cn("relative overflow-hidden rounded-lg bg-muted", className)}>
+            <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-background/30 to-transparent" />
         </div>
-    </motion.div>
-);
+    );
+
+    return (
+        <motion.div
+            className="w-full max-w-sm mx-auto p-4 space-y-4"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+        >
+            <motion.div variants={itemVariants} className="space-y-2">
+                <ShimmerBlock className="h-8 w-3/4" />
+                <ShimmerBlock className="h-4 w-1/2" />
+            </motion.div>
+            
+            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
+                <ShimmerBlock className="h-20 w-full" />
+                <ShimmerBlock className="h-20 w-full" />
+                <ShimmerBlock className="h-20 w-full" />
+                <ShimmerBlock className="h-20 w-full" />
+            </motion.div>
+            
+            <motion.div variants={itemVariants}>
+                <ShimmerBlock className="h-28 w-full" />
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="space-y-2">
+                <ShimmerBlock className="h-6 w-1/3" />
+                <ShimmerBlock className="h-24 w-full" />
+            </motion.div>
+        </motion.div>
+    );
+};
+
 
 export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [step, setStep] = useState(0);
@@ -345,7 +384,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             setIsFinishing(true);
             setTimeout(() => {
                 setIsExiting(true);
-            }, 3000); // Duration of the finishing screen
+            }, 3000); 
         }
     };
     
@@ -434,14 +473,14 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         >
             {/* Animated Background Blobs */}
             <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-            <div className="absolute -top-4 -right-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+            <div className="absolute top-[-4rem] -right-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
             <div className="absolute -bottom-8 left-1/4 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
 
             <AnimatePresence>
                 {isFinishing ? (
                      <motion.div
                         key="finishing"
-                        className="absolute inset-0 flex flex-col items-center justify-center text-center z-20 bg-background/50 backdrop-blur-sm"
+                        className="absolute inset-0 flex flex-col items-center justify-center text-center z-20 bg-background"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.5 }}
