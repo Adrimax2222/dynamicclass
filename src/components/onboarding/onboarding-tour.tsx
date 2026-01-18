@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -156,7 +155,11 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     }, []);
 
     const handleShowInfo = (title: string) => {
-        setActiveExplanation(title);
+        if (activeExplanation === title) {
+            setActiveExplanation(null);
+        } else {
+            setActiveExplanation(title);
+        }
     };
     
     const handleCloseInfo = () => {
@@ -176,9 +179,11 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     };
 
     const getPositionClass = (title: string, stepIndex: number): string => {
-        const mobileClass = "top-4 left-1/2 -translate-x-1/2"; // Default for mobile: centered at top
+        // Default for mobile: centered at top
+        const mobileClass = "top-4 left-1/2 -translate-x-1/2"; 
         let desktopClass = "";
     
+        // Desktop positions
         switch (stepIndex) {
             case 1: // "Una estructura colaborativa"
                 switch (title) {
@@ -224,7 +229,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 break;
         }
     
-        return cn(mobileClass, desktopClass);
+        return cn("w-64 sm:w-auto sm:max-w-xs", mobileClass, desktopClass);
     };
 
     const steps = [
@@ -240,7 +245,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             content: () => {
                 const activeItem = steps[0].items.find(item => item.title === activeExplanation);
                 return (
-                    <div className="relative w-full h-[320px] sm:h-[220px] flex items-center justify-center overflow-hidden">
+                    <div className="relative w-full h-[320px] sm:h-auto flex items-center justify-center overflow-hidden">
                         <motion.div
                             className="absolute inset-0 flex"
                             animate={{ x: activeExplanation ? "-100%" : "0%" }}
@@ -250,13 +255,17 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             <div className="w-full flex-shrink-0 flex items-center justify-center">
                                 <div className="w-80 space-y-4">
                                     {steps[0].items.map((item) => (
-                                        <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
-                                            <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
-                                                <p className="text-xs text-muted-foreground">{item.desc}</p>
+                                        <div key={item.title} className="w-full flex items-center justify-between text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-2">
+                                            <div className="flex items-center gap-4 min-w-0">
+                                                <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                                                    <item.icon className="h-5 w-5 text-primary" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h4 className="font-semibold text-sm text-foreground truncate">{item.title}</h4>
+                                                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                                                </div>
                                             </div>
-                                            <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
+                                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full flex-shrink-0" onClick={() => handleShowInfo(item.title)}>
                                                 <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
                                             </Button>
                                         </div>
@@ -435,7 +444,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                         >
                             <ThemeIcon className="h-6 w-6 text-primary flex-shrink-0"/>
-                            <div>
+                            <div className='flex-1'>
                                 <h4 className="font-semibold">Tema {theme === 'dark' ? 'Oscuro' : 'Claro'}</h4>
                                 <p className="text-sm text-muted-foreground">Personaliza la apariencia de la app.</p>
                             </div>
@@ -654,7 +663,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                                     {activeExplanation && activeItem && (
                                                         <motion.div
                                                             key={activeItem.title}
-                                                            className={cn("absolute z-20 w-64", getPositionClass(activeItem.title, step))}
+                                                            className={cn("absolute z-20", getPositionClass(activeItem.title, step))}
                                                             initial={{ opacity: 0, scale: 0.8 }}
                                                             animate={{ opacity: 1, scale: 1 }}
                                                             exit={{ opacity: 0, scale: 0.8 }}
