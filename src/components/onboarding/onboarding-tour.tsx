@@ -176,7 +176,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     };
 
     const getPositionClass = (title: string, stepIndex: number): string => {
-        const mobileClass = "top-0 left-1/2 -translate-x-1/2 mt-4 sm:translate-x-0";
+        const mobileClass = "top-4 left-1/2 -translate-x-1/2"; // Default for mobile: centered at top
         let desktopClass = "";
     
         switch (stepIndex) {
@@ -199,10 +199,10 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 }
                 break;
             case 4: // "Interactúa con tu clase"
-                switch (title) {
-                    case "Chat de Clase":       desktopClass = "sm:top-0 sm:left-full sm:ml-8"; break;
-                    case "Anuncios y Encuestas":desktopClass = "sm:bottom-0 sm:right-full sm:mr-8"; break;
-                    case "Horario Integrado":   desktopClass = "sm:top-1/2 sm:-translate-y-1/2 sm:left-full sm:ml-8"; break;
+                 switch (title) {
+                    case "Chat de Clase":       desktopClass = "sm:top-1/2 sm:-translate-y-1/2 sm:right-full sm:mr-8"; break;
+                    case "Anuncios y Encuestas":desktopClass = "sm:bottom-0 sm:left-1/2 sm:-translate-x-1/2"; break;
+                    case "Horario Integrado":   desktopClass = "sm:top-0 sm:left-1/2 sm:-translate-x-1/2"; break;
                 }
                 break;
             case 5: // "Compite y gana recompensas"
@@ -213,12 +213,13 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                     case "Avatares":        desktopClass = "sm:bottom-0 sm:left-full sm:ml-4"; break;
                 }
                 break;
-            case 6: // "Configuración rápida"
+             case 6: // "Configuración rápida"
                  switch (title) {
-                    case "Tema de la Aplicación": desktopClass = "sm:top-0 sm:right-full sm:mr-4"; break;
-                    case "Burbuja de IA":       desktopClass = "sm:top-1/3 sm:right-full sm:mr-4 sm:-translate-y-1/2"; break;
-                    case "Guardar Escaneos":    desktopClass = "sm:bottom-1/3 sm:right-full sm:mr-4 sm:translate-y-1/2"; break;
-                    case "Resúmenes Semanales": desktopClass = "sm:bottom-0 sm:right-full sm:mr-4"; break;
+                    case "Tema de la Aplicación": desktopClass = "sm:top-0 sm:left-full sm:ml-4"; break;
+                    case "Idioma de la Aplicación": desktopClass = "sm:top-1/3 sm:left-full sm:ml-4 sm:-translate-y-1/2"; break;
+                    case "Burbuja de IA":       desktopClass = "sm:top-2/3 sm:left-full sm:ml-4 sm:-translate-y-1/2"; break;
+                    case "Guardar Escaneos":    desktopClass = "sm:bottom-0 sm:left-full sm:ml-4"; break;
+                    case "Resúmenes Semanales": desktopClass = "sm:bottom-1/3 sm:left-full sm:ml-4 sm:translate-y-1/2"; break;
                 }
                 break;
         }
@@ -239,41 +240,38 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             content: () => {
                 const activeItem = steps[0].items.find(item => item.title === activeExplanation);
                 return (
-                    <div className="w-full h-[400px] flex items-center justify-center overflow-hidden">
+                    <div className="relative w-full h-[320px] sm:h-[220px] flex items-center justify-center overflow-hidden">
                         <motion.div
-                            className="w-full max-w-sm"
-                            animate={{ x: activeExplanation ? '-50%' : '0%' }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                            className="absolute inset-0 flex"
+                            animate={{ x: activeExplanation ? "-100%" : "0%" }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         >
-                            <div className="w-80 space-y-4 mx-auto">
-                                {steps[0].items.map((item) => (
-                                    <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
-                                        <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
-                                        <div>
-                                            <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
-                                            <p className="text-xs text-muted-foreground">{item.desc}</p>
+                            {/* View 1: List of buttons */}
+                            <div className="w-full flex-shrink-0 flex items-center justify-center">
+                                <div className="w-80 space-y-4">
+                                    {steps[0].items.map((item) => (
+                                        <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
+                                            <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
+                                            <div>
+                                                <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
+                                                <p className="text-xs text-muted-foreground">{item.desc}</p>
+                                            </div>
+                                            <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
+                                                <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                            </Button>
                                         </div>
-                                        <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
-                                            <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                        </Button>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
+                            </div>
+                            {/* View 2: Detail panel */}
+                            <div className="w-full flex-shrink-0 flex items-center justify-center">
+                                {activeItem && (
+                                     <div className="w-80 h-auto">
+                                        <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
+                                     </div>
+                                )}
                             </div>
                         </motion.div>
-                        <AnimatePresence>
-                            {activeExplanation && activeItem && (
-                                <motion.div
-                                    key="info-panel-step-0"
-                                    className="absolute w-80 h-[300px]"
-                                    initial={{ x: '50%', opacity: 0 }}
-                                    animate={{ x: '0%', opacity: 1 }}
-                                    exit={{ x: '50%', opacity: 0 }}
-                                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                                >
-                                    <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
                     </div>
                 )
             }
@@ -650,30 +648,29 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     <div className="relative w-full max-w-4xl mx-auto min-h-[400px] flex items-center justify-center">
                                         <CurrentContent />
                                         
-                                        <div className="absolute inset-0 z-20 pointer-events-none">
-                                            <AnimatePresence>
-                                                {activeExplanation && activeItem && (
-                                                    <motion.div
-                                                        key={activeItem.title}
-                                                        className={cn(
-                                                            "absolute z-20 w-56",
-                                                            getPositionClass(activeItem.title, step)
-                                                        )}
-                                                        initial={{ opacity: 0, scale: 0.8 }}
-                                                        animate={{ opacity: 1, scale: 1 }}
-                                                        exit={{ opacity: 0, scale: 0.8 }}
-                                                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                                                    >
-                                                        <InfoPanel
-                                                            title={activeItem.title}
-                                                            icon={activeItem.icon}
-                                                            description={activeItem.explanation}
-                                                            onClose={handleCloseInfo}
-                                                        />
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
+                                        {step > 0 && (
+                                            <div className="absolute inset-0 z-20 pointer-events-none">
+                                                <AnimatePresence>
+                                                    {activeExplanation && activeItem && (
+                                                        <motion.div
+                                                            key={activeItem.title}
+                                                            className={cn("absolute z-20 w-64", getPositionClass(activeItem.title, step))}
+                                                            initial={{ opacity: 0, scale: 0.8 }}
+                                                            animate={{ opacity: 1, scale: 1 }}
+                                                            exit={{ opacity: 0, scale: 0.8 }}
+                                                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                                        >
+                                                            <InfoPanel
+                                                                title={activeItem.title}
+                                                                icon={activeItem.icon}
+                                                                description={activeItem.explanation}
+                                                                onClose={handleCloseInfo}
+                                                            />
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
+                                        )}
                                     </div>
                                 </motion.div>
                             </AnimatePresence>
