@@ -45,6 +45,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { useApp } from '@/lib/hooks/use-app';
+import type { Theme } from '@/context/app-provider';
 
 const introIcons = [
     { icon: BookOpenCheck, angle: 0 },
@@ -62,7 +63,7 @@ const steps = [
         icon: School,
         title: "Elige tu Camino",
         description: "Dynamic Class se adapta a ti. Empieza uniéndote a un grupo, creando uno nuevo o usándolo de forma individual.",
-        content: () => (
+        content: ({}) => (
             <motion.div 
                 className="mt-6 space-y-3"
                 variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
@@ -105,7 +106,7 @@ const steps = [
         icon: Users,
         title: "Una Estructura Colaborativa",
         description: "Organizamos los roles para una gestión clara y segura, desde el administrador global hasta cada estudiante.",
-        content: () => (
+        content: ({}) => (
              <motion.div 
                 className="mt-6 space-y-2"
                 variants={{
@@ -152,7 +153,7 @@ const steps = [
         icon: BrainCircuit,
         title: "Tu Centro de Operaciones",
         description: "Todas tus herramientas de productividad, centralizadas en el Modo Estudio para que nada te distraiga.",
-        content: () => {
+        content: ({}) => {
             const tools = [
                 { icon: Timer, name: 'Pomodoro', explanation: "Técnica de gestión del tiempo para mantener la concentración en bloques de 25 minutos." },
                 { icon: ScanLine, name: 'Escáner', explanation: "Digitaliza tus apuntes y documentos físicos usando la cámara de tu dispositivo." },
@@ -198,7 +199,7 @@ const steps = [
         icon: Sparkles,
         title: "Asistencia Inteligente",
         description: "Nuestra IA te ayuda a entender conceptos, generar resúmenes, crear tarjetas de estudio interactivas y mucho más.",
-        content: () => {
+        content: ({}) => {
              const aiFeatures = ["Resúmenes", "Flashcards", "Explicaciones", "Esquemas", "Cuestionarios"];
             return (
                 <motion.div 
@@ -233,7 +234,7 @@ const steps = [
         icon: Vote,
         title: "Interactúa con tu Clase",
         description: "Consulta tu horario, participa en encuestas y mantente siempre al día con el chat de clase y los anuncios importantes.",
-        content: () => (
+        content: ({}) => (
             <motion.div
                 className="mt-6 space-y-4"
                 initial="hidden"
@@ -277,7 +278,7 @@ const steps = [
         icon: Trophy,
         title: "Compite y Gana Recompensas",
         description: "Gana trofeos por tus logros y canjéalos por tarjetas regalo o avatares exclusivos para tu perfil.",
-         content: () => (
+         content: ({}) => (
             <motion.div
                 className="grid grid-cols-2 gap-4 mt-6"
                 variants={{ visible: { transition: { staggerChildren: 0.2 } } }}
@@ -309,8 +310,7 @@ const steps = [
         icon: MailCheck,
         title: "Notificaciones Inteligentes",
         description: "Recibe resúmenes semanales y mantente al día sin esfuerzo. Personaliza tu experiencia visual desde el principio.",
-        content: function Content() {
-            const { setTheme } = useApp();
+        content: function Content({ setTheme }: { setTheme: (theme: Theme) => void; }) {
             return (
                  <motion.div
                     className="mt-6 space-y-4"
@@ -362,6 +362,7 @@ const BuildingWorkspaceScreen = () => {
             opacity: 1,
             transition: {
                 staggerChildren: 0.15,
+                delayChildren: 0.5,
             },
         },
     };
@@ -422,6 +423,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [isIntro, setIsIntro] = useState(true);
     const [isFinishing, setIsFinishing] = useState(false);
     const [isExiting, setIsExiting] = useState(false);
+    const { setTheme } = useApp();
+
 
     useEffect(() => {
         const timer = setTimeout(() => setIsIntro(false), 4000); 
@@ -574,7 +577,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     <p className="text-muted-foreground mt-2">{steps[step].description}</p>
                                     
                                     <div className="min-h-[290px] flex items-center justify-center">
-                                        {steps[step].content()}
+                                        {steps[step].content({ setTheme })}
                                     </div>
                                 </motion.div>
                             </AnimatePresence>
