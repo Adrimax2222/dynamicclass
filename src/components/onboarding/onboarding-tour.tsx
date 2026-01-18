@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -100,8 +99,9 @@ const steps = [
                             description={item.explanation}
                             icon={ItemIcon}
                             trigger={
-                                <motion.div
-                                    className="flex items-center text-left gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer hover:bg-muted/50"
+                                <motion.button
+                                    type="button"
+                                    className="w-full flex items-center text-left gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer hover:bg-muted/50"
                                     variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
                                 >
                                     <ItemIcon className="h-6 w-6 text-primary flex-shrink-0"/>
@@ -109,7 +109,7 @@ const steps = [
                                         <h4 className="font-semibold text-sm">{item.title}</h4>
                                         <p className="text-xs text-muted-foreground">{item.desc}</p>
                                     </div>
-                                </motion.div>
+                                </motion.button>
                             }
                         />
                     )
@@ -145,8 +145,9 @@ const steps = [
                             description={item.explanation}
                             icon={ItemIcon}
                             trigger={
-                                <motion.div
-                                    className="flex items-center text-left gap-4 p-3 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer hover:bg-muted/50"
+                                <motion.button
+                                    type="button"
+                                    className="w-full flex items-center text-left gap-4 p-3 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer hover:bg-muted/50"
                                     variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
                                 >
                                     <ItemIcon className="h-5 w-5 text-primary"/>
@@ -154,7 +155,7 @@ const steps = [
                                         <h4 className="font-semibold text-sm">{item.title}</h4>
                                         <p className="text-xs text-muted-foreground">{item.desc}</p>
                                     </div>
-                                </motion.div>
+                                </motion.button>
                             }
                        />
                     )
@@ -189,14 +190,15 @@ const steps = [
                             description={tool.explanation}
                             icon={tool.icon}
                             trigger={
-                                <motion.div
+                                <motion.button
+                                    type="button"
                                     className="flex flex-col items-center justify-center gap-2 p-2 sm:p-3 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer aspect-square"
                                     variants={{ hidden: { opacity: 0, scale: 0.5 }, visible: { opacity: 1, scale: 1 } }}
                                     whileHover={{ scale: 1.1, backgroundColor: 'hsl(var(--muted))' }}
                                 >
                                     <tool.icon className="h-6 w-6 sm:h-7 sm:w-7 text-primary"/>
                                     <span className="text-[10px] sm:text-xs font-semibold leading-tight">{tool.name}</span>
-                                </motion.div>
+                                </motion.button>
                             }
                         />
                     ))}
@@ -216,8 +218,9 @@ const steps = [
                     description="ADRIMAX AI es un asistente educativo avanzado integrado en la app. Puedes chatear con él para pedirle que te explique conceptos difíciles, te haga un resumen de un texto largo, genere tarjetas de estudio interactivas para repasar, o incluso cree cuestionarios para que pongas a prueba tus conocimientos. ¡Es como tener un tutor personal en tu bolsillo!"
                     icon={Sparkles}
                     trigger={
-                        <motion.div
-                            className="mt-6 p-6 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg text-left cursor-pointer"
+                        <motion.button
+                            type="button"
+                            className="w-full mt-6 p-6 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg text-left cursor-pointer"
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.5 }}
@@ -241,7 +244,7 @@ const steps = [
                                     </motion.span>
                                 ))}
                             </motion.div>
-                        </motion.div>
+                        </motion.button>
                     }
                 />
             )
@@ -271,15 +274,16 @@ const steps = [
                             description={item.explanation}
                             icon={ItemIcon}
                             trigger={
-                                <motion.div 
-                                    className="flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                                <motion.button 
+                                    type="button"
+                                    className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                                     variants={{ hidden: { opacity: 0, x: index % 2 === 0 ? -20 : 20 }, visible: { opacity: 1, x: 0 } }}
                                 >
                                     <ItemIcon className="h-6 w-6 text-primary flex-shrink-0"/>
                                     <div>
                                         <h4 className="font-semibold">{item.title}</h4>
                                     </div>
-                                </motion.div>
+                                </motion.button>
                             }
                         />
                     );
@@ -312,14 +316,15 @@ const steps = [
                             description={item.explanation}
                             icon={ItemIcon}
                             trigger={
-                                <motion.div
+                                <motion.button
+                                    type="button"
                                     variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}}
-                                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30 cursor-pointer"
+                                    className="w-full flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30 cursor-pointer"
                                 >
                                     <ItemIcon className="h-8 w-8 text-amber-500"/>
                                     <span className="font-bold text-sm text-center">{item.title}</span>
                                     {item.value && <span className="font-bold text-xl">{item.value}</span>}
-                                </motion.div>
+                                </motion.button>
                             }
                         />
                     );
@@ -332,6 +337,7 @@ const steps = [
         title: "Notificaciones Inteligentes",
         description: "Recibe resúmenes semanales y mantente al día sin esfuerzo. Personaliza tu experiencia visual desde el principio.",
         content: ({ theme, setTheme }: { theme?: Theme; setTheme?: (theme: Theme) => void; }) => {
+            const Icon = theme === 'dark' ? Moon : Sun;
             return (
                  <motion.div
                     className="mt-6 space-y-4"
@@ -344,8 +350,9 @@ const steps = [
                         description="Si lo activas, cada viernes recibirás en tu correo un resumen de tu rendimiento, tareas completadas y los próximos eventos de tu calendario. ¡Una forma perfecta de planificar tu semana!"
                         icon={MailCheck}
                         trigger={
-                             <motion.div 
-                                className="flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                             <motion.button 
+                                type="button"
+                                className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                                 variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
                              >
                                 <MailCheck className="h-6 w-6 text-primary flex-shrink-0"/>
@@ -353,29 +360,26 @@ const steps = [
                                     <h4 className="font-semibold">Resúmenes Semanales</h4>
                                     <p className="text-sm text-muted-foreground">Recibe cada viernes un informe de tu progreso.</p>
                                 </div>
-                             </motion.div>
+                             </motion.button>
                         }
                     />
-                    <ExplanationSheet
+                     <ExplanationSheet
                         title="Pre-configurar Tema"
                         description="Elige tu tema preferido, claro u oscuro. Puedes cambiarlo en cualquier momento desde los ajustes de la aplicación."
-                        icon={theme === 'dark' ? Moon : Sun}
+                        icon={Icon}
                         trigger={
-                            <motion.div 
-                                className="flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                            <motion.button 
+                                type="button"
+                                className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                                 variants={{ hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 } }}
                                 onClick={() => setTheme && setTheme(theme === 'dark' ? 'light' : 'dark')}
                             >
-                                {theme === 'dark' ? (
-                                    <Moon className="h-6 w-6 text-primary flex-shrink-0"/>
-                                ) : (
-                                    <Sun className="h-6 w-6 text-primary flex-shrink-0"/>
-                                )}
+                                <Icon className="h-6 w-6 text-primary flex-shrink-0"/>
                                 <div>
                                     <h4 className="font-semibold">Pre-configurar Tema</h4>
                                     <p className="text-sm text-muted-foreground">Prueba el Modo Oscuro y elige tu vista preferida.</p>
                                 </div>
-                            </motion.div>
+                            </motion.button>
                         }
                     />
                 </motion.div>
@@ -390,8 +394,8 @@ const BuildingWorkspaceScreen = () => {
         visible: {
             opacity: 1,
             transition: {
-                staggerChildren: 0.1,
-                delayChildren: 0.2,
+                staggerChildren: 0.2,
+                delayChildren: 0.3,
             },
         },
     };
@@ -454,7 +458,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [isExiting, setIsExiting] = useState(false);
     const { theme, setTheme } = useApp();
 
-
     useEffect(() => {
         const timer = setTimeout(() => setIsIntro(false), 4000); 
         return () => clearTimeout(timer);
@@ -472,6 +475,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     };
     
     const isLastStep = step === steps.length - 1;
+    const CurrentIcon = steps[step].icon;
+    const CurrentContent = steps[step].content;
 
     const introScreen = (
          <div className="fixed inset-0 bg-background z-[100] flex flex-col items-center justify-center p-6 overflow-hidden">
@@ -539,9 +544,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     );
     
     if (isIntro) return introScreen;
-    
-    const CurrentIcon = steps[step].icon;
-    const CurrentContent = steps[step].content;
     
     return (
         <motion.div 
