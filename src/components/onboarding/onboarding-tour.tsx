@@ -53,10 +53,13 @@ const introIcons = [
     { icon: Trophy, angle: 315 },
 ];
 
-const ExplanationCard = ({ title, description, icon: Icon, position }: { title: string; description: string; icon: React.ElementType; position: string; }) => {
+const ExplanationCard = ({ title, description, icon: Icon, className }: { title: string; description:string; icon: React.ElementType; className?: string; }) => {
     return (
         <motion.div
-            className={cn("absolute w-64 p-4 rounded-2xl shadow-2xl bg-background/80 backdrop-blur-lg border border-border/50 text-center z-20", position)}
+            className={cn(
+                "absolute w-64 max-w-[90vw] p-4 rounded-2xl shadow-2xl bg-background/80 backdrop-blur-lg border border-border/50 text-center z-20",
+                className
+            )}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 400, damping: 25 } }}
             exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
@@ -164,234 +167,202 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             title: "Elige tu Camino",
             description: "Dynamic Class se adapta a ti. Pulsa en cada opción para saber más.",
             items: [
-                { icon: School, title: "Unirse a un Centro", desc: "Usa el código de tu clase para conectar.", explanation: "Usa el código de tu clase para conectar con tu centro y sincronizar horarios." },
-                { icon: PlusCircle, title: "Crear un Centro", desc: "Crea un espacio para tu centro y comparte.", explanation: "Si eres profesor o delegado, crea un espacio para tu centro y comparte recursos." },
-                { icon: User, title: "Uso Personal", desc: "Disfruta de la app de forma individual.", explanation: "Disfruta de las herramientas de estudio sin conexión a un centro." },
+                { icon: School, title: "Unirse a un Centro", desc: "Usa el código de tu clase para conectar.", explanation: "Usa el código de tu clase para conectar con tu centro y sincronizar horarios.", position: "absolute top-8 left-1/2 -translate-x-1/2 sm:left-4 sm:top-1/4 sm:translate-x-0" },
+                { icon: PlusCircle, title: "Crear un Centro", desc: "Crea un espacio para tu centro y comparte.", explanation: "Si eres profesor o delegado, crea un espacio para tu centro y comparte recursos.", position: "absolute bottom-1/4 right-1/2 translate-x-[calc(50%+4rem)] sm:right-4 sm:top-1/2 sm:translate-x-0 sm:-translate-y-1/2" },
+                { icon: User, title: "Uso Personal", desc: "Disfruta de la app de forma individual.", explanation: "Disfruta de las herramientas de estudio sin conexión a un centro.", position: "absolute bottom-0 left-1/2 -translate-x-1/2 sm:left-4 sm:bottom-1/4 sm:top-auto sm:translate-x-0" },
             ],
-            content: () => {
-                 const positions = [
-                    "top-1/4 left-1/2 -translate-x-[calc(50%+10rem)] sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+15rem)] sm:-translate-y-1/2",
-                    "bottom-1/4 right-1/2 translate-x-[calc(50%+10rem)] sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+15rem)] sm:-translate-y-1/2",
-                    "bottom-0 left-1/2 -translate-x-1/2 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+15rem)] sm:translate-y-[calc(50%+4rem)]"
-                ];
-                return (
-                     <div className="relative w-full h-[400px] flex items-center justify-center">
-                        <motion.div 
-                            className="space-y-4 z-10 w-72"
-                            variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-                            initial="hidden"
-                            animate="visible"
-                        >
-                            {steps[0].items.map((item) => (
-                                <motion.div
-                                    key={item.title}
-                                    variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
-                                >
-                                    <div className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
-                                        <div className="flex-1 flex items-center gap-4">
-                                            <div className="p-2 bg-primary/10 rounded-lg">
-                                                <item.icon className="h-5 w-5 text-primary" />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
-                                                <p className="text-xs text-muted-foreground">{item.desc}</p>
-                                            </div>
+            content: () => (
+                <div className="relative w-full h-[400px] flex items-center justify-center">
+                    <motion.div 
+                        className="space-y-4 z-10 w-72"
+                        variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        {steps[0].items.map((item) => (
+                            <motion.div
+                                key={item.title}
+                                variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
+                            >
+                                <div className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
+                                    <div className="flex-1 flex items-center gap-4">
+                                        <div className="p-2 bg-primary/10 rounded-lg">
+                                            <item.icon className="h-5 w-5 text-primary" />
                                         </div>
-                                        <motion.button
-                                            type="button"
-                                            onClick={() => setOpenSheet(prev => (prev === item.title ? null : item.title))}
-                                            className="flex-shrink-0 rounded-full h-8 w-8 bg-blue-500 flex items-center justify-center relative shadow-lg cursor-pointer"
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            aria-label={`Más información sobre ${item.title}`}
-                                        >
-                                            <motion.span
-                                                className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"
-                                                animate={{
-                                                    scale: [1, 1.6, 1],
-                                                    opacity: [0.75, 0, 0.75],
-                                                }}
-                                                transition={{
-                                                    duration: 1.5,
-                                                    repeat: Infinity,
-                                                    repeatType: "loop",
-                                                }}
-                                            />
-                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-                                        </motion.button>
+                                        <div>
+                                            <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
+                                            <p className="text-xs text-muted-foreground">{item.desc}</p>
+                                        </div>
                                     </div>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                        <AnimatePresence>
-                            {steps[0].items.map((item, index) => (
-                                openSheet === item.title && (
-                                    <ExplanationCard 
-                                        key={item.title}
-                                        title={item.title}
-                                        description={item.explanation}
-                                        icon={item.icon}
-                                        position={positions[index]}
-                                    />
-                                )
-                            ))}
-                        </AnimatePresence>
-                    </div>
-                );
-            }
+                                    <motion.button
+                                        type="button"
+                                        onClick={() => setOpenSheet(prev => (prev === item.title ? null : item.title))}
+                                        className="flex-shrink-0 rounded-full h-8 w-8 bg-blue-500 flex items-center justify-center relative shadow-lg cursor-pointer"
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        aria-label={`Más información sobre ${item.title}`}
+                                    >
+                                        <motion.span
+                                            className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"
+                                            animate={{ scale: [1, 1.6, 1], opacity: [0.75, 0, 0.75]}}
+                                            transition={{ duration: 1.5, repeat: Infinity, repeatType: "loop" }}
+                                        />
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                                    </motion.button>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                    <AnimatePresence>
+                        {steps[0].items.map((item) => (
+                            openSheet === item.title && (
+                                <ExplanationCard 
+                                    key={item.title}
+                                    title={item.title}
+                                    description={item.explanation}
+                                    icon={item.icon}
+                                    className={item.position}
+                                />
+                            )
+                        ))}
+                    </AnimatePresence>
+                </div>
+            )
         },
         {
             icon: Users,
             title: "Una Estructura Colaborativa",
             description: "Organizamos los roles para una gestión clara y segura. Pulsa para saber qué hace cada uno.",
             items: [
-                { icon: ShieldCheck, title: "Admin Global", desc: "Supervisa toda la plataforma.", explanation: "Control total para crear centros, gestionar usuarios y roles. Es el nivel más alto, reservado para el equipo de Dynamic Class." },
-                { icon: Building, title: "Admin de Centro", desc: "Gestiona un centro educativo y sus clases.", explanation: "Añade clases, gestiona miembros y configura calendarios y horarios. Ideal para directores o jefes de estudios." },
-                { icon: GraduationCap, title: "Admin de Clase", desc: "Modera el chat y el horario de su clase.", explanation: "Un rol de delegado o profesor que puede fijar mensajes y editar el horario de su propia clase. Facilita la autogestión." },
-                { icon: User, title: "Estudiante", desc: "Participa, aprende y compite.", explanation: "El rol principal. Accede a las herramientas de estudio, participa en clase y compite en los rankings para ganar recompensas." },
+                { icon: ShieldCheck, title: "Admin Global", desc: "Supervisa toda la plataforma.", explanation: "Control total para crear centros, gestionar usuarios y roles. Es el nivel más alto, reservado para el equipo de Dynamic Class.", position: "absolute top-0 left-1/2 -translate-x-1/2 sm:left-4 sm:top-8 sm:translate-x-0" },
+                { icon: Building, title: "Admin de Centro", desc: "Gestiona un centro educativo y sus clases.", explanation: "Añade clases, gestiona miembros y configura calendarios y horarios. Ideal para directores o jefes de estudios.", position: "absolute top-1/4 right-1/2 translate-x-[calc(50%+4rem)] sm:right-4 sm:top-1/4 sm:translate-x-0" },
+                { icon: GraduationCap, title: "Admin de Clase", desc: "Modera el chat y el horario de su clase.", explanation: "Un rol de delegado o profesor que puede fijar mensajes y editar el horario de su propia clase. Facilita la autogestión.", position: "absolute bottom-1/4 left-1/2 -translate-x-1/2 sm:left-4 sm:bottom-1/4 sm:top-auto sm:translate-x-0" },
+                { icon: User, title: "Estudiante", desc: "Participa, aprende y compite.", explanation: "El rol principal. Accede a las herramientas de estudio, participa en clase y compite en los rankings para ganar recompensas.", position: "absolute bottom-0 right-1/2 translate-x-[calc(50%+4rem)] sm:right-4 sm:bottom-8 sm:top-auto sm:translate-x-0" },
             ],
-            content: () => {
-                 const positions = [
-                    "top-8 left-1/2 -translate-x-1/2 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+10rem)] sm:-translate-y-[130%]",
-                    "bottom-24 right-1/2 translate-x-1/2 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+10rem)] sm:translate-y-[30%]",
-                    "top-16 right-1/2 translate-x-1/2 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+10rem)] sm:-translate-y-[70%]",
-                    "bottom-8 left-1/2 -translate-x-1/2 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+10rem)] sm:translate-y-[70%]"
-                ];
-                return (
-                    <div className="relative w-full h-[400px] flex items-center justify-center">
-                        <motion.div
-                            className="w-72 space-y-4 z-10"
-                            variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-                            initial="hidden"
-                            animate="visible"
-                        >
-                            {steps[1].items.map((item) => (
-                                <motion.div
-                                    key={item.title}
-                                    variants={{ hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1 } }}
-                                >
-                                    <div className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
-                                        <div className="flex-1 flex items-center gap-4">
-                                            <div className="p-2 bg-primary/10 rounded-lg">
-                                                <item.icon className="h-5 w-5 text-primary" />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
-                                                <p className="text-xs text-muted-foreground">{item.desc}</p>
-                                            </div>
+            content: () => (
+                <div className="relative w-full h-[400px] flex items-center justify-center">
+                    <motion.div
+                        className="w-72 space-y-4 z-10"
+                        variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        {steps[1].items.map((item) => (
+                            <motion.div
+                                key={item.title}
+                                variants={{ hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1 } }}
+                            >
+                                <div className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
+                                    <div className="flex-1 flex items-center gap-4">
+                                        <div className="p-2 bg-primary/10 rounded-lg">
+                                            <item.icon className="h-5 w-5 text-primary" />
                                         </div>
-                                        <motion.button
-                                            type="button"
-                                            onClick={() => setOpenSheet(prev => (prev === item.title ? null : item.title))}
-                                            className="flex-shrink-0 rounded-full h-8 w-8 bg-blue-500 flex items-center justify-center relative shadow-lg cursor-pointer"
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            aria-label={`Más información sobre ${item.title}`}
-                                        >
-                                            <motion.span
-                                                className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"
-                                                animate={{ scale: [1, 1.6, 1], opacity: [0.75, 0, 0.75]}}
-                                                transition={{ duration: 1.5, repeat: Infinity }}
-                                            />
-                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-                                        </motion.button>
+                                        <div>
+                                            <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
+                                            <p className="text-xs text-muted-foreground">{item.desc}</p>
+                                        </div>
                                     </div>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                        <AnimatePresence>
-                            {steps[1].items.map((item, index) => (
-                                openSheet === item.title && (
-                                    <ExplanationCard 
-                                        key={item.title}
-                                        title={item.title}
-                                        description={item.explanation}
-                                        icon={item.icon}
-                                        position={positions[index]}
-                                    />
-                                )
-                            ))}
-                        </AnimatePresence>
-                    </div>
-                );
-            }
+                                    <motion.button
+                                        type="button"
+                                        onClick={() => setOpenSheet(prev => (prev === item.title ? null : item.title))}
+                                        className="flex-shrink-0 rounded-full h-8 w-8 bg-blue-500 flex items-center justify-center relative shadow-lg cursor-pointer"
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        aria-label={`Más información sobre ${item.title}`}
+                                    >
+                                        <motion.span
+                                            className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"
+                                            animate={{ scale: [1, 1.6, 1], opacity: [0.75, 0, 0.75]}}
+                                            transition={{ duration: 1.5, repeat: Infinity }}
+                                        />
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                                    </motion.button>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                    <AnimatePresence>
+                        {steps[1].items.map((item) => (
+                            openSheet === item.title && (
+                                <ExplanationCard 
+                                    key={item.title}
+                                    title={item.title}
+                                    description={item.explanation}
+                                    icon={item.icon}
+                                    className={item.position}
+                                />
+                            )
+                        ))}
+                    </AnimatePresence>
+                </div>
+            )
         },
         {
             icon: BrainCircuit,
             title: "Tu Centro de Operaciones",
             description: "Todas tus herramientas de productividad, centralizadas en el Modo Estudio para que nada te distraiga.",
             items: [
-                { title: 'Pomodoro', icon: Timer, explanation: "Utiliza la técnica Pomodoro para mantener la concentración en bloques de estudio (ej. 25 min) seguidos de descansos cortos." },
-                { title: 'Escáner', icon: ScanLine, explanation: "Digitaliza tus apuntes en papel. Haz una foto, mejora la imagen y guárdala como PDF en tu dispositivo." },
-                { title: 'Calculadora', icon: Calculator, explanation: "Una calculadora científica siempre a mano para resolver problemas complejos sin salir de la app." },
-                { title: 'Música', icon: Music, explanation: "Conéctate a Spotify y controla tu música de estudio favorita directamente desde el Modo Estudio." },
-                { title: 'Calcula Notas', icon: Target, explanation: "Introduce tus notas y sus porcentajes para calcular qué necesitas sacar en el próximo examen para aprobar." },
-                { title: 'Editor Mágico', icon: Wand2, explanation: "Potencia tus apuntes con IA. Pídele que resuma, traduzca, corrija la ortografía o incluso continúe tus textos." },
+                { title: 'Pomodoro', icon: Timer, explanation: "Utiliza la técnica Pomodoro para mantener la concentración en bloques de estudio (ej. 25 min) seguidos de descansos cortos.", position: "absolute top-0 left-1/2 -translate-x-1/2 sm:top-8 sm:left-4 sm:translate-x-0" },
+                { title: 'Escáner', icon: ScanLine, explanation: "Digitaliza tus apuntes en papel. Haz una foto, mejora la imagen y guárdala como PDF en tu dispositivo.", position: "absolute top-16 left-1/2 -translate-x-1/2 sm:top-8 sm:left-1/2 sm:-translate-x-1/2" },
+                { title: 'Calculadora', icon: Calculator, explanation: "Una calculadora científica siempre a mano para resolver problemas complejos sin salir de la app.", position: "absolute top-32 left-1/2 -translate-x-1/2 sm:right-4 sm:top-8 sm:translate-x-0" },
+                { title: 'Música', icon: Music, explanation: "Conéctate a Spotify y controla tu música de estudio favorita directamente desde el Modo Estudio.", position: "absolute bottom-32 right-1/2 translate-x-[calc(50%+2rem)] sm:left-4 sm:bottom-8 sm:top-auto sm:translate-x-0" },
+                { title: 'Calcula Notas', icon: Target, explanation: "Introduce tus notas y sus porcentajes para calcular qué necesitas sacar en el próximo examen para aprobar.", position: "absolute bottom-16 right-1/2 translate-x-[calc(50%+2rem)] sm:bottom-8 sm:left-1/2 sm:-translate-x-1/2 sm:top-auto" },
+                { title: 'Editor Mágico', icon: Wand2, explanation: "Potencia tus apuntes con IA. Pídele que resuma, traduzca, corrija la ortografía o incluso continúe tus textos.", position: "absolute bottom-0 right-1/2 translate-x-[calc(50%+2rem)] sm:right-4 sm:bottom-8 sm:top-auto sm:translate-x-0" },
             ],
-            content: () => {
-                const positions = [
-                    "top-0 -left-4 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+12rem)] sm:-translate-y-[150%]",
-                    "top-0 sm:top-0 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-[calc(100%+2rem)]",
-                    "top-0 -right-4 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+12rem)] sm:-translate-y-[150%]",
-                    "bottom-0 -left-4 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+12rem)] sm:translate-y-[50%]",
-                    "bottom-0 sm:bottom-0 sm:left-1/2 sm:-translate-x-1/2 sm:translate-y-[calc(100%+2rem)]",
-                    "bottom-0 -right-4 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+12rem)] sm:translate-y-[50%]",
-                ];
-                return (
-                    <div className="relative w-full h-[400px] flex items-center justify-center">
-                        <motion.div
-                            className="w-full max-w-xs grid grid-cols-3 gap-2 sm:gap-4 z-10"
-                            variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
-                            initial="hidden"
-                            animate="visible"
-                        >
-                            {steps[2].items.map(tool => (
-                                <motion.div
-                                    key={tool.title}
-                                    className="w-full h-full"
-                                    variants={{ hidden: { opacity: 0, scale: 0.5 }, visible: { opacity: 1, scale: 1 } }}
-                                >
-                                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-2 sm:p-3 rounded-lg border bg-background/80 backdrop-blur-sm cursor-default aspect-square">
-                                        <div className="p-2 bg-primary/10 rounded-lg">
-                                            <tool.icon className="h-6 w-6 sm:h-7 sm:w-7 text-primary"/>
-                                        </div>
-                                        <div className="flex items-center justify-center gap-1">
-                                            <span className="text-[10px] sm:text-xs font-semibold leading-tight text-center">{tool.title}</span>
-                                            <motion.button
-                                                type="button"
-                                                onClick={() => setOpenSheet(prev => (prev === tool.title ? null : tool.title))}
-                                                className="flex-shrink-0 rounded-full h-6 w-6 bg-blue-500 flex items-center justify-center relative shadow-lg cursor-pointer"
-                                                whileHover={{ scale: 1.1 }}
-                                                whileTap={{ scale: 0.95 }}
-                                            >
-                                                <motion.span
-                                                    className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"
-                                                    animate={{ scale: [1, 1.6, 1], opacity: [0.75, 0, 0.75]}}
-                                                    transition={{ duration: 1.5, repeat: Infinity }}
-                                                />
-                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                                            </motion.button>
-                                        </div>
+            content: () => (
+                <div className="relative w-full h-[400px] flex items-center justify-center">
+                    <motion.div
+                        className="w-full max-w-xs grid grid-cols-3 gap-2 sm:gap-4 z-10"
+                        variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        {steps[2].items.map(tool => (
+                            <motion.div
+                                key={tool.title}
+                                className="w-full h-full"
+                                variants={{ hidden: { opacity: 0, scale: 0.5 }, visible: { opacity: 1, scale: 1 } }}
+                            >
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-2 sm:p-3 rounded-lg border bg-background/80 backdrop-blur-sm cursor-default aspect-square">
+                                    <div className="p-2 bg-primary/10 rounded-lg">
+                                        <tool.icon className="h-6 w-6 sm:h-7 sm:w-7 text-primary"/>
                                     </div>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                        <AnimatePresence>
-                            {steps[2].items.map((item, index) => (
-                                openSheet === item.title && (
-                                    <ExplanationCard 
-                                        key={item.title}
-                                        title={item.title}
-                                        description={item.explanation || ''}
-                                        icon={item.icon}
-                                        position={positions[index]}
-                                    />
-                                )
-                            ))}
-                        </AnimatePresence>
-                    </div>
-                );
-            }
+                                    <div className="flex items-center justify-center gap-1">
+                                        <span className="text-[10px] sm:text-xs font-semibold leading-tight text-center">{tool.title}</span>
+                                        <motion.button
+                                            type="button"
+                                            onClick={() => setOpenSheet(prev => (prev === tool.title ? null : tool.title))}
+                                            className="flex-shrink-0 rounded-full h-6 w-6 bg-blue-500 flex items-center justify-center relative shadow-lg cursor-pointer"
+                                            whileHover={{ scale: 1.1 }}
+                                            whileTap={{ scale: 0.95 }}
+                                        >
+                                            <motion.span
+                                                className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"
+                                                animate={{ scale: [1, 1.6, 1], opacity: [0.75, 0, 0.75]}}
+                                                transition={{ duration: 1.5, repeat: Infinity }}
+                                            />
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                                        </motion.button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                    <AnimatePresence>
+                        {steps[2].items.map((item) => (
+                            openSheet === item.title && (
+                                <ExplanationCard 
+                                    key={item.title}
+                                    title={item.title}
+                                    description={item.explanation}
+                                    icon={item.icon}
+                                    className={item.position}
+                                />
+                            )
+                        ))}
+                    </AnimatePresence>
+                </div>
+            )
         },
         {
             icon: Sparkles,
@@ -440,149 +411,129 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             title: "Interactúa con tu Clase",
             description: "Consulta tu horario, participa en encuestas y mantente siempre al día con el chat de clase y los anuncios.",
             items: [
-                { icon: MessageSquare, title: "Chat de Clase", explanation: "Un espacio de chat en tiempo real para resolver dudas y organizar trabajos en grupo con tus compañeros." },
-                { icon: Building, title: "Anuncios y Encuestas", explanation: "Mantente al día con los comunicados de tus profesores y participa en encuestas para dar tu opinión." },
-                { icon: Calendar, title: "Horario Integrado", explanation: "Consulta tus clases: asignatura, hora, profesor y aula. Todo en un mismo lugar y siempre accesible." },
+                { icon: MessageSquare, title: "Chat de Clase", explanation: "Un espacio de chat en tiempo real para resolver dudas y organizar trabajos en grupo con tus compañeros.", position: "absolute top-8 left-1/2 -translate-x-1/2 sm:left-4 sm:top-1/4 sm:translate-x-0" },
+                { icon: Building, title: "Anuncios y Encuestas", explanation: "Mantente al día con los comunicados de tus profesores y participa en encuestas para dar tu opinión.", position: "absolute bottom-1/4 right-1/2 translate-x-[calc(50%+4rem)] sm:right-4 sm:top-1/2 sm:translate-x-0 sm:-translate-y-1/2" },
+                { icon: Calendar, title: "Horario Integrado", explanation: "Consulta tus clases: asignatura, hora, profesor y aula. Todo en un mismo lugar y siempre accesible.", position: "absolute bottom-0 left-1/2 -translate-x-1/2 sm:left-4 sm:bottom-1/4 sm:top-auto sm:translate-x-0" },
             ],
-            content: () => {
-                const positions = [
-                    "top-1/4 -left-4 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+10rem)] sm:-translate-y-[120%]",
-                    "bottom-1/4 -right-4 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+10rem)] sm:-translate-y-1/2",
-                    "top-1/2 -left-4 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+10rem)] sm:translate-y-[20%]"
-                ];
-                return (
-                    <div className="relative w-full h-[400px] flex items-center justify-center">
-                        <AnimatePresence>
-                            {steps[4].items.map((item, index) => (
-                                openSheet === item.title && (
-                                    <ExplanationCard 
-                                        key={item.title}
-                                        title={item.title}
-                                        description={item.explanation}
-                                        icon={item.icon}
-                                        position={positions[index]}
-                                    />
-                                )
-                            ))}
-                        </AnimatePresence>
-    
-                        <motion.div
-                            className="w-72 space-y-4 z-10"
-                            initial="hidden"
-                            animate="visible"
-                            variants={{ visible: { transition: { staggerChildren: 0.1 } }}}
-                        >
-                            {steps[4].items.map((item) => (
-                                <motion.div
+            content: () => (
+                <div className="relative w-full h-[400px] flex items-center justify-center">
+                    <AnimatePresence>
+                        {steps[4].items.map((item) => (
+                            openSheet === item.title && (
+                                <ExplanationCard 
                                     key={item.title}
-                                    variants={{ hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1 } }}
-                                >
-                                    <div className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
-                                        <div className="flex-1 flex items-center gap-4">
-                                            <div className="p-2 bg-primary/10 rounded-lg">
-                                                <item.icon className="h-5 w-5 text-primary" />
-                                            </div>
-                                            <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
+                                    title={item.title}
+                                    description={item.explanation}
+                                    icon={item.icon}
+                                    className={item.position}
+                                />
+                            )
+                        ))}
+                    </AnimatePresence>
+
+                    <motion.div
+                        className="w-72 space-y-4 z-10"
+                        initial="hidden"
+                        animate="visible"
+                        variants={{ visible: { transition: { staggerChildren: 0.1 } }}}
+                    >
+                        {steps[4].items.map((item) => (
+                            <motion.div
+                                key={item.title}
+                                variants={{ hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1 } }}
+                            >
+                                <div className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
+                                    <div className="flex-1 flex items-center gap-4">
+                                        <div className="p-2 bg-primary/10 rounded-lg">
+                                            <item.icon className="h-5 w-5 text-primary" />
                                         </div>
-                                        <motion.button
-                                            type="button"
-                                            onClick={() => setOpenSheet(prev => (prev === item.title ? null : item.title))}
-                                            className="flex-shrink-0 rounded-full h-8 w-8 bg-blue-500 flex items-center justify-center relative shadow-lg cursor-pointer"
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            aria-label={`Más información sobre ${item.title}`}
-                                        >
-                                            <motion.span
-                                                className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"
-                                                animate={{ scale: [1, 1.6, 1], opacity: [0.75, 0, 0.75]}}
-                                                transition={{ duration: 1.5, repeat: Infinity }}
-                                            />
-                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-                                        </motion.button>
+                                        <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
                                     </div>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    </div>
-                )
-            }
+                                    <motion.button
+                                        type="button"
+                                        onClick={() => setOpenSheet(prev => (prev === item.title ? null : item.title))}
+                                        className="flex-shrink-0 rounded-full h-8 w-8 bg-blue-500 flex items-center justify-center relative shadow-lg cursor-pointer"
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        aria-label={`Más información sobre ${item.title}`}
+                                    >
+                                        <motion.span
+                                            className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"
+                                            animate={{ scale: [1, 1.6, 1], opacity: [0.75, 0, 0.75]}}
+                                            transition={{ duration: 1.5, repeat: Infinity }}
+                                        />
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                                    </motion.button>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                </div>
+            )
         },
         {
             icon: Trophy,
             title: "Compite y Gana Recompensas",
             description: "Gana trofeos por tus logros y canjéalos por tarjetas regalo o avatares exclusivos para tu perfil.",
             items: [
-                { icon: Trophy, title: "Trofeos", value: "125", explanation: "Gana trofeos al completar tareas y exámenes. ¡Acumúlalos para subir en el ranking y canjearlos por premios!"},
-                { icon: Flame, title: "Racha Actual", value: "12 Días", explanation: "Mantén tu racha de estudio diaria utilizando el Modo Estudio. ¡Compite con tus compañeros para ver quién tiene la racha más larga!"},
-                { icon: Gift, title: "Tarjetas Regalo", value: "", explanation: "Canjea los trofeos que tanto te ha costado ganar por tarjetas regalo de tus tiendas favoritas como Amazon, GAME, y más."},
-                { icon: Cat, title: "Avatares", value: "", explanation: "Usa tus trofeos para desbloquear iconos y avatares exclusivos para personalizar tu foto de perfil y destacar en la comunidad."},
+                { icon: Trophy, title: "Trofeos", value: "125", explanation: "Gana trofeos al completar tareas y exámenes. ¡Acumúlalos para subir en el ranking y canjearlos por premios!", position: "absolute top-0 left-1/2 -translate-x-1/2 sm:left-4 sm:top-8 sm:translate-x-0" },
+                { icon: Flame, title: "Racha Actual", value: "12 Días", explanation: "Mantén tu racha de estudio diaria utilizando el Modo Estudio. ¡Compite con tus compañeros para ver quién tiene la racha más larga!", position: "absolute top-1/4 right-1/2 translate-x-[calc(50%+4rem)] sm:right-4 sm:top-1/4 sm:translate-x-0" },
+                { icon: Gift, title: "Tarjetas Regalo", value: "", explanation: "Canjea los trofeos que tanto te ha costado ganar por tarjetas regalo de tus tiendas favoritas como Amazon, GAME, y más.", position: "absolute bottom-1/4 left-1/2 -translate-x-1/2 sm:left-4 sm:bottom-1/4 sm:top-auto sm:translate-x-0" },
+                { icon: Cat, title: "Avatares", value: "", explanation: "Usa tus trofeos para desbloquear iconos y avatares exclusivos para personalizar tu foto de perfil y destacar en la comunidad.", position: "absolute bottom-0 right-1/2 translate-x-[calc(50%+4rem)] sm:right-4 sm:bottom-8 sm:top-auto sm:translate-x-0" },
             ],
-            content: () => {
-                 const positions = [
-                    "top-0 -left-4 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+8rem)] sm:-translate-y-[130%]",
-                    "top-0 -right-4 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+8rem)] sm:-translate-y-[130%]",
-                    "bottom-0 -left-4 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+8rem)] sm:translate-y-[30%]",
-                    "bottom-0 -right-4 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+8rem)] sm:translate-y-[30%]"
-                ];
-                return (
-                    <div className="relative w-full h-[400px] flex items-center justify-center">
-                        <AnimatePresence>
-                            {steps[5].items.map((item, index) => (
-                                openSheet === item.title && (
-                                    <ExplanationCard 
-                                        key={item.title}
-                                        title={item.title}
-                                        description={item.explanation || ''}
-                                        icon={item.icon}
-                                        position={positions[index]}
-                                    />
-                                )
-                            ))}
-                        </AnimatePresence>
-                        <motion.div
-                            className="grid grid-cols-2 gap-4 mt-6 z-10 w-full max-w-sm"
-                            variants={{ visible: { transition: { staggerChildren: 0.2 } } }}
-                            initial="hidden"
-                            animate="visible"
-                        >
-                            {steps[5].items.map((item) => (
-                                <motion.div
+            content: () => (
+                <div className="relative w-full h-[400px] flex items-center justify-center">
+                    <AnimatePresence>
+                        {steps[5].items.map((item) => (
+                            openSheet === item.title && (
+                                <ExplanationCard 
                                     key={item.title}
-                                    variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}}
-                                >
-                                <motion.button
-                                        type="button"
-                                        onClick={() => setOpenSheet(item.title)}
-                                        className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30 cursor-pointer"
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                >
-                                    <item.icon className="h-8 w-8 text-amber-500"/>
-                                    <span className="font-bold text-sm text-center">{item.title}</span>
-                                    {item.value && <span className="font-bold text-xl">{item.value}</span>}
-                                </motion.button>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    </div>
-                )
-            }
+                                    title={item.title}
+                                    description={item.explanation || ''}
+                                    icon={item.icon}
+                                    className={item.position}
+                                />
+                            )
+                        ))}
+                    </AnimatePresence>
+                    <motion.div
+                        className="grid grid-cols-2 gap-4 mt-6 z-10 w-full max-w-sm"
+                        variants={{ visible: { transition: { staggerChildren: 0.2 } } }}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        {steps[5].items.map((item) => (
+                            <motion.div
+                                key={item.title}
+                                variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}}
+                            >
+                            <motion.button
+                                    type="button"
+                                    onClick={() => setOpenSheet(prev => (prev === item.title ? null : item.title))}
+                                    className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30 cursor-pointer"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                            >
+                                <item.icon className="h-8 w-8 text-amber-500"/>
+                                <span className="font-bold text-sm text-center">{item.title}</span>
+                                {item.value && <span className="font-bold text-xl">{item.value}</span>}
+                            </motion.button>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                </div>
+            )
         },
         {
             icon: MailCheck,
             title: "Notificaciones y Tema",
             description: "Recibe resúmenes semanales y mantente al día sin esfuerzo. Personaliza tu experiencia visual desde el principio.",
             items: [
-                { icon: MailCheck, title: "Resúmenes Semanales", explanation: "Si lo activas, cada viernes recibirás en tu correo un resumen de tu rendimiento, tareas completadas y los próximos eventos de tu calendario. ¡Una forma perfecta de planificar tu semana!" },
-                { icon: theme === 'dark' ? Moon : Sun, title: "Pre-configurar Tema", explanation: "Elige tu tema preferido, claro u oscuro. Puedes cambiarlo en cualquier momento desde los ajustes de la aplicación." },
+                { icon: MailCheck, title: "Resúmenes Semanales", explanation: "Si lo activas, cada viernes recibirás en tu correo un resumen de tu rendimiento, tareas completadas y los próximos eventos de tu calendario. ¡Una forma perfecta de planificar tu semana!", position: "absolute top-8 left-1/2 -translate-x-1/2 sm:left-4 sm:top-1/2 sm:-translate-y-[calc(50%+2rem)] sm:translate-x-0" },
+                { icon: theme === 'dark' ? Moon : Sun, title: "Pre-configurar Tema", explanation: "Elige tu tema preferido, claro u oscuro. Puedes cambiarlo en cualquier momento desde los ajustes de la aplicación.", position: "absolute bottom-8 left-1/2 -translate-x-1/2 sm:right-4 sm:top-1/2 sm:translate-x-0 sm:translate-y-4" },
             ],
             content: ({ setTheme, theme }: { setTheme: (theme: Theme) => void, theme: Theme }) => {
                 const ThemeIcon = theme === 'dark' ? Moon : Sun;
-                const positions = [
-                    "top-8 sm:top-1/2 sm:left-1/2 sm:-translate-x-[calc(100%+10rem)] sm:-translate-y-1/2",
-                    "bottom-8 sm:top-1/2 sm:right-1/2 sm:translate-x-[calc(100%+10rem)] sm:-translate-y-1/2"
-                ];
-
                 return (
                      <div className="relative w-full h-[400px] flex items-center justify-center">
                          <AnimatePresence>
@@ -593,7 +544,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                          title={item.title}
                                          description={item.explanation || ''}
                                          icon={item.icon}
-                                         position={positions[index]}
+                                         className={item.position}
                                      />
                                  )
                              ))}
@@ -609,7 +560,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             >
                                 <motion.button
                                     type="button"
-                                    onClick={() => setOpenSheet("Resúmenes Semanales")}
+                                    onClick={() => setOpenSheet(prev => prev === "Resúmenes Semanales" ? null : "Resúmenes Semanales")}
                                     className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
