@@ -60,19 +60,34 @@ const introIcons = [
     { icon: Trophy, angle: 315 },
 ];
 
-const ExplanationSheet = ({ open, onOpenChange, title, description, icon: Icon }: { open: boolean, onOpenChange: (open: boolean) => void, title: string, description: string, icon?: React.ElementType }) => (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent>
-            <SheetHeader>
-                <SheetTitle className="flex items-center gap-2">
-                    {Icon && <Icon className="h-5 w-5" />}
-                    {title}
-                </SheetTitle>
-                <SheetDescription>{description}</SheetDescription>
-            </SheetHeader>
-        </SheetContent>
-    </Sheet>
-);
+const ExplanationCard = ({ title, description, icon: Icon, position, isVisible }: { title: string; description: string; icon: React.ElementType; position: string; isVisible: boolean }) => {
+    const variants = {
+        hidden: { opacity: 0, scale: 0.9, y: 20 },
+        visible: { opacity: 1, scale: 1, y: 0 },
+    };
+
+    return (
+        <AnimatePresence>
+            {isVisible && (
+                <motion.div
+                    className={cn("absolute w-56 p-5 rounded-2xl shadow-2xl bg-white/30 backdrop-blur-lg border border-white/40 text-center z-20", position)}
+                    variants={variants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                >
+                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+                        <Icon className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="font-bold text-sm text-white mb-1">{title}</h3>
+                    <p className="text-xs text-white/80">{description}</p>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+};
+
 
 const BuildingWorkspaceScreen = () => {
      const containerVariants = {
@@ -136,34 +151,19 @@ const BuildingWorkspaceScreen = () => {
     );
 };
 
-const ExplanationCard = ({ title, description, icon: Icon, position, isVisible }: { title: string; description: string; icon: React.ElementType; position: string; isVisible: boolean }) => {
-    const variants = {
-        hidden: { opacity: 0, scale: 0.9, y: 20 },
-        visible: { opacity: 1, scale: 1, y: 0 },
-    };
-
-    return (
-        <AnimatePresence>
-            {isVisible && (
-                <motion.div
-                    className={cn("absolute w-56 p-5 rounded-2xl shadow-2xl bg-white/10 backdrop-blur-lg border border-white/20 text-center z-0", position)}
-                    variants={variants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="hidden"
-                    transition={{ duration: 0.3, ease: 'easeOut' }}
-                >
-                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-3">
-                        <Icon className="h-6 w-6 text-white" />
-                    </div>
-                    <h3 className="font-bold text-sm text-white mb-1">{title}</h3>
-                    <p className="text-xs text-white/80">{description}</p>
-                </motion.div>
-            )}
-        </AnimatePresence>
-    );
-};
-
+const ExplanationSheet = ({ open, onOpenChange, title, description, icon: Icon }: { open: boolean, onOpenChange: (open: boolean) => void, title: string, description: string, icon?: React.ElementType }) => (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent>
+            <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                    {Icon && <Icon className="h-5 w-5" />}
+                    {title}
+                </SheetTitle>
+                <SheetDescription>{description}</SheetDescription>
+            </SheetHeader>
+        </SheetContent>
+    </Sheet>
+);
 
 export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [step, setStep] = useState(0);
@@ -180,7 +180,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     }, []);
 
     const handleNext = () => {
-        setActiveExplanation(null); // Hide any open card when going to next step
+        setActiveExplanation(null);
         if (step < steps.length - 1) {
             setStep(step + 1);
         } else {
@@ -207,23 +207,23 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                     <ExplanationCard
                         isVisible={activeExplanation === 'Unirse a un Centro'}
                         title="Acceso para Alumnos"
-                        description="Introduce el código de tu clase para unirte a tu centro educativo y conectar con profesores y compañeros."
+                        description="Introduce el código de tu clase para conectar con tu centro."
                         icon={School}
-                        position="top-0 left-0 -translate-x-4"
+                        position="top-16 -left-8 -translate-x-full"
                     />
                      <ExplanationCard
                         isVisible={activeExplanation === 'Crear un Centro'}
                         title="Para Profesores y Administradores"
                         description="Crea un espacio educativo propio, gestiona clases y comparte recursos."
                         icon={PlusCircle}
-                        position="top-0 right-0 translate-x-4"
+                        position="top-1/2 -translate-y-1/2 -right-8 translate-x-full"
                     />
                     <ExplanationCard
                         isVisible={activeExplanation === 'Uso Personal'}
                         title="Gestión Individual"
-                        description="Organiza tu calendario, tareas y accede a herramientas de IA y estudio personal."
+                        description="Organiza tus tareas y accede a las herramientas de estudio de forma personal."
                         icon={User}
-                        position="bottom-0 right-0 translate-x-4"
+                        position="bottom-16 -left-8 -translate-x-full"
                     />
 
                     {/* Central buttons */}
@@ -662,6 +662,3 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         </motion.div>
     );
 }
-
-
-    
