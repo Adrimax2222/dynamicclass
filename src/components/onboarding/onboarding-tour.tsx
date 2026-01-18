@@ -58,7 +58,6 @@ const introIcons = [
     { icon: Trophy, angle: 315 },
 ];
 
-// Componente de Panel Explicativo Controlado (sin trigger)
 const ExplanationSheet = ({ open, onOpenChange, title, description, icon: Icon }: { open: boolean, onOpenChange: (open: boolean) => void, title: string, description: string, icon?: React.ElementType }) => (
     <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent>
@@ -93,22 +92,20 @@ const steps = [
                 {steps[0].items.map((item) => {
                     const ItemIcon = item.icon;
                     return (
-                        <motion.div 
+                        <motion.button
                             key={item.title}
+                            type="button"
+                            onClick={() => setOpenSheet(item.title)}
+                            className="w-full flex items-center text-left gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer hover:bg-muted/50"
                             variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
+                            whileHover={{ scale: 1.03 }}
                         >
-                            <button
-                                type="button"
-                                onClick={() => setOpenSheet(item.title)}
-                                className="w-full flex items-center text-left gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer hover:bg-muted/50"
-                            >
-                                <ItemIcon className="h-6 w-6 text-primary flex-shrink-0"/>
-                                <div>
-                                    <h4 className="font-semibold text-sm">{item.title}</h4>
-                                    <p className="text-xs text-muted-foreground">{item.desc}</p>
-                                </div>
-                            </button>
-                        </motion.div>
+                            <ItemIcon className="h-6 w-6 text-primary flex-shrink-0"/>
+                            <div>
+                                <h4 className="font-semibold text-sm">{item.title}</h4>
+                                <p className="text-xs text-muted-foreground">{item.desc}</p>
+                            </div>
+                        </motion.button>
                     )
                 })}
             </motion.div>
@@ -134,22 +131,20 @@ const steps = [
                 {steps[1].items.map((item) => {
                     const ItemIcon = item.icon;
                     return (
-                       <motion.div
+                       <motion.button
                             key={item.title}
+                            type="button"
+                            onClick={() => setOpenSheet(item.title)}
+                            className="w-full flex items-center text-left gap-4 p-3 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer hover:bg-muted/50"
                             variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                            whileHover={{ scale: 1.03 }}
                         >
-                           <button
-                                type="button"
-                                onClick={() => setOpenSheet(item.title)}
-                                className="w-full flex items-center text-left gap-4 p-3 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer hover:bg-muted/50"
-                            >
-                                <ItemIcon className="h-5 w-5 text-primary"/>
-                                <div>
-                                    <h4 className="font-semibold text-sm">{item.title}</h4>
-                                    <p className="text-xs text-muted-foreground">{item.desc}</p>
-                                </div>
-                            </button>
-                        </motion.div>
+                            <ItemIcon className="h-5 w-5 text-primary"/>
+                            <div>
+                                <h4 className="font-semibold text-sm">{item.title}</h4>
+                                <p className="text-xs text-muted-foreground">{item.desc}</p>
+                            </div>
+                        </motion.button>
                     )
                 })}
             </motion.div>
@@ -175,20 +170,17 @@ const steps = [
                 animate="visible"
             >
                 {steps[2].items.map((tool) => (
-                    <motion.div
+                    <motion.button
                         key={tool.title}
+                        type="button"
+                        onClick={() => setOpenSheet(tool.title)}
+                        className="w-full h-full flex flex-col items-center justify-center gap-2 p-2 sm:p-3 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer aspect-square hover:bg-muted"
                         variants={{ hidden: { opacity: 0, scale: 0.5 }, visible: { opacity: 1, scale: 1 } }}
                         whileHover={{ scale: 1.1 }}
                     >
-                        <button
-                            type="button"
-                            onClick={() => setOpenSheet(tool.title)}
-                            className="w-full h-full flex flex-col items-center justify-center gap-2 p-2 sm:p-3 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer aspect-square hover:bg-muted"
-                        >
-                            <tool.icon className="h-6 w-6 sm:h-7 sm:w-7 text-primary"/>
-                            <span className="text-[10px] sm:text-xs font-semibold leading-tight">{tool.title}</span>
-                        </button>
-                    </motion.div>
+                        <tool.icon className="h-6 w-6 sm:h-7 sm:w-7 text-primary"/>
+                        <span className="text-[10px] sm:text-xs font-semibold leading-tight">{tool.title}</span>
+                    </motion.button>
                 ))}
             </motion.div>
         )
@@ -201,37 +193,34 @@ const steps = [
         content: ({ setOpenSheet }: { setOpenSheet: (id: string | null) => void }) => {
             const item = steps[3].items[0];
             return (
-                <motion.div
+                <motion.button
+                    type="button"
+                    onClick={() => setOpenSheet(item.title)}
+                    className="w-full mt-6 p-6 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg text-left cursor-pointer"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5 }}
                     whileHover={{ scale: 1.05 }}
                 >
-                    <button
-                        type="button"
-                        onClick={() => setOpenSheet(item.title)}
-                        className="w-full mt-6 p-6 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg text-left cursor-pointer"
+                    <h4 className="font-bold text-lg">{item.title}</h4>
+                    <p className="opacity-80 mt-1 text-sm">Tu asistente 24/7. Pídele que te explique un tema, te cree tarjetas de estudio o que te ponga a prueba con un cuestionario.</p>
+                    <motion.div 
+                        className="flex flex-wrap gap-2 mt-4"
+                        variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                        initial="hidden"
+                        animate="visible"
                     >
-                        <h4 className="font-bold text-lg">{item.title}</h4>
-                        <p className="opacity-80 mt-1 text-sm">Tu asistente 24/7. Pídele que te explique un tema, te cree tarjetas de estudio o que te ponga a prueba con un cuestionario.</p>
-                        <motion.div 
-                            className="flex flex-wrap gap-2 mt-4"
-                            variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-                            initial="hidden"
-                            animate="visible"
-                        >
-                            {item.features.map(feat => (
-                                 <motion.span
-                                    key={feat}
-                                    className="text-xs font-bold bg-white/20 py-1 px-2 rounded-full"
-                                    variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
-                                >
-                                    {feat}
-                                </motion.span>
-                            ))}
-                        </motion.div>
-                    </button>
-                </motion.div>
+                        {item.features.map(feat => (
+                             <motion.span
+                                key={feat}
+                                className="text-xs font-bold bg-white/20 py-1 px-2 rounded-full"
+                                variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                            >
+                                {feat}
+                            </motion.span>
+                        ))}
+                    </motion.div>
+                </motion.button>
             )
         }
     },
@@ -254,21 +243,19 @@ const steps = [
                 {steps[4].items.map((item, index) => {
                     const ItemIcon = item.icon;
                     return(
-                        <motion.div 
+                        <motion.button 
                             key={index}
+                            type="button"
+                            onClick={() => setOpenSheet(item.title)}
+                            className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                             variants={{ hidden: { opacity: 0, x: index % 2 === 0 ? -20 : 20 }, visible: { opacity: 1, x: 0 } }}
+                            whileHover={{ scale: 1.03 }}
                         >
-                            <button 
-                                type="button"
-                                onClick={() => setOpenSheet(item.title)}
-                                className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
-                            >
-                                <ItemIcon className="h-6 w-6 text-primary flex-shrink-0"/>
-                                <div>
-                                    <h4 className="font-semibold">{item.title}</h4>
-                                </div>
-                            </button>
-                        </motion.div>
+                            <ItemIcon className="h-6 w-6 text-primary flex-shrink-0"/>
+                            <div>
+                                <h4 className="font-semibold">{item.title}</h4>
+                            </div>
+                        </motion.button>
                     );
                 })}
             </motion.div>
@@ -294,20 +281,18 @@ const steps = [
                 {steps[5].items.map((item, index) => {
                     const ItemIcon = item.icon;
                     return (
-                        <motion.div
+                        <motion.button
                             key={index}
+                            type="button"
+                            onClick={() => setOpenSheet(item.title)}
+                            className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30 cursor-pointer"
                             variants={{hidden: {opacity: 0, scale: 0.5}, visible: {opacity: 1, scale: 1}}}
+                            whileHover={{ scale: 1.1 }}
                         >
-                            <button
-                                type="button"
-                                onClick={() => setOpenSheet(item.title)}
-                                className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30 cursor-pointer"
-                            >
-                                <ItemIcon className="h-8 w-8 text-amber-500"/>
-                                <span className="font-bold text-sm text-center">{item.title}</span>
-                                {item.value && <span className="font-bold text-xl">{item.value}</span>}
-                            </button>
-                        </motion.div>
+                            <ItemIcon className="h-8 w-8 text-amber-500"/>
+                            <span className="font-bold text-sm text-center">{item.title}</span>
+                            {item.value && <span className="font-bold text-xl">{item.value}</span>}
+                        </motion.button>
                     );
                 })}
             </motion.div>
@@ -321,7 +306,7 @@ const steps = [
             { icon: MailCheck, title: "Resúmenes Semanales", explanation: "Si lo activas, cada viernes recibirás en tu correo un resumen de tu rendimiento, tareas completadas y los próximos eventos de tu calendario. ¡Una forma perfecta de planificar tu semana!" },
             { icon: Sun, title: "Pre-configurar Tema", explanation: "Elige tu tema preferido, claro u oscuro. Puedes cambiarlo en cualquier momento desde los ajustes de la aplicación." },
         ],
-        content: ({ theme, setTheme, setOpenSheet }: { theme?: Theme; setTheme?: (theme: Theme) => void, setOpenSheet: (id: string | null) => void }) => {
+        content: ({ theme, setTheme, setOpenSheet }: { theme: Theme; setTheme: (theme: Theme) => void, setOpenSheet: (id: string | null) => void }) => {
             const ThemeIcon = theme === 'dark' ? Moon : Sun;
             return (
                  <motion.div
@@ -330,39 +315,35 @@ const steps = [
                     animate="visible"
                     variants={{ visible: { transition: { staggerChildren: 0.2 } }}}
                 >
-                    <motion.div 
+                    <motion.button 
+                        type="button"
+                        onClick={() => setOpenSheet("Resúmenes Semanales")}
+                        className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                         variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
+                        whileHover={{ scale: 1.03 }}
                      >
-                        <button 
-                            type="button"
-                            onClick={() => setOpenSheet("Resúmenes Semanales")}
-                            className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
-                        >
-                            <MailCheck className="h-6 w-6 text-primary flex-shrink-0"/>
-                            <div>
-                                <h4 className="font-semibold">Resúmenes Semanales</h4>
-                                <p className="text-sm text-muted-foreground">Recibe cada viernes un informe de tu progreso.</p>
-                            </div>
-                         </button>
-                     </motion.div>
-                    <motion.div
+                        <MailCheck className="h-6 w-6 text-primary flex-shrink-0"/>
+                        <div>
+                            <h4 className="font-semibold">Resúmenes Semanales</h4>
+                            <p className="text-sm text-muted-foreground">Recibe cada viernes un informe de tu progreso.</p>
+                        </div>
+                     </motion.button>
+                    <motion.button
+                        type="button"
+                        onClick={() => {
+                            setTheme(theme === 'dark' ? 'light' : 'dark');
+                            setOpenSheet("Pre-configurar Tema");
+                        }}
+                        className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                         variants={{ hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 } }}
+                        whileHover={{ scale: 1.03 }}
                     >
-                        <button 
-                            type="button"
-                            onClick={() => {
-                                setTheme && setTheme(theme === 'dark' ? 'light' : 'dark');
-                                setOpenSheet("Pre-configurar Tema");
-                            }}
-                            className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
-                        >
-                            <ThemeIcon className="h-6 w-6 text-primary flex-shrink-0"/>
-                            <div>
-                                <h4 className="font-semibold">Pre-configurar Tema</h4>
-                                <p className="text-sm text-muted-foreground">Prueba el Modo Oscuro y elige tu vista preferida.</p>
-                            </div>
-                        </button>
-                    </motion.div>
+                        <ThemeIcon className="h-6 w-6 text-primary flex-shrink-0"/>
+                        <div>
+                            <h4 className="font-semibold">Pre-configurar Tema</h4>
+                            <p className="text-sm text-muted-foreground">Prueba el Modo Oscuro y elige tu vista preferida.</p>
+                        </div>
+                    </motion.button>
                 </motion.div>
             )
         }
@@ -553,7 +534,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.5, delay: 0.5 }}
                     >
-                        <h2 className="text-2xl font-bold font-headline mb-6">Construyendo tu Espacio...</h2>
+                        <h2 className="text-2xl font-bold font-headline mb-6">Configurando tu espacio...</h2>
                         <BuildingWorkspaceScreen />
                     </motion.div>
                 ) : (
