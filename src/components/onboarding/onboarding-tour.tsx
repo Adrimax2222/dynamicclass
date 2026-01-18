@@ -62,15 +62,15 @@ const introIcons = [
 
 const ExplanationCard = ({ title, description, icon: Icon, position, isVisible }: { title: string; description: string; icon: React.ElementType; position: string; isVisible: boolean }) => {
     const variants = {
-        hidden: { opacity: 0, scale: 0.8, x: position.includes('left') ? 20 : -20 },
-        visible: { opacity: 1, scale: 1, x: 0 },
+        hidden: { opacity: 0, scale: 0.8 },
+        visible: { opacity: 1, scale: 1 },
     };
 
     return (
         <AnimatePresence>
             {isVisible && (
                 <motion.div
-                    className={cn("absolute w-64 p-4 rounded-2xl shadow-2xl bg-white/50 backdrop-blur-2xl border border-white/50 text-center z-20", position)}
+                    className={cn("absolute w-64 p-4 rounded-2xl shadow-2xl bg-white/50 backdrop-blur-2xl border border-white/40 text-center z-20", position)}
                     variants={variants}
                     initial="hidden"
                     animate="visible"
@@ -87,6 +87,7 @@ const ExplanationCard = ({ title, description, icon: Icon, position, isVisible }
         </AnimatePresence>
     );
 };
+
 
 const BuildingWorkspaceScreen = () => {
      const containerVariants = {
@@ -171,9 +172,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [isIntro, setIsIntro] = useState(true);
     const [isFinishing, setIsFinishing] = useState(false);
     const [isExiting, setIsExiting] = useState(false);
-    const [openSheet, setOpenSheet] = useState<string | null>(null);
-    const { theme, setTheme } = useApp();
     const [activeExplanation, setActiveExplanation] = useState<string | null>(null);
+    const { theme, setTheme } = useApp();
     
     useEffect(() => {
         const timer = setTimeout(() => setIsIntro(false), 4000); 
@@ -198,9 +198,9 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             title: "Elige tu Camino",
             description: "Dynamic Class se adapta a ti. Pulsa en cada opción para saber más.",
             items: [
-                { icon: School, title: "Unirse a un Centro", desc: "Usa el código de tu clase." },
-                { icon: PlusCircle, title: "Crear un Centro", desc: "Crea un espacio para tu centro." },
-                { icon: User, title: "Uso Personal", desc: "Disfruta de la app individualmente." },
+                { icon: School, title: "Unirse a un Centro", desc: "Usa el código de tu clase para conectar." },
+                { icon: PlusCircle, title: "Crear un Centro", desc: "Crea un espacio para tu centro y comparte." },
+                { icon: User, title: "Uso Personal", desc: "Disfruta de la app de forma individual." },
             ],
             content: () => (
                  <div className="relative w-full h-[400px] flex items-center justify-center">
@@ -210,21 +210,21 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             title="Unirse a un Centro"
                             description="Usa el código de tu clase para conectar con tu centro y sincronizar horarios."
                             icon={School}
-                            position="top-0 right-full mr-12"
+                            position="top-0 right-full mr-8"
                         />
                         <ExplanationCard
                             isVisible={activeExplanation === 'Crear un Centro'}
                             title="Crear un Centro"
                             description="Si eres profesor o delegado, crea un espacio para tu centro y comparte recursos."
                             icon={PlusCircle}
-                            position="top-1/2 -translate-y-1/2 left-full ml-12"
+                            position="top-1/2 -translate-y-1/2 left-full ml-8"
                         />
                         <ExplanationCard
                             isVisible={activeExplanation === 'Uso Personal'}
                             title="Uso Personal"
                             description="Disfruta de las herramientas de estudio sin conexión a un centro."
                             icon={User}
-                            position="bottom-0 right-full mr-12"
+                            position="bottom-0 right-full mr-8"
                         />
 
                         <motion.div 
@@ -234,13 +234,10 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             animate="visible"
                         >
                             {steps[0].items.map((item) => (
-                                <motion.button
+                                <motion.div
                                     key={item.title}
-                                    type="button"
-                                    className="w-full flex items-center text-left p-3 rounded-lg border bg-background/50 backdrop-blur-sm gap-4"
                                     variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
+                                    className="w-full flex items-center text-left p-3 rounded-lg border bg-background/50 backdrop-blur-sm gap-4"
                                 >
                                     <div className="flex-1 flex items-center gap-4">
                                         <div className="p-2 bg-primary/10 rounded-lg">
@@ -251,11 +248,9 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                             <p className="text-xs text-muted-foreground">{item.desc}</p>
                                         </div>
                                     </div>
-                                    <motion.div
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setActiveExplanation(prev => prev === item.title ? null : item.title);
-                                        }}
+                                    <motion.button
+                                        type="button"
+                                        onClick={() => setActiveExplanation(prev => prev === item.title ? null : item.title)}
                                         className="flex-shrink-0 rounded-full h-8 w-8 bg-blue-500 flex items-center justify-center relative shadow-lg cursor-pointer"
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.95 }}
@@ -274,8 +269,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                             }}
                                         />
                                         <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-                                    </motion.div>
-                                </motion.button>
+                                    </motion.button>
+                                </motion.div>
                             ))}
                         </motion.div>
                     </div>
@@ -287,45 +282,84 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             title: "Una Estructura Colaborativa",
             description: "Organizamos los roles para una gestión clara y segura. Pulsa para saber qué hace cada uno.",
             items: [
-                { icon: ShieldCheck, title: "Admin Global", desc: "Supervisa toda la plataforma.", explanation: "Tiene control total para crear y gestionar centros, usuarios y roles. Es el nivel más alto de administración, reservado para el equipo de Dynamic Class." },
-                { icon: Building, title: "Admin de Centro", desc: "Gestiona un centro educativo y sus clases.", explanation: "Puede añadir clases, gestionar miembros y configurar los calendarios y horarios de su centro específico. Un rol ideal para el director o jefe de estudios." },
-                { icon: GraduationCap, title: "Admin de Clase", desc: "Modera el chat y el horario de su clase.", explanation: "Un rol de delegado o profesor que puede fijar mensajes, gestionar miembros y editar el horario de su propia clase. Facilita la autogestión de cada grupo." },
-                { icon: User, title: "Estudiante", desc: "Participa, aprende y compite.", explanation: "El rol principal. Accede a todas las herramientas de estudio, participa en su clase y compite en los rankings para ganar recompensas." },
+                { icon: ShieldCheck, title: "Admin Global", desc: "Supervisa toda la plataforma.", explanation: "Control total para crear centros, gestionar usuarios y roles. Es el nivel más alto, reservado para el equipo de Dynamic Class." },
+                { icon: Building, title: "Admin de Centro", desc: "Gestiona un centro educativo y sus clases.", explanation: "Añade clases, gestiona miembros y configura calendarios y horarios. Ideal para directores o jefes de estudios." },
+                { icon: GraduationCap, title: "Admin de Clase", desc: "Modera el chat y el horario de su clase.", explanation: "Un rol de delegado o profesor que puede fijar mensajes y editar el horario de su propia clase. Facilita la autogestión." },
+                { icon: User, title: "Estudiante", desc: "Participa, aprende y compite.", explanation: "El rol principal. Accede a las herramientas de estudio, participa en clase y compite en los rankings para ganar recompensas." },
             ],
             content: () => (
-                 <motion.div 
-                    className="mt-6 space-y-2"
-                    variants={{ visible: { opacity: 1, transition: { staggerChildren: 0.15 } } }}
-                    initial="hidden"
-                    animate="visible"
-                >
-                    {steps[1].items.map((item) => (
-                         <motion.div
-                            key={item.title}
-                            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                 <div className="relative w-full h-[400px] flex items-center justify-center">
+                    <div className="relative w-72">
+                        <ExplanationCard
+                            isVisible={activeExplanation === 'Admin Global'}
+                            title="Admin Global"
+                            description="Control total para crear centros y gestionar usuarios. Reservado para nuestro equipo."
+                            icon={ShieldCheck}
+                            position="top-0 left-full ml-12"
+                        />
+                         <ExplanationCard
+                            isVisible={activeExplanation === 'Admin de Centro'}
+                            title="Admin de Centro"
+                            description="Añade clases y configura horarios y calendarios. Ideal para directores."
+                            icon={Building}
+                            position="bottom-0 right-full mr-12"
+                        />
+                         <ExplanationCard
+                            isVisible={activeExplanation === 'Admin de Clase'}
+                            title="Admin de Clase"
+                            description="Modera el chat y gestiona el horario de su propia clase. Perfecto para delegados."
+                            icon={GraduationCap}
+                            position="top-0 right-full mr-12"
+                        />
+                        <ExplanationCard
+                            isVisible={activeExplanation === 'Estudiante'}
+                            title="Estudiante"
+                            description="Accede a las herramientas, participa y compite para ganar recompensas."
+                            icon={User}
+                            position="bottom-0 left-full ml-12"
+                        />
+                        
+                        <motion.div 
+                            className="space-y-4 z-10"
+                            variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                            initial="hidden"
+                            animate="visible"
                         >
-                             <motion.button
-                                type="button"
-                                onClick={() => setOpenSheet(item.title)}
-                                className="w-full flex items-center text-left gap-4 p-3 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer hover:bg-muted"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                            >
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                    <item.icon className="h-5 w-5 text-primary"/>
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="font-semibold text-sm">{item.title}</h4>
-                                    <p className="text-xs text-muted-foreground">{item.desc}</p>
-                                </div>
-                                <div className="flex-shrink-0 rounded-full h-8 w-8 bg-blue-500 flex items-center justify-center relative shadow-lg">
-                                    <motion.span className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" animate={{ scale: [1, 1.6, 1], opacity: [0.75, 0, 0.75]}} transition={{ duration: 1.5, repeat: Infinity }}/>
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-                                </div>
-                            </motion.button>
+                            {steps[1].items.map((item) => (
+                                <motion.div
+                                    key={item.title}
+                                    variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
+                                    className="w-full flex items-center text-left p-3 rounded-lg border bg-background/50 backdrop-blur-sm gap-4"
+                                >
+                                    <div className="flex-1 flex items-center gap-4">
+                                        <div className="p-2 bg-primary/10 rounded-lg">
+                                            <item.icon className="h-5 w-5 text-primary" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
+                                            <p className="text-xs text-muted-foreground">{item.desc}</p>
+                                        </div>
+                                    </div>
+                                    <motion.button
+                                        type="button"
+                                        onClick={() => setActiveExplanation(prev => prev === item.title ? null : item.title)}
+                                        className="flex-shrink-0 rounded-full h-8 w-8 bg-blue-500 flex items-center justify-center relative shadow-lg cursor-pointer"
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        aria-label={`Más información sobre ${item.title}`}
+                                    >
+                                        <motion.span
+                                            className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"
+                                            animate={{ scale: [1, 1.6, 1], opacity: [0.75, 0, 0.75]}}
+                                            transition={{ duration: 1.5, repeat: Infinity }}
+                                        />
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                                    </motion.button>
+                                </motion.div>
+                            ))}
                         </motion.div>
-                    ))}
-                </motion.div>
+                    </div>
+                </div>
             )
         },
         {
@@ -333,12 +367,12 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             title: "Tu Centro de Operaciones",
             description: "Todas tus herramientas de productividad, centralizadas en el Modo Estudio para que nada te distraiga.",
             items: [
-                { icon: Timer, title: 'Pomodoro', explanation: "Utiliza la técnica Pomodoro para mantener la concentración en bloques de estudio (ej. 25 min) seguidos de descansos cortos." },
-                { icon: ScanLine, title: 'Escáner', explanation: "Digitaliza tus apuntes en papel. Haz una foto, mejora la imagen y guárdala como PDF en tu dispositivo." },
-                { icon: Calculator, title: 'Calculadora', explanation: "Una calculadora científica siempre a mano para resolver problemas complejos sin salir de la app." },
-                { icon: Music, title: 'Música', explanation: "Conéctate a Spotify y controla tu música de estudio favorita directamente desde el Modo Estudio." },
-                { icon: Target, title: 'Calcula Notas', explanation: "Introduce tus notas y sus porcentajes para calcular qué necesitas sacar en el próximo examen para aprobar." },
-                { icon: Wand2, title: 'Editor Mágico', explanation: "Potencia tus apuntes con IA. Pídele que resuma, traduzca, corrija la ortografía o incluso continúe tus textos." },
+                { title: 'Pomodoro', icon: Timer, explanation: "Utiliza la técnica Pomodoro para mantener la concentración en bloques de estudio (ej. 25 min) seguidos de descansos cortos." },
+                { title: 'Escáner', icon: ScanLine, explanation: "Digitaliza tus apuntes en papel. Haz una foto, mejora la imagen y guárdala como PDF en tu dispositivo." },
+                { title: 'Calculadora', icon: Calculator, explanation: "Una calculadora científica siempre a mano para resolver problemas complejos sin salir de la app." },
+                { title: 'Música', icon: Music, explanation: "Conéctate a Spotify y controla tu música de estudio favorita directamente desde el Modo Estudio." },
+                { title: 'Calcula Notas', icon: Target, explanation: "Introduce tus notas y sus porcentajes para calcular qué necesitas sacar en el próximo examen para aprobar." },
+                { title: 'Editor Mágico', icon: Wand2, explanation: "Potencia tus apuntes con IA. Pídele que resuma, traduzca, corrija la ortografía o incluso continúe tus textos." },
             ],
             content: () => (
                 <motion.div
@@ -355,7 +389,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         >
                             <motion.button
                                 type="button"
-                                onClick={() => setOpenSheet(tool.title)}
+                                onClick={() => setActiveExplanation(tool.title)}
                                 className="w-full h-full flex flex-col items-center justify-center gap-2 p-2 sm:p-3 rounded-lg border bg-background/50 backdrop-blur-sm cursor-pointer aspect-square hover:bg-muted"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -376,34 +410,39 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             content: () => {
                 const item = steps[3].items[0];
                 return (
-                    <motion.button
-                        type="button"
-                        onClick={() => setOpenSheet(item.title)}
-                        className="w-full mt-6 p-6 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg text-left cursor-pointer"
+                    <motion.div 
+                        className="w-full mt-6"
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.5 }}
-                        whileHover={{ scale: 1.05 }}
                     >
-                        <h4 className="font-bold text-lg">{item.title}</h4>
-                        <p className="opacity-80 mt-1 text-sm">Tu asistente 24/7. Pídele que te explique un tema, te cree tarjetas de estudio o que te ponga a prueba con un cuestionario.</p>
-                        <motion.div 
-                            className="flex flex-wrap gap-2 mt-4"
-                            variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-                            initial="hidden"
-                            animate="visible"
+                         <motion.button
+                            type="button"
+                            onClick={() => setActiveExplanation(item.title)}
+                            className="w-full p-6 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg text-left cursor-pointer"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                         >
-                            {item.features.map(feat => (
-                                 <motion.span
-                                    key={feat}
-                                    className="text-xs font-bold bg-white/20 py-1 px-2 rounded-full"
-                                    variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
-                                >
-                                    {feat}
-                                </motion.span>
-                            ))}
-                        </motion.div>
-                    </motion.button>
+                            <h4 className="font-bold text-lg">{item.title}</h4>
+                            <p className="opacity-80 mt-1 text-sm">Tu asistente 24/7. Pídele que te explique un tema, te cree tarjetas de estudio o que te ponga a prueba con un cuestionario.</p>
+                            <motion.div 
+                                className="flex flex-wrap gap-2 mt-4"
+                                variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                                initial="hidden"
+                                animate="visible"
+                            >
+                                {item.features.map(feat => (
+                                     <motion.span
+                                        key={feat}
+                                        className="text-xs font-bold bg-white/20 py-1 px-2 rounded-full"
+                                        variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                                    >
+                                        {feat}
+                                    </motion.span>
+                                ))}
+                            </motion.div>
+                        </motion.button>
+                    </motion.div>
                 )
             }
         },
@@ -430,7 +469,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         >
                             <motion.button 
                                 type="button"
-                                onClick={() => setOpenSheet(item.title)}
+                                onClick={() => setActiveExplanation(item.title)}
                                 className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
@@ -469,7 +508,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         >
                            <motion.button
                                 type="button"
-                                onClick={() => setOpenSheet(item.title)}
+                                onClick={() => setActiveExplanation(item.title)}
                                 className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30 cursor-pointer"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -505,7 +544,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                          >
                             <motion.button
                                 type="button"
-                                onClick={() => setOpenSheet("Resúmenes Semanales")}
+                                onClick={() => setActiveExplanation("Resúmenes Semanales")}
                                 className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
@@ -525,7 +564,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 onClick={() => {
                                     const newTheme = theme === 'dark' ? 'light' : 'dark';
                                     setTheme(newTheme);
-                                    setOpenSheet("Pre-configurar Tema");
+                                    setActiveExplanation("Pre-configurar Tema");
                                 }}
                                 className="w-full flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                                 whileHover={{ scale: 1.02 }}
@@ -686,14 +725,17 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         </div>
                         
                         {currentItems.map(item => (
-                            <ExplanationSheet
-                                key={item.title}
-                                open={openSheet === item.title}
-                                onOpenChange={(isOpen) => !isOpen && setOpenSheet(null)}
-                                title={item.title}
-                                description={item.explanation || ''}
-                                icon={item.icon}
-                            />
+                            <Sheet key={item.title} open={activeExplanation === item.title} onOpenChange={() => setActiveExplanation(null)}>
+                               <SheetContent>
+                                   <SheetHeader>
+                                       <SheetTitle className="flex items-center gap-2">
+                                           {item.icon && <item.icon className="h-5 w-5" />}
+                                           {item.title}
+                                       </SheetTitle>
+                                       <SheetDescription>{item.explanation}</SheetDescription>
+                                   </SheetHeader>
+                               </SheetContent>
+                           </Sheet>
                         ))}
                         
                         <footer className="space-y-4">
