@@ -163,6 +163,14 @@ export default {
                 transform: 'translate(0px, 0px) scale(1)',
             },
         },
+        shimmer: {
+          '0%': {
+            backgroundPosition: '-200% 0',
+          },
+          '100%': {
+            backgroundPosition: '200% 0',
+          },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -175,6 +183,7 @@ export default {
         'float-logo': 'float-logo 2s ease-in-out infinite',
         'pulse-slow': 'pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'blob': 'blob 7s infinite',
+        'shimmer': 'shimmer 2.5s linear infinite',
       },
     },
   },
