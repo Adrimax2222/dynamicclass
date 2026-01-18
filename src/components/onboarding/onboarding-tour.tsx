@@ -172,7 +172,59 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             }, 5000);
         }
     };
+
+    const getPositionClass = (title: string, stepIndex: number): string => {
+        // Default for mobile: At the top of the container.
+        const mobileClass = "top-0 left-1/2 -translate-x-1/2 mt-4 sm:translate-x-0";
+        let desktopClass = "";
     
+        switch (stepIndex) {
+            case 1: // "Una estructura colaborativa"
+                switch (title) {
+                    case "Admin Global":    desktopClass = "sm:top-0 sm:left-0"; break;
+                    case "Admin de Centro":   desktopClass = "sm:bottom-0 sm:right-0"; break;
+                    case "Admin de Clase":    desktopClass = "sm:top-0 sm:right-0"; break;
+                    case "Estudiante":      desktopClass = "sm:bottom-0 sm:left-0"; break;
+                }
+                break;
+            case 2: // "Tu centro de operaciones"
+                switch (title) {
+                    case "Pomodoro":        desktopClass = "sm:top-0 sm:left-0"; break;
+                    case "Escáner":         desktopClass = "sm:top-0 sm:right-0"; break;
+                    case "Calculadora":     desktopClass = "sm:top-1/2 sm:left-0 sm:-translate-y-1/2"; break;
+                    case "Música":          desktopClass = "sm:top-1/2 sm:right-0 sm:-translate-y-1/2"; break;
+                    case "Calcula Notas":   desktopClass = "sm:bottom-0 sm:left-0"; break;
+                    case "Editor Mágico":   desktopClass = "sm:bottom-0 sm:right-0"; break;
+                }
+                break;
+            case 4: // "Interactúa con tu clase"
+                switch (title) {
+                    case "Chat de Clase":       desktopClass = "sm:top-0 sm:left-full sm:ml-8"; break;
+                    case "Anuncios y Encuestas":desktopClass = "sm:bottom-0 sm:right-full sm:mr-8"; break;
+                    case "Horario Integrado":   desktopClass = "sm:top-1/2 sm:-translate-y-1/2 sm:left-full sm:ml-8"; break;
+                }
+                break;
+            case 5: // "Compite y gana recompensas"
+                 switch (title) {
+                    case "Trofeos":         desktopClass = "sm:top-0 sm:right-full sm:mr-4"; break;
+                    case "Racha Actual":    desktopClass = "sm:top-0 sm:left-full sm:ml-4"; break;
+                    case "Tarjetas Regalo": desktopClass = "sm:bottom-0 sm:right-full sm:mr-4"; break;
+                    case "Avatares":        desktopClass = "sm:bottom-0 sm:left-full sm:ml-4"; break;
+                }
+                break;
+            case 6: // "Configuración rápida"
+                 switch (title) {
+                    case "Tema de la Aplicación": desktopClass = "sm:top-0 sm:right-full sm:mr-4"; break;
+                    case "Burbuja de IA":       desktopClass = "sm:top-1/3 sm:right-full sm:mr-4 sm:-translate-y-1/2"; break;
+                    case "Guardar Escaneos":    desktopClass = "sm:bottom-1/3 sm:right-full sm:mr-4 sm:translate-y-1/2"; break;
+                    case "Resúmenes Semanales": desktopClass = "sm:bottom-0 sm:right-full sm:mr-4"; break;
+                }
+                break;
+        }
+    
+        return cn(mobileClass, desktopClass);
+    };
+
     const steps = [
         {
             icon: School,
@@ -186,47 +238,38 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             content: () => {
                 const activeItem = steps[0].items.find(item => item.title === activeExplanation);
                 return (
-                     <div className="w-full h-[400px] relative flex items-center justify-center overflow-hidden">
-                        <AnimatePresence>
-                            {!activeExplanation && (
-                                <motion.div
-                                    key="options"
-                                    className="w-full flex items-center justify-center"
-                                    initial={{ x: '0%', opacity: 1 }}
-                                    animate={{ x: '0%', opacity: 1 }}
-                                    exit={{ x: '-50%', opacity: 0 }}
-                                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                                >
-                                    <div className="w-80 space-y-4">
-                                    {steps[0].items.map((item) => (
-                                        <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
-                                            <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
-                                            <div>
-                                                <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
-                                                <p className="text-xs text-muted-foreground">{item.desc}</p>
-                                            </div>
-                                            <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
-                                                <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                            </Button>
+                    <div className="w-full h-[400px] flex items-center justify-center overflow-hidden">
+                        <motion.div
+                            className="w-full max-w-sm"
+                            animate={{ x: activeExplanation ? '-50%' : '0%' }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                        >
+                            <div className="w-80 space-y-4 mx-auto">
+                                {steps[0].items.map((item) => (
+                                    <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
+                                        <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
+                                        <div>
+                                            <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
+                                            <p className="text-xs text-muted-foreground">{item.desc}</p>
                                         </div>
-                                    ))}
+                                        <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
+                                            <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                        </Button>
                                     </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                                ))}
+                            </div>
+                        </motion.div>
                         <AnimatePresence>
                             {activeExplanation && activeItem && (
                                 <motion.div
-                                    key="info"
-                                    className="absolute w-full h-full flex items-center justify-center"
+                                    key="info-panel-step-0"
+                                    className="absolute w-80 h-[300px]"
                                     initial={{ x: '50%', opacity: 0 }}
                                     animate={{ x: '0%', opacity: 1 }}
                                     exit={{ x: '50%', opacity: 0 }}
                                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                                 >
-                                    <div className="w-80 h-auto">
-                                        <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
-                                    </div>
+                                    <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -244,43 +287,22 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: GraduationCap, title: "Admin de Clase", desc: "Modera el chat y horario de su clase.", explanation: "Un rol de delegado o profesor que puede fijar mensajes y editar el horario de su propia clase." },
                 { icon: User, title: "Estudiante", desc: "Participa, aprende y compite.", explanation: "El rol principal. Accede a las herramientas de estudio, participa en clase y compite en los rankings." },
             ],
-            content: () => {
-                const activeItem = steps[1].items.find(item => item.title === activeExplanation);
-                return (
-                    <div className="w-full h-[400px] flex items-center justify-center">
-                        <div className="w-72 space-y-4">
-                        {steps[1].items.map((item) => (
-                            <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
-                                <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
-                                <div className='flex-1'>
-                                    <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
-                                    <p className="text-xs text-muted-foreground">{item.desc}</p>
-                                </div>
-                                <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
-                                    <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                </Button>
-                            </div>
-                        ))}
+            content: () => (
+                <div className="w-72 space-y-4">
+                {steps[1].items.map((item) => (
+                    <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
+                        <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
+                        <div className='flex-1'>
+                            <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
+                            <p className="text-xs text-muted-foreground">{item.desc}</p>
                         </div>
-                        <AnimatePresence>
-                            {activeExplanation && activeItem && (
-                                <motion.div
-                                    key={activeItem?.title}
-                                    className="absolute z-20 sm:left-full sm:ml-8"
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.8 }}
-                                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                                >
-                                    <div className="w-56 h-auto">
-                                        <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                        <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
+                            <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                        </Button>
                     </div>
-                )
-            }
+                ))}
+                </div>
+            )
         },
         {
             icon: BrainCircuit,
@@ -294,43 +316,21 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { title: 'Calcula Notas', icon: Target, explanation: "Introduce tus notas y sus porcentajes para calcular qué necesitas sacar en el próximo examen para aprobar." },
                 { title: 'Editor Mágico', icon: Wand2, explanation: "Potencia tus apuntes con IA. Pídele que resuma, traduzca, corrija la ortografía o incluso continúe tus textos." },
             ],
-            content: () => {
-                const activeItem = steps[2].items.find(item => item.title === activeExplanation);
-                
-                 return (
-                    <div className="w-full h-[400px] relative flex items-center justify-center">
-                        <div className="grid grid-cols-3 gap-3 w-72">
-                        {steps[2].items.map((tool, index) => (
-                            <div key={tool.title} className="w-full h-full flex flex-col items-center justify-center gap-2 p-2 rounded-lg border bg-background/80 backdrop-blur-sm aspect-square">
-                                <div className="p-2 bg-primary/10 rounded-lg"> <tool.icon className="h-6 w-6 text-primary"/> </div>
-                                <div className="flex items-center gap-1">
-                                    <span className="text-xs font-semibold leading-tight text-center">{tool.title}</span>
-                                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={() => handleShowInfo(tool.title)}>
-                                        <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
+            content: () => (
+                <div className="grid grid-cols-3 gap-3 w-72">
+                {steps[2].items.map((tool) => (
+                    <div key={tool.title} className="w-full h-full flex flex-col items-center justify-center gap-2 p-2 rounded-lg border bg-background/80 backdrop-blur-sm aspect-square">
+                        <div className="p-2 bg-primary/10 rounded-lg"> <tool.icon className="h-6 w-6 text-primary"/> </div>
+                        <div className="flex items-center gap-1">
+                            <span className="text-xs font-semibold leading-tight text-center">{tool.title}</span>
+                            <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={() => handleShowInfo(tool.title)}>
+                                <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                            </Button>
                         </div>
-                         <AnimatePresence>
-                            {activeExplanation && activeItem && (
-                                <motion.div
-                                    key={activeItem?.title}
-                                    className="absolute z-20 sm:top-0 sm:left-full sm:ml-8"
-                                     initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.8 }}
-                                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                                >
-                                     <div className="w-56 h-auto">
-                                        <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
                     </div>
-                )
-            }
+                ))}
+                </div>
+            )
         },
         {
             icon: Sparkles,
@@ -365,40 +365,19 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: Building, title: "Anuncios y Encuestas", explanation: "Mantente al día con los comunicados de tus profesores y participa en encuestas para dar tu opinión." },
                 { icon: Calendar, title: "Horario Integrado", explanation: "Consulta tus clases: asignatura, hora, profesor y aula. Todo en un mismo lugar y siempre accesible." },
             ],
-            content: () => {
-                const activeItem = steps[4].items.find(item => item.title === activeExplanation);
-                 return (
-                    <div className="w-full h-[400px] relative flex items-center justify-center">
-                        <div className="w-72 space-y-4">
-                        {steps[4].items.map((item) => (
-                            <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
-                                <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
-                                <h4 className="flex-1 font-semibold text-sm text-foreground">{item.title}</h4>
-                                <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
-                                    <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                </Button>
-                            </div>
-                        ))}
+            content: () => (
+                 <div className="w-72 space-y-4">
+                    {steps[4].items.map((item) => (
+                        <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
+                            <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
+                            <h4 className="flex-1 font-semibold text-sm text-foreground">{item.title}</h4>
+                            <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
+                                <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                            </Button>
                         </div>
-                         <AnimatePresence>
-                            {activeExplanation && activeItem && (
-                                <motion.div
-                                    key={activeItem?.title}
-                                    className="absolute z-20 sm:left-full sm:ml-8"
-                                     initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.8 }}
-                                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                                >
-                                    <div className="w-56 h-auto">
-                                        <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                )
-            }
+                    ))}
+                </div>
+            )
         },
         {
             icon: Trophy,
@@ -410,42 +389,21 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: Gift, title: "Tarjetas Regalo", explanation: "Canjea los trofeos que tanto te ha costado ganar por tarjetas regalo de tus tiendas favoritas como Amazon, GAME, y más." },
                 { icon: Cat, title: "Avatares", explanation: "Usa tus trofeos para desbloquear iconos y avatares exclusivos para personalizar tu foto de perfil y destacar en la comunidad." },
             ],
-            content: () => {
-                 const activeItem = steps[5].items.find(item => item.title === activeExplanation);
-                 return (
-                    <div className="w-full h-[400px] relative flex items-center justify-center">
-                        <div className="grid grid-cols-2 gap-4 w-72">
-                        {steps[5].items.map((item, index) => (
-                           <div key={item.title} className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30">
-                                <item.icon className="h-8 w-8 text-amber-500"/>
-                                <div className="flex items-center gap-1">
-                                    <span className="font-bold text-sm text-center">{item.title}</span>
-                                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={() => handleShowInfo(item.title)}>
-                                        <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                    </Button>
-                                </div>
-                           </div>
-                        ))}
+            content: () => (
+                <div className="grid grid-cols-2 gap-4 w-72">
+                {steps[5].items.map((item) => (
+                   <div key={item.title} className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30">
+                        <item.icon className="h-8 w-8 text-amber-500"/>
+                        <div className="flex items-center gap-1">
+                            <span className="font-bold text-sm text-center">{item.title}</span>
+                            <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={() => handleShowInfo(item.title)}>
+                                <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                            </Button>
                         </div>
-                        <AnimatePresence>
-                             {activeExplanation && activeItem && (
-                                <motion.div
-                                    key={activeItem?.title}
-                                    className="absolute z-20 sm:left-full sm:ml-8"
-                                     initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.8 }}
-                                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                                >
-                                     <div className="w-56 h-auto">
-                                        <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                )
-            }
+                   </div>
+                ))}
+                </div>
+            )
         },
         {
             icon: Settings2,
@@ -459,95 +417,75 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             ],
             content: () => {
                 const ThemeIcon = theme === 'dark' ? Moon : Sun;
-                const activeItem = steps[6].items.find(item => item.title === activeExplanation);
+                
                 return (
-                     <div className="w-full h-[400px] relative flex items-center justify-center">
-                        <div className="w-full max-w-sm space-y-4">
-                            
-                            <div
-                                onClick={() => {
-                                    const newTheme = theme === 'dark' ? 'light' : 'dark';
-                                    setTheme(newTheme);
-                                }}
-                                className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
-                            >
-                                <ThemeIcon className="h-6 w-6 text-primary flex-shrink-0"/>
-                                <div>
-                                    <h4 className="font-semibold">Tema {theme === 'dark' ? 'Oscuro' : 'Claro'}</h4>
-                                    <p className="text-sm text-muted-foreground">Personaliza la apariencia de la app.</p>
-                                </div>
-                                <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Tema de la Aplicación")}}>
-                                     <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                </Button>
+                     <div className="w-full max-w-sm space-y-4">
+                        <div
+                            onClick={() => {
+                                const newTheme = theme === 'dark' ? 'light' : 'dark';
+                                setTheme(newTheme);
+                            }}
+                            className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                        >
+                            <ThemeIcon className="h-6 w-6 text-primary flex-shrink-0"/>
+                            <div>
+                                <h4 className="font-semibold">Tema {theme === 'dark' ? 'Oscuro' : 'Claro'}</h4>
+                                <p className="text-sm text-muted-foreground">Personaliza la apariencia de la app.</p>
                             </div>
-
-                            <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
-                                <Sparkles className="h-6 w-6 text-primary flex-shrink-0"/>
-                                <div className="flex-1">
-                                    <h4 className="font-semibold">Burbuja de IA</h4>
-                                    <p className="text-sm text-muted-foreground">Acceso rápido a ADRIMAX AI.</p>
-                                </div>
-                                <Switch checked={isChatBubbleVisible} onCheckedChange={setIsChatBubbleVisible} />
-                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => handleShowInfo("Burbuja de IA")}>
-                                     <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                </Button>
-                            </div>
-                            
-                            <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
-                                <Save className="h-6 w-6 text-primary flex-shrink-0"/>
-                                <div className="flex-1">
-                                    <h4 className="font-semibold">Guardar Escaneos</h4>
-                                    <p className="text-sm text-muted-foreground">Almacena documentos en el historial.</p>
-                                </div>
-                                <Switch checked={saveScannedDocs} onCheckedChange={setSaveScannedDocs} />
-                                 <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => handleShowInfo("Guardar Escaneos")}>
-                                     <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                </Button>
-                            </div>
-
-                            <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left opacity-50 cursor-not-allowed">
-                                <MailCheck className="h-6 w-6 text-primary flex-shrink-0"/>
-                                <div className="flex-1">
-                                    <h4 className="font-semibold">Resúmenes Semanales</h4>
-                                    <p className="text-sm text-muted-foreground">Recibe informes en tu correo.</p>
-                                </div>
-                                <Switch disabled={true} />
-                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.preventDefault(); e.stopPropagation(); handleShowInfo("Resúmenes Semanales")}}>
-                                     <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                </Button>
-                            </div>
-
+                            <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Tema de la Aplicación")}}>
+                                 <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                            </Button>
                         </div>
-                        <AnimatePresence>
-                            {activeExplanation && activeItem && (
-                                <motion.div
-                                    key={activeItem?.title}
-                                    className="absolute z-20 sm:left-full sm:ml-8"
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.8 }}
-                                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                                >
-                                    <div className="w-56 h-auto">
-                                        <InfoPanel 
-                                            title={activeItem.title} 
-                                            icon={activeItem.title === 'Tema de la Aplicación' ? ThemeIcon : activeItem.icon} 
-                                            description={activeItem.explanation} 
-                                            onClose={handleCloseInfo} 
-                                        />
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                     </div>
+
+                        <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
+                            <Sparkles className="h-6 w-6 text-primary flex-shrink-0"/>
+                            <div className="flex-1">
+                                <h4 className="font-semibold">Burbuja de IA</h4>
+                                <p className="text-sm text-muted-foreground">Acceso rápido a ADRIMAX AI.</p>
+                            </div>
+                            <Switch checked={isChatBubbleVisible} onCheckedChange={setIsChatBubbleVisible} />
+                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => handleShowInfo("Burbuja de IA")}>
+                                 <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                            </Button>
+                        </div>
+                        
+                        <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
+                            <Save className="h-6 w-6 text-primary flex-shrink-0"/>
+                            <div className="flex-1">
+                                <h4 className="font-semibold">Guardar Escaneos</h4>
+                                <p className="text-sm text-muted-foreground">Almacena documentos en el historial.</p>
+                            </div>
+                            <Switch checked={saveScannedDocs} onCheckedChange={setSaveScannedDocs} />
+                             <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => handleShowInfo("Guardar Escaneos")}>
+                                 <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                            </Button>
+                        </div>
+
+                        <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left opacity-50 cursor-not-allowed">
+                            <MailCheck className="h-6 w-6 text-primary flex-shrink-0"/>
+                            <div className="flex-1">
+                                <h4 className="font-semibold">Resúmenes Semanales</h4>
+                                <p className="text-sm text-muted-foreground">Recibe informes en tu correo.</p>
+                            </div>
+                            <Switch disabled={true} />
+                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.preventDefault(); e.stopPropagation(); handleShowInfo("Resúmenes Semanales")}}>
+                                 <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                            </Button>
+                        </div>
+
+                    </div>
                 )
             }
         }
     ];
 
+    const currentStepDefinition = steps[step];
+    const CurrentContent = currentStepDefinition.content;
+    const activeItem = currentStepDefinition.items.find(item => item.title === activeExplanation);
+
     const isLastStep = step === steps.length - 1;
     const CurrentIcon = steps[step].icon;
-    const CurrentContent = steps[step].content;
+    
 
     const introScreen = (
          <div className="fixed inset-0 bg-background z-[100] flex flex-col items-center justify-center p-6 overflow-hidden">
@@ -678,8 +616,34 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     <h2 className="text-2xl font-bold font-headline">{steps[step].title}</h2>
                                     <p className="text-muted-foreground mt-2">{steps[step].description}</p>
                                     
-                                    <div className="min-h-[400px] flex items-center justify-center">
+                                    <div className="relative w-full max-w-4xl mx-auto min-h-[400px] flex items-center justify-center">
                                         <CurrentContent />
+                                        
+                                        {/* This block handles all floating info panels except for step 0 */}
+                                        {step !== 0 && (
+                                            <AnimatePresence>
+                                                {activeExplanation && activeItem && (
+                                                    <motion.div
+                                                        key={activeItem.title}
+                                                        className={cn(
+                                                            "absolute z-20 w-56",
+                                                            getPositionClass(activeItem.title, step)
+                                                        )}
+                                                        initial={{ opacity: 0, scale: 0.8 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        exit={{ opacity: 0, scale: 0.8 }}
+                                                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                                    >
+                                                        <InfoPanel
+                                                            title={activeItem.title}
+                                                            icon={activeItem.icon}
+                                                            description={activeItem.explanation}
+                                                            onClose={handleCloseInfo}
+                                                        />
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        )}
                                     </div>
                                 </motion.div>
                             </AnimatePresence>
