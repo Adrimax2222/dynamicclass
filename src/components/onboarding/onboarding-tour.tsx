@@ -30,7 +30,9 @@ import {
     PencilRuler,
     Users,
     BrainCircuit,
-    ShieldCheck
+    ShieldCheck,
+    MailCheck,
+    Sun
 } from 'lucide-react';
 import { 
     Sheet,
@@ -42,6 +44,7 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import { useApp } from '@/lib/hooks/use-app';
 
 const introIcons = [
     { icon: BookOpenCheck, angle: 0 },
@@ -67,9 +70,9 @@ const steps = [
                 animate="visible"
             >
                 {[
-                    { icon: School, title: "Unirse a un Centro", desc: "Usa un código para acceder a tu clase." },
-                    { icon: PlusCircle, title: "Crear un Centro", desc: "Si tu centro no existe, créalo y compártelo." },
-                    { icon: User, title: "Uso Personal", desc: "Utiliza la app de forma individual." },
+                    { icon: School, title: "Unirse a un Centro", desc: "Usa un código para acceder a tu clase.", explanation: "Si tu centro educativo ya usa Dynamic Class, solo necesitas un código de 6 dígitos para unirte. Al hacerlo, tu horario, calendario de exámenes y anuncios se sincronizarán automáticamente." },
+                    { icon: PlusCircle, title: "Crear un Centro", desc: "Si tu centro no existe, créalo y compártelo.", explanation: "Conviértete en administrador de tu propio centro. Podrás crear clases, gestionar miembros y configurar todo el contenido para tus compañeros. Ideal para delegados o profesores." },
+                    { icon: User, title: "Uso Personal", desc: "Utiliza la app de forma individual.", explanation: "Perfecto si quieres usar las herramientas de estudio como el Pomodoro, el escáner, la IA y las notas sin estar conectado a un centro. Siempre podrás unirte a uno más tarde." },
                 ].map((item, i) => {
                     const ItemIcon = item.icon;
                     return (
@@ -89,7 +92,7 @@ const steps = [
                             <SheetContent>
                                 <SheetHeader>
                                     <SheetTitle className="flex items-center gap-2"><ItemIcon className="h-5 w-5" />{item.title}</SheetTitle>
-                                    <SheetDescription>{item.desc}</SheetDescription>
+                                    <SheetDescription>{item.explanation}</SheetDescription>
                                 </SheetHeader>
                             </SheetContent>
                         </Sheet>
@@ -301,6 +304,54 @@ const steps = [
                 </motion.div>
             </motion.div>
         )
+    },
+    {
+        icon: MailCheck,
+        title: "Notificaciones Inteligentes",
+        description: "Recibe resúmenes semanales y mantente al día sin esfuerzo. Personaliza tu experiencia visual desde el principio.",
+        content: function Content() {
+            const { setTheme } = useApp();
+            return (
+                 <motion.div
+                    className="mt-6 space-y-4"
+                    initial="hidden"
+                    animate="visible"
+                    variants={{ visible: { transition: { staggerChildren: 0.2 } }}}
+                >
+                    <Sheet>
+                        <SheetTrigger asChild>
+                             <motion.div 
+                                className="flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                                variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
+                             >
+                                <MailCheck className="h-6 w-6 text-primary flex-shrink-0"/>
+                                <div>
+                                    <h4 className="font-semibold">Resúmenes Semanales</h4>
+                                    <p className="text-sm text-muted-foreground">Recibe cada viernes un informe de tu progreso.</p>
+                                </div>
+                             </motion.div>
+                        </SheetTrigger>
+                        <SheetContent>
+                            <SheetHeader>
+                                <SheetTitle className="flex items-center gap-2"><MailCheck className="h-5 w-5" />Resúmenes Semanales</SheetTitle>
+                                <SheetDescription>Cada viernes, recibirás un correo con tu rendimiento, tareas pendientes y eventos importantes de la próxima semana, extraídos de tu calendario. Podrás desactivar esta función cuando quieras desde los ajustes.</SheetDescription>
+                            </SheetHeader>
+                        </SheetContent>
+                    </Sheet>
+                    <motion.div 
+                        className="flex items-center gap-4 p-4 rounded-lg border bg-background/50 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                        variants={{ hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 } }}
+                        onClick={() => setTheme('dark')}
+                    >
+                        <Sun className="h-6 w-6 text-primary flex-shrink-0"/>
+                        <div>
+                            <h4 className="font-semibold">Pre-configurar Tema</h4>
+                            <p className="text-sm text-muted-foreground">Prueba el Modo Oscuro y elige tu vista preferida.</p>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )
+        }
     }
 ];
 
@@ -329,7 +380,7 @@ const BuildingWorkspaceScreen = () => {
 
     const ShimmerBlock = ({ className }: { className?: string }) => (
         <div className={cn("relative overflow-hidden rounded-lg bg-muted", className)}>
-            <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-background/30 to-transparent" />
+            <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-background/30 to-transparent" />
         </div>
     );
 
@@ -384,7 +435,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             setIsFinishing(true);
             setTimeout(() => {
                 setIsExiting(true);
-            }, 3000); 
+            }, 4000); 
         }
     };
     
