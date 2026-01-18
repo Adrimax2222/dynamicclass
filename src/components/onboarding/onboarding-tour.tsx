@@ -344,6 +344,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         </div>
     );
     
+    const CurrentIcon = steps[step].icon;
+
     const tourScreen = (
         <motion.div 
             className="fixed inset-0 bg-background z-[100] flex flex-col p-6"
