@@ -255,7 +255,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 
                 return (
                     <div className="relative w-80 h-96">
-                        <AnimatePresence>
+                        <AnimatePresence mode="wait">
                             {view === 'list' && (
                                 <motion.div
                                     key="list"
@@ -274,7 +274,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                            <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
                                                <item.icon className="h-5 w-5 text-primary" />
                                            </div>
-                                           <div className="min-w-0 flex-1">
+                                            <div className="min-w-0 flex-1">
                                                <h4 className="font-semibold text-sm text-foreground truncate">{item.title}</h4>
                                                <p className="text-xs text-muted-foreground">{item.desc}</p>
                                            </div>
@@ -670,21 +670,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         exit={{ opacity: 0 }}
                     >
                         <header className="flex items-center h-10">
-                            <AnimatePresence>
-                                {step > 0 && !isFinishing && (
-                                    <motion.div
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -20 }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        <Button variant="ghost" size="icon" onClick={goToPreviousStep}>
-                                            <ArrowLeft className="h-5 w-5" />
-                                        </Button>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                            <motion.div layoutId="onboarding-logo" className={cn(step > 0 && !isFinishing && 'ml-2')}>
+                            <motion.div layoutId="onboarding-logo">
                                 <Logo className="h-10 w-10 text-primary" />
                             </motion.div>
                         </header>
@@ -719,7 +705,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         
                         <footer className="space-y-4">
                             <Progress value={((step + 1) / steps.length) * 100} className="h-2 w-full max-w-xs mx-auto" />
-
+                            
                             {isLastStep ? (
                                 <div className="space-y-2">
                                     <Button onClick={handleNext} className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
@@ -742,8 +728,18 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 </div>
+                            ) : step > 0 ? (
+                                <div className="flex items-center gap-3">
+                                    <Button variant="outline" onClick={goToPreviousStep} size="lg" className="w-auto px-4">
+                                        <ArrowLeft className="h-4 w-4"/>
+                                    </Button>
+                                    <Button onClick={handleNext} className="flex-1" size="lg">
+                                        Siguiente
+                                        <ArrowRight className="h-4 w-4 ml-2"/>
+                                    </Button>
+                                </div>
                             ) : (
-                                <Button onClick={handleNext} className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
+                                <Button onClick={handleNext} className="w-full" size="lg">
                                     Siguiente
                                     <ArrowRight className="h-4 w-4 ml-2"/>
                                 </Button>
