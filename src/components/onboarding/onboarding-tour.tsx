@@ -54,17 +54,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AvatarDisplay } from '@/components/profile/avatar-creator';
 import { Badge } from '@/components/ui/badge';
-import { 
-    AlertDialog, 
-    AlertDialogAction, 
-    AlertDialogCancel, 
-    AlertDialogContent, 
-    AlertDialogDescription, 
-    AlertDialogFooter, 
-    AlertDialogHeader, 
-    AlertDialogTitle, 
-    AlertDialogTrigger 
-} from '@/components/ui/alert-dialog';
+import { createPortal } from 'react-dom';
 
 
 const introIcons = [
@@ -163,27 +153,64 @@ const InfoPanel = ({ title, description, icon: Icon, onClose }: { title: string;
     );
 };
 
-function ChangeSettingsInfoDialog() {
-    const [isOpen, setIsOpen] = React.useState(false);
-    
-    return (
-        <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-            <AlertDialogTrigger asChild>
-                <Button variant="ghost" className="w-full h-8 text-xs">Quiero cambiar la configuración</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>¡No te preocupes!</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Puedes cambiar todas estas configuraciones más tarde desde tu perfil y en la sección de ajustes de la aplicación.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogAction onClick={() => setIsOpen(false)}>Entendido</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+interface ChangeSettingsInfoModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function ChangeSettingsInfoModal({ isOpen, onClose }: ChangeSettingsInfoModalProps) {
+    const [isBrowser, setIsBrowser] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsBrowser(true);
+    }, []);
+
+    if (!isBrowser) {
+        return null;
+    }
+
+    const modalContent = (
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onClose}
+                >
+                    <motion.div
+                        className="relative w-full max-w-sm rounded-2xl p-6 shadow-2xl bg-background text-foreground"
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-3 right-3 h-8 w-8 rounded-full"
+                            onClick={onClose}
+                        >
+                            <X className="h-5 w-5" />
+                        </Button>
+                        
+                        <h2 className="text-xl font-bold mb-2">¡No te preocupes!</h2>
+                        <p className="text-sm text-muted-foreground mb-6">
+                            Puedes cambiar todas estas configuraciones más tarde desde tu perfil y en la sección de ajustes de la aplicación.
+                        </p>
+                        
+                        <Button onClick={onClose} className="w-full">
+                            Entendido
+                        </Button>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
+
+    return createPortal(modalContent, document.body);
 }
 
 function HelpDialog() {
@@ -206,6 +233,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [isExiting, setIsExiting] = useState(false);
     const [activeExplanation, setActiveExplanation] = useState<string | null>(null);
     const [view, setView] = useState('list');
+    const [isSettingsInfoOpen, setIsSettingsInfoOpen] = useState(false);
     
     useEffect(() => {
         const timer = setTimeout(() => setIsIntro(false), 4000); 
@@ -239,7 +267,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         }
     };
     
-   const SummaryStepContent = () => {
+   const SummaryStepContent = ({ onOpenSettingsInfo }: { onOpenSettingsInfo: () => void; }) => {
         const { user, theme, language, isChatBubbleVisible, saveScannedDocs, weeklySummary } = useApp();
 
         const langMap: Record<Language, string> = {
@@ -293,7 +321,9 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                     </CardContent>
                 </Card>
                  <div className="mt-4">
-                    <ChangeSettingsInfoDialog />
+                    <Button variant="ghost" className="w-full h-8 text-xs" onClick={onOpenSettingsInfo}>
+                        Quiero cambiar la configuración
+                    </Button>
                 </div>
             </div>
         );
@@ -614,7 +644,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             title: "Esta es tu nueva cuenta",
             description: "Un resumen de tu perfil y configuraciones. ¡Todo listo para empezar!",
             items: [],
-            content: SummaryStepContent
+            content: () => <SummaryStepContent onOpenSettingsInfo={() => setIsSettingsInfoOpen(true)} />
         }
     ];
 
@@ -695,6 +725,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     
     return (
         <>
+            <ChangeSettingsInfoModal isOpen={isSettingsInfoOpen} onClose={() => setIsSettingsInfoOpen(false)} />
             <motion.div 
                 className="fixed inset-0 bg-background z-[100] flex flex-col p-6"
                 initial={{ opacity: 1, scale: 1 }}
