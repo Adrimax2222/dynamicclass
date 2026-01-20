@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -48,13 +48,16 @@ import {
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { useApp } from '@/lib/hooks/use-app';
-import type { Theme, Language } from '@/lib/types';
+import type { Theme, Language, Center } from '@/lib/types';
 import { Switch } from '../ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AvatarDisplay } from '@/components/profile/avatar-creator';
 import { Badge } from '@/components/ui/badge';
 import { createPortal } from 'react-dom';
+import { useFirestore, useCollection } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import { Separator } from '@/components/ui/separator';
 
 
 const introIcons = [
@@ -226,6 +229,83 @@ function HelpDialog() {
 }
 
 
+const SummaryStepContent = ({ onOpenSettingsInfo }: { onOpenSettingsInfo: () => void; }) => {
+    const { user, theme, language, isChatBubbleVisible, saveScannedDocs, weeklySummary } = useApp();
+    const firestore = useFirestore();
+
+    const centersCollection = useMemo(() => firestore ? collection(firestore, 'centers') : null, [firestore]);
+    const { data: allCenters = [] } = useCollection<Center>(centersCollection);
+
+    const langMap: Record<Language, string> = {
+        esp: "Español",
+        cat: "Català",
+        eng: "Inglés",
+        mad: "Marroquí",
+    };
+
+    const settings = [
+        { icon: theme === 'dark' ? Moon : Sun, label: "Tema", value: theme === 'dark' ? 'Oscuro' : 'Claro' },
+        { icon: Languages, label: "Idioma", value: langMap[language] },
+        { icon: Sparkles, label: "Burbuja de IA", value: isChatBubbleVisible ? 'Activada' : 'Desactivada' },
+        { icon: Save, label: "Guardar Escaneos", value: saveScannedDocs ? 'Activado' : 'Desactivado' },
+        { icon: MailCheck, label: "Resúmenes Semanales", value: weeklySummary ? 'Activados' : 'Desactivados' },
+    ];
+    
+    if (!user) return null;
+
+    const userCenter = allCenters.find(c => c.code === user.center);
+    const displayCenterName = user.center === 'personal' || user.center === 'default' ? 'Uso Personal' : userCenter?.name || user.center;
+
+    return (
+        <div className="w-full max-w-lg mx-auto">
+            <Card className="shadow-lg border-primary/20 bg-background/90 backdrop-blur-md overflow-hidden">
+                <div className="flex flex-col sm:flex-row">
+                    {/* Left Panel */}
+                    <div className="flex-shrink-0 w-full sm:w-48 bg-muted/50 p-6 flex flex-col items-center justify-center text-center border-b sm:border-b-0 sm:border-r">
+                        <AvatarDisplay user={user} className="w-24 h-24 ring-4 ring-background" />
+                        <h3 className="text-xl font-bold pt-4 truncate w-full">{user.name}</h3>
+                        <p className="text-sm text-muted-foreground truncate w-full">{user.email}</p>
+                    </div>
+
+                    {/* Right Panel */}
+                    <div className="flex-1 p-6 space-y-6">
+                        <div className="text-center sm:text-left">
+                            <p className="text-xs font-semibold text-muted-foreground">CENTRO EDUCATIVO</p>
+                            <p className="font-bold text-lg">{displayCenterName}</p>
+                            {user.course !== 'personal' && user.course !== 'default' && (
+                                <Badge variant="secondary">{`${user.course.toUpperCase()}-${user.className}`}</Badge>
+                            )}
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-3">
+                             <p className="text-xs font-semibold text-muted-foreground text-center sm:text-left">CONFIGURACIÓN</p>
+                            {settings.map(s => {
+                                const SettingIcon = s.icon;
+                                return (
+                                    <div key={s.label} className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-2">
+                                            <SettingIcon className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-muted-foreground">{s.label}</span>
+                                        </div>
+                                        <span className="font-semibold">{s.value}</span>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </div>
+            </Card>
+             <div className="mt-4">
+                <Button variant="ghost" className="w-full h-8 text-xs" onClick={onOpenSettingsInfo}>
+                    Quiero cambiar la configuración
+                </Button>
+            </div>
+        </div>
+    );
+};
+
 export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [step, setStep] = useState(0);
     const [isIntro, setIsIntro] = useState(true);
@@ -267,67 +347,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         }
     };
     
-   const SummaryStepContent = ({ onOpenSettingsInfo }: { onOpenSettingsInfo: () => void; }) => {
-        const { user, theme, language, isChatBubbleVisible, saveScannedDocs, weeklySummary } = useApp();
-
-        const langMap: Record<Language, string> = {
-            esp: "Español",
-            cat: "Català",
-            eng: "Inglés",
-            mad: "Marroquí",
-        };
-
-        const settings = [
-            { icon: theme === 'dark' ? Moon : Sun, label: "Tema", value: theme === 'dark' ? 'Oscuro' : 'Claro' },
-            { icon: Languages, label: "Idioma", value: langMap[language] },
-            { icon: Sparkles, label: "Burbuja de IA", value: isChatBubbleVisible ? 'Activada' : 'Desactivada' },
-            { icon: Save, label: "Guardar Escaneos", value: saveScannedDocs ? 'Activado' : 'Desactivado' },
-            { icon: MailCheck, label: "Resúmenes Semanales", value: weeklySummary ? 'Activados' : 'Desactivados' },
-        ];
-        
-        if (!user) return null;
-
-        return (
-            <div className="w-full max-w-md mx-auto">
-                <Card className="shadow-lg border-primary/20 bg-background/90 backdrop-blur-md">
-                    <CardHeader className="text-center items-center p-4">
-                        <AvatarDisplay user={user} className="w-20 h-20 ring-4 ring-background" />
-                        <CardTitle className="text-xl pt-2">{user.name}</CardTitle>
-                        <CardDescription>{user.email}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0 space-y-3">
-                        <div className="p-3 rounded-lg bg-muted/50 text-center">
-                            <p className="text-xs font-semibold text-muted-foreground">CENTRO EDUCATIVO</p>
-                            <p className="font-bold">{user.center === 'personal' || user.center === 'default' ? 'Uso Personal' : user.center}</p>
-                            {user.course !== 'personal' && user.course !== 'default' && (
-                                <Badge variant="secondary" className="mt-1">{`${user.course.toUpperCase()}-${user.className}`}</Badge>
-                            )}
-                        </div>
-                        <div className="space-y-2">
-                            <p className="text-xs font-semibold text-muted-foreground text-center">CONFIGURACIÓN</p>
-                            {settings.map(s => {
-                                const SettingIcon = s.icon;
-                                return (
-                                    <div key={s.label} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted/50">
-                                        <div className="flex items-center gap-2">
-                                            <SettingIcon className="h-4 w-4 text-muted-foreground" />
-                                            <span>{s.label}</span>
-                                        </div>
-                                        <span className="font-semibold">{s.value}</span>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </CardContent>
-                </Card>
-                 <div className="mt-4">
-                    <Button variant="ghost" className="w-full h-8 text-xs" onClick={onOpenSettingsInfo}>
-                        Quiero cambiar la configuración
-                    </Button>
-                </div>
-            </div>
-        );
-    };
+   
     const steps = [
         {
             icon: School,
