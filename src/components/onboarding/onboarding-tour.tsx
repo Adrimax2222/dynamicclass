@@ -21,6 +21,7 @@ import {
     Vote, 
     Building,
     ArrowRight,
+    ArrowLeft,
     Wand2,
     Target,
     MessageSquare,
@@ -149,6 +150,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [isFinishing, setIsFinishing] = useState(false);
     const [isExiting, setIsExiting] = useState(false);
     const [activeExplanation, setActiveExplanation] = useState<string | null>(null);
+    const [view, setView] = useState('list');
     
     useEffect(() => {
         const timer = setTimeout(() => setIsIntro(false), 4000); 
@@ -172,6 +174,13 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             setTimeout(() => {
                 setIsExiting(true);
             }, 5000);
+        }
+    };
+    
+    const goToPreviousStep = () => {
+        setActiveExplanation(null);
+        if (step > 0) {
+            setStep(step - 1);
         }
     };
     
@@ -242,24 +251,60 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: User, title: "Uso Personal", desc: "Disfruta de la app de forma individual.", explanation: "Si prefieres usar la app por tu cuenta, elige esta opción. Podrás usar todas las herramientas de estudio y organización de forma privada." },
             ],
             content: () => {
+                const item = steps[0].items.find(i => i.title === view);
+                
                 return (
-                    <div className="w-80 space-y-4">
-                        {steps[0].items.map((item) => (
-                           <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-3">
-                               <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
-                                   <item.icon className="h-5 w-5 text-primary" />
-                               </div>
-                               <div className="flex-1 min-w-0">
-                                   <h4 className="font-semibold text-sm text-foreground truncate">{item.title}</h4>
-                                   <p className="text-xs text-muted-foreground">{item.desc}</p>
-                               </div>
-                               <div className="flex-shrink-0">
-                                   <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
-                                       <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                   </Button>
-                               </div>
-                           </div>
-                        ))}
+                    <div className="relative w-80 h-96">
+                        <AnimatePresence>
+                            {view === 'list' && (
+                                <motion.div
+                                    key="list"
+                                    className="absolute inset-0 w-full h-full flex flex-col justify-center items-center space-y-4"
+                                    initial={{ opacity: 0, x: -50 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 50 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    {steps[0].items.map((item) => (
+                                       <button
+                                           key={item.title}
+                                           onClick={() => setView(item.title)}
+                                           className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4 transition-all hover:bg-muted/50 hover:border-primary/50"
+                                       >
+                                           <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                                               <item.icon className="h-5 w-5 text-primary" />
+                                           </div>
+                                           <div className="flex-1 min-w-0">
+                                               <h4 className="font-semibold text-sm text-foreground truncate">{item.title}</h4>
+                                               <p className="text-xs text-muted-foreground">{item.desc}</p>
+                                           </div>
+                                       </button>
+                                    ))}
+                                </motion.div>
+                            )}
+
+                            {view !== 'list' && item && (
+                                <motion.div
+                                    key="info"
+                                    className="absolute inset-0 w-full h-full flex flex-col justify-center items-center"
+                                    initial={{ opacity: 0, x: 50 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -50 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    <div className="w-full p-6 rounded-2xl shadow-2xl bg-background/80 backdrop-blur-lg border border-border/50 text-center flex flex-col items-center justify-center relative">
+                                        <Button size="icon" variant="ghost" className="absolute top-2 right-2 rounded-full h-8 w-8" onClick={() => setView('list')}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                        <div className="w-12 h-12 bg-background/50 rounded-lg flex items-center justify-center mx-auto mb-4 border">
+                                            <item.icon className="h-7 w-7 text-primary" />
+                                        </div>
+                                        <h3 className="font-bold text-lg text-foreground mb-2">{item.title}</h3>
+                                        <p className="text-sm text-muted-foreground">{item.explanation}</p>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 );
             }
@@ -445,7 +490,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 <h4 className="font-semibold truncate text-sm">Idioma</h4>
                             </div>
                             <Select value={language} onValueChange={(v: Language) => setLanguage(v)}>
-                                <SelectTrigger className="w-32 z-30 h-9">
+                                <SelectTrigger className="w-32 z-[30] h-9">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -460,7 +505,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             </Button>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="w-full flex items-center gap-4 p-3 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
                                 <Sparkles className="h-5 w-5 text-primary flex-shrink-0"/>
                                 <div className="flex-1 min-w-0">
@@ -624,8 +669,22 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         initial={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                     >
-                        <header className="flex items-center justify-between h-10">
-                            <motion.div layoutId="onboarding-logo">
+                        <header className="flex items-center h-10">
+                            <AnimatePresence>
+                                {step > 0 && !isFinishing && (
+                                    <motion.div
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -20 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <Button variant="ghost" size="icon" onClick={goToPreviousStep}>
+                                            <ArrowLeft className="h-5 w-5" />
+                                        </Button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                            <motion.div layoutId="onboarding-logo" className={cn(step > 0 && !isFinishing && 'ml-2')}>
                                 <Logo className="h-10 w-10 text-primary" />
                             </motion.div>
                         </header>
