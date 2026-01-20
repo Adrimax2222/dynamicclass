@@ -75,7 +75,7 @@ import {
   writeBatch,
   FieldValue,
 } from "firebase/firestore";
-import type { Note, Announcement, AnnouncementScope, Schedule, Center, AnnouncementType, PollOption, User as AppUser, Timestamp } from "@/lib/types";
+import type { Note, Announcement, AnnouncementScope, Schedule, Center, AnnouncementType, PollOption, User as AppUser, Timestamp, ClassChatMessage } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -101,9 +101,32 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 export default function InfoPage() {
+  const { user } = useApp();
+  const firestore = useFirestore();
+
+  const userClassName = useMemo(() => user ? `${user.course.replace('eso','ESO')}-${user.className}` : null, [user]);
+
+  const chatPath = useMemo(() => {
+    if (!user || !user.organizationId || !userClassName) return null;
+    return `centers/${user.organizationId}/classes/${userClassName}/messages`;
+  }, [user, userClassName]);
+
+  const messagesQuery = useMemoFirebase(() => {
+      if (!chatPath) return null;
+      return query(collection(firestore, chatPath));
+  }, [chatPath, firestore]);
+
+  const { data: messages } = useCollection<ClassChatMessage>(messagesQuery);
+
+  const hasNewMessages = useMemo(() => {
+    if (!messages || !user) return false;
+    return messages.some(msg => msg.authorId !== user.uid && !msg.viewedBy?.includes(user.uid));
+  }, [messages, user]);
+
   return (
     <div className="flex flex-col min-h-full">
       <header className="p-4 sm:p-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
@@ -123,8 +146,9 @@ export default function InfoPage() {
               <TabsTrigger value="announcements">
                 <Building className="h-4 w-4 mr-2" /> Anuncios
               </TabsTrigger>
-              <TabsTrigger value="my-class">
+              <TabsTrigger value="my-class" className="relative">
                 <GraduationCap className="h-4 w-4 mr-2" /> Mi Clase
+                {hasNewMessages && <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-blue-500" />}
               </TabsTrigger>
               <TabsTrigger value="notes">
                 <Notebook className="h-4 w-4 mr-2" /> Anotaciones
@@ -137,7 +161,7 @@ export default function InfoPage() {
               <AnnouncementsTab />
             </TabsContent>
             <TabsContent value="my-class">
-              <MyClassTab />
+              <MyClassTab hasNewMessages={hasNewMessages} />
             </TabsContent>
             <TabsContent value="notes">
               <NotesTab />
@@ -959,7 +983,7 @@ function PollResultsDialog({ announcement, allUsers }: { announcement: Announcem
     )
 }
 
-function MyClassTab() {
+function MyClassTab({ hasNewMessages }: { hasNewMessages: boolean }) {
   return (
     <Tabs defaultValue="chat" className="w-full">
       <TabsList className="grid w-full grid-cols-2">
@@ -967,9 +991,10 @@ function MyClassTab() {
           <GraduationCap className="h-4 w-4 mr-2" />
           Horario
         </TabsTrigger>
-        <TabsTrigger value="chat">
+        <TabsTrigger value="chat" className="relative">
           <MessageSquare className="h-4 w-4 mr-2" />
           Chat de Clase
+          {hasNewMessages && <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-blue-500" />}
         </TabsTrigger>
       </TabsList>
       <TabsContent value="schedule" className="mt-4">
@@ -1141,8 +1166,15 @@ function ClassChatPreview() {
                     <p className="text-sm text-muted-foreground mt-2">Únete a la conversación de tu clase.</p>
                 </div>
             </CardContent>
-            <CardFooter>
-                 <Button asChild className="w-full">
+            <CardFooter className="flex-col items-stretch gap-4">
+                <Alert variant="destructive" className="bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-200 [&>svg]:text-amber-500">
+                    <InfoIcon className="h-4 w-4" />
+                    <AlertTitle className="font-semibold">Sistema Experimental</AlertTitle>
+                    <AlertDescription className="text-xs">
+                        El chat de clase es una función beta y puede contener errores. Úsalo con responsabilidad.
+                    </AlertDescription>
+                </Alert>
+                <Button asChild className="w-full">
                     <Link href="/class-chat">
                         <MessageSquare className="mr-2 h-4 w-4"/>
                         Ir al Chat
