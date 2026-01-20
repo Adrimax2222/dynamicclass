@@ -175,6 +175,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [isExiting, setIsExiting] = useState(false);
     const [activeExplanation, setActiveExplanation] = useState<string | null>(null);
     const [view, setView] = useState('list');
+    const [isHelpOpen, setIsHelpOpen] = useState(false);
     
     useEffect(() => {
         const timer = setTimeout(() => setIsIntro(false), 4000); 
@@ -700,7 +701,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 </motion.div>
                                 <h1 className="text-lg font-bold font-headline">Dynamic Class - Introducción</h1>
                             </div>
-                            <Dialog>
+                            <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
                                 <DialogTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
                                         <HelpCircle className="h-5 w-5" />
@@ -855,3 +856,4 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         </motion.div>
     );
 }
+
