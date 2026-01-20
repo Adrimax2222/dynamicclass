@@ -176,8 +176,9 @@ const InfoPanel = ({ title, description, icon: Icon, onClose }: { title: string;
 };
 
 function HelpDialog() {
+  const [isOpen, setIsOpen] = useState(false);
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
             <HelpCircle className="h-5 w-5" />
@@ -785,7 +786,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             initial={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                         >
-                            <header className="relative z-20 flex items-center justify-between gap-3 h-10">
+                             <header className="relative z-20 flex items-center justify-between gap-3 h-10">
                                 <div className="flex items-center gap-3">
                                     <motion.div layoutId="onboarding-logo">
                                         <Logo className="h-8 w-8 text-primary" />
@@ -827,7 +828,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 <Progress value={((step + 1) / steps.length) * 100} className="h-2 w-full max-w-xs mx-auto" />
                                 
                                 <div className="grid grid-cols-3 gap-3">
-                                    <Button variant="outline" onClick={goToPreviousStep} size="lg" className={cn("col-span-1", step === 0 && 'invisible')}>
+                                     <Button variant="outline" onClick={goToPreviousStep} size="lg" className={cn("col-span-1", step === 0 && 'invisible')}>
                                         <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
                                     </Button>
 
@@ -872,3 +873,4 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         </>
     );
 }
+
