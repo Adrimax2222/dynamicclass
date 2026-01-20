@@ -39,7 +39,8 @@ import {
     X,
     Save,
     Settings2,
-    Languages
+    Languages,
+    Sigma
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -245,13 +246,14 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             content: () => {
                 const activeItem = steps[0].items.find(item => item.title === activeExplanation);
                 return (
-                    <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden">
+                     <div className="relative w-full flex-1 flex overflow-hidden">
                         <motion.div
-                            className="absolute inset-0 flex"
-                            animate={{ x: activeExplanation ? "-100%" : "0%" }}
+                            className="flex w-[200%]"
+                            animate={{ x: activeExplanation ? "-50%" : "0%" }}
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         >
-                            <div className="w-full flex-shrink-0 flex items-center justify-center">
+                            {/* First View: List of options */}
+                            <div className="w-1/2 flex-shrink-0 flex items-center justify-center">
                                 <div className="w-80 space-y-4">
                                     {steps[0].items.map((item) => (
                                         <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-3">
@@ -271,7 +273,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     ))}
                                 </div>
                             </div>
-                            <div className="w-full flex-shrink-0 flex items-center justify-center">
+                            {/* Second View: Explanation Panel */}
+                            <div className="w-1/2 flex-shrink-0 flex items-center justify-center">
                                 {activeItem && (
                                     <div className="w-80 h-auto">
                                         <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
@@ -294,7 +297,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: User, title: "Estudiante", desc: "Participa, aprende y compite.", explanation: "El rol principal. Accede a las herramientas de estudio, participa en clase y compite en los rankings." },
             ],
             content: () => (
-                <div className="relative w-full h-[400px] flex items-center justify-center">
+                <div className="relative w-full h-auto flex items-center justify-center">
                     <div className="w-72 space-y-4">
                     {steps[1].items.map((item) => (
                         <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
@@ -319,13 +322,13 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             items: [
                 { title: 'Pomodoro', icon: Timer, explanation: "Utiliza la técnica Pomodoro para mantener la concentración en bloques de estudio (ej. 25 min) seguidos de descansos cortos." },
                 { title: 'Escáner', icon: ScanLine, explanation: "Digitaliza tus apuntes en papel. Haz una foto, mejora la imagen y guárdala como PDF en tu dispositivo." },
-                { title: 'Calculadora', icon: Calculator, explanation: "Una calculadora científica siempre a mano para resolver problemas complejos sin salir de la app." },
+                { title: 'Calculadora', icon: Sigma, explanation: "Una calculadora científica siempre a mano para resolver problemas complejos sin salir de la app." },
                 { title: 'Música', icon: Music, explanation: "Conéctate a Spotify y controla tu música de estudio favorita directamente desde el Modo Estudio." },
                 { title: 'Calcula Notas', icon: Target, explanation: "Introduce tus notas y sus porcentajes para calcular qué necesitas sacar en el próximo examen para aprobar." },
                 { title: 'Editor Mágico', icon: Wand2, explanation: "Potencia tus apuntes con IA. Pídele que resuma, traduzca, corrija la ortografía o incluso continúe tus textos." },
             ],
             content: () => (
-                <div className="relative w-full h-[400px] flex items-center justify-center">
+                <div className="relative w-full h-auto flex items-center justify-center">
                     <div className="grid grid-cols-3 gap-3 w-72">
                     {steps[2].items.map((tool) => (
                         <div key={tool.title} className="w-full h-full flex flex-col items-center justify-center gap-2 p-2 rounded-lg border bg-background/80 backdrop-blur-sm aspect-square">
@@ -350,7 +353,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             content: () => {
                 const item = steps[3].items[0];
                 return (
-                    <div className="w-full h-[400px] flex items-center justify-center">
+                    <div className="w-full h-auto flex items-center justify-center">
                         <div className="w-full max-w-sm">
                             <div className="w-full p-6 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg text-left">
                                 <h4 className="font-bold text-lg">{item.title}</h4>
@@ -376,7 +379,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: Calendar, title: "Horario Integrado", explanation: "Consulta tus clases: asignatura, hora, profesor y aula. Todo en un mismo lugar y siempre accesible." },
             ],
             content: () => (
-                <div className="relative w-full h-[400px] flex items-center justify-center">
+                <div className="relative w-full h-auto flex items-center justify-center">
                     <div className="w-72 space-y-4">
                         {steps[4].items.map((item) => (
                             <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
@@ -402,7 +405,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: Cat, title: "Avatares", explanation: "Usa tus trofeos para desbloquear iconos y avatares exclusivos para personalizar tu foto de perfil y destacar en la comunidad." },
             ],
             content: () => (
-                <div className="relative w-full h-[400px] flex items-center justify-center">
+                <div className="relative w-full h-auto flex items-center justify-center">
                     <div className="grid grid-cols-2 gap-4 w-72">
                     {steps[5].items.map((item) => (
                     <div key={item.title} className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30">
