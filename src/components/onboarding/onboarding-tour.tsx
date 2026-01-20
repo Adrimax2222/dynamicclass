@@ -669,10 +669,15 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         initial={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                     >
-                        <header className="flex items-center h-10">
-                            <motion.div layoutId="onboarding-logo">
+                         <header className="flex items-center justify-center h-10 relative">
+                            <motion.div layoutId="onboarding-logo" className="absolute left-1/2 -translate-x-1/2">
                                 <Logo className="h-10 w-10 text-primary" />
                             </motion.div>
+                             {step > 0 && (
+                                <Button variant="ghost" size="icon" className="absolute left-0" onClick={goToPreviousStep}>
+                                    <ArrowLeft />
+                                </Button>
+                            )}
                         </header>
 
                         <div className="flex-1 flex flex-col justify-center text-center">
@@ -729,13 +734,13 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     </AlertDialog>
                                 </div>
                             ) : step > 0 ? (
-                                <div className="flex items-center gap-3">
-                                    <Button variant="outline" onClick={goToPreviousStep} size="lg" className="w-auto px-4">
-                                        <ArrowLeft className="h-4 w-4"/>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <Button variant="outline" onClick={goToPreviousStep} size="lg" className="col-span-2">
+                                        <ArrowLeft className="mr-2 h-4 w-4" />
+                                        Atrás
                                     </Button>
-                                    <Button onClick={handleNext} className="flex-1" size="lg">
+                                    <Button onClick={handleNext} size="lg" className="col-span-1">
                                         Siguiente
-                                        <ArrowRight className="h-4 w-4 ml-2"/>
                                     </Button>
                                 </div>
                             ) : (
