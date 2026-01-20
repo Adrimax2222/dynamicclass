@@ -44,9 +44,6 @@ import {
     Sigma,
     UserCheck,
     HelpCircle,
-    Globe,
-    FileText,
-    Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -263,7 +260,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         if (!user) return null;
 
         return (
-            <div className="w-full max-w-sm mx-auto">
+            <div className="w-full max-w-md mx-auto">
                 <Card className="shadow-lg border-primary/20 bg-background/90 backdrop-blur-md">
                     <CardHeader className="text-center items-center p-4">
                         <AvatarDisplay user={user} className="w-20 h-20 ring-4 ring-background" />
@@ -295,6 +292,9 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         </div>
                     </CardContent>
                 </Card>
+                 <div className="mt-4">
+                    <ChangeSettingsInfoDialog />
+                </div>
             </div>
         );
     };
@@ -527,7 +527,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 const ThemeIcon = theme === 'dark' ? Moon : Sun;
                 
                 return (
-                     <div className="w-full max-w-md mx-auto space-y-3">
+                     <div className="w-full max-w-lg mx-auto space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div
                                 onClick={() => {
@@ -551,13 +551,13 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     <h4 className="font-semibold text-sm">Idioma</h4>
                                 </div>
                                 <Select value={language} onValueChange={(v: Language) => setLanguage(v)}>
-                                    <SelectTrigger className="w-32 z-[30] h-9">
+                                    <SelectTrigger className="w-auto z-[30] h-9">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="esp">ESP - Español</SelectItem>
-                                        <SelectItem value="cat">CAT - Català</SelectItem>
-                                        <SelectItem value="eng">ENG - Inglés</SelectItem>
+                                        <SelectItem value="esp">Español</SelectItem>
+                                        <SelectItem value="cat">Català</SelectItem>
+                                        <SelectItem value="eng">Inglés</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => { e.stopPropagation(); handleShowInfo("Idioma de la Aplicación")}}>
@@ -695,7 +695,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     
     return (
         <>
-            <HelpDialog/>
             <motion.div 
                 className="fixed inset-0 bg-background z-[100] flex flex-col p-6"
                 initial={{ opacity: 1, scale: 1 }}
@@ -772,7 +771,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 <Progress value={((step + 1) / steps.length) * 100} className="h-2 w-full max-w-xs mx-auto" />
                                 
                                 <div className="grid grid-cols-3 gap-3">
-                                     <Button variant="outline" onClick={goToPreviousStep} size="lg" className={cn("col-span-1", step === 0 && 'invisible')}>
+                                    <Button variant="outline" onClick={goToPreviousStep} size="lg" className={cn("col-span-1", step === 0 && 'invisible')}>
                                         <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
                                     </Button>
 
@@ -781,7 +780,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                             <Button onClick={handleNext} className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
                                                 Comenzar a Explorar
                                             </Button>
-                                            <ChangeSettingsInfoDialog />
                                         </div>
                                     ) : (
                                         <Button onClick={handleNext} size="lg" className="col-span-2">
