@@ -855,4 +855,3 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         </motion.div>
     );
 }
-
