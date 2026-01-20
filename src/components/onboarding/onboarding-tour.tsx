@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -186,27 +187,27 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         switch (stepIndex) {
             case 1:
                 desktopClass = {
-                    "Admin Global":    "sm:top-0 sm:left-0 sm:translate-x-0 sm:translate-y-0",
-                    "Admin de Centro": "sm:bottom-0 sm:right-0 sm:translate-x-0 sm:translate-y-0",
-                    "Admin de Clase":  "sm:top-0 sm:right-0 sm:translate-x-0 sm:translate-y-0",
-                    "Estudiante":      "sm:bottom-0 sm:left-0 sm:translate-x-0 sm:translate-y-0",
+                    "Admin Global":    "sm:top-0 sm:left-0",
+                    "Admin de Centro": "sm:bottom-0 sm:right-0",
+                    "Admin de Clase":  "sm:top-0 sm:right-0",
+                    "Estudiante":      "sm:bottom-0 sm:left-0",
                 }[title] || "";
                 break;
             case 2:
                 desktopClass = {
-                    'Pomodoro':        "sm:top-0 sm:left-0 sm:translate-x-0 sm:translate-y-0",
-                    'Escáner':         "sm:top-0 sm:right-0 sm:translate-x-0 sm:translate-y-0",
-                    'Calculadora':     "sm:top-1/2 sm:left-0 sm:-translate-y-1/2 sm:translate-x-0",
-                    'Música':          "sm:top-1/2 sm:right-0 sm:-translate-y-1/2 sm:translate-x-0",
-                    'Calcula Notas':   "sm:bottom-0 sm:left-0 sm:translate-x-0 sm:translate-y-0",
-                    'Editor Mágico':   "sm:bottom-0 sm:right-0 sm:translate-x-0 sm:translate-y-0",
+                    'Pomodoro':        "sm:top-0 sm:left-0",
+                    'Escáner':         "sm:top-0 sm:right-0",
+                    'Calculadora':     "sm:top-1/2 sm:left-0 sm:-translate-y-1/2",
+                    'Música':          "sm:top-1/2 sm:right-0 sm:-translate-y-1/2",
+                    'Calcula Notas':   "sm:bottom-0 sm:left-0",
+                    'Editor Mágico':   "sm:bottom-0 sm:right-0",
                 }[title] || "";
                 break;
             case 4:
                  desktopClass = {
                     "Chat de Clase":       "sm:top-1/2 sm:-translate-y-1/2 sm:right-full sm:mr-8",
-                    "Anuncios y Encuestas":"sm:bottom-0 sm:left-1/2 sm:-translate-x-1/2 sm:translate-y-0",
-                    "Horario Integrado":   "sm:top-0 sm:left-1/2 sm:-translate-x-1/2 sm:translate-y-0",
+                    "Anuncios y Encuestas":"sm:bottom-0 sm:left-1/2 sm:-translate-x-1/2",
+                    "Horario Integrado":   "sm:top-0 sm:left-1/2 sm:-translate-x-1/2",
                 }[title] || "";
                 break;
             case 5:
@@ -228,7 +229,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 break;
         }
     
-        return cn("sm:w-72", mobileClass, desktopClass);
+        return cn("sm:w-72", mobileClass, desktopClass.includes('sm:') ? 'sm:translate-x-0 sm:translate-y-0' : '', desktopClass);
     };
 
     const steps = [
@@ -244,13 +245,12 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             content: () => {
                 const activeItem = steps[0].items.find(item => item.title === activeExplanation);
                 return (
-                    <div className="relative w-full flex-1 flex items-center justify-center">
+                    <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden">
                         <motion.div
                             className="absolute inset-0 flex"
                             animate={{ x: activeExplanation ? "-100%" : "0%" }}
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         >
-                            {/* View 1: List of buttons */}
                             <div className="w-full flex-shrink-0 flex items-center justify-center">
                                 <div className="w-80 space-y-4">
                                     {steps[0].items.map((item) => (
@@ -271,7 +271,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     ))}
                                 </div>
                             </div>
-                            {/* View 2: Detail panel */}
                             <div className="w-full flex-shrink-0 flex items-center justify-center">
                                 {activeItem && (
                                     <div className="w-80 h-auto">
@@ -295,19 +294,21 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: User, title: "Estudiante", desc: "Participa, aprende y compite.", explanation: "El rol principal. Accede a las herramientas de estudio, participa en clase y compite en los rankings." },
             ],
             content: () => (
-                <div className="w-72 space-y-4">
-                {steps[1].items.map((item) => (
-                    <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
-                        <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
-                        <div className='flex-1 min-w-0'>
-                            <h4 className="font-semibold text-sm text-foreground truncate">{item.title}</h4>
-                            <p className="text-xs text-muted-foreground">{item.desc}</p>
+                <div className="relative w-full h-[400px] flex items-center justify-center">
+                    <div className="w-72 space-y-4">
+                    {steps[1].items.map((item) => (
+                        <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
+                            <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
+                            <div className='flex-1 min-w-0'>
+                                <h4 className="font-semibold text-sm text-foreground truncate">{item.title}</h4>
+                                <p className="text-xs text-muted-foreground">{item.desc}</p>
+                            </div>
+                            <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
+                                <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                            </Button>
                         </div>
-                        <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
-                             <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                        </Button>
+                    ))}
                     </div>
-                ))}
                 </div>
             )
         },
@@ -324,18 +325,20 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { title: 'Editor Mágico', icon: Wand2, explanation: "Potencia tus apuntes con IA. Pídele que resuma, traduzca, corrija la ortografía o incluso continúe tus textos." },
             ],
             content: () => (
-                <div className="grid grid-cols-3 gap-3 w-72">
-                {steps[2].items.map((tool) => (
-                    <div key={tool.title} className="w-full h-full flex flex-col items-center justify-center gap-2 p-2 rounded-lg border bg-background/80 backdrop-blur-sm aspect-square">
-                        <div className="p-2 bg-primary/10 rounded-lg"> <tool.icon className="h-6 w-6 text-primary"/> </div>
-                        <div className="flex items-center gap-1">
-                            <span className="text-xs font-semibold leading-tight text-center">{tool.title}</span>
-                            <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={() => handleShowInfo(tool.title)}>
-                                <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                            </Button>
+                <div className="relative w-full h-[400px] flex items-center justify-center">
+                    <div className="grid grid-cols-3 gap-3 w-72">
+                    {steps[2].items.map((tool) => (
+                        <div key={tool.title} className="w-full h-full flex flex-col items-center justify-center gap-2 p-2 rounded-lg border bg-background/80 backdrop-blur-sm aspect-square">
+                            <div className="p-2 bg-primary/10 rounded-lg"> <tool.icon className="h-6 w-6 text-primary"/> </div>
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs font-semibold leading-tight text-center">{tool.title}</span>
+                                <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={() => handleShowInfo(tool.title)}>
+                                    <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                </Button>
+                            </div>
                         </div>
+                    ))}
                     </div>
-                ))}
                 </div>
             )
         },
@@ -373,16 +376,18 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: Calendar, title: "Horario Integrado", explanation: "Consulta tus clases: asignatura, hora, profesor y aula. Todo en un mismo lugar y siempre accesible." },
             ],
             content: () => (
-                 <div className="w-72 space-y-4">
-                    {steps[4].items.map((item) => (
-                        <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
-                            <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
-                            <h4 className="flex-1 font-semibold text-sm text-foreground">{item.title}</h4>
-                            <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
-                                <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                            </Button>
-                        </div>
-                    ))}
+                <div className="relative w-full h-[400px] flex items-center justify-center">
+                    <div className="w-72 space-y-4">
+                        {steps[4].items.map((item) => (
+                            <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
+                                <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
+                                <h4 className="flex-1 font-semibold text-sm text-foreground">{item.title}</h4>
+                                <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
+                                    <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )
         },
@@ -397,18 +402,20 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: Cat, title: "Avatares", explanation: "Usa tus trofeos para desbloquear iconos y avatares exclusivos para personalizar tu foto de perfil y destacar en la comunidad." },
             ],
             content: () => (
-                <div className="grid grid-cols-2 gap-4 w-72">
-                {steps[5].items.map((item) => (
-                   <div key={item.title} className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30">
-                        <item.icon className="h-8 w-8 text-amber-500"/>
-                        <div className="flex items-center gap-1">
-                            <span className="font-bold text-sm text-center">{item.title}</span>
-                            <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={() => handleShowInfo(item.title)}>
-                                <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                            </Button>
-                        </div>
-                   </div>
-                ))}
+                <div className="relative w-full h-[400px] flex items-center justify-center">
+                    <div className="grid grid-cols-2 gap-4 w-72">
+                    {steps[5].items.map((item) => (
+                    <div key={item.title} className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30">
+                            <item.icon className="h-8 w-8 text-amber-500"/>
+                            <div className="flex items-center gap-1">
+                                <span className="font-bold text-sm text-center">{item.title}</span>
+                                <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={() => handleShowInfo(item.title)}>
+                                    <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                </Button>
+                            </div>
+                    </div>
+                    ))}
+                    </div>
                 </div>
             )
         },
@@ -434,7 +441,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 const ThemeIcon = theme === 'dark' ? Moon : Sun;
                 
                 return (
-                     <div className="w-full max-w-sm space-y-4">
+                     <div className="w-full max-w-xl space-y-4">
                         <div
                             onClick={() => {
                                 const newTheme = theme === 'dark' ? 'light' : 'dark';
@@ -447,7 +454,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 <h4 className="font-semibold truncate">Tema {theme === 'dark' ? 'Oscuro' : 'Claro'}</h4>
                                 <p className="text-sm text-muted-foreground">Personaliza la apariencia de la app.</p>
                             </div>
-                            <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Tema de la Aplicación")}}>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Tema de la Aplicación")}}>
                                  <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
                             </Button>
                         </div>
@@ -474,28 +481,34 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             </Button>
                         </div>
 
-                        <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
-                            <Sparkles className="h-6 w-6 text-primary flex-shrink-0"/>
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold truncate">Burbuja de IA</h4>
-                                <p className="text-sm text-muted-foreground">Acceso rápido a ADRIMAX AI.</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
+                                <Sparkles className="h-6 w-6 text-primary flex-shrink-0"/>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-semibold truncate">Burbuja de IA</h4>
+                                    <p className="text-sm text-muted-foreground">Acceso rápido a ADRIMAX AI.</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Switch checked={isChatBubbleVisible} onCheckedChange={setIsChatBubbleVisible} />
+                                    <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Burbuja de IA")}}>
+                                        <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                    </Button>
+                                </div>
                             </div>
-                            <Switch checked={isChatBubbleVisible} onCheckedChange={setIsChatBubbleVisible} />
-                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => handleShowInfo("Burbuja de IA")}>
-                                 <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                            </Button>
-                        </div>
-                        
-                        <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
-                            <Save className="h-6 w-6 text-primary flex-shrink-0"/>
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold truncate">Guardar Escaneos</h4>
-                                <p className="text-sm text-muted-foreground">Almacena documentos en el historial.</p>
+                            
+                            <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
+                                <Save className="h-6 w-6 text-primary flex-shrink-0"/>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-semibold truncate">Guardar Escaneos</h4>
+                                    <p className="text-sm text-muted-foreground">Almacena documentos.</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Switch checked={saveScannedDocs} onCheckedChange={setSaveScannedDocs} />
+                                    <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Guardar Escaneos")}}>
+                                        <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                    </Button>
+                                </div>
                             </div>
-                            <Switch checked={saveScannedDocs} onCheckedChange={setSaveScannedDocs} />
-                             <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => handleShowInfo("Guardar Escaneos")}>
-                                 <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                            </Button>
                         </div>
 
                         <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
@@ -504,10 +517,12 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 <h4 className="font-semibold truncate">Resúmenes Semanales</h4>
                                 <p className="text-sm text-muted-foreground">Recibe informes en tu correo.</p>
                             </div>
-                            <Switch checked={weeklySummary} onCheckedChange={setWeeklySummary} />
-                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.preventDefault(); e.stopPropagation(); handleShowInfo("Resúmenes Semanales")}}>
-                                 <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Switch checked={weeklySummary} onCheckedChange={setWeeklySummary} />
+                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Resúmenes Semanales")}}>
+                                    <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                </Button>
+                            </div>
                         </div>
 
                     </div>
@@ -698,4 +713,3 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         </motion.div>
     );
 }
-
