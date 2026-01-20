@@ -61,7 +61,7 @@ const introIcons = [
 const InfoPanel = ({ title, description, icon: Icon, onClose }: { title: string; description:string; icon: React.ElementType; onClose: () => void; }) => {
     return (
         <motion.div
-            className="w-full h-full p-6 rounded-2xl shadow-2xl bg-background/80 backdrop-blur-lg border border-border/50 text-center flex flex-col items-center justify-center relative"
+            className="w-full p-6 rounded-2xl shadow-2xl bg-background/80 backdrop-blur-lg border border-border/50 text-center flex flex-col items-center justify-center relative"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
@@ -179,34 +179,34 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     };
     
     const getPositionClass = (title: string, stepIndex: number): string => {
-        const mobileClass = "top-4 left-1/2 -translate-x-1/2 w-64"; 
+        const mobileClass = "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80"; 
         
         let desktopClass = "";
         
         switch (stepIndex) {
             case 1:
                 desktopClass = {
-                    "Admin Global":    "sm:top-0 sm:left-0",
-                    "Admin de Centro": "sm:bottom-0 sm:right-0",
-                    "Admin de Clase":  "sm:top-0 sm:right-0",
-                    "Estudiante":      "sm:bottom-0 sm:left-0",
+                    "Admin Global":    "sm:top-0 sm:left-0 sm:translate-x-0 sm:translate-y-0",
+                    "Admin de Centro": "sm:bottom-0 sm:right-0 sm:translate-x-0 sm:translate-y-0",
+                    "Admin de Clase":  "sm:top-0 sm:right-0 sm:translate-x-0 sm:translate-y-0",
+                    "Estudiante":      "sm:bottom-0 sm:left-0 sm:translate-x-0 sm:translate-y-0",
                 }[title] || "";
                 break;
             case 2:
                 desktopClass = {
-                    'Pomodoro':        "sm:top-0 sm:left-0",
-                    'Escáner':         "sm:top-0 sm:right-0",
-                    'Calculadora':     "sm:top-1/2 sm:left-0 sm:-translate-y-1/2",
-                    'Música':          "sm:top-1/2 sm:right-0 sm:-translate-y-1/2",
-                    'Calcula Notas':   "sm:bottom-0 sm:left-0",
-                    'Editor Mágico':   "sm:bottom-0 sm:right-0",
+                    'Pomodoro':        "sm:top-0 sm:left-0 sm:translate-x-0 sm:translate-y-0",
+                    'Escáner':         "sm:top-0 sm:right-0 sm:translate-x-0 sm:translate-y-0",
+                    'Calculadora':     "sm:top-1/2 sm:left-0 sm:-translate-y-1/2 sm:translate-x-0",
+                    'Música':          "sm:top-1/2 sm:right-0 sm:-translate-y-1/2 sm:translate-x-0",
+                    'Calcula Notas':   "sm:bottom-0 sm:left-0 sm:translate-x-0 sm:translate-y-0",
+                    'Editor Mágico':   "sm:bottom-0 sm:right-0 sm:translate-x-0 sm:translate-y-0",
                 }[title] || "";
                 break;
             case 4:
                  desktopClass = {
                     "Chat de Clase":       "sm:top-1/2 sm:-translate-y-1/2 sm:right-full sm:mr-8",
-                    "Anuncios y Encuestas":"sm:bottom-0 sm:left-1/2 sm:-translate-x-1/2",
-                    "Horario Integrado":   "sm:top-0 sm:left-1/2 sm:-translate-x-1/2",
+                    "Anuncios y Encuestas":"sm:bottom-0 sm:left-1/2 sm:-translate-x-1/2 sm:translate-y-0",
+                    "Horario Integrado":   "sm:top-0 sm:left-1/2 sm:-translate-x-1/2 sm:translate-y-0",
                 }[title] || "";
                 break;
             case 5:
@@ -228,7 +228,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 break;
         }
     
-        return cn("sm:w-auto sm:max-w-xs", mobileClass, desktopClass);
+        return cn("sm:w-72", mobileClass, desktopClass);
     };
 
     const steps = [
@@ -299,12 +299,12 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 {steps[1].items.map((item) => (
                     <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
                         <div className="p-2 bg-primary/10 rounded-lg"> <item.icon className="h-5 w-5 text-primary" /> </div>
-                        <div className='flex-1'>
-                            <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
+                        <div className='flex-1 min-w-0'>
+                            <h4 className="font-semibold text-sm text-foreground truncate">{item.title}</h4>
                             <p className="text-xs text-muted-foreground">{item.desc}</p>
                         </div>
                         <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
-                            <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                             <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
                         </Button>
                     </div>
                 ))}
@@ -443,8 +443,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
                         >
                             <ThemeIcon className="h-6 w-6 text-primary flex-shrink-0"/>
-                            <div className='flex-1'>
-                                <h4 className="font-semibold">Tema {theme === 'dark' ? 'Oscuro' : 'Claro'}</h4>
+                            <div className='flex-1 min-w-0'>
+                                <h4 className="font-semibold truncate">Tema {theme === 'dark' ? 'Oscuro' : 'Claro'}</h4>
                                 <p className="text-sm text-muted-foreground">Personaliza la apariencia de la app.</p>
                             </div>
                             <Button size="icon" variant="ghost" className="ml-auto h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Tema de la Aplicación")}}>
@@ -454,8 +454,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
 
                          <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
                             <Languages className="h-6 w-6 text-primary flex-shrink-0"/>
-                            <div className="flex-1">
-                                <h4 className="font-semibold">Idioma</h4>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold truncate">Idioma</h4>
                                 <p className="text-sm text-muted-foreground">Selecciona el idioma de la app.</p>
                             </div>
                             <Select value={language} onValueChange={(v: Language) => setLanguage(v)}>
@@ -476,8 +476,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
 
                         <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
                             <Sparkles className="h-6 w-6 text-primary flex-shrink-0"/>
-                            <div className="flex-1">
-                                <h4 className="font-semibold">Burbuja de IA</h4>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold truncate">Burbuja de IA</h4>
                                 <p className="text-sm text-muted-foreground">Acceso rápido a ADRIMAX AI.</p>
                             </div>
                             <Switch checked={isChatBubbleVisible} onCheckedChange={setIsChatBubbleVisible} />
@@ -488,8 +488,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         
                         <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
                             <Save className="h-6 w-6 text-primary flex-shrink-0"/>
-                            <div className="flex-1">
-                                <h4 className="font-semibold">Guardar Escaneos</h4>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold truncate">Guardar Escaneos</h4>
                                 <p className="text-sm text-muted-foreground">Almacena documentos en el historial.</p>
                             </div>
                             <Switch checked={saveScannedDocs} onCheckedChange={setSaveScannedDocs} />
@@ -500,8 +500,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
 
                         <div className="w-full flex items-center gap-4 p-4 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
                             <MailCheck className="h-6 w-6 text-primary flex-shrink-0"/>
-                            <div className="flex-1">
-                                <h4 className="font-semibold">Resúmenes Semanales</h4>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold truncate">Resúmenes Semanales</h4>
                                 <p className="text-sm text-muted-foreground">Recibe informes en tu correo.</p>
                             </div>
                             <Switch checked={weeklySummary} onCheckedChange={setWeeklySummary} />
@@ -662,7 +662,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                                     {activeExplanation && activeItem && (
                                                         <motion.div
                                                             key={activeItem.title}
-                                                            className={cn("absolute z-20", getPositionClass(activeItem.title, step))}
+                                                            className={cn("absolute z-20 pointer-events-auto", getPositionClass(activeItem.title, step))}
                                                             initial={{ opacity: 0, scale: 0.8 }}
                                                             animate={{ opacity: 1, scale: 1 }}
                                                             exit={{ opacity: 0, scale: 0.8 }}
@@ -698,3 +698,4 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         </motion.div>
     );
 }
+
