@@ -179,57 +179,56 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     };
 
     const getPositionClass = (title: string, stepIndex: number): string => {
-        // Default for mobile: centered at top
-        const mobileClass = "top-4 left-1/2 -translate-x-1/2"; 
+        const mobileClass = "top-4 left-1/2 -translate-x-1/2 w-64"; 
+        
         let desktopClass = "";
-    
-        // Desktop positions
+        
         switch (stepIndex) {
-            case 1: // "Una estructura colaborativa"
-                switch (title) {
-                    case "Admin Global":    desktopClass = "sm:top-0 sm:left-0"; break;
-                    case "Admin de Centro":   desktopClass = "sm:bottom-0 sm:right-0"; break;
-                    case "Admin de Clase":    desktopClass = "sm:top-0 sm:right-0"; break;
-                    case "Estudiante":      desktopClass = "sm:bottom-0 sm:left-0"; break;
-                }
+            case 1:
+                desktopClass = {
+                    "Admin Global":    "sm:top-0 sm:left-0",
+                    "Admin de Centro": "sm:bottom-0 sm:right-0",
+                    "Admin de Clase":  "sm:top-0 sm:right-0",
+                    "Estudiante":      "sm:bottom-0 sm:left-0",
+                }[title] || "";
                 break;
-            case 2: // "Tu centro de operaciones"
-                switch (title) {
-                    case "Pomodoro":        desktopClass = "sm:top-0 sm:left-0"; break;
-                    case "Escáner":         desktopClass = "sm:top-0 sm:right-0"; break;
-                    case "Calculadora":     desktopClass = "sm:top-1/2 sm:left-0 sm:-translate-y-1/2"; break;
-                    case "Música":          desktopClass = "sm:top-1/2 sm:right-0 sm:-translate-y-1/2"; break;
-                    case "Calcula Notas":   desktopClass = "sm:bottom-0 sm:left-0"; break;
-                    case "Editor Mágico":   desktopClass = "sm:bottom-0 sm:right-0"; break;
-                }
+            case 2:
+                desktopClass = {
+                    'Pomodoro':        "sm:top-0 sm:left-0",
+                    'Escáner':         "sm:top-0 sm:right-0",
+                    'Calculadora':     "sm:top-1/2 sm:left-0 sm:-translate-y-1/2",
+                    'Música':          "sm:top-1/2 sm:right-0 sm:-translate-y-1/2",
+                    'Calcula Notas':   "sm:bottom-0 sm:left-0",
+                    'Editor Mágico':   "sm:bottom-0 sm:right-0",
+                }[title] || "";
                 break;
-            case 4: // "Interactúa con tu clase"
-                 switch (title) {
-                    case "Chat de Clase":       desktopClass = "sm:top-1/2 sm:-translate-y-1/2 sm:right-full sm:mr-8"; break;
-                    case "Anuncios y Encuestas":desktopClass = "sm:bottom-0 sm:left-1/2 sm:-translate-x-1/2"; break;
-                    case "Horario Integrado":   desktopClass = "sm:top-0 sm:left-1/2 sm:-translate-x-1/2"; break;
-                }
+            case 4:
+                 desktopClass = {
+                    "Chat de Clase":       "sm:top-1/2 sm:-translate-y-1/2 sm:right-full sm:mr-8",
+                    "Anuncios y Encuestas":"sm:bottom-0 sm:left-1/2 sm:-translate-x-1/2",
+                    "Horario Integrado":   "sm:top-0 sm:left-1/2 sm:-translate-x-1/2",
+                }[title] || "";
                 break;
-            case 5: // "Compite y gana recompensas"
-                 switch (title) {
-                    case "Trofeos":         desktopClass = "sm:top-0 sm:right-full sm:mr-4"; break;
-                    case "Racha Actual":    desktopClass = "sm:top-0 sm:left-full sm:ml-4"; break;
-                    case "Tarjetas Regalo": desktopClass = "sm:bottom-0 sm:right-full sm:mr-4"; break;
-                    case "Avatares":        desktopClass = "sm:bottom-0 sm:left-full sm:ml-4"; break;
-                }
+            case 5:
+                 desktopClass = {
+                    "Trofeos":         "sm:top-0 sm:right-full sm:mr-4",
+                    "Racha Actual":    "sm:top-0 sm:left-full sm:ml-4",
+                    "Tarjetas Regalo": "sm:bottom-0 sm:right-full sm:mr-4",
+                    "Avatares":        "sm:bottom-0 sm:left-full sm:ml-4",
+                }[title] || "";
                 break;
-             case 6: // "Configuración rápida"
-                 switch (title) {
-                    case "Tema de la Aplicación": desktopClass = "sm:top-0 sm:left-full sm:ml-4"; break;
-                    case "Idioma de la Aplicación": desktopClass = "sm:top-1/3 sm:left-full sm:ml-4 sm:-translate-y-1/2"; break;
-                    case "Burbuja de IA":       desktopClass = "sm:top-2/3 sm:left-full sm:ml-4 sm:-translate-y-1/2"; break;
-                    case "Guardar Escaneos":    desktopClass = "sm:bottom-0 sm:left-full sm:ml-4"; break;
-                    case "Resúmenes Semanales": desktopClass = "sm:bottom-1/3 sm:left-full sm:ml-4 sm:translate-y-1/2"; break;
-                }
+             case 6:
+                 desktopClass = {
+                    "Tema de la Aplicación": "sm:top-0 sm:left-full sm:ml-4",
+                    "Idioma de la Aplicación": "sm:top-1/3 sm:left-full sm:ml-4 sm:-translate-y-1/2",
+                    "Burbuja de IA":       "sm:top-2/3 sm:left-full sm:ml-4 sm:-translate-y-1/2",
+                    "Guardar Escaneos":    "sm:bottom-0 sm:left-full sm:ml-4",
+                    "Resúmenes Semanales": "sm:bottom-1/3 sm:left-full sm:ml-4 sm:translate-y-1/2",
+                }[title] || "";
                 break;
         }
     
-        return cn("w-64 sm:w-auto sm:max-w-xs", mobileClass, desktopClass);
+        return cn("sm:w-auto sm:max-w-xs", mobileClass, desktopClass);
     };
 
     const steps = [
@@ -260,8 +259,8 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                                 <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
                                                     <item.icon className="h-5 w-5 text-primary" />
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <h4 className="font-semibold text-sm text-foreground truncate">{item.title}</h4>
+                                                <div>
+                                                    <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
                                                     <p className="text-xs text-muted-foreground">{item.desc}</p>
                                                 </div>
                                             </div>
@@ -275,9 +274,9 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             {/* View 2: Detail panel */}
                             <div className="w-full flex-shrink-0 flex items-center justify-center">
                                 {activeItem && (
-                                     <div className="w-80 h-auto">
+                                        <div className="w-80 h-auto">
                                         <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
-                                     </div>
+                                        </div>
                                 )}
                             </div>
                         </motion.div>
