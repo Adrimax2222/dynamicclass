@@ -167,24 +167,38 @@ const InfoPanel = ({ title, description, icon: Icon, onClose }: { title: string;
 };
 
 function ChangeSettingsInfoDialog() {
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="ghost" className="w-full h-8 text-xs">Quiero cambiar la configuración</Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>¡No te preocupes!</AlertDialogTitle>
-          <AlertDialogDescription>
-            Puedes cambiar todas estas configuraciones más tarde desde tu perfil y en la sección de ajustes de la aplicación.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogAction>Entendido</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
+    const [isOpen, setIsOpen] = React.useState(false);
+    
+    return (
+        <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+            <AlertDialogTrigger asChild>
+                <Button variant="ghost" className="w-full h-8 text-xs">Quiero cambiar la configuración</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>¡No te preocupes!</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Puedes cambiar todas estas configuraciones más tarde desde tu perfil y en la sección de ajustes de la aplicación.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => setIsOpen(false)}>Entendido</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
+function HelpDialog() {
+    const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+    return (
+        <>
+            <HelpModal isOpen={isHelpModalOpen} onClose={() => setIsHelpModalOpen(false)} />
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={() => setIsHelpModalOpen(true)}>
+                <HelpCircle className="h-5 w-5" />
+            </Button>
+        </>
+    );
 }
 
 
@@ -195,7 +209,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [isExiting, setIsExiting] = useState(false);
     const [activeExplanation, setActiveExplanation] = useState<string | null>(null);
     const [view, setView] = useState('list');
-    const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
     
     useEffect(() => {
         const timer = setTimeout(() => setIsIntro(false), 4000); 
@@ -514,7 +527,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 const ThemeIcon = theme === 'dark' ? Moon : Sun;
                 
                 return (
-                     <div className="w-full max-w-sm mx-auto space-y-3">
+                     <div className="w-full max-w-md mx-auto space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div
                                 onClick={() => {
@@ -525,7 +538,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             >
                                 <ThemeIcon className="h-5 w-5 text-primary flex-shrink-0"/>
                                 <div className='flex-1 min-w-0'>
-                                    <h4 className="font-semibold truncate text-sm">Tema {theme === 'dark' ? 'Oscuro' : 'Claro'}</h4>
+                                    <h4 className="font-semibold text-sm">Tema {theme === 'dark' ? 'Oscuro' : 'Claro'}</h4>
                                 </div>
                                 <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Tema de la Aplicación")}}>
                                     <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
@@ -535,7 +548,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                              <div className="w-full flex items-center gap-4 p-3 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
                                 <Languages className="h-5 w-5 text-primary flex-shrink-0"/>
                                 <div className="flex-1 min-w-0">
-                                    <h4 className="font-semibold truncate text-sm">Idioma</h4>
+                                    <h4 className="font-semibold text-sm">Idioma</h4>
                                 </div>
                                 <Select value={language} onValueChange={(v: Language) => setLanguage(v)}>
                                     <SelectTrigger className="w-32 z-[30] h-9">
@@ -545,7 +558,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                         <SelectItem value="esp">ESP - Español</SelectItem>
                                         <SelectItem value="cat">CAT - Català</SelectItem>
                                         <SelectItem value="eng">ENG - Inglés</SelectItem>
-                                        <SelectItem value="mad">MAD - Marroquí</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => { e.stopPropagation(); handleShowInfo("Idioma de la Aplicación")}}>
@@ -557,7 +569,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                          <div className="w-full flex items-center gap-4 p-3 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
                             <Sparkles className="h-5 w-5 text-primary flex-shrink-0"/>
                             <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold truncate text-sm">Burbuja de IA</h4>
+                                <h4 className="font-semibold text-sm">Burbuja de IA</h4>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Switch checked={isChatBubbleVisible} onCheckedChange={setIsChatBubbleVisible} />
@@ -570,7 +582,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                          <div className="w-full flex items-center gap-4 p-3 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
                             <Save className="h-5 w-5 text-primary flex-shrink-0"/>
                             <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold truncate text-sm">Guardar Escaneos</h4>
+                                <h4 className="font-semibold text-sm">Guardar Escaneos</h4>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Switch checked={saveScannedDocs} onCheckedChange={setSaveScannedDocs} />
@@ -583,7 +595,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         <div className="w-full flex items-center gap-4 p-3 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
                             <MailCheck className="h-5 w-5 text-primary flex-shrink-0"/>
                             <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold truncate text-sm">Resúmenes Semanales</h4>
+                                <h4 className="font-semibold text-sm">Resúmenes Semanales</h4>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Switch checked={weeklySummary} onCheckedChange={setWeeklySummary} />
@@ -683,7 +695,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     
     return (
         <>
-            <HelpModal isOpen={isHelpModalOpen} onClose={() => setIsHelpModalOpen(false)} />
+            <HelpDialog/>
             <motion.div 
                 className="fixed inset-0 bg-background z-[100] flex flex-col p-6"
                 initial={{ opacity: 1, scale: 1 }}
@@ -725,9 +737,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     </motion.div>
                                     <h1 className="text-lg font-bold font-headline">Dynamic Class - Introducción</h1>
                                 </div>
-                                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={() => setIsHelpModalOpen(true)}>
-                                    <HelpCircle className="h-5 w-5" />
-                                </Button>
+                                <HelpDialog />
                             </header>
 
                             <div className="flex-1 flex flex-col justify-center text-center">
