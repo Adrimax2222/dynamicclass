@@ -40,7 +40,8 @@ import {
     Save,
     Settings2,
     Languages,
-    Sigma
+    Sigma,
+    UserCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -48,6 +49,12 @@ import { useApp } from '@/lib/hooks/use-app';
 import type { Theme, Language } from '@/lib/types';
 import { Switch } from '../ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { InfoPanel } from './info-panel';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AvatarDisplay } from '@/components/profile/avatar-creator';
+import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 const introIcons = [
     { icon: BookOpenCheck, angle: 0 },
@@ -59,27 +66,6 @@ const introIcons = [
     { icon: Sparkles, angle: 270 },
     { icon: Trophy, angle: 315 },
 ];
-
-const InfoPanel = ({ title, description, icon: Icon, onClose }: { title: string; description:string; icon: React.ElementType; onClose: () => void; }) => {
-    return (
-        <motion.div
-            className="w-full p-6 rounded-2xl shadow-2xl bg-background/80 backdrop-blur-lg border border-border/50 text-center flex flex-col items-center justify-center relative"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-        >
-            <Button size="icon" variant="ghost" className="absolute top-2 right-2 rounded-full h-8 w-8" onClick={onClose}>
-                <X className="h-4 w-4" />
-            </Button>
-            <div className="w-12 h-12 bg-background/50 rounded-lg flex items-center justify-center mx-auto mb-4 border">
-                <Icon className="h-7 w-7 text-primary" />
-            </div>
-            <h3 className="font-bold text-lg text-foreground mb-2">{title}</h3>
-            <p className="text-sm text-muted-foreground">{description}</p>
-        </motion.div>
-    );
-};
 
 
 const BuildingWorkspaceScreen = () => {
@@ -150,6 +136,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [isFinishing, setIsFinishing] = useState(false);
     const [isExiting, setIsExiting] = useState(false);
     const [activeExplanation, setActiveExplanation] = useState<string | null>(null);
+    const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
     
     useEffect(() => {
         const timer = setTimeout(() => setIsIntro(false), 4000); 
@@ -157,15 +144,12 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     }, []);
 
     const handleShowInfo = (title: string) => {
-        if (activeExplanation === title) {
-            setActiveExplanation(null);
-        } else {
-            setActiveExplanation(title);
-        }
+        setActiveExplanation(title);
+        setIsInfoPanelOpen(true);
     };
     
     const handleCloseInfo = () => {
-        setActiveExplanation(null);
+        setIsInfoPanelOpen(false);
     };
 
     const handleNext = () => {
@@ -180,59 +164,62 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         }
     };
     
-    const getPositionClass = (title: string, stepIndex: number): string => {
-        const mobileClass = "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80"; 
-        
-        let desktopClass = "";
-        
-        switch (stepIndex) {
-            case 1:
-                desktopClass = {
-                    "Admin Global":    "sm:top-0 sm:left-0",
-                    "Admin de Centro": "sm:bottom-0 sm:right-0",
-                    "Admin de Clase":  "sm:top-0 sm:right-0",
-                    "Estudiante":      "sm:bottom-0 sm:left-0",
-                }[title] || "";
-                break;
-            case 2:
-                desktopClass = {
-                    'Pomodoro':        "sm:top-0 sm:left-0",
-                    'Escáner':         "sm:top-0 sm:right-0",
-                    'Calculadora':     "sm:top-1/2 sm:left-0 sm:-translate-y-1/2",
-                    'Música':          "sm:top-1/2 sm:right-0 sm:-translate-y-1/2",
-                    'Calcula Notas':   "sm:bottom-0 sm:left-0",
-                    'Editor Mágico':   "sm:bottom-0 sm:right-0",
-                }[title] || "";
-                break;
-            case 4:
-                 desktopClass = {
-                    "Chat de Clase":       "sm:top-1/2 sm:-translate-y-1/2 sm:right-full sm:mr-8",
-                    "Anuncios y Encuestas":"sm:bottom-0 sm:left-1/2 sm:-translate-x-1/2",
-                    "Horario Integrado":   "sm:top-0 sm:left-1/2 sm:-translate-x-1/2",
-                }[title] || "";
-                break;
-            case 5:
-                 desktopClass = {
-                    "Trofeos":         "sm:top-0 sm:right-full sm:mr-4",
-                    "Racha Actual":    "sm:top-0 sm:left-full sm:ml-4",
-                    "Tarjetas Regalo": "sm:bottom-0 sm:right-full sm:mr-4",
-                    "Avatares":        "sm:bottom-0 sm:left-full sm:ml-4",
-                }[title] || "";
-                break;
-             case 6:
-                 desktopClass = {
-                    "Tema de la Aplicación": "sm:top-0 sm:left-full sm:ml-4",
-                    "Idioma de la Aplicación": "sm:top-1/3 sm:left-full sm:ml-4 sm:-translate-y-1/2",
-                    "Burbuja de IA":       "sm:top-2/3 sm:left-full sm:ml-4 sm:-translate-y-1/2",
-                    "Guardar Escaneos":    "sm:bottom-0 sm:left-full sm:ml-4",
-                    "Resúmenes Semanales": "sm:bottom-1/3 sm:left-full sm:ml-4 sm:translate-y-1/2",
-                }[title] || "";
-                break;
-        }
-    
-        return cn("sm:w-72", mobileClass, desktopClass.includes('sm:') ? 'sm:translate-x-0 sm:translate-y-0' : '', desktopClass);
-    };
+   const SummaryStepContent = () => {
+        const { user, theme, language, isChatBubbleVisible, saveScannedDocs, weeklySummary } = useApp();
 
+        const langMap: Record<Language, string> = {
+            esp: "Español",
+            cat: "Català",
+            eng: "Inglés",
+            mad: "Marroquí",
+        };
+
+        const settings = [
+            { icon: theme === 'dark' ? Moon : Sun, label: "Tema", value: theme === 'dark' ? 'Oscuro' : 'Claro' },
+            { icon: Languages, label: "Idioma", value: langMap[language] },
+            { icon: Sparkles, label: "Burbuja de IA", value: isChatBubbleVisible ? 'Activada' : 'Desactivada' },
+            { icon: Save, label: "Guardar Escaneos", value: saveScannedDocs ? 'Activado' : 'Desactivado' },
+            { icon: MailCheck, label: "Resúmenes Semanales", value: weeklySummary ? 'Activados' : 'Desactivados' },
+        ];
+        
+        if (!user) return null;
+
+        return (
+            <div className="w-full max-w-sm mx-auto">
+                <Card className="shadow-lg border-primary/20 bg-background/90 backdrop-blur-md">
+                    <CardHeader className="text-center items-center p-4">
+                        <AvatarDisplay user={user} className="w-20 h-20 ring-4 ring-background" />
+                        <CardTitle className="text-xl pt-2">{user.name}</CardTitle>
+                        <CardDescription>{user.email}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 space-y-3">
+                        <div className="p-3 rounded-lg bg-muted/50 text-center">
+                            <p className="text-xs font-semibold text-muted-foreground">CENTRO EDUCATIVO</p>
+                            <p className="font-bold">{user.center === 'personal' || user.center === 'default' ? 'Uso Personal' : user.center}</p>
+                            {user.course !== 'personal' && user.course !== 'default' && (
+                                <Badge variant="secondary" className="mt-1">{`${user.course.toUpperCase()}-${user.className}`}</Badge>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold text-muted-foreground text-center">CONFIGURACIÓN</p>
+                            {settings.map(s => {
+                                const SettingIcon = s.icon;
+                                return (
+                                    <div key={s.label} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted/50">
+                                        <div className="flex items-center gap-2">
+                                            <SettingIcon className="h-4 w-4 text-muted-foreground" />
+                                            <span>{s.label}</span>
+                                        </div>
+                                        <span className="font-semibold">{s.value}</span>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    };
     const steps = [
         {
             icon: School,
@@ -246,20 +233,31 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             content: () => {
                 const activeItem = steps[0].items.find(item => item.title === activeExplanation);
                 return (
-                     <div className="relative w-full flex-1 flex items-center justify-center">
+                    <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden">
                         <AnimatePresence mode="wait">
-                            {!activeItem ? (
+                            {isInfoPanelOpen && activeItem ? (
+                                <motion.div
+                                    key="info-panel-view"
+                                    className="w-80"
+                                    initial={{ opacity: 0, x: 30 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 30 }}
+                                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                >
+                                    <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
+                                </motion.div>
+                            ) : (
                                 <motion.div
                                     key="options-view"
                                     initial={{ opacity: 0, x: -30 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 30 }}
+                                    exit={{ opacity: 0, x: -30 }}
                                     transition={{ duration: 0.3, ease: 'easeInOut' }}
                                     className="w-80 space-y-4"
                                 >
                                     {steps[0].items.map((item) => (
                                         <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-3">
-                                            <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                                             <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
                                                 <item.icon className="h-5 w-5 text-primary" />
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -274,21 +272,10 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                         </div>
                                     ))}
                                 </motion.div>
-                            ) : (
-                                <motion.div
-                                    key="info-panel-view"
-                                    initial={{ opacity: 0, x: 30 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -30 }}
-                                    transition={{ duration: 0.3, ease: 'easeInOut' }}
-                                    className="w-80"
-                                >
-                                    <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
-                                </motion.div>
                             )}
                         </AnimatePresence>
                     </div>
-                )
+                );
             }
         },
         {
@@ -449,7 +436,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 const ThemeIcon = theme === 'dark' ? Moon : Sun;
                 
                 return (
-                     <div className="w-full max-w-xl space-y-4">
+                     <div className="w-full max-w-sm mx-auto space-y-4">
                         <div
                             onClick={() => {
                                 const newTheme = theme === 'dark' ? 'light' : 'dark';
@@ -484,7 +471,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     <SelectItem value="mad">MAD - Marroquí</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => handleShowInfo("Idioma de la Aplicación")}>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => { e.stopPropagation(); handleShowInfo("Idioma de la Aplicación")}}>
                                  <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
                             </Button>
                         </div>
@@ -494,7 +481,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 <Sparkles className="h-6 w-6 text-primary flex-shrink-0"/>
                                 <div className="flex-1 min-w-0">
                                     <h4 className="font-semibold truncate">Burbuja de IA</h4>
-                                    <p className="text-sm text-muted-foreground">Acceso rápido a ADRIMAX AI.</p>
+                                    <p className="text-sm text-muted-foreground">Acceso rápido.</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Switch checked={isChatBubbleVisible} onCheckedChange={setIsChatBubbleVisible} />
@@ -508,7 +495,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 <Save className="h-6 w-6 text-primary flex-shrink-0"/>
                                 <div className="flex-1 min-w-0">
                                     <h4 className="font-semibold truncate">Guardar Escaneos</h4>
-                                    <p className="text-sm text-muted-foreground">Almacena documentos.</p>
+                                    <p className="text-sm text-muted-foreground">En el historial.</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Switch checked={saveScannedDocs} onCheckedChange={setSaveScannedDocs} />
@@ -536,8 +523,69 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                     </div>
                 )
             }
+        },
+        {
+            icon: UserCheck,
+            title: "Esta es tu nueva cuenta",
+            description: "Un resumen de tu perfil y configuraciones. ¡Todo listo para empezar!",
+            items: [],
+            content: SummaryStepContent
         }
     ];
+
+    const getPositionClass = (title: string, stepIndex: number): string => {
+        const mobileClass = "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80"; 
+        
+        let desktopClass = "";
+        
+        switch (stepIndex) {
+            case 1:
+                desktopClass = {
+                    "Admin Global": "sm:top-0 sm:left-0",
+                    "Admin de Centro": "sm:bottom-0 sm:right-0",
+                    "Admin de Clase": "sm:top-0 sm:right-0",
+                    "Estudiante": "sm:bottom-0 sm:left-0",
+                }[title] || "";
+                break;
+            case 2:
+                desktopClass = {
+                    'Pomodoro': "sm:top-0 sm:left-0",
+                    'Escáner': "sm:top-0 sm:right-0",
+                    'Calculadora': "sm:top-1/2 sm:left-0 sm:-translate-y-1/2",
+                    'Música': "sm:top-1/2 sm:right-0 sm:-translate-y-1/2",
+                    'Calcula Notas': "sm:bottom-0 sm:left-0",
+                    'Editor Mágico': "sm:bottom-0 sm:right-0",
+                }[title] || "";
+                break;
+            case 3:
+            case 4:
+                 desktopClass = {
+                    "Chat de Clase": "sm:top-1/2 sm:-translate-y-1/2 sm:right-full sm:mr-8",
+                    "Anuncios y Encuestas":"sm:bottom-0 sm:left-1/2 sm:-translate-x-1/2",
+                    "Horario Integrado": "sm:top-0 sm:left-1/2 sm:-translate-x-1/2",
+                }[title] || "";
+                break;
+            case 5:
+                 desktopClass = {
+                    "Trofeos": "sm:top-0 sm:right-full sm:mr-4",
+                    "Racha Actual": "sm:top-0 sm:left-full sm:ml-4",
+                    "Tarjetas Regalo": "sm:bottom-0 sm:right-full sm:mr-4",
+                    "Avatares": "sm:bottom-0 sm:left-full sm:ml-4",
+                }[title] || "";
+                break;
+             case 6:
+                 desktopClass = {
+                    "Tema de la Aplicación": "sm:top-0 sm:left-full sm:ml-4",
+                    "Idioma de la Aplicación": "sm:top-1/3 sm:left-full sm:ml-4 sm:-translate-y-1/2",
+                    "Burbuja de IA": "sm:top-2/3 sm:left-full sm:ml-4 sm:-translate-y-1/2",
+                    "Guardar Escaneos": "sm:bottom-0 sm:left-full sm:ml-4",
+                    "Resúmenes Semanales": "sm:bottom-1/3 sm:left-full sm:ml-4 sm:translate-y-1/2",
+                }[title] || "";
+                break;
+        }
+    
+        return cn("sm:w-72", mobileClass, desktopClass.includes('sm:') ? 'sm:translate-x-0 sm:translate-y-0' : '', desktopClass);
+    };
 
     const currentStepDefinition = steps[step];
     const CurrentContent = currentStepDefinition.content;
@@ -710,10 +758,34 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         <footer className="space-y-4">
                             <Progress value={((step + 1) / steps.length) * 100} className="h-2 w-full max-w-xs mx-auto" />
 
-                            <Button onClick={handleNext} className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
-                                {isLastStep ? "Comenzar a Explorar" : "Siguiente"}
-                                {!isLastStep && <ArrowRight className="h-4 w-4 ml-2"/>}
-                            </Button>
+                            {isLastStep ? (
+                                <div className="space-y-2">
+                                    <Button onClick={handleNext} className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
+                                        Comenzar a Explorar
+                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" className="w-full">Quiero cambiar la configuración</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>¡No te preocupes!</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Puedes cambiar todas estas configuraciones más tarde desde tu perfil y en la sección de ajustes de la aplicación.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogAction>Entendido</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            ) : (
+                                <Button onClick={handleNext} className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
+                                    Siguiente
+                                    <ArrowRight className="h-4 w-4 ml-2"/>
+                                </Button>
+                            )}
                         </footer>
                     </motion.div>
                 )}
@@ -721,3 +793,24 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         </motion.div>
     );
 }
+
+const InfoPanel = ({ title, description, icon: Icon, onClose }: { title: string; description:string; icon: React.ElementType; onClose: () => void; }) => {
+    return (
+        <motion.div
+            className="w-full p-6 rounded-2xl shadow-2xl bg-background/80 backdrop-blur-lg border border-border/50 text-center flex flex-col items-center justify-center relative"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+        >
+            <Button size="icon" variant="ghost" className="absolute top-2 right-2 rounded-full h-8 w-8" onClick={onClose}>
+                <X className="h-4 w-4" />
+            </Button>
+            <div className="w-12 h-12 bg-background/50 rounded-lg flex items-center justify-center mx-auto mb-4 border">
+                <Icon className="h-7 w-7 text-primary" />
+            </div>
+            <h3 className="font-bold text-lg text-foreground mb-2">{title}</h3>
+            <p className="text-sm text-muted-foreground">{description}</p>
+        </motion.div>
+    );
+};
