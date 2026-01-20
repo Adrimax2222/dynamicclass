@@ -175,6 +175,88 @@ const InfoPanel = ({ title, description, icon: Icon, onClose }: { title: string;
     );
 };
 
+function HelpDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+            <HelpCircle className="h-5 w-5" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <HelpCircle className="h-5 w-5 text-primary" />
+            Centro de Ayuda
+          </DialogTitle>
+          <DialogDescription>
+            Si tienes algún problema o duda, aquí tienes cómo contactarnos.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 py-4">
+          <a href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <Globe className="h-6 w-6 text-primary" />
+              <div>
+                <p className="font-medium">Web Oficial</p>
+                <p className="text-xs text-muted-foreground">Visita nuestra página.</p>
+              </div>
+            </div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </a>
+          <a href="https://form.jotform.com/230622014643040" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <FileText className="h-6 w-6 text-primary" />
+              <div>
+                <p className="font-medium">Formulario de Asistencia</p>
+                <p className="text-xs text-muted-foreground">Para dudas y problemas técnicos.</p>
+              </div>
+            </div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </a>
+          <div className="flex items-center justify-between rounded-md border p-4">
+            <div className="flex items-center gap-3">
+              <Mail className="h-6 w-6 text-primary" />
+              <div>
+                <p className="font-medium">Correo de Soporte</p>
+                <p className="text-xs text-muted-foreground">info.dynamicclass@gmail.com</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cerrar</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
+function ChangeSettingsInfoDialog() {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="ghost" className="w-full h-8 text-xs">Quiero cambiar la configuración</Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¡No te preocupes!</AlertDialogTitle>
+          <AlertDialogDescription>
+            Puedes cambiar todas estas configuraciones más tarde desde tu perfil y en la sección de ajustes de la aplicación.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogAction>Entendido</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+
 export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [step, setStep] = useState(0);
     const [isIntro, setIsIntro] = useState(true);
@@ -182,7 +264,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     const [isExiting, setIsExiting] = useState(false);
     const [activeExplanation, setActiveExplanation] = useState<string | null>(null);
     const [view, setView] = useState('list');
-    const [isHelpOpen, setIsHelpOpen] = useState(false);
     
     useEffect(() => {
         const timer = setTimeout(() => setIsIntro(false), 4000); 
@@ -711,9 +792,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     </motion.div>
                                     <h1 className="text-lg font-bold font-headline">Dynamic Class - Introducción</h1>
                                 </div>
-                                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={() => setIsHelpOpen(true)}>
-                                    <HelpCircle className="h-5 w-5" />
-                                </Button>
+                                <HelpDialog />
                             </header>
 
                             <div className="flex-1 flex flex-col justify-center text-center">
@@ -757,22 +836,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                             <Button onClick={handleNext} className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
                                                 Comenzar a Explorar
                                             </Button>
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" className="w-full h-8 text-xs">Quiero cambiar la configuración</Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>¡No te preocupes!</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Puedes cambiar todas estas configuraciones más tarde desde tu perfil y en la sección de ajustes de la aplicación.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogAction>Entendido</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
+                                            <ChangeSettingsInfoDialog />
                                         </div>
                                     ) : (
                                         <Button onClick={handleNext} size="lg" className="col-span-2">
@@ -805,56 +869,6 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                     )}
                 </AnimatePresence>
             </motion.div>
-
-            <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <HelpCircle className="h-5 w-5 text-primary" />
-                            Centro de Ayuda
-                        </DialogTitle>
-                        <DialogDescription>
-                            Si tienes algún problema o duda, aquí tienes cómo contactarnos.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3 py-4">
-                        <a href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
-                            <div className="flex items-center gap-3">
-                                <Globe className="h-6 w-6 text-primary" />
-                                <div>
-                                    <p className="font-medium">Web Oficial</p>
-                                    <p className="text-xs text-muted-foreground">Visita nuestra página.</p>
-                                </div>
-                            </div>
-                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                        </a>
-                        <a href="https://form.jotform.com/230622014643040" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
-                            <div className="flex items-center gap-3">
-                                <FileText className="h-6 w-6 text-primary" />
-                                 <div>
-                                    <p className="font-medium">Formulario de Asistencia</p>
-                                    <p className="text-xs text-muted-foreground">Para dudas y problemas técnicos.</p>
-                                </div>
-                            </div>
-                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                        </a>
-                        <div className="flex items-center justify-between rounded-md border p-4">
-                            <div className="flex items-center gap-3">
-                                <Mail className="h-6 w-6 text-primary" />
-                                <div>
-                                    <p className="font-medium">Correo de Soporte</p>
-                                    <p className="text-xs text-muted-foreground">info.dynamicclass@gmail.com</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                     <DialogFooter>
-                        <DialogClose asChild>
-                            <Button variant="outline">Cerrar</Button>
-                        </DialogClose>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </>
     );
 }
