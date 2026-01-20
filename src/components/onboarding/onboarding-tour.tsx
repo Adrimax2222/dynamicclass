@@ -376,7 +376,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { title: 'Editor Mágico', icon: Wand2, explanation: "Potencia tus apuntes con IA. Pídele que resuma, traduzca, corrija la ortografía o incluso continúe tus textos." },
             ],
             content: () => (
-                <div className="relative w-full h-auto flex items-center justify-center">
+                <div className="relative w-full flex items-center justify-center">
                     <div className="grid grid-cols-3 gap-3 w-72">
                     {steps[2].items.map((tool) => (
                         <div key={tool.title} className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-background/80 backdrop-blur-sm aspect-square">
@@ -401,7 +401,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             content: () => {
                 const item = steps[3].items[0];
                 return (
-                    <div className="w-full h-auto flex items-center justify-center">
+                    <div className="w-full flex items-center justify-center">
                         <div className="w-full max-w-sm">
                             <div className="w-full p-6 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg text-left">
                                 <h4 className="font-bold text-lg">{item.title}</h4>
@@ -427,7 +427,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: Calendar, title: "Horario Integrado", explanation: "Consulta tus clases: asignatura, hora, profesor y aula. Todo en un mismo lugar y siempre accesible." },
             ],
             content: () => (
-                <div className="relative w-full h-auto flex items-center justify-center">
+                <div className="relative w-full flex items-center justify-center">
                     <div className="w-72 space-y-4">
                         {steps[4].items.map((item) => (
                             <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
@@ -453,7 +453,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: Cat, title: "Avatares", explanation: "Usa tus trofeos para desbloquear iconos y avatares exclusivos para personalizar tu foto de perfil y destacar en la comunidad." },
             ],
             content: () => (
-                <div className="relative w-full h-auto flex items-center justify-center">
+                <div className="relative w-full flex items-center justify-center">
                     <div className="grid grid-cols-2 gap-4 w-72">
                     {steps[5].items.map((item) => (
                     <div key={item.title} className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-amber-400/10 border-amber-400/30">
@@ -660,200 +660,201 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     if (isIntro) return introScreen;
     
     return (
-        <motion.div 
-            className="fixed inset-0 bg-background z-[100] flex flex-col p-6"
-            initial={{ opacity: 1, scale: 1 }}
-            animate={isExiting ? { opacity: 0, scale: 0.95 } : { opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            onAnimationComplete={() => {
-                if (isExiting) {
-                    onComplete();
-                }
-            }}
-        >
-            <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-            <div className="absolute top-[-4rem] -right-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-            <div className="absolute -bottom-8 left-1/4 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+        <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
+            <motion.div 
+                className="fixed inset-0 bg-background z-[100] flex flex-col p-6"
+                initial={{ opacity: 1, scale: 1 }}
+                animate={isExiting ? { opacity: 0, scale: 0.95 } : { opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                onAnimationComplete={() => {
+                    if (isExiting) {
+                        onComplete();
+                    }
+                }}
+            >
+                <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+                <div className="absolute top-[-4rem] -right-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+                <div className="absolute -bottom-8 left-1/4 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
 
-            <AnimatePresence>
-                {isFinishing ? (
-                     <motion.div
-                        key="finishing"
-                        className="absolute inset-0 flex flex-col items-center justify-center text-center z-20 bg-background"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5, delay: 0.5 }}
-                    >
-                        <h2 className="text-2xl font-bold font-headline mb-6">Configurando tu espacio...</h2>
-                        <BuildingWorkspaceScreen />
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        key="tour-content"
-                        className="relative z-10 flex flex-col flex-1"
-                        initial={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                    >
-                        <header className="relative z-20 flex items-center justify-between gap-3 h-10">
-                            <div className="flex items-center gap-3">
-                                <motion.div layoutId="onboarding-logo">
-                                    <Logo className="h-8 w-8 text-primary" />
-                                </motion.div>
-                                <h1 className="text-lg font-bold font-headline">Dynamic Class - Introducción</h1>
-                            </div>
-                            <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
+                <AnimatePresence>
+                    {isFinishing ? (
+                         <motion.div
+                            key="finishing"
+                            className="absolute inset-0 flex flex-col items-center justify-center text-center z-20 bg-background"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.5, delay: 0.5 }}
+                        >
+                            <h2 className="text-2xl font-bold font-headline mb-6">Configurando tu espacio...</h2>
+                            <BuildingWorkspaceScreen />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="tour-content"
+                            className="relative z-10 flex flex-col flex-1"
+                            initial={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                        >
+                            <header className="relative z-20 flex items-center justify-between gap-3 h-10">
+                                <div className="flex items-center gap-3">
+                                    <motion.div layoutId="onboarding-logo">
+                                        <Logo className="h-8 w-8 text-primary" />
+                                    </motion.div>
+                                    <h1 className="text-lg font-bold font-headline">Dynamic Class - Introducción</h1>
+                                </div>
                                 <DialogTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
                                         <HelpCircle className="h-5 w-5" />
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle className="flex items-center gap-2">
-                                            <HelpCircle className="h-5 w-5 text-primary" />
-                                            Centro de Ayuda
-                                        </DialogTitle>
-                                        <DialogDescription>
-                                            Si tienes algún problema o duda, aquí tienes cómo contactarnos.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="space-y-3 py-4">
-                                        <a href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
-                                            <div className="flex items-center gap-3">
-                                                <Globe className="h-6 w-6 text-primary" />
-                                                <div>
-                                                    <p className="font-medium">Web Oficial</p>
-                                                    <p className="text-xs text-muted-foreground">Visita nuestra página.</p>
-                                                </div>
-                                            </div>
-                                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                        </a>
-                                        <a href="https://form.jotform.com/230622014643040" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
-                                            <div className="flex items-center gap-3">
-                                                <FileText className="h-6 w-6 text-primary" />
-                                                 <div>
-                                                    <p className="font-medium">Formulario de Asistencia</p>
-                                                    <p className="text-xs text-muted-foreground">Para dudas y problemas técnicos.</p>
-                                                </div>
-                                            </div>
-                                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                        </a>
-                                        <div className="flex items-center justify-between rounded-md border p-4">
-                                            <div className="flex items-center gap-3">
-                                                <Mail className="h-6 w-6 text-primary" />
-                                                <div>
-                                                    <p className="font-medium">Correo de Soporte</p>
-                                                    <p className="text-xs text-muted-foreground">info.dynamicclass@gmail.com</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                     <DialogFooter>
-                                        <DialogClose asChild>
-                                            <Button variant="outline">Cerrar</Button>
-                                        </DialogClose>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                        </header>
+                            </header>
 
-                        <div className="flex-1 flex flex-col justify-center text-center">
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={step}
-                                    initial={{ opacity: 0, y: 50 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, x: -50 }}
-                                    transition={{ duration: 0.4, ease: "easeInOut" }}
-                                    className="w-full max-w-xl mx-auto"
-                                >
-                                    <motion.div 
-                                        className="bg-primary/10 p-4 rounded-full w-fit mx-auto mb-6"
-                                        initial={{ scale: 0.5, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                            <div className="flex-1 flex flex-col justify-center text-center">
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={step}
+                                        initial={{ opacity: 0, y: 50 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, x: -50 }}
+                                        transition={{ duration: 0.4, ease: "easeInOut" }}
+                                        className="w-full max-w-xl mx-auto"
                                     >
-                                       <CurrentIcon className="h-8 w-8 text-primary" />
+                                        <motion.div 
+                                            className="bg-primary/10 p-4 rounded-full w-fit mx-auto mb-6"
+                                            initial={{ scale: 0.5, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                                        >
+                                           <CurrentIcon className="h-8 w-8 text-primary" />
+                                        </motion.div>
+                                        <h2 className="text-2xl font-bold font-headline">{steps[step].title}</h2>
+                                        <p className="text-muted-foreground mt-2">{steps[step].description}</p>
+                                        
+                                        <div className="relative w-full max-w-4xl mx-auto min-h-[400px] flex items-center justify-center">
+                                            <CurrentContent />
+                                        </div>
                                     </motion.div>
-                                    <h2 className="text-2xl font-bold font-headline">{steps[step].title}</h2>
-                                    <p className="text-muted-foreground mt-2">{steps[step].description}</p>
-                                    
-                                    <div className="relative w-full max-w-4xl mx-auto min-h-[400px] flex items-center justify-center">
-                                        <CurrentContent />
-                                    </div>
-                                </motion.div>
-                            </AnimatePresence>
-                        </div>
-                        
-                        <footer className="space-y-4">
-                            <Progress value={((step + 1) / steps.length) * 100} className="h-2 w-full max-w-xs mx-auto" />
+                                </AnimatePresence>
+                            </div>
                             
-                            {isLastStep ? (
-                                <div className="space-y-2">
-                                    <Button onClick={handleNext} className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
-                                        Comenzar a Explorar
-                                    </Button>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" className="w-full">Quiero cambiar la configuración</Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>¡No te preocupes!</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Puedes cambiar todas estas configuraciones más tarde desde tu perfil y en la sección de ajustes de la aplicación.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogAction>Entendido</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-3 gap-3">
-                                    <Button variant="outline" onClick={goToPreviousStep} size="lg" className={cn("col-span-1", step === 0 && 'invisible')}>
-                                        <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
-                                    </Button>
-                                    <Button onClick={handleNext} size="lg" className="col-span-2">
-                                        Siguiente
-                                    </Button>
-                                </div>
-                            )}
-                        </footer>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-             <AnimatePresence>
-                {activeExplanation && activeItem && (
-                    <motion.div
-                        key="info-panel-backdrop"
-                        className="absolute inset-0 z-20 flex items-center justify-center bg-background/50 backdrop-blur-sm p-4"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={handleCloseInfo}
-                    >
-                        <motion.div 
-                            key="info-panel-content"
-                            onClick={(e) => e.stopPropagation()}
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                        >
-                            <InfoPanel
-                                title={activeItem.title}
-                                icon={activeItem.icon}
-                                description={activeItem.explanation}
-                                onClose={handleCloseInfo}
-                            />
+                            <footer className="space-y-4">
+                                <Progress value={((step + 1) / steps.length) * 100} className="h-2 w-full max-w-xs mx-auto" />
+                                
+                                {isLastStep ? (
+                                    <div className="space-y-2">
+                                        <Button onClick={handleNext} className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
+                                            Comenzar a Explorar
+                                        </Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" className="w-full">Quiero cambiar la configuración</Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>¡No te preocupes!</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Puedes cambiar todas estas configuraciones más tarde desde tu perfil y en la sección de ajustes de la aplicación.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogAction>Entendido</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <Button variant="outline" onClick={goToPreviousStep} size="lg" className={cn("col-span-1", step === 0 && 'invisible')}>
+                                            <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
+                                        </Button>
+                                        <Button onClick={handleNext} size="lg" className="col-span-2">
+                                            Siguiente
+                                        </Button>
+                                    </div>
+                                )}
+                            </footer>
                         </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                 <AnimatePresence>
+                    {activeExplanation && activeItem && (
+                        <motion.div
+                            key="info-panel-backdrop"
+                            className="absolute inset-0 z-20 flex items-center justify-center bg-background/50 backdrop-blur-sm p-4"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={handleCloseInfo}
+                        >
+                            <motion.div 
+                                key="info-panel-content"
+                                onClick={(e) => e.stopPropagation()}
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.9, opacity: 0 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                            >
+                                <InfoPanel
+                                    title={activeItem.title}
+                                    icon={activeItem.icon}
+                                    description={activeItem.explanation}
+                                    onClose={handleCloseInfo}
+                                />
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </motion.div>
+            
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <HelpCircle className="h-5 w-5 text-primary" />
+                        Centro de Ayuda
+                    </DialogTitle>
+                    <DialogDescription>
+                        Si tienes algún problema o duda, aquí tienes cómo contactarnos.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3 py-4">
+                    <a href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
+                        <div className="flex items-center gap-3">
+                            <Globe className="h-6 w-6 text-primary" />
+                            <div>
+                                <p className="font-medium">Web Oficial</p>
+                                <p className="text-xs text-muted-foreground">Visita nuestra página.</p>
+                            </div>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    </a>
+                    <a href="https://form.jotform.com/230622014643040" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
+                        <div className="flex items-center gap-3">
+                            <FileText className="h-6 w-6 text-primary" />
+                             <div>
+                                <p className="font-medium">Formulario de Asistencia</p>
+                                <p className="text-xs text-muted-foreground">Para dudas y problemas técnicos.</p>
+                            </div>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    </a>
+                    <div className="flex items-center justify-between rounded-md border p-4">
+                        <div className="flex items-center gap-3">
+                            <Mail className="h-6 w-6 text-primary" />
+                            <div>
+                                <p className="font-medium">Correo de Soporte</p>
+                                <p className="text-xs text-muted-foreground">info.dynamicclass@gmail.com</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline">Cerrar</Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
 
