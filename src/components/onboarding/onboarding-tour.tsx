@@ -254,12 +254,12 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 const item = steps[0].items.find(i => i.title === view);
                 
                 return (
-                    <div className="relative w-80 h-96">
+                     <div className="relative w-full flex items-center justify-center">
                         <AnimatePresence mode="wait">
                             {view === 'list' && (
                                 <motion.div
                                     key="list"
-                                    className="absolute inset-0 w-full h-full flex flex-col justify-center items-center space-y-4"
+                                    className="w-full max-w-xs space-y-4"
                                     initial={{ opacity: 0, x: -50 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 50, transition: { duration: 0.2 } }}
@@ -286,7 +286,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             {view !== 'list' && item && (
                                 <motion.div
                                     key="info"
-                                    className="absolute inset-0 w-full h-full flex flex-col justify-center items-center"
+                                    className="w-full max-w-xs"
                                     initial={{ opacity: 0, x: 50 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -50, transition: { duration: 0.2 } }}
@@ -670,14 +670,9 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         exit={{ opacity: 0 }}
                     >
                          <header className="flex items-center justify-center h-10 relative">
-                            <motion.div layoutId="onboarding-logo" className="absolute left-1/2 -translate-x-1/2">
+                            <motion.div layoutId="onboarding-logo">
                                 <Logo className="h-10 w-10 text-primary" />
                             </motion.div>
-                             {step > 0 && (
-                                <Button variant="ghost" size="icon" className="absolute left-0" onClick={goToPreviousStep}>
-                                    <ArrowLeft />
-                                </Button>
-                            )}
                         </header>
 
                         <div className="flex-1 flex flex-col justify-center text-center">
@@ -735,11 +730,11 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 </div>
                             ) : step > 0 ? (
                                 <div className="grid grid-cols-3 gap-3">
-                                    <Button variant="outline" onClick={goToPreviousStep} size="lg" className="col-span-2">
+                                    <Button variant="outline" onClick={goToPreviousStep} size="lg" className="col-span-1">
                                         <ArrowLeft className="mr-2 h-4 w-4" />
                                         Atrás
                                     </Button>
-                                    <Button onClick={handleNext} size="lg" className="col-span-1">
+                                    <Button onClick={handleNext} size="lg" className="col-span-2">
                                         Siguiente
                                     </Button>
                                 </div>
