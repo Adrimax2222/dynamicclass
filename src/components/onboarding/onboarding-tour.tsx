@@ -41,7 +41,11 @@ import {
     Settings2,
     Languages,
     Sigma,
-    UserCheck
+    UserCheck,
+    HelpCircle,
+    Globe,
+    FileText,
+    Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -52,7 +56,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AvatarDisplay } from '@/components/profile/avatar-creator';
 import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { 
+    AlertDialog, 
+    AlertDialogAction, 
+    AlertDialogCancel, 
+    AlertDialogContent, 
+    AlertDialogDescription, 
+    AlertDialogFooter, 
+    AlertDialogHeader, 
+    AlertDialogTitle, 
+    AlertDialogTrigger 
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 
 const introIcons = [
@@ -669,11 +693,67 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         initial={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                     >
-                        <header className="flex items-center gap-3 h-10 relative">
-                            <motion.div layoutId="onboarding-logo">
-                                <Logo className="h-8 w-8 text-primary" />
-                            </motion.div>
-                            <h1 className="text-lg font-bold font-headline">Dynamic Class - Introducción</h1>
+                        <header className="relative z-20 flex items-center justify-between gap-3 h-10">
+                            <div className="flex items-center gap-3">
+                                <motion.div layoutId="onboarding-logo">
+                                    <Logo className="h-8 w-8 text-primary" />
+                                </motion.div>
+                                <h1 className="text-lg font-bold font-headline">Dynamic Class - Introducción</h1>
+                            </div>
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                                        <HelpCircle className="h-5 w-5" />
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle className="flex items-center gap-2">
+                                            <HelpCircle className="h-5 w-5 text-primary" />
+                                            Centro de Ayuda
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            Si tienes algún problema o duda, aquí tienes cómo contactarnos.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-3 py-4">
+                                        <a href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
+                                            <div className="flex items-center gap-3">
+                                                <Globe className="h-6 w-6 text-primary" />
+                                                <div>
+                                                    <p className="font-medium">Web Oficial</p>
+                                                    <p className="text-xs text-muted-foreground">Visita nuestra página.</p>
+                                                </div>
+                                            </div>
+                                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                        </a>
+                                        <a href="https://form.jotform.com/230622014643040" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
+                                            <div className="flex items-center gap-3">
+                                                <FileText className="h-6 w-6 text-primary" />
+                                                 <div>
+                                                    <p className="font-medium">Formulario de Asistencia</p>
+                                                    <p className="text-xs text-muted-foreground">Para dudas y problemas técnicos.</p>
+                                                </div>
+                                            </div>
+                                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                        </a>
+                                        <div className="flex items-center justify-between rounded-md border p-4">
+                                            <div className="flex items-center gap-3">
+                                                <Mail className="h-6 w-6 text-primary" />
+                                                <div>
+                                                    <p className="font-medium">Correo de Soporte</p>
+                                                    <p className="text-xs text-muted-foreground">info.dynamicclass@gmail.com</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                     <DialogFooter>
+                                        <DialogClose asChild>
+                                            <Button variant="outline">Cerrar</Button>
+                                        </DialogClose>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
                         </header>
 
                         <div className="flex-1 flex flex-col justify-center text-center">
@@ -732,7 +812,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             ) : (
                                 <div className="grid grid-cols-3 gap-3">
                                     <Button variant="outline" onClick={goToPreviousStep} size="lg" className={cn("col-span-1", step === 0 && 'invisible')}>
-                                        Atrás
+                                        <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
                                     </Button>
                                     <Button onClick={handleNext} size="lg" className="col-span-2">
                                         Siguiente
@@ -775,5 +855,4 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         </motion.div>
     );
 }
-
 
