@@ -155,7 +155,14 @@ const BuildingWorkspaceScreen = () => {
 
 const InfoPanel = ({ title, description, icon: Icon, onClose }: { title: string; description:string; icon: React.ElementType; onClose: () => void; }) => {
     return (
-        <div className="w-full max-w-xs p-6 rounded-2xl shadow-2xl bg-background/80 backdrop-blur-lg border border-border/50 text-center flex flex-col items-center justify-center relative">
+        <motion.div 
+            className="w-full max-w-xs p-6 rounded-2xl shadow-2xl bg-background/80 backdrop-blur-lg border border-border/50 text-center flex flex-col items-center justify-center relative"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            onClick={(e) => e.stopPropagation()}
+        >
             <Button size="icon" variant="ghost" className="absolute top-2 right-2 rounded-full h-8 w-8" onClick={onClose}>
                 <X className="h-4 w-4" />
             </Button>
@@ -164,7 +171,7 @@ const InfoPanel = ({ title, description, icon: Icon, onClose }: { title: string;
             </div>
             <h3 className="font-bold text-lg text-foreground mb-2">{title}</h3>
             <p className="text-sm text-muted-foreground">{description}</p>
-        </div>
+        </motion.div>
     );
 };
 
@@ -275,64 +282,66 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: PlusCircle, title: "Crear un Centro", desc: "Crea un espacio para tu centro y comparte.", explanation: "Si eres profesor o delegado, puedes dar de alta tu centro. Obtendrás un código para compartir y te convertirás en administrador." },
                 { icon: User, title: "Uso Personal", desc: "Disfruta de la app de forma individual.", explanation: "Si prefieres usar la app por tu cuenta, elige esta opción. Podrás usar todas las herramientas de estudio y organización de forma privada." },
             ],
-            content: () => {
-                const item = steps[0].items.find(i => i.title === view);
-                
-                return (
-                     <div className="relative w-full flex items-center justify-center">
-                        <AnimatePresence mode="wait">
-                            {view === 'list' && (
-                                <motion.div
-                                    key="list"
-                                    className="w-full max-w-xs space-y-4"
-                                    initial={{ opacity: 0, x: -50 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 50, transition: { duration: 0.2 } }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    {steps[0].items.map((item) => (
-                                       <button
-                                           key={item.title}
-                                           onClick={() => setView(item.title)}
-                                           className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4 transition-all hover:bg-muted/50 hover:border-primary/50"
-                                       >
-                                           <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
-                                               <item.icon className="h-5 w-5 text-primary" />
-                                           </div>
-                                            <div className="min-w-0 flex-1">
-                                               <h4 className="font-semibold text-sm text-foreground truncate">{item.title}</h4>
-                                               <p className="text-xs text-muted-foreground">{item.desc}</p>
-                                           </div>
-                                       </button>
-                                    ))}
-                                </motion.div>
-                            )}
+            content: () => (
+                <div className="relative w-full flex items-center justify-center">
+                    <AnimatePresence mode="wait">
+                        {view === 'list' && (
+                            <motion.div
+                                key="list"
+                                className="w-full max-w-xs space-y-4"
+                                initial={{ opacity: 0, x: -50 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 50, transition: { duration: 0.2 } }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                {steps[0].items.map((item) => (
+                                   <button
+                                       key={item.title}
+                                       onClick={() => setView(item.title)}
+                                       className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4 transition-all hover:bg-muted/50 hover:border-primary/50"
+                                   >
+                                       <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                                           <item.icon className="h-5 w-5 text-primary" />
+                                       </div>
+                                        <div className="min-w-0 flex-1">
+                                           <h4 className="font-semibold text-sm text-foreground truncate">{item.title}</h4>
+                                           <p className="text-xs text-muted-foreground">{item.desc}</p>
+                                       </div>
+                                   </button>
+                                ))}
+                            </motion.div>
+                        )}
 
-                            {view !== 'list' && item && (
-                                <motion.div
-                                    key="info"
-                                    className="w-full max-w-xs"
-                                    initial={{ opacity: 0, x: 50 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -50, transition: { duration: 0.2 } }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <div className="w-full p-6 rounded-2xl shadow-2xl bg-background/80 backdrop-blur-lg border border-border/50 text-center flex flex-col items-center justify-center relative">
-                                        <Button size="icon" variant="ghost" className="absolute top-2 right-2 rounded-full h-8 w-8" onClick={() => setView('list')}>
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                        <div className="w-12 h-12 bg-background/50 rounded-lg flex items-center justify-center mx-auto mb-4 border">
-                                            <item.icon className="h-7 w-7 text-primary" />
+                        {view !== 'list' && steps[0].items.find(i => i.title === view) && (
+                            <motion.div
+                                key="info"
+                                className="w-full max-w-xs"
+                                initial={{ opacity: 0, x: 50 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -50, transition: { duration: 0.2 } }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                {(() => {
+                                    const item = steps[0].items.find(i => i.title === view);
+                                    if (!item) return null;
+                                    return (
+                                        <div className="w-full p-6 rounded-2xl shadow-2xl bg-background/80 backdrop-blur-lg border border-border/50 text-center flex flex-col items-center justify-center relative">
+                                            <Button size="icon" variant="ghost" className="absolute top-2 right-2 rounded-full h-8 w-8" onClick={() => setView('list')}>
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                            <div className="w-12 h-12 bg-background/50 rounded-lg flex items-center justify-center mx-auto mb-4 border">
+                                                <item.icon className="h-7 w-7 text-primary" />
+                                            </div>
+                                            <h3 className="font-bold text-lg text-foreground mb-2">{item.title}</h3>
+                                            <p className="text-sm text-muted-foreground">{item.explanation}</p>
                                         </div>
-                                        <h3 className="font-bold text-lg text-foreground mb-2">{item.title}</h3>
-                                        <p className="text-sm text-muted-foreground">{item.explanation}</p>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                );
-            }
+                                    )
+                                })()}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            )
         },
         {
             icon: Users,
@@ -493,68 +502,68 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 
                 return (
                      <div className="w-full max-w-sm mx-auto space-y-3">
-                        <div
-                            onClick={() => {
-                                const newTheme = theme === 'dark' ? 'light' : 'dark';
-                                setTheme(newTheme);
-                            }}
-                            className="w-full flex items-center gap-4 p-3 rounded-xl border bg-background/80 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
-                        >
-                            <ThemeIcon className="h-5 w-5 text-primary flex-shrink-0"/>
-                            <div className='flex-1 min-w-0'>
-                                <h4 className="font-semibold truncate text-sm">Tema {theme === 'dark' ? 'Oscuro' : 'Claro'}</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div
+                                onClick={() => {
+                                    const newTheme = theme === 'dark' ? 'light' : 'dark';
+                                    setTheme(newTheme);
+                                }}
+                                className="w-full flex items-center gap-4 p-3 rounded-xl border bg-background/80 backdrop-blur-sm text-left cursor-pointer hover:bg-muted/50"
+                            >
+                                <ThemeIcon className="h-5 w-5 text-primary flex-shrink-0"/>
+                                <div className='flex-1 min-w-0'>
+                                    <h4 className="font-semibold truncate text-sm">Tema {theme === 'dark' ? 'Oscuro' : 'Claro'}</h4>
+                                </div>
+                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Tema de la Aplicación")}}>
+                                    <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                </Button>
                             </div>
-                             <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Tema de la Aplicación")}}>
-                                 <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                            </Button>
+
+                             <div className="w-full flex items-center gap-4 p-3 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
+                                <Languages className="h-5 w-5 text-primary flex-shrink-0"/>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-semibold truncate text-sm">Idioma</h4>
+                                </div>
+                                <Select value={language} onValueChange={(v: Language) => setLanguage(v)}>
+                                    <SelectTrigger className="w-32 z-[30] h-9">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="esp">ESP - Español</SelectItem>
+                                        <SelectItem value="cat">CAT - Català</SelectItem>
+                                        <SelectItem value="eng">ENG - Inglés</SelectItem>
+                                        <SelectItem value="mad">MAD - Marroquí</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => { e.stopPropagation(); handleShowInfo("Idioma de la Aplicación")}}>
+                                     <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                </Button>
+                            </div>
                         </div>
 
                          <div className="w-full flex items-center gap-4 p-3 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
-                            <Languages className="h-5 w-5 text-primary flex-shrink-0"/>
+                            <Sparkles className="h-5 w-5 text-primary flex-shrink-0"/>
                             <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold truncate text-sm">Idioma</h4>
+                                <h4 className="font-semibold truncate text-sm">Burbuja de IA</h4>
                             </div>
-                            <Select value={language} onValueChange={(v: Language) => setLanguage(v)}>
-                                <SelectTrigger className="w-32 z-[30] h-9">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="esp">ESP - Español</SelectItem>
-                                    <SelectItem value="cat">CAT - Català</SelectItem>
-                                    <SelectItem value="eng">ENG - Inglés</SelectItem>
-                                    <SelectItem value="mad">MAD - Marroquí</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => { e.stopPropagation(); handleShowInfo("Idioma de la Aplicación")}}>
-                                 <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Switch checked={isChatBubbleVisible} onCheckedChange={setIsChatBubbleVisible} />
+                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Burbuja de IA")}}>
+                                    <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                </Button>
+                            </div>
                         </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="w-full flex items-center gap-4 p-3 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
-                                <Sparkles className="h-5 w-5 text-primary flex-shrink-0"/>
-                                <div className="flex-1 min-w-0">
-                                    <h4 className="font-semibold truncate text-sm">Burbuja de IA</h4>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Switch checked={isChatBubbleVisible} onCheckedChange={setIsChatBubbleVisible} />
-                                    <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Burbuja de IA")}}>
-                                        <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                    </Button>
-                                </div>
+                        
+                         <div className="w-full flex items-center gap-4 p-3 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
+                            <Save className="h-5 w-5 text-primary flex-shrink-0"/>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold truncate text-sm">Guardar Escaneos</h4>
                             </div>
-                            
-                            <div className="w-full flex items-center gap-4 p-3 rounded-xl border bg-background/80 backdrop-blur-sm text-left">
-                                <Save className="h-5 w-5 text-primary flex-shrink-0"/>
-                                <div className="flex-1 min-w-0">
-                                    <h4 className="font-semibold truncate text-sm">Guardar Escaneos</h4>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Switch checked={saveScannedDocs} onCheckedChange={setSaveScannedDocs} />
-                                    <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Guardar Escaneos")}}>
-                                        <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                    </Button>
-                                </div>
+                            <div className="flex items-center gap-2">
+                                <Switch checked={saveScannedDocs} onCheckedChange={setSaveScannedDocs} />
+                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={(e) => {e.stopPropagation(); handleShowInfo("Guardar Escaneos")}}>
+                                    <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                </Button>
                             </div>
                         </div>
 
@@ -660,7 +669,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
     if (isIntro) return introScreen;
     
     return (
-        <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
+        <>
             <motion.div 
                 className="fixed inset-0 bg-background z-[100] flex flex-col p-6"
                 initial={{ opacity: 1, scale: 1 }}
@@ -702,11 +711,9 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     </motion.div>
                                     <h1 className="text-lg font-bold font-headline">Dynamic Class - Introducción</h1>
                                 </div>
-                                <DialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
-                                        <HelpCircle className="h-5 w-5" />
-                                    </Button>
-                                </DialogTrigger>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={() => setIsHelpOpen(true)}>
+                                    <HelpCircle className="h-5 w-5" />
+                                </Button>
                             </header>
 
                             <div className="flex-1 flex flex-col justify-center text-center">
@@ -740,38 +747,39 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             <footer className="space-y-4">
                                 <Progress value={((step + 1) / steps.length) * 100} className="h-2 w-full max-w-xs mx-auto" />
                                 
-                                {isLastStep ? (
-                                    <div className="space-y-2">
-                                        <Button onClick={handleNext} className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
-                                            Comenzar a Explorar
-                                        </Button>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" className="w-full">Quiero cambiar la configuración</Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>¡No te preocupes!</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        Puedes cambiar todas estas configuraciones más tarde desde tu perfil y en la sección de ajustes de la aplicación.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogAction>Entendido</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-3 gap-3">
-                                        <Button variant="outline" onClick={goToPreviousStep} size="lg" className={cn("col-span-1", step === 0 && 'invisible')}>
-                                            <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
-                                        </Button>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <Button variant="outline" onClick={goToPreviousStep} size="lg" className={cn("col-span-1", step === 0 && 'invisible')}>
+                                        <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
+                                    </Button>
+
+                                    {isLastStep ? (
+                                        <div className="col-span-2 space-y-2">
+                                            <Button onClick={handleNext} className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
+                                                Comenzar a Explorar
+                                            </Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" className="w-full h-8 text-xs">Quiero cambiar la configuración</Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>¡No te preocupes!</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Puedes cambiar todas estas configuraciones más tarde desde tu perfil y en la sección de ajustes de la aplicación.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogAction>Entendido</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+                                    ) : (
                                         <Button onClick={handleNext} size="lg" className="col-span-2">
                                             Siguiente
                                         </Button>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </footer>
                         </motion.div>
                     )}
@@ -781,80 +789,72 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                     {activeExplanation && activeItem && (
                         <motion.div
                             key="info-panel-backdrop"
-                            className="absolute inset-0 z-20 flex items-center justify-center bg-background/50 backdrop-blur-sm p-4"
+                            className="absolute inset-0 z-30 flex items-center justify-center bg-background/50 backdrop-blur-sm p-4"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={handleCloseInfo}
                         >
-                            <motion.div 
-                                key="info-panel-content"
-                                onClick={(e) => e.stopPropagation()}
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.9, opacity: 0 }}
-                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                            >
-                                <InfoPanel
-                                    title={activeItem.title}
-                                    icon={activeItem.icon}
-                                    description={activeItem.explanation}
-                                    onClose={handleCloseInfo}
-                                />
-                            </motion.div>
+                            <InfoPanel
+                                title={activeItem.title}
+                                icon={activeItem.icon}
+                                description={activeItem.explanation}
+                                onClose={handleCloseInfo}
+                            />
                         </motion.div>
                     )}
                 </AnimatePresence>
             </motion.div>
-            
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <HelpCircle className="h-5 w-5 text-primary" />
-                        Centro de Ayuda
-                    </DialogTitle>
-                    <DialogDescription>
-                        Si tienes algún problema o duda, aquí tienes cómo contactarnos.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-3 py-4">
-                    <a href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
-                        <div className="flex items-center gap-3">
-                            <Globe className="h-6 w-6 text-primary" />
-                            <div>
-                                <p className="font-medium">Web Oficial</p>
-                                <p className="text-xs text-muted-foreground">Visita nuestra página.</p>
+
+            <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <HelpCircle className="h-5 w-5 text-primary" />
+                            Centro de Ayuda
+                        </DialogTitle>
+                        <DialogDescription>
+                            Si tienes algún problema o duda, aquí tienes cómo contactarnos.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 py-4">
+                        <a href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
+                            <div className="flex items-center gap-3">
+                                <Globe className="h-6 w-6 text-primary" />
+                                <div>
+                                    <p className="font-medium">Web Oficial</p>
+                                    <p className="text-xs text-muted-foreground">Visita nuestra página.</p>
+                                </div>
                             </div>
-                        </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    </a>
-                    <a href="https://form.jotform.com/230622014643040" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
-                        <div className="flex items-center gap-3">
-                            <FileText className="h-6 w-6 text-primary" />
-                             <div>
-                                <p className="font-medium">Formulario de Asistencia</p>
-                                <p className="text-xs text-muted-foreground">Para dudas y problemas técnicos.</p>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                        </a>
+                        <a href="https://form.jotform.com/230622014643040" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-md border p-4 transition-colors hover:bg-muted/50">
+                            <div className="flex items-center gap-3">
+                                <FileText className="h-6 w-6 text-primary" />
+                                 <div>
+                                    <p className="font-medium">Formulario de Asistencia</p>
+                                    <p className="text-xs text-muted-foreground">Para dudas y problemas técnicos.</p>
+                                </div>
                             </div>
-                        </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    </a>
-                    <div className="flex items-center justify-between rounded-md border p-4">
-                        <div className="flex items-center gap-3">
-                            <Mail className="h-6 w-6 text-primary" />
-                            <div>
-                                <p className="font-medium">Correo de Soporte</p>
-                                <p className="text-xs text-muted-foreground">info.dynamicclass@gmail.com</p>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                        </a>
+                        <div className="flex items-center justify-between rounded-md border p-4">
+                            <div className="flex items-center gap-3">
+                                <Mail className="h-6 w-6 text-primary" />
+                                <div>
+                                    <p className="font-medium">Correo de Soporte</p>
+                                    <p className="text-xs text-muted-foreground">info.dynamicclass@gmail.com</p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                 <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="outline">Cerrar</Button>
-                    </DialogClose>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                     <DialogFooter>
+                        <DialogClose asChild>
+                            <Button variant="outline">Cerrar</Button>
+                        </DialogClose>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
-
