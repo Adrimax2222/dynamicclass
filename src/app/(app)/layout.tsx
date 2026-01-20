@@ -44,11 +44,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
     
     if (user && !onboardingCheckDone) {
-        // For testing purposes, always show the onboarding tour.
-        const shouldShow = true; 
-        
-        // In production, this would be:
-        // const shouldShow = user.accessCount != null && user.accessCount <= 4 && !user.hasSeenOnboarding;
+        const shouldShow = (user.accessCount || 0) < 2;
 
         setShowOnboarding(shouldShow);
         setOnboardingCheckDone(true);
@@ -58,17 +54,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [firebaseUser, user, router, onboardingCheckDone]);
 
-  const handleOnboardingComplete = async () => {
+  const handleOnboardingComplete = () => {
     setShowOnboarding(false);
-    if (user && firestore) {
-        const userDocRef = doc(firestore, 'users', user.uid);
-        try {
-            await updateDoc(userDocRef, { hasSeenOnboarding: true });
-            updateUser({ hasSeenOnboarding: true }); // Optimistically update local state
-        } catch (error) {
-            console.error("Failed to update onboarding status:", error);
-        }
-    }
   };
 
   if (isCheckingAuth || !user) {
@@ -93,3 +80,5 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+    

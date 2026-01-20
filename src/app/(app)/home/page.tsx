@@ -106,7 +106,7 @@ export default function HomePage() {
     const sessionKey = `accessIncremented_${user.uid}`;
     const hasIncrementedInSession = sessionStorage.getItem(sessionKey);
 
-    if (!user.hasSeenOnboarding && !hasIncrementedInSession) {
+    if (!hasIncrementedInSession) {
         const userDocRef = doc(firestore, 'users', user.uid);
         updateDoc(userDocRef, {
             accessCount: increment(1)
@@ -943,3 +943,6 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
 
 
 
+
+
+    
