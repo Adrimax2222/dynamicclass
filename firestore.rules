@@ -221,7 +221,7 @@ service cloud.firestore {
                        message.isPinned == false;
             }
             
-            allow create: if isClassMember() && isValidClassMessage() && getUserData().isChatBanned != true;
+            allow create: if (isClassMember() || canManageClass()) && isValidClassMessage() && getUserData().isChatBanned != true;
             
             allow delete: if canManageClass() || request.auth.uid == resource.data.authorId;
             

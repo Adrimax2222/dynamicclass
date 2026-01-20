@@ -98,6 +98,8 @@ export default function ClassChatPage() {
             viewedBy: [],
             isPinned: false
         };
+        
+        console.log("Datos enviados:", newMessage);
 
         try {
             await addDoc(collection(firestore, chatPath), newMessage as any);
@@ -293,7 +295,7 @@ export default function ClassChatPage() {
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            disabled={isSending}
+                            disabled={isSending || !user}
                         />
                          <Popover>
                             <PopoverTrigger asChild>
@@ -319,7 +321,7 @@ export default function ClassChatPage() {
                             size="icon" 
                             className="shrink-0"
                             onClick={handleSend}
-                            disabled={isSending || !message.trim()}
+                            disabled={isSending || !message.trim() || !user}
                         >
                             {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-4 w-4" />}
                         </Button>
