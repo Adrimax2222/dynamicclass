@@ -262,7 +262,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     className="absolute inset-0 w-full h-full flex flex-col justify-center items-center space-y-4"
                                     initial={{ opacity: 0, x: -50 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 50 }}
+                                    exit={{ opacity: 0, x: 50, transition: { duration: 0.2 } }}
                                     transition={{ duration: 0.3 }}
                                 >
                                     {steps[0].items.map((item) => (
@@ -274,7 +274,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                            <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
                                                <item.icon className="h-5 w-5 text-primary" />
                                            </div>
-                                           <div className="flex-1 min-w-0">
+                                           <div className="min-w-0 flex-1">
                                                <h4 className="font-semibold text-sm text-foreground truncate">{item.title}</h4>
                                                <p className="text-xs text-muted-foreground">{item.desc}</p>
                                            </div>
@@ -289,7 +289,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                     className="absolute inset-0 w-full h-full flex flex-col justify-center items-center"
                                     initial={{ opacity: 0, x: 50 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -50 }}
+                                    exit={{ opacity: 0, x: -50, transition: { duration: 0.2 } }}
                                     transition={{ duration: 0.3 }}
                                 >
                                     <div className="w-full p-6 rounded-2xl shadow-2xl bg-background/80 backdrop-blur-lg border border-border/50 text-center flex flex-col items-center justify-center relative">
@@ -354,7 +354,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 <div className="relative w-full h-auto flex items-center justify-center">
                     <div className="grid grid-cols-3 gap-3 w-72">
                     {steps[2].items.map((tool) => (
-                        <div key={tool.title} className="w-full h-full flex flex-col items-center justify-center gap-2 p-2 rounded-lg border bg-background/80 backdrop-blur-sm aspect-square">
+                        <div key={tool.title} className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 rounded-lg border bg-background/80 backdrop-blur-sm aspect-square">
                             <div className="p-2 bg-primary/10 rounded-lg"> <tool.icon className="h-6 w-6 text-primary"/> </div>
                             <div className="flex items-center gap-1">
                                 <span className="text-xs font-semibold leading-tight text-center">{tool.title}</span>
@@ -784,3 +784,4 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         </motion.div>
     );
 }
+
