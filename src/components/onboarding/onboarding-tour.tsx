@@ -177,7 +177,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             }, 5000);
         }
     };
-
+    
     const getPositionClass = (title: string, stepIndex: number): string => {
         const mobileClass = "top-4 left-1/2 -translate-x-1/2 w-64"; 
         
@@ -244,7 +244,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             content: () => {
                 const activeItem = steps[0].items.find(item => item.title === activeExplanation);
                 return (
-                    <div className="relative w-full h-[320px] sm:h-auto flex items-center justify-center overflow-hidden">
+                    <div className="relative w-full flex-1 flex items-center justify-center">
                         <motion.div
                             className="absolute inset-0 flex"
                             animate={{ x: activeExplanation ? "-100%" : "0%" }}
@@ -254,19 +254,19 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             <div className="w-full flex-shrink-0 flex items-center justify-center">
                                 <div className="w-80 space-y-4">
                                     {steps[0].items.map((item) => (
-                                        <div key={item.title} className="w-full flex items-center justify-between text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-2">
-                                            <div className="flex items-center gap-4 min-w-0">
-                                                <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
-                                                    <item.icon className="h-5 w-5 text-primary" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-semibold text-sm text-foreground">{item.title}</h4>
-                                                    <p className="text-xs text-muted-foreground">{item.desc}</p>
-                                                </div>
+                                        <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-3">
+                                            <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                                                <item.icon className="h-5 w-5 text-primary" />
                                             </div>
-                                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full flex-shrink-0" onClick={() => handleShowInfo(item.title)}>
-                                                <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                            </Button>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-semibold text-sm text-foreground truncate">{item.title}</h4>
+                                                <p className="text-xs text-muted-foreground">{item.desc}</p>
+                                            </div>
+                                            <div className="flex-shrink-0">
+                                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => handleShowInfo(item.title)}>
+                                                    <motion.span className="absolute inline-flex h-2 w-2 rounded-full bg-blue-500" animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+                                                </Button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -274,9 +274,9 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                             {/* View 2: Detail panel */}
                             <div className="w-full flex-shrink-0 flex items-center justify-center">
                                 {activeItem && (
-                                        <div className="w-80 h-auto">
+                                    <div className="w-80 h-auto">
                                         <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
-                                        </div>
+                                    </div>
                                 )}
                             </div>
                         </motion.div>
