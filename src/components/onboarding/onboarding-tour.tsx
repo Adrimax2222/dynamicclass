@@ -246,15 +246,17 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
             content: () => {
                 const activeItem = steps[0].items.find(item => item.title === activeExplanation);
                 return (
-                     <div className="relative w-full flex-1 flex overflow-hidden">
-                        <motion.div
-                            className="flex w-[200%]"
-                            animate={{ x: activeExplanation ? "-50%" : "0%" }}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        >
-                            {/* First View: List of options */}
-                            <div className="w-1/2 flex-shrink-0 flex items-center justify-center">
-                                <div className="w-80 space-y-4">
+                     <div className="relative w-full flex-1 flex items-center justify-center">
+                        <AnimatePresence mode="wait">
+                            {!activeItem ? (
+                                <motion.div
+                                    key="options-view"
+                                    initial={{ opacity: 0, x: -30 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 30 }}
+                                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                    className="w-80 space-y-4"
+                                >
                                     {steps[0].items.map((item) => (
                                         <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-3">
                                             <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
@@ -271,17 +273,20 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                             </div>
                                         </div>
                                     ))}
-                                </div>
-                            </div>
-                            {/* Second View: Explanation Panel */}
-                            <div className="w-1/2 flex-shrink-0 flex items-center justify-center">
-                                {activeItem && (
-                                    <div className="w-80 h-auto">
-                                        <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="info-panel-view"
+                                    initial={{ opacity: 0, x: 30 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -30 }}
+                                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                    className="w-80"
+                                >
+                                    <InfoPanel title={activeItem.title} icon={activeItem.icon} description={activeItem.explanation} onClose={handleCloseInfo} />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 )
             }
@@ -297,7 +302,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                 { icon: User, title: "Estudiante", desc: "Participa, aprende y compite.", explanation: "El rol principal. Accede a las herramientas de estudio, participa en clase y compite en los rankings." },
             ],
             content: () => (
-                <div className="relative w-full h-auto flex items-center justify-center">
+                <div className="relative w-full flex items-center justify-center">
                     <div className="w-72 space-y-4">
                     {steps[1].items.map((item) => (
                         <div key={item.title} className="w-full flex items-center text-left p-3 rounded-xl border bg-background/80 backdrop-blur-sm gap-4">
@@ -469,7 +474,7 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                 <p className="text-sm text-muted-foreground">Selecciona el idioma de la app.</p>
                             </div>
                             <Select value={language} onValueChange={(v: Language) => setLanguage(v)}>
-                                <SelectTrigger className="w-32">
+                                <SelectTrigger className="w-32 z-30">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
