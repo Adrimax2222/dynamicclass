@@ -183,55 +183,12 @@ service cloud.firestore {
       allow update, delete: if isGlobalAdmin() || isCenterAdmin(centerId);
       allow list, get: if true;
       
-        // ============= CLASS CHAT =============
+        // ============= CLASS CHAT (TEMPORARY DEBUG RULES) =============
         match /classes/{className}/messages/{messageId} {
-            
-            function canManageClass() {
-                return isGlobalAdmin() || isCenterAdmin(centerId) || isClassAdmin(className);
-            }
-
-            function isClassMember() {
-                let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-                // Path variable `className` is formatted as "4ESO-B"
-                // User data `course` is "4eso" and `className` is "B"
-                return userData.organizationId == centerId &&
-                       userData.course == className.split('-')[0].lower() &&
-                       userData.className == className.split('-')[1];
-            }
-            
-            function canReadChat() {
-                return canManageClass() || isClassMember();
-            }
-
-            allow read: if canReadChat();
-          
-            function isValidClassMessage() {
-                let message = request.resource.data;
-                // Client sends: content, authorId, authorName, authorAvatar, authorRole, timestamp, viewedBy, isPinned
-                let expectedKeys = ['content', 'authorId', 'authorName', 'authorAvatar', 'authorRole', 'timestamp', 'viewedBy', 'isPinned'];
-                
-                return message.keys().hasAll(expectedKeys) &&
-                       message.keys().size() == 8 &&
-                       message.authorId == request.auth.uid &&
-                       message.authorName is string &&
-                       message.authorAvatar is string &&
-                       message.authorRole is string &&
-                       message.content is string && message.content.size() > 0 && message.content.size() <= 2000 &&
-                       message.viewedBy == [] &&
-                       message.isPinned == false;
-            }
-            
-            allow create: if (isClassMember() || canManageClass()) && isValidClassMessage() && getUserData().isChatBanned != true;
-            
-            allow delete: if canManageClass() || request.auth.uid == resource.data.authorId;
-            
-            allow update: if 
-              // Rule for editing message content by the author
-              (request.resource.data.diff(resource.data).affectedKeys().hasAll(['content', 'editedAt']) && request.auth.uid == resource.data.authorId) ||
-              // Rule for pinning/unpinning a message by an admin
-              (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isPinned']) && canManageClass()) ||
-              // Rule for marking a message as seen by anyone who can read it
-              (canReadChat() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewedBy']) && request.resource.data.viewedBy.toSet().difference(resource.data.viewedBy.toSet()).hasOnly([request.auth.uid]));
+            // WARNING: These are temporary, permissive rules for debugging.
+            // They allow any authenticated user to read and write to any class chat.
+            // This should be replaced with more secure rules after testing.
+            allow read, write: if request.auth != null;
         }
     }
   }

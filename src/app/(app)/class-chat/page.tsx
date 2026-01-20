@@ -84,7 +84,15 @@ export default function ClassChatPage() {
     }, [message]);
 
     const handleSend = async () => {
-        if (!message.trim() || !user || !chatPath || !firestore) return;
+        if (!message.trim() || !user || !chatPath || !firestore) {
+            console.error("DEBUG: Envío cancelado. Faltan datos.", {
+                "Tiene Mensaje": !!message.trim(),
+                "Tiene Usuario": !!user,
+                "Tiene Ruta de Chat": !!chatPath,
+                "Tiene Firestore": !!firestore,
+            });
+            return;
+        }
         
         setIsSending(true);
 
@@ -99,7 +107,13 @@ export default function ClassChatPage() {
             isPinned: false
         };
         
-        console.log("Datos enviados:", newMessage);
+        console.log("--- DEBUG: Datos enviados a Firestore ---");
+        console.table({
+            "User UID": user.uid,
+            "Chat Path": chatPath,
+        });
+        console.log("Message Object:", newMessage);
+
 
         try {
             await addDoc(collection(firestore, chatPath), newMessage as any);
