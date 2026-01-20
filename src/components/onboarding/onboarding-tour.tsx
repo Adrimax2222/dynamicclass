@@ -669,10 +669,11 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                         initial={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                     >
-                         <header className="flex items-center justify-center h-10 relative">
+                        <header className="flex items-center gap-3 h-10 relative">
                             <motion.div layoutId="onboarding-logo">
-                                <Logo className="h-10 w-10 text-primary" />
+                                <Logo className="h-8 w-8 text-primary" />
                             </motion.div>
+                            <h1 className="text-lg font-bold font-headline">Dynamic Class - Introducción</h1>
                         </header>
 
                         <div className="flex-1 flex flex-col justify-center text-center">
@@ -728,21 +729,15 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 </div>
-                            ) : step > 0 ? (
+                            ) : (
                                 <div className="grid grid-cols-3 gap-3">
-                                    <Button variant="outline" onClick={goToPreviousStep} size="lg" className="col-span-1">
-                                        <ArrowLeft className="mr-2 h-4 w-4" />
+                                    <Button variant="outline" onClick={goToPreviousStep} size="lg" className={cn("col-span-1", step === 0 && 'invisible')}>
                                         Atrás
                                     </Button>
                                     <Button onClick={handleNext} size="lg" className="col-span-2">
                                         Siguiente
                                     </Button>
                                 </div>
-                            ) : (
-                                <Button onClick={handleNext} className="w-full" size="lg">
-                                    Siguiente
-                                    <ArrowRight className="h-4 w-4 ml-2"/>
-                                </Button>
                             )}
                         </footer>
                     </motion.div>
@@ -780,4 +775,5 @@ export function OnboardingTour({ onComplete }: { onComplete: () => void }) {
         </motion.div>
     );
 }
+
 
