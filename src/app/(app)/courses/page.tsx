@@ -764,16 +764,15 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
 }
 
 function PollDisplay({ announcement, allUsers }: { announcement: Announcement, allUsers: AppUser[]}) {
-    console.log("RENDERIZANDO COMPONENTE PollDisplay");
-    const { user, firestore, auth } = useApp();
+    const { user, firestore } = useApp();
     const { toast } = useToast();
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const hasUserVoted = useMemo(() => {
-        if (!auth?.currentUser || !announcement.votedUserIds) return false;
-        return announcement.votedUserIds.includes(auth.currentUser.uid);
-    }, [auth?.currentUser, announcement.votedUserIds]);
+        if (!user || !announcement.votedUserIds) return false;
+        return announcement.votedUserIds.includes(user.uid);
+    }, [user, announcement.votedUserIds]);
     
     const totalVotes = useMemo(() => {
         if (!announcement.pollVoteCounts) return 0;
@@ -794,12 +793,10 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
     };
 
     const handleSubmitVote = async () => {
-        console.log("EJECUTANDO VOTO");
-        if (!auth?.currentUser) {
-          alert("Error crítico: Firebase dice que no hay un usuario logueado actualmente.");
+        if (!user) {
+          toast({ title: "Error de autenticación", description: "Debes iniciar sesión para votar.", variant: "destructive" });
           return;
         }
-        alert("Usuario detectado correctamente: " + auth.currentUser.uid);
         
         if (selectedOptions.length === 0) {
             toast({ title: "Selecciona una opción", description: "Debes elegir al menos una respuesta.", variant: "destructive" });
@@ -811,29 +808,32 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
         }
     
         if (!announcement.id) {
-            alert("ERROR: El anuncio no tiene ID");
+            toast({ title: "Error interno", description: "El anuncio no tiene un ID válido.", variant: "destructive" });
             return;
         }
-        console.log("Intentando escribir en: anuncios/" + announcement.id);
     
         setIsSubmitting(true);
         const announcementRef = doc(firestore, "announcements", announcement.id);
         
         try {
-            alert('Iniciando envío...');
-            
             const updateData: { [key: string]: any } = {};
             selectedOptions.forEach(optionId => {
                 updateData[`pollVoteCounts.${optionId}`] = increment(1);
             });
-            updateData.votedUserIds = arrayUnion(auth.currentUser.uid);
+            updateData.votedUserIds = arrayUnion(user.uid);
             
             await updateDoc(announcementRef, updateData);
     
-            alert('¡Voto guardado!');
+            toast({ title: "¡Voto registrado!", description: "Gracias por tu participación." });
         } catch (error: any) {
-            console.error("🔥 ERROR DETALLADO:", error);
-            alert("DEBUG: " + error.code + " | " + error.message);
+            console.error("Error al enviar el voto:", error);
+            toast({
+                title: "Error al votar",
+                description: error.code === 'permission-denied' 
+                    ? "No tienes permisos para votar o ya has votado."
+                    : (error.message || "No se pudo registrar tu voto."),
+                variant: "destructive"
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -923,18 +923,18 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
             </div>
             
             <div className="flex items-center justify-between mt-3">
-              <button
+              <Button
                   type="button"
                   onClick={handleSubmitVote}
                   disabled={isSubmitting || selectedOptions.length === 0}
-                  className="w-full bg-primary text-primary-foreground p-2 rounded-md disabled:opacity-50 cursor-pointer pointer-events-auto z-[9999] relative"
+                  className="w-full"
               >
                   {isSubmitting ? (
                     <span className="flex items-center justify-center">
                         <Loader2 className="mr-2 h-4 w-4 animate-spin"/> Enviando...
                     </span>
                   ) : "Enviar Respuesta"}
-              </button>
+              </Button>
               {showAdminResultsButton && (
                   <PollResultsDialog announcement={announcement} allUsers={allUsers} />
               )}
