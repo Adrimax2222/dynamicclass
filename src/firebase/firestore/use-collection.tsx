@@ -48,7 +48,7 @@ export const useCollection = <T>(
       queryToExecute,
       (snapshot) => {
         const docs = snapshot.docs.map((doc) => ({
-          id: doc.id,
+          uid: doc.id, // Use uid to be consistent with useDoc
           ...doc.data(),
         })) as T[];
         setData(docs);
@@ -67,3 +67,5 @@ export const useCollection = <T>(
 
   return { data, isLoading, error };
 };
+
+    
