@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -10,7 +11,7 @@ import type { ClassChatMessage, Center, User } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle, CheckCheck, Pencil, MicOff, MoreHorizontal, Copy, Trash2, Pin, Eye } from 'lucide-react';
+import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle, CheckCheck, Pencil, MicOff, MoreHorizontal, Copy, Trash2, Pin, Eye, MessageSquareOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AvatarDisplay } from '@/components/profile/avatar-creator';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -22,6 +23,7 @@ import { WipDialog } from '@/components/layout/wip-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import LoadingScreen from '@/components/layout/loading-screen';
 
 export default function ClassChatPage() {
     const { user } = useApp();
@@ -38,16 +40,18 @@ export default function ClassChatPage() {
         if (!user || !user.organizationId) return null;
         return doc(firestore, 'centers', user.organizationId);
     }, [user, firestore]);
-    const { data: centerData } = useDoc<Center>(centerDocRef);
 
-    const { constructedClassName, classImageUrl, classDescription } = useMemo(() => {
-        if (!user || !centerData) return { className: '', classImageUrl: '', classDescription: '' };
+    const { data: centerData, isLoading: isCenterLoading } = useDoc<Center>(centerDocRef);
+
+    const { constructedClassName, classImageUrl, classDescription, isChatEnabled } = useMemo(() => {
+        if (!user || !centerData) return { className: '', classImageUrl: '', classDescription: '', isChatEnabled: true };
         const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
         const classDef = centerData.classes.find(c => c.name === userClassName);
         return {
             constructedClassName: userClassName,
             classImageUrl: classDef?.imageUrl || '',
-            classDescription: classDef?.description || 'Chat de Clase'
+            classDescription: classDef?.description || 'Chat de Clase',
+            isChatEnabled: classDef?.isChatEnabled ?? true,
         };
     }, [user, centerData]);
     
@@ -61,9 +65,11 @@ export default function ClassChatPage() {
         return query(collection(firestore, chatPath), orderBy('timestamp', 'asc'));
     }, [chatPath, firestore]);
 
-    const { data: messages = [], isLoading } = useCollection<ClassChatMessage>(messagesQuery);
+    const { data: messages = [], isLoading: areMessagesLoading } = useCollection<ClassChatMessage>(messagesQuery);
     const pinnedMessage = useMemo(() => messages.find(m => m.isPinned), [messages]);
     
+    const isLoading = isCenterLoading || areMessagesLoading;
+
     useEffect(() => {
       const scrollContainer = scrollAreaRef.current;
       if (scrollContainer) {
@@ -85,12 +91,6 @@ export default function ClassChatPage() {
 
     const handleSend = async () => {
         if (!message.trim() || !user || !chatPath || !firestore) {
-            console.error("DEBUG: Envío cancelado. Faltan datos.", {
-                "Tiene Mensaje": !!message.trim(),
-                "Tiene Usuario": !!user,
-                "Tiene Ruta de Chat": !!chatPath,
-                "Tiene Firestore": !!firestore,
-            });
             return;
         }
         
@@ -106,14 +106,6 @@ export default function ClassChatPage() {
             viewedBy: [],
             isPinned: false
         };
-        
-        console.log("--- DEBUG: Datos enviados a Firestore ---");
-        console.table({
-            "User UID": user.uid,
-            "Chat Path": chatPath,
-        });
-        console.log("Message Object:", newMessage);
-
 
         try {
             await addDoc(collection(firestore, chatPath), newMessage as any);
@@ -202,15 +194,23 @@ export default function ClassChatPage() {
     const isClassAdmin = user?.role.startsWith('admin-');
     const isClassAdminForThisClass = isClassAdmin && user.role.substring('admin-'.length) === constructedClassName;
     const canEdit = isGlobalAdmin || isCenterAdmin || isClassAdminForThisClass;
+    
+    if (isLoading) {
+        return <LoadingScreen />
+    }
 
-    if (!user || user.center === 'personal') {
+    if (!user || user.center === 'personal' || !isChatEnabled) {
+        const message = !isChatEnabled 
+            ? "Tu administrador ha desactivado el chat para esta clase."
+            : "El chat de clase es una función exclusiva para usuarios que pertenecen a un centro educativo.";
+
         return (
-            <div className="container mx-auto max-w-4xl p-4 sm:p-6 text-center">
-                 <Alert variant="destructive">
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Acceso Denegado</AlertTitle>
+            <div className="container mx-auto max-w-4xl p-4 sm:p-6 text-center h-screen flex flex-col items-center justify-center">
+                 <Alert variant="destructive" className="items-center">
+                    <MessageSquareOff className="h-5 w-5" />
+                    <AlertTitle>Chat Desactivado</AlertTitle>
                     <AlertDescription>
-                        El chat de clase es una función exclusiva para usuarios que pertenecen a un centro educativo.
+                        {message}
                     </AlertDescription>
                 </Alert>
                 <Button onClick={() => router.back()} className="mt-4">
@@ -259,7 +259,7 @@ export default function ClassChatPage() {
             
             <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
                 <div className="p-4 space-y-6">
-                    {isLoading ? (
+                    {areMessagesLoading ? (
                         <div className="flex justify-center items-center h-64">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>

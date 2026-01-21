@@ -48,6 +48,7 @@ export type ClassDefinition = {
   schedule?: Schedule;
   imageUrl?: string;
   description?: string;
+  isChatEnabled?: boolean;
 }
 
 export type Center = {

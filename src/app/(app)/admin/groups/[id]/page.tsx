@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit, Group, User, ShieldCheck, Replace, UserX, Move } from "lucide-react";
+import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit, Group, User, ShieldCheck, Replace, UserX, Move, MessageSquare } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,7 @@ import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { TeacherInfoDialog } from "@/components/layout/teacher-info-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 
 export default function ManageGroupPage() {
     const { user: currentUser } = useApp();
@@ -546,7 +547,7 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
 
         setIsProcessing(true);
         const centerDocRef = doc(firestore, 'centers', center.uid);
-        const newClass: ClassDefinition = { name: combinedClassName, icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] } };
+        const newClass: ClassDefinition = { name: combinedClassName, icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] }, isChatEnabled: true };
 
         try {
             await updateDoc(centerDocRef, {
@@ -674,6 +675,12 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
                                    Miembros
                                  </Link>
                                </Button>
+                               <ChatSettingsDialog center={center} classObj={classObj}>
+                                   <Button variant="secondary" size="sm" className="flex-1 sm:flex-initial">
+                                       <MessageSquare className="h-4 w-4 mr-2"/>
+                                       Chat
+                                   </Button>
+                               </ChatSettingsDialog>
                                <Button asChild variant="secondary" size="sm" className="flex-1 sm:flex-initial">
                                   <Link href={`/admin/schedule/editor/${center.uid}/${encodeURIComponent(classObj.name)}`}>
                                    <BookOpen className="h-4 w-4 mr-2" />
@@ -714,5 +721,104 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
                 )}
             </CardContent>
         </Card>
+    );
+}
+
+function ChatSettingsDialog({ children, center, classObj }: { children: React.ReactNode, center: Center, classObj: ClassDefinition }) {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [isOpen, setIsOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isEnabled, setIsEnabled] = useState(classObj.isChatEnabled ?? true);
+
+    const handleToggle = async (checked: boolean) => {
+        if (!firestore || !center?.uid) return;
+
+        setIsSaving(true);
+        const updatedClasses = center.classes.map(c => 
+            c.name === classObj.name ? { ...c, isChatEnabled: checked } : c
+        );
+        
+        try {
+            const centerDocRef = doc(firestore, 'centers', center.uid);
+            await updateDoc(centerDocRef, { classes: updatedClasses });
+            setIsEnabled(checked);
+            toast({ title: `Chat ${checked ? 'habilitado' : 'deshabilitado'}`, description: `El chat para la clase ${classObj.name} ha sido ${checked ? 'activado' : 'desactivado'}.` });
+        } catch (error) {
+            console.error("Error updating chat status:", error);
+            toast({ title: "Error", description: "No se pudo actualizar el estado del chat.", variant: "destructive" });
+        } finally {
+            setIsSaving(false);
+            if (!checked) {
+                setIsOpen(false);
+            }
+        }
+    };
+    
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><MessageSquare /> Gestión del Chat de Clase</DialogTitle>
+                    <DialogDescription>
+                        Controla el acceso al chat para la clase <span className="font-bold">{classObj.name}</span>.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg border">
+                        <p className="font-semibold text-foreground mb-2">¿Qué es el Chat de Clase?</p>
+                        <ul className="list-disc list-inside space-y-1">
+                            <li>Es un canal de comunicación en tiempo real para alumnos y profesores de una misma clase.</li>
+                            <li>Permite resolver dudas, organizar trabajos y fomentar la colaboración.</li>
+                            <li>Los administradores pueden moderar el contenido y gestionar a los participantes.</li>
+                        </ul>
+                    </div>
+                     <div className="flex items-center justify-between rounded-lg border p-4">
+                        <Label htmlFor={`chat-enabled-switch-${classObj.name.replace(/\s/g, '-')}`} className="space-y-1">
+                            <span className="font-medium">Habilitar Chat de Clase</span>
+                            <p className="text-xs text-muted-foreground">
+                                {isEnabled ? "El chat está activo." : "El chat está desactivado."}
+                            </p>
+                        </Label>
+                         {isEnabled ? (
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Switch
+                                            id={`chat-enabled-switch-${classObj.name.replace(/\s/g, '-')}`}
+                                            checked={isEnabled}
+                                            disabled={isSaving}
+                                        />
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>¿Deshabilitar el chat?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Esta acción impedirá que todos los miembros de la clase, incluidos los profesores, puedan enviar o ver mensajes.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleToggle(false)} className="bg-destructive hover:bg-destructive/90">Sí, deshabilitar</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            ) : (
+                                <Switch
+                                    id={`chat-enabled-switch-${classObj.name.replace(/\s/g, '-')}`}
+                                    checked={isEnabled}
+                                    onCheckedChange={handleToggle}
+                                    disabled={isSaving}
+                                />
+                            )}
+                    </div>
+                </div>
+                 <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline">Cerrar</Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

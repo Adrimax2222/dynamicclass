@@ -27,6 +27,7 @@ import {
   CheckCircle2,
   EyeOff,
   ChevronDown,
+  MessageSquareOff,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -1114,6 +1115,7 @@ function ClassChatPreview() {
             name: userClassName,
             description: classDef?.description,
             imageUrl: classDef?.imageUrl,
+            isChatEnabled: classDef?.isChatEnabled ?? true,
         };
     }, [user, centerData]);
 
@@ -1134,6 +1136,55 @@ function ClassChatPreview() {
       "1bach": "1º Bachillerato", "2bach": "2º Bachillerato",
     };
     const formattedCourse = courseMap[user.course] || user.course.toUpperCase();
+
+    if (isCenterLoading) {
+      return (
+        <Card className="shadow-lg flex flex-col">
+          <CardHeader>
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-1/2 mt-1" />
+          </CardHeader>
+           <CardContent className="text-center flex-1 flex flex-col justify-center items-center">
+               <div className="p-8 bg-muted/50 rounded-lg flex flex-col items-center gap-4">
+                  <Skeleton className="h-20 w-20 rounded-full" />
+                  <Skeleton className="h-4 w-40 mt-2" />
+              </div>
+          </CardContent>
+          <CardFooter className="flex-col items-stretch gap-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+          </CardFooter>
+        </Card>
+      )
+    }
+    
+    if (!classInfo?.isChatEnabled) {
+         return (
+             <Card className="shadow-lg flex flex-col">
+                <CardHeader>
+                    <CardTitle>Chat de Clase: {formattedCourse}-{user.className}</CardTitle>
+                    <CardDescription className="line-clamp-2 h-[2.5rem] pt-1">
+                        {classInfo?.description || 'Conéctate con tus compañeros y profesores.'}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="text-center flex-1 flex flex-col justify-center items-center">
+                    <div className="flex flex-col items-center justify-center text-center p-8">
+                        <MessageSquareOff className="h-12 w-12 text-destructive/70 mb-4" />
+                        <p className="font-semibold">Chat Deshabilitado</p>
+                        <p className="text-sm text-muted-foreground">
+                            Tu administrador ha desactivado el chat para esta clase.
+                        </p>
+                    </div>
+                </CardContent>
+                <CardFooter>
+                    <Button disabled className="w-full">
+                        <MessageSquareOff className="mr-2 h-4 w-4"/>
+                        Chat desactivado
+                    </Button>
+                </CardFooter>
+            </Card>
+        );
+    }
 
     return (
          <Card className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
