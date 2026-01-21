@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -395,13 +396,13 @@ function AnnouncementsTab() {
       <div className="space-y-4">
         {sortedAndFilteredAnnouncements.map((announcement) => (
           <AnnouncementItem
-              key={announcement.id}
+              key={announcement.uid}
               announcement={announcement}
               isAuthor={user?.uid === announcement.authorId}
               canManage={canUserManageAnnouncement(announcement)}
               onUpdate={handleUpdateAnnouncement}
               onDelete={handleDeleteAnnouncement}
-              onPin={() => handlePinAnnouncement(announcement.id, !!announcement.isPinned)}
+              onPin={() => handlePinAnnouncement(announcement.uid, !!announcement.isPinned)}
               onReaction={handleReaction}
               allUsersInCenter={usersInCenter}
           />
@@ -624,7 +625,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          const announcementDocRef = doc(firestore, "announcements", announcement.id);
+          const announcementDocRef = doc(firestore, "announcements", announcement.uid);
           updateDoc(announcementDocRef, {
             viewedBy: arrayUnion(user.uid)
           }).catch(err => console.error("Failed to update view count", err));
@@ -637,7 +638,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
     observer.observe(node);
 
     return () => observer.disconnect();
-  }, [announcement.id, announcement.viewedBy, firestore, user]);
+  }, [announcement.uid, announcement.viewedBy, firestore, user]);
 
   const formatTimestamp = (timestamp: Timestamp) => {
     if (!timestamp) return "";
@@ -646,7 +647,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
   };
   
   const handleUpdate = () => {
-    onUpdate(announcement.id, editText);
+    onUpdate(announcement.uid, editText);
     setIsEditing(false);
   }
 
@@ -717,7 +718,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                                         variant="ghost"
                                         size="icon"
                                         className="text-xl rounded-full h-9 w-9"
-                                        onClick={() => onReaction(announcement.id, emoji)}
+                                        onClick={() => onReaction(announcement.uid, emoji)}
                                     >
                                         {emoji}
                                     </Button>
@@ -735,7 +736,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                                     key={emoji}
                                     variant={userHasReacted ? "default" : "secondary"}
                                     className="cursor-pointer transition-transform hover:scale-110 py-0.5 px-1.5"
-                                    onClick={() => onReaction(announcement.id, emoji)}
+                                    onClick={() => onReaction(announcement.uid, emoji)}
                                 >
                                     <span className="text-sm mr-1">{emoji}</span>
                                     <span className="font-bold text-xs">{uids.length}</span>
@@ -755,7 +756,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                         <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>Editar</Button>
                     )}
                    {(isAuthor || canManage) && (
-                     <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(announcement.id)}>Eliminar</Button>
+                     <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(announcement.uid)}>Eliminar</Button>
                    )}
                 </div>
             </CardFooter>
@@ -808,13 +809,13 @@ function PollDisplay({ announcement, allUsers }: { announcement: Announcement, a
             return;
         }
     
-        if (!announcement.id) {
+        if (!announcement.uid) {
             toast({ title: "Error interno", description: "El anuncio no tiene un ID válido.", variant: "destructive" });
             return;
         }
     
         setIsSubmitting(true);
-        const announcementRef = doc(firestore, "announcements", announcement.id);
+        const announcementRef = doc(firestore, "announcements", announcement.uid);
         
         try {
             const updateData: { [key: string]: any } = {};

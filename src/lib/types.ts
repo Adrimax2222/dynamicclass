@@ -152,7 +152,7 @@ export type PollOption = {
 };
 
 export type Announcement = {
-  id: string;
+  uid: string;
   text?: string;
   authorId: string;
   authorName: string;

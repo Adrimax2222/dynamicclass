@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -265,10 +266,10 @@ export default function HomePage() {
 
         const centersRef = collection(firestore, "centers");
         const centersSnapshot = await getDocs(centersRef);
-        const centersList = centersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Center));
+        const centersList = centersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Center));
         setAllCenters(centersList);
 
-        const userCenter = centersList.find(c => c.code === user.center);
+        const userCenter = centersList.find(c => c.uid === user.organizationId);
         const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
         
         let icalUrlToFetch: string | null = null;
@@ -308,7 +309,7 @@ export default function HomePage() {
                     return ann.scope === 'general';
                 }
                 // If user is in a center, show general announcements AND announcements for their center
-                return ann.scope === 'general' || (userCenter && ann.scope === 'center' && userCenter.code === SCHOOL_VERIFICATION_CODE);
+                return ann.scope === 'general' || (userCenter && ann.scope === 'center' && userCenter.uid === user.organizationId) || (userCenter && ann.scope === 'class' && userCenter.uid === user.organizationId && ann.className === userClassName);
             });
             setAllAnnouncements(filteredAnnouncements);
         }
@@ -466,7 +467,7 @@ export default function HomePage() {
     { title: 'Anuncios', value: getCategoryCount('Anuncios'), icon: MessageSquare, color: 'text-green-500', isAnnouncement: true },
   ];
   
-  const userCenterName = allCenters.find(c => c.code === user.center)?.name || user.center;
+  const userCenterName = allCenters.find(c => c.uid === user.organizationId)?.name || user.center;
 
   const isProfileIncomplete = user.isNewUser && (user.course === "default" || user.className === "default" || user.ageRange === "default");
   const isAdmin = ADMIN_EMAILS.includes(user.email);
