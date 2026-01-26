@@ -33,6 +33,7 @@ export type User = {
   hasSeenOnboarding?: boolean;
   theme?: Theme;
   isChatBubbleVisible?: boolean;
+  isClassChatBubbleVisible?: boolean;
   saveScannedDocs?: boolean;
   language?: Language;
   weeklySummary?: boolean;

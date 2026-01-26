@@ -28,6 +28,8 @@ export interface AppContextType {
   
   isChatBubbleVisible: boolean;
   setIsChatBubbleVisible: (visible: boolean) => void;
+  isClassChatBubbleVisible: boolean;
+  setIsClassChatBubbleVisible: (visible: boolean) => void;
   
   isChatDrawerOpen: boolean;
   setChatDrawerOpen: (isOpen: boolean) => void;
@@ -69,6 +71,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>('esp');
   const [weeklySummary, setWeeklySummaryState] = useState(false);
   const [isChatBubbleVisible, setIsChatBubbleVisibleState] = useState(true);
+  const [isClassChatBubbleVisible, setIsClassChatBubbleVisibleState] = useState(true);
   const [isChatDrawerOpen, setChatDrawerOpen] = useState(false);
   const [saveScannedDocs, setSaveScannedDocsState] = useState(true);
   
@@ -157,6 +160,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
                 const userBubbleVisible = userData.isChatBubbleVisible ?? true;
                 setIsChatBubbleVisibleState(userBubbleVisible);
+
+                const userClassChatBubbleVisible = userData.isClassChatBubbleVisible ?? true;
+                setIsClassChatBubbleVisibleState(userClassChatBubbleVisible);
 
                 const storedSaveDocs = localStorage.getItem('saveScannedDocs');
                 const userSaveDocs = userData.saveScannedDocs ?? (storedSaveDocs !== null ? JSON.parse(storedSaveDocs) : true);
@@ -254,6 +260,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (user && firestore) {
           const userDocRef = doc(firestore, 'users', user.uid);
           updateDoc(userDocRef, { isChatBubbleVisible: visible }).catch(console.error);
+      }
+  }, [user, firestore]);
+  
+  const setIsClassChatBubbleVisible = useCallback((visible: boolean) => {
+      setIsClassChatBubbleVisibleState(visible);
+      if (user && firestore) {
+          const userDocRef = doc(firestore, 'users', user.uid);
+          updateDoc(userDocRef, { isClassChatBubbleVisible: visible }).catch(console.error);
       }
   }, [user, firestore]);
 
@@ -435,6 +449,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setWeeklySummary,
     isChatBubbleVisible,
     setIsChatBubbleVisible,
+    isClassChatBubbleVisible,
+    setIsClassChatBubbleVisible,
     isChatDrawerOpen,
     setChatDrawerOpen,
     // Chat context values

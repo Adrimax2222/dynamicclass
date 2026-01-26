@@ -6,10 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap, Pin, Mail, Copy, Check, Gift, MailCheck, Info } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap, Pin, Mail, Copy, Check, Gift, MailCheck, Info, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { useAuth, useFirestore } from "@/firebase";
+import { useAuth, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import { Logo } from "@/components/icons";
 import Link from "next/link";
@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
@@ -44,15 +44,45 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { doc, increment, updateDoc } from "firebase/firestore";
+import type { Center } from "@/lib/types";
 
 
 export default function SettingsPage() {
-  const { user, theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, setIsChatBubbleVisible, saveScannedDocs, setSaveScannedDocs } = useApp();
+  const { user, theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, setIsChatBubbleVisible, isClassChatBubbleVisible, setIsClassChatBubbleVisible, saveScannedDocs, setSaveScannedDocs } = useApp();
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+
+  const centerDocRef = useMemoFirebase(() => {
+    if (!firestore || !user?.organizationId) return null;
+    return doc(firestore, "centers", user.organizationId);
+  }, [firestore, user?.organizationId]);
+
+  const { data: centerData } = useDoc<Center>(centerDocRef);
+
+  const isChatEnabledForClass = useMemo(() => {
+      if (!user || !centerData) return false;
+      if (user.center === 'personal' || !user.organizationId) return false;
+      
+      const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
+      const classDef = centerData.classes.find(c => c.name === userClassName);
+      return classDef?.isChatEnabled ?? true;
+  }, [user, centerData]);
+
+  const handleClassChatBubbleToggle = (checked: boolean) => {
+      if (!isChatEnabledForClass) {
+          toast({
+              title: "Función no disponible",
+              description: "El chat para tu clase está desactivado por un administrador.",
+              variant: "destructive",
+          });
+          return;
+      }
+      setIsClassChatBubbleVisible(checked);
+  };
 
   const handleLogout = async () => {
     if (auth) {
@@ -190,6 +220,19 @@ export default function SettingsPage() {
                     id="ai-bubble-switch"
                     checked={isChatBubbleVisible}
                     onCheckedChange={setIsChatBubbleVisible}
+                />
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+                <Label htmlFor="class-chat-bubble-switch" className={cn("flex items-center gap-2", !isChatEnabledForClass && "cursor-not-allowed text-muted-foreground/50")}>
+                    <MessageSquare className="h-5 w-5 text-blue-500" />
+                    <span>Burbuja de Chat</span>
+                </Label>
+                <Switch
+                    id="class-chat-bubble-switch"
+                    checked={isChatEnabledForClass && isClassChatBubbleVisible}
+                    onCheckedChange={handleClassChatBubbleToggle}
+                    disabled={!isChatEnabledForClass}
                 />
             </div>
             <Separator />
@@ -788,9 +831,3 @@ function WeeklySummaryInfoDialog() {
     </Dialog>
   );
 }
-
-
-
-
-    
-    

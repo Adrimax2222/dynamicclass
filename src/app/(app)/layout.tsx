@@ -4,6 +4,7 @@
 import { useApp } from "@/lib/hooks/use-app";
 import BottomNav from "@/components/layout/bottom-nav";
 import ChatBubble from "@/components/chatbot/chat-bubble";
+import ClassChatBubble from "@/components/layout/class-chat-bubble";
 import ChatDrawer from "@/components/chatbot/chat-drawer";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -74,11 +75,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <BottomNav />
         </div>
         <ChatBubble />
+        <ClassChatBubble />
         <ChatDrawer />
         <FloatingStudyTimer />
       </div>
     </div>
   );
 }
-
-    
