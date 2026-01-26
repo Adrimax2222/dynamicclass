@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -441,7 +440,7 @@ function NewAnnouncementCard({ onSend }: { onSend: (data: Partial<Announcement>)
         return null;
     }, [user]);
     
-    const availableClassNameForPosting = isClassAdmin ? adminSpecificClass : userAssignedClass;
+    const availableClassNameForPosting = isGlobalAdmin ? userAssignedClass : adminSpecificClass;
 
     const getInitialScope = useCallback((): AnnouncementScope => {
         if (isClassAdmin) return 'class';
@@ -594,9 +593,8 @@ function NewAnnouncementCard({ onSend }: { onSend: (data: Partial<Announcement>)
                             )}
                         </SelectContent>
                     </Select>
-                    <Button onClick={handleSend} disabled={isLoading} className="w-full sm:w-auto flex-grow sm:flex-grow-0">
-                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                        Publicar
+                    <Button onClick={handleSend} disabled={isLoading} size="icon">
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
                 </div>
             </CardContent>
@@ -679,7 +677,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
                 <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                     <div>
                         <p className="font-bold text-sm">{announcement.authorName}</p>
-                        <p className="text-xs text-muted-foreground">{formatTimestamp(announcement.createdAt)}</p>
+                        <p className="text-xs text-muted-foreground">{announcement.createdAt ? formatTimestamp(announcement.createdAt) : ''}</p>
                     </div>
                      <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -1287,8 +1285,17 @@ function NotesTab() {
     return [...notes].sort((a, b) => {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
-        if (a.updatedAt && b.updatedAt) return b.updatedAt.seconds - a.updatedAt.seconds;
-        if (a.createdAt && b.createdAt) return b.createdAt.seconds - a.createdAt.seconds;
+        if (a.updatedAt && b.updatedAt) {
+            // Check if toDate exists before calling
+            const dateA = a.updatedAt.toDate ? a.updatedAt.toDate() : new Date(a.updatedAt.seconds * 1000);
+            const dateB = b.updatedAt.toDate ? b.updatedAt.toDate() : new Date(b.updatedAt.seconds * 1000);
+            return dateB.getTime() - dateA.getTime();
+        }
+        if (a.createdAt && b.createdAt) {
+            const dateA = a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt.seconds * 1000);
+            const dateB = b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt.seconds * 1000);
+            return dateB.getTime() - dateA.getTime();
+        }
         return 0;
     });
   }, [notes]);
@@ -1332,9 +1339,7 @@ function NotesTab() {
                 <p className="text-xs text-muted-foreground">
                     {note.updatedAt
                         ? `Actualizado ${formatDistanceToNow(note.updatedAt.toDate(), { addSuffix: true, locale: es })}`
-                        : note.createdAt
-                        ? `Creado ${formatDistanceToNow(note.createdAt.toDate(), { addSuffix: true, locale: es })}`
-                        : "Ahora mismo..."
+                        : (note.createdAt ? `Creado ${formatDistanceToNow(note.createdAt.toDate(), { addSuffix: true, locale: es })}` : "Ahora mismo...")
                     }
                  </p>
                <Button variant="ghost" size="icon" className="text-destructive/60 hover:text-destructive h-8 w-8" onClick={() => handleDeleteNote(note.uid)}>
