@@ -426,13 +426,22 @@ function NewAnnouncementCard({ onSend }: { onSend: (data: Partial<Announcement>)
     const isCenterAdmin = user?.role === 'center-admin';
     const isClassAdmin = user?.role?.startsWith('admin-');
 
-    const adminClassName = useMemo(() => {
-        if (isClassAdmin && user) {
+    const adminSpecificClass = useMemo(() => {
+        if (isClassAdmin && user?.role) {
             const roleParts = user.role.split('admin-');
             if (roleParts.length > 1) return roleParts[1];
         }
         return null;
-    }, [isClassAdmin, user]);
+    }, [isClassAdmin, user?.role]);
+
+    const userAssignedClass = useMemo(() => {
+        if (user && user.course && user.course !== 'default' && user.course !== 'personal') {
+            return `${user.course.replace('eso','ESO')}-${user.className}`;
+        }
+        return null;
+    }, [user]);
+    
+    const availableClassNameForPosting = isClassAdmin ? adminSpecificClass : userAssignedClass;
 
     const getInitialScope = useCallback((): AnnouncementScope => {
         if (isClassAdmin) return 'class';
@@ -471,8 +480,8 @@ function NewAnnouncementCard({ onSend }: { onSend: (data: Partial<Announcement>)
             if (scope === 'center' || scope === 'class') {
                 announcementData.centerId = user.organizationId;
             }
-            if (scope === 'class' && adminClassName) {
-                announcementData.className = adminClassName;
+            if (scope === 'class' && availableClassNameForPosting) {
+                announcementData.className = availableClassNameForPosting;
             }
 
             if (announcementType === 'text') {
@@ -558,36 +567,34 @@ function NewAnnouncementCard({ onSend }: { onSend: (data: Partial<Announcement>)
                        )}
                     </div>
                 </div>
-                <div className="flex flex-col sm:flex-row justify-end items-stretch gap-2">
-                    <div className="flex items-center gap-2">
-                         <Select onValueChange={(v: AnnouncementType) => setAnnouncementType(v)} value={announcementType}>
-                            <SelectTrigger className="w-full sm:w-[130px]">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="text"><div className="flex items-center gap-2"><TextIcon className="h-4 w-4" /> Texto</div></SelectItem>
-                                <SelectItem value="poll"><div className="flex items-center gap-2"><Vote className="h-4 w-4" /> Votación</div></SelectItem>
-                                <SelectItem value="file" disabled><div className="flex items-center gap-2"><File className="h-4 w-4" /> Archivo</div></SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select onValueChange={(v: AnnouncementScope) => setScope(v)} value={scope} disabled={!isGlobalAdmin}>
-                            <SelectTrigger className="w-full sm:w-[130px]">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {isGlobalAdmin && (
-                                    <SelectItem value="general"><div className="flex items-center gap-2"><Globe className="h-4 w-4" /> General</div></SelectItem>
-                                )}
-                                {(isGlobalAdmin || isCenterAdmin) && user?.organizationId && (
-                                   <SelectItem value="center"><div className="flex items-center gap-2"><Building className="h-4 w-4" /> Centro</div></SelectItem>
-                                )}
-                                {(isGlobalAdmin || isClassAdmin) && user?.organizationId && adminClassName && (
-                                   <SelectItem value="class"><div className="flex items-center gap-2"><Users className="h-4 w-4" /> {adminClassName}</div></SelectItem>
-                                )}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <Button onClick={handleSend} disabled={isLoading} className="w-full sm:w-auto">
+                <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+                    <Select onValueChange={(v: AnnouncementType) => setAnnouncementType(v)} value={announcementType}>
+                        <SelectTrigger className="w-full sm:w-auto flex-grow sm:flex-grow-0 sm:min-w-[130px]">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="text"><div className="flex items-center gap-2"><TextIcon className="h-4 w-4" /> Texto</div></SelectItem>
+                            <SelectItem value="poll"><div className="flex items-center gap-2"><Vote className="h-4 w-4" /> Votación</div></SelectItem>
+                            <SelectItem value="file" disabled><div className="flex items-center gap-2"><File className="h-4 w-4" /> Archivo</div></SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select onValueChange={(v: AnnouncementScope) => setScope(v)} value={scope} disabled={!isGlobalAdmin && isCenterAdmin}>
+                        <SelectTrigger className="w-full sm:w-auto flex-grow sm:flex-grow-0 sm:min-w-[130px]">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {isGlobalAdmin && (
+                                <SelectItem value="general"><div className="flex items-center gap-2"><Globe className="h-4 w-4" /> General</div></SelectItem>
+                            )}
+                            {(isGlobalAdmin || isCenterAdmin) && user?.organizationId && (
+                                <SelectItem value="center"><div className="flex items-center gap-2"><Building className="h-4 w-4" /> Centro</div></SelectItem>
+                            )}
+                            {(isGlobalAdmin || isClassAdmin) && user?.organizationId && availableClassNameForPosting && (
+                               <SelectItem value="class"><div className="flex items-center gap-2"><Users className="h-4 w-4" /> {availableClassNameForPosting}</div></SelectItem>
+                            )}
+                        </SelectContent>
+                    </Select>
+                    <Button onClick={handleSend} disabled={isLoading} className="w-full sm:w-auto flex-grow sm:flex-grow-0">
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                         Publicar
                     </Button>
