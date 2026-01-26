@@ -1242,34 +1242,35 @@ function NotesTab() {
   const { user } = useApp();
   const firestore = useFirestore();
 
-  const notesCollection = useMemoFirebase(() => {
+  const notesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, `users/${user.uid}/notes`), orderBy("isPinned", "desc"), orderBy("createdAt", "desc"));
   }, [firestore, user]);
 
-  const { data: notes = [], isLoading } = useCollection<Note>(notesCollection);
+  const { data: notes = [], isLoading } = useCollection<Note>(notesQuery);
 
   const handleAddNote = async (title: string, content: string, color: string) => {
-    if (!notesCollection) return;
-    await addDoc(notesCollection, { title, content, color, createdAt: serverTimestamp(), isPinned: false, updatedAt: serverTimestamp() });
+    if (!firestore || !user) return;
+    const notesCollectionRef = collection(firestore, `users/${user.uid}/notes`);
+    await addDoc(notesCollectionRef, { title, content, color, createdAt: serverTimestamp(), isPinned: false, updatedAt: serverTimestamp() });
   };
   
   const handleUpdateNote = async (id: string, title: string, content: string, color: string) => {
-    if (!notesCollection) return;
-    const noteDoc = doc(notesCollection, id);
-    await updateDoc(noteDoc, { title, content, color, updatedAt: serverTimestamp() });
+    if (!firestore || !user) return;
+    const noteDocRef = doc(firestore, `users/${user.uid}/notes`, id);
+    await updateDoc(noteDocRef, { title, content, color, updatedAt: serverTimestamp() });
   };
 
   const handleDeleteNote = async (id: string) => {
-    if (!notesCollection) return;
-    const noteDoc = doc(notesCollection, id);
-    await deleteDoc(noteDoc);
+    if (!firestore || !user) return;
+    const noteDocRef = doc(firestore, `users/${user.uid}/notes`, id);
+    await deleteDoc(noteDocRef);
   };
 
   const handlePinNote = async (id: string, currentStatus: boolean) => {
-    if (!notesCollection) return;
-    const noteDoc = doc(notesCollection, id);
-    await updateDoc(noteDoc, { isPinned: !currentStatus });
+    if (!firestore || !user) return;
+    const noteDocRef = doc(firestore, `users/${user.uid}/notes`, id);
+    await updateDoc(noteDocRef, { isPinned: !currentStatus });
   };
   
   const sortedNotes = useMemo(() => {
@@ -1302,11 +1303,11 @@ function NotesTab() {
       
       <div className="columns-1 md:columns-2 gap-4 space-y-4">
         {sortedNotes.map((note) => (
-          <Card key={note.id} className="break-inside-avoid flex flex-col" style={{ borderTop: `4px solid ${note.color || 'hsl(var(--border))'}`}}>
+          <Card key={note.uid} className="break-inside-avoid flex flex-col" style={{ borderTop: `4px solid ${note.color || 'hsl(var(--border))'}`}}>
             <CardHeader className="flex-row items-start justify-between gap-2 pb-2">
               <CardTitle className="text-base line-clamp-2">{note.title}</CardTitle>
                <div className="flex items-center shrink-0">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handlePinNote(note.id, note.isPinned || false)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handlePinNote(note.uid, note.isPinned || false)}>
                       <Pin className={cn("h-4 w-4 text-muted-foreground", note.isPinned && "fill-primary text-primary")} />
                   </Button>
                    <NoteDialog note={note} onSave={handleUpdateNote}>
@@ -1321,7 +1322,7 @@ function NotesTab() {
                 <p className="text-xs text-muted-foreground">
                     {note.updatedAt ? `Actualizado ${formatDistanceToNow(note.updatedAt.toDate(), { addSuffix: true, locale: es })}` : `Creado ${formatDistanceToNow(note.createdAt.toDate(), { addSuffix: true, locale: es })}`}
                  </p>
-               <Button variant="ghost" size="icon" className="text-destructive/60 hover:text-destructive h-8 w-8" onClick={() => handleDeleteNote(note.id)}>
+               <Button variant="ghost" size="icon" className="text-destructive/60 hover:text-destructive h-8 w-8" onClick={() => handleDeleteNote(note.uid)}>
                   <Trash2 className="h-4 w-4" />
                </Button>
             </CardFooter>
@@ -1334,7 +1335,7 @@ function NotesTab() {
 
 const noteColors = ['#FFFFFF', '#FEE2E2', '#FEF3C7', '#D1FAE5', '#DBEAFE', '#E0E7FF', '#F3E8FF'];
 
-function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, note?: Note, onSave: (title: string, content: string, color: string) => void }) {
+function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, note?: Note, onSave: (title: string, content: string, color: string) => void | ((id: string, title: string, content: string, color: string) => void) }) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -1351,7 +1352,11 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
 
   const handleSave = () => {
     if (title) {
-        onSave(title, content, color);
+        if (isEditing && note) {
+            (onSave as (id: string, title: string, content: string, color: string) => void)(note.uid, title, content, color);
+        } else {
+            (onSave as (title: string, content: string, color: string) => void)(title, content, color);
+        }
         setIsOpen(false);
     }
   }
@@ -1392,6 +1397,5 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
                 <Button onClick={handleSave}>Guardar</Button>
             </DialogFooter>
         </DialogContent>
-    </Dialog>
   )
 }
