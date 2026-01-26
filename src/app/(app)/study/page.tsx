@@ -47,7 +47,7 @@ import {
   Upload,
   Download,
   FileCheck2,
-  RotateCw,
+  RotateCw as RotateCwIcon, // Renamed to avoid conflict
   Crop,
   X,
   Check,
@@ -76,6 +76,94 @@ import Link from 'next/link';
 import type { Center, TimerMode, CustomMode } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
 import { motion, AnimatePresence } from 'framer-motion';
+
+// --- Plant Growth SVG Components ---
+
+const SproutIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 64 64" fill="none" {...props}>
+        <motion.path 
+            d="M32 54V42" 
+            stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5, delay: 0.2 }}
+        />
+        <motion.path 
+            d="M32 42 C 26 40, 26 32, 32 30"
+            fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5 }}
+        />
+        <motion.path 
+            d="M32 42 C 38 40, 38 32, 32 30"
+            fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5, delay: 0.1 }}
+        />
+    </svg>
+);
+
+const PlantIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 64 64" fill="none" {...props}>
+        <motion.path 
+            d="M32 54V30" 
+            stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5 }}
+        />
+        <motion.path 
+            d="M32 46 C 22 44, 22 34, 32 32"
+            fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}
+        />
+        <motion.path 
+            d="M32 46 C 42 44, 42 34, 32 32"
+            fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.3 }}
+        />
+        <motion.path 
+            d="M32 38 C 24 36, 24 28, 32 26"
+            fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.4 }}
+        />
+        <motion.path 
+            d="M32 38 C 40 36, 40 28, 32 26"
+            fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.5 }}
+        />
+    </svg>
+);
+
+const TreeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 64 64" fill="none" {...props}>
+        <motion.path 
+            d="M32 54V26" 
+            stroke="currentColor" strokeWidth="4" strokeLinecap="round"
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5 }}
+        />
+        <motion.path 
+            d="M24 38 L32 26 L40 38"
+            fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"
+            initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.3 }}
+        />
+        <motion.circle 
+            cx="32" cy="22" r="14" 
+            fill="currentColor"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 10, delay: 0.5 }}
+        />
+         <motion.circle 
+            cx="22" cy="26" r="10" 
+            fill="currentColor"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 10, delay: 0.6 }}
+        />
+         <motion.circle 
+            cx="42" cy="26" r="10" 
+            fill="currentColor"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 10, delay: 0.6 }}
+        />
+    </svg>
+);
 
 
 type Sound = {
@@ -144,6 +232,8 @@ export default function StudyPage() {
     const [isMounted, setIsMounted] = useState(false);
     const [isScheduleAvailable, setIsScheduleAvailable] = useState(false);
     const [isFocusMode, setIsFocusMode] = useState(false);
+    const [plantStage, setPlantStage] = useState(0); // 0: none, 1: sprout, 2: plant, 3: tree
+
 
     const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -308,6 +398,33 @@ export default function StudyPage() {
         if (totalDuration === 0) return 100;
         return (timeLeft / totalDuration) * 100;
     }, [timeLeft, timerMode, phase, modes]);
+    
+    useEffect(() => {
+        if (!isActive || phase !== 'focus') {
+          if (plantStage !== 0) setPlantStage(0);
+          return;
+        }
+
+        const totalDuration = modes[timerMode].focus * 60;
+        const timeElapsed = totalDuration - timeLeft;
+        
+        const firstThird = totalDuration / 3;
+        const secondThird = (totalDuration / 3) * 2;
+        
+        let newStage = 0;
+        if (timeElapsed >= secondThird) {
+            newStage = 3;
+        } else if (timeElapsed >= firstThird) {
+            newStage = 2;
+        } else {
+            newStage = 1;
+        }
+        
+        if (newStage !== plantStage) {
+            setPlantStage(newStage);
+        }
+    
+    }, [isActive, phase, timeLeft, timerMode, modes, plantStage]);
   
     if (!user) return null;
 
@@ -422,16 +539,47 @@ export default function StudyPage() {
                                                 {phase === 'focus' ? 'ENFOQUE' : 'DESCANSO'}
                                             </p>
                                         </motion.div>
-                                        <motion.div
-                                            key="plant"
-                                            className="flex items-center justify-center"
-                                            initial={{ opacity: 0, scale: 0.5, y: 50 }}
-                                            animate={{ opacity: 1, scale: 1, y: 10 }}
-                                            exit={{ opacity: 0, scale: 0.5, y: 50, transition: { duration: 0.3 } }}
-                                            transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.3 }}
-                                        >
-                                            <TreePine className={cn("h-28 w-28", phase === 'focus' ? 'text-green-500' : 'text-green-400/70')} />
-                                        </motion.div>
+                                        
+                                        <div className="flex items-center justify-center">
+                                            <AnimatePresence mode="wait">
+                                                {plantStage === 1 && (
+                                                    <motion.div
+                                                        key="sprout"
+                                                        initial={{ opacity: 0, scale: 0.5 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        exit={{ opacity: 0, scale: 0.5 }}
+                                                        transition={{ duration: 0.5 }}
+                                                        className="text-green-500 w-32 h-32 mt-6"
+                                                    >
+                                                        <SproutIcon className="w-full h-full" />
+                                                    </motion.div>
+                                                )}
+                                                {plantStage === 2 && (
+                                                    <motion.div
+                                                        key="plant"
+                                                        initial={{ opacity: 0, scale: 0.5 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        exit={{ opacity: 0, scale: 0.5 }}
+                                                        transition={{ duration: 0.5 }}
+                                                        className="text-green-500 w-32 h-32 mt-6"
+                                                    >
+                                                        <PlantIcon className="w-full h-full" />
+                                                    </motion.div>
+                                                )}
+                                                {plantStage === 3 && (
+                                                    <motion.div
+                                                        key="tree"
+                                                        initial={{ opacity: 0, scale: 0.5 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        exit={{ opacity: 0, scale: 0.5 }}
+                                                        transition={{ duration: 0.5 }}
+                                                        className="text-green-500 w-32 h-32 mt-6"
+                                                    >
+                                                        <TreeIcon className="w-full h-full" />
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
                                     </>
                                 )}
                             </AnimatePresence>
@@ -1132,7 +1280,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 
                 <DialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
                      <div className="flex items-center gap-2">
-                        <Button onClick={handleRotate} variant="outline" size="icon" disabled={!activePage}><RotateCw className="h-4 w-4" /></Button>
+                        <Button onClick={handleRotate} variant="outline" size="icon" disabled={!activePage}><RotateCwIcon className="h-4 w-4" /></Button>
                         <Button onClick={() => setIsCropping(!isCropping)} variant={isCropping ? "default" : "outline"} size="icon" disabled={!activePage} className={cn(isCropping && "ring-2 ring-primary ring-offset-2")}>
                           <Crop className="h-4 w-4" />
                         </Button>
