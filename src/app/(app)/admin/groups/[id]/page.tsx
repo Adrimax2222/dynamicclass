@@ -728,8 +728,15 @@ function ChatSettingsDialog({ children, center, classObj }: { children: React.Re
     const firestore = useFirestore();
     const { toast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isEnabled, setIsEnabled] = useState(classObj.isChatEnabled ?? true);
+
+    useEffect(() => {
+        if (isOpen) {
+            setIsEnabled(classObj.isChatEnabled ?? true);
+        }
+    }, [isOpen, classObj.isChatEnabled]);
 
     const handleToggle = async (checked: boolean) => {
         if (!firestore || !center?.uid) return;
@@ -749,76 +756,79 @@ function ChatSettingsDialog({ children, center, classObj }: { children: React.Re
             toast({ title: "Error", description: "No se pudo actualizar el estado del chat.", variant: "destructive" });
         } finally {
             setIsSaving(false);
-            if (!checked) {
-                setIsOpen(false);
-            }
         }
     };
     
+    const handleSwitchChange = (checked: boolean) => {
+        if (!checked) {
+            setIsAlertOpen(true);
+        } else {
+            handleToggle(true);
+        }
+    };
+
+    const handleConfirmDisable = () => {
+        handleToggle(false);
+        setIsAlertOpen(false);
+        setIsOpen(false);
+    };
+    
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2"><MessageSquare /> Gestión del Chat de Clase</DialogTitle>
-                    <DialogDescription>
-                        Controla el acceso al chat para la clase <span className="font-bold">{classObj.name}</span>.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                    <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg border">
-                        <p className="font-semibold text-foreground mb-2">¿Qué es el Chat de Clase?</p>
-                        <ul className="list-disc list-inside space-y-1">
-                            <li>Es un canal de comunicación en tiempo real para alumnos y profesores de una misma clase.</li>
-                            <li>Permite resolver dudas, organizar trabajos y fomentar la colaboración.</li>
-                            <li>Los administradores pueden moderar el contenido y gestionar a los participantes.</li>
-                        </ul>
+        <>
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogTrigger asChild>{children}</DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2"><MessageSquare /> Gestión del Chat de Clase</DialogTitle>
+                        <DialogDescription>
+                            Controla el acceso al chat para la clase <span className="font-bold">{classObj.name}</span>.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg border">
+                            <p className="font-semibold text-foreground mb-2">¿Qué es el Chat de Clase?</p>
+                            <ul className="list-disc list-inside space-y-1">
+                                <li>Es un canal de comunicación en tiempo real para alumnos y profesores de una misma clase.</li>
+                                <li>Permite resolver dudas, organizar trabajos y fomentar la colaboración.</li>
+                                <li>Los administradores pueden moderar el contenido y gestionar a los participantes.</li>
+                            </ul>
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-4">
+                            <Label htmlFor={`chat-enabled-switch-${classObj.name.replace(/\s/g, '-')}`} className="space-y-1">
+                                <span className="font-medium">Habilitar Chat de Clase</span>
+                                <p className="text-xs text-muted-foreground">
+                                    {isEnabled ? "El chat está activo." : "El chat está desactivado."}
+                                </p>
+                            </Label>
+                            <Switch
+                                id={`chat-enabled-switch-${classObj.name.replace(/\s/g, '-')}`}
+                                checked={isEnabled}
+                                onCheckedChange={handleSwitchChange}
+                                disabled={isSaving}
+                            />
+                        </div>
                     </div>
-                     <div className="flex items-center justify-between rounded-lg border p-4">
-                        <Label htmlFor={`chat-enabled-switch-${classObj.name.replace(/\s/g, '-')}`} className="space-y-1">
-                            <span className="font-medium">Habilitar Chat de Clase</span>
-                            <p className="text-xs text-muted-foreground">
-                                {isEnabled ? "El chat está activo." : "El chat está desactivado."}
-                            </p>
-                        </Label>
-                         {isEnabled ? (
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Switch
-                                            id={`chat-enabled-switch-${classObj.name.replace(/\s/g, '-')}`}
-                                            checked={isEnabled}
-                                            disabled={isSaving}
-                                        />
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>¿Deshabilitar el chat?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Esta acción impedirá que todos los miembros de la clase, incluidos los profesores, puedan enviar o ver mensajes.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleToggle(false)} className="bg-destructive hover:bg-destructive/90">Sí, deshabilitar</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            ) : (
-                                <Switch
-                                    id={`chat-enabled-switch-${classObj.name.replace(/\s/g, '-')}`}
-                                    checked={isEnabled}
-                                    onCheckedChange={handleToggle}
-                                    disabled={isSaving}
-                                />
-                            )}
-                    </div>
-                </div>
-                 <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="outline">Cerrar</Button>
-                    </DialogClose>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button variant="outline">Cerrar</Button>
+                        </DialogClose>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Deshabilitar el chat?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción impedirá que todos los miembros de la clase, incluidos los profesores, puedan enviar o ver mensajes.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmDisable} className="bg-destructive hover:bg-destructive/90">Sí, deshabilitar</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }
