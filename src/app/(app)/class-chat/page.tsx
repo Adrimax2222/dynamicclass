@@ -96,7 +96,7 @@ export default function ClassChatPage() {
         
         setIsSending(true);
 
-        const newMessage: Omit<ClassChatMessage, 'id' | 'editedAt'> = {
+        const newMessage: Omit<ClassChatMessage, 'uid' | 'editedAt'> = {
             content: message,
             authorId: user.uid,
             authorName: user.name,
@@ -108,6 +108,11 @@ export default function ClassChatPage() {
         };
 
         try {
+            console.log("Sending message with data:", {
+                chatPath: chatPath,
+                messageData: newMessage,
+                userId: user.uid,
+            });
             await addDoc(collection(firestore, chatPath), newMessage as any);
             setMessage('');
         } catch (error) {
@@ -138,8 +143,8 @@ export default function ClassChatPage() {
         const batch = writeBatch(firestore);
     
         // If a message is already pinned, unpin it first
-        if (pinnedMessage && pinnedMessage.id !== messageId) {
-            const oldPinRef = doc(firestore, chatPath, pinnedMessage.id);
+        if (pinnedMessage && pinnedMessage.uid !== messageId) {
+            const oldPinRef = doc(firestore, chatPath, pinnedMessage.uid);
             batch.update(oldPinRef, { isPinned: false });
         }
     
@@ -170,7 +175,9 @@ export default function ClassChatPage() {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            handleSend();
+            if (!isSending && user) {
+                handleSend();
+            }
         }
     };
     
@@ -193,7 +200,7 @@ export default function ClassChatPage() {
     const isCenterAdmin = user?.role === 'center-admin' && user?.organizationId === centerData?.uid;
     const isClassAdmin = user?.role.startsWith('admin-');
     const isClassAdminForThisClass = isClassAdmin && user.role.substring('admin-'.length) === constructedClassName;
-    const canEdit = isGlobalAdmin || isCenterAdmin || isClassAdminForThisClass;
+    const canManage = isGlobalAdmin || isCenterAdmin || isClassAdminForThisClass;
     
     if (isLoading) {
         return <LoadingScreen />
@@ -235,7 +242,7 @@ export default function ClassChatPage() {
                     </div>
                 </div>
 
-                {canEdit && (
+                {canManage && (
                     <Button asChild variant="ghost" size="icon">
                         <Link href={`/admin/groups/${user.organizationId}/${encodeURIComponent(constructedClassName)}/edit`}>
                             <Pencil className="h-5 w-5" />
@@ -247,7 +254,7 @@ export default function ClassChatPage() {
             {pinnedMessage && (
                 <div 
                     className="p-3 border-b bg-amber-500/10 text-amber-900 dark:text-amber-200 cursor-pointer hover:bg-amber-500/20 transition-colors flex items-start gap-3 sticky top-[73px] z-10"
-                    onClick={() => scrollToMessage(pinnedMessage.id)}
+                    onClick={() => scrollToMessage(pinnedMessage.uid)}
                 >
                     <Pin className="h-5 w-5 shrink-0 mt-0.5"/>
                     <div className="flex-1 text-sm">
@@ -271,8 +278,8 @@ export default function ClassChatPage() {
                     ) : (
                         messages.map((msg) => (
                            <MessageItem
-                                ref={el => messageRefs.current.set(msg.id, el)}
-                                key={msg.id}
+                                ref={el => messageRefs.current.set(msg.uid, el)}
+                                key={msg.uid}
                                 msg={msg}
                                 user={user}
                                 chatPath={chatPath || ''}
@@ -383,14 +390,14 @@ const MessageItem = React.forwardRef<HTMLDivElement, MessageItemProps>(
 
     useEffect(() => {
         const observerRef = (ref as React.RefObject<HTMLDivElement>)?.current;
-        if (!observerRef || !firestore || !user || !msg.id || !chatPath) return;
+        if (!observerRef || !firestore || !user || !msg.uid || !chatPath) return;
 
         if (msg.viewedBy?.includes(user.uid)) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting) {
-                    const messageDocRef = doc(firestore, chatPath, msg.id);
+                    const messageDocRef = doc(firestore, chatPath, msg.uid);
                     updateDoc(messageDocRef, {
                         viewedBy: arrayUnion(user.uid)
                     }).catch(err => console.error("Failed to mark as seen:", err));
@@ -408,7 +415,7 @@ const MessageItem = React.forwardRef<HTMLDivElement, MessageItemProps>(
             }
             observer.disconnect();
         };
-    }, [msg.id, msg.viewedBy, firestore, user, chatPath, ref]);
+    }, [msg.uid, msg.viewedBy, firestore, user, chatPath, ref]);
 
     const formatRole = (role: string) => {
         if (!role) return 'Usuario';
@@ -429,7 +436,7 @@ const MessageItem = React.forwardRef<HTMLDivElement, MessageItemProps>(
 
     const handleSaveEdit = () => {
         if (editText.trim() && editText !== msg.content) {
-            onUpdate(msg.id, editText);
+            onUpdate(msg.uid, editText);
         }
         setIsEditing(false);
     };
@@ -456,7 +463,7 @@ const MessageItem = React.forwardRef<HTMLDivElement, MessageItemProps>(
                         <DropdownMenuContent>
                             <DropdownMenuItem onClick={handleCopy}><Copy className="mr-2 h-4 w-4"/>Copiar</DropdownMenuItem>
                             {canEdit && <DropdownMenuItem onSelect={() => setIsEditing(true)}><Pencil className="mr-2 h-4 w-4"/>Editar</DropdownMenuItem>}
-                            {canPin && <DropdownMenuItem onSelect={() => onPin(msg.id, !!msg.isPinned)}><Pin className="mr-2 h-4 w-4"/>{msg.isPinned ? "Desfijar" : "Fijar"}</DropdownMenuItem>}
+                            {canPin && <DropdownMenuItem onSelect={() => onPin(msg.uid, !!msg.isPinned)}><Pin className="mr-2 h-4 w-4"/>{msg.isPinned ? "Desfijar" : "Fijar"}</DropdownMenuItem>}
                             {canDelete && (
                                 <>
                                     <DropdownMenuSeparator />
@@ -473,7 +480,7 @@ const MessageItem = React.forwardRef<HTMLDivElement, MessageItemProps>(
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => onDelete(msg.id)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                                                <AlertDialogAction onClick={() => onDelete(msg.uid)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>

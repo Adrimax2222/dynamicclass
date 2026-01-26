@@ -122,7 +122,7 @@ export type ChatMessage = {
 };
 
 export type ClassChatMessage = {
-  id: string;
+  uid: string;
   authorId: string;
   authorName: string;
   authorAvatar: string;
