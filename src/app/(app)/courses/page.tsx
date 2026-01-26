@@ -766,8 +766,7 @@ function AnnouncementItem({ announcement, isAuthor, canManage, onUpdate, onDelet
 }
 
 function PollDisplay({ announcement, allUsers }: { announcement: Announcement, allUsers: AppUser[]}) {
-    const { user, firestore } = useApp();
-    const { toast } = useToast();
+    const { user, firestore, toast } = useApp();
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -1242,34 +1241,38 @@ function NotesTab() {
   const { user } = useApp();
   const firestore = useFirestore();
 
-  const notesQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, `users/${user.uid}/notes`), orderBy("isPinned", "desc"), orderBy("createdAt", "desc"));
+  const notesCollectionRef = useMemoFirebase(() => {
+      if (!firestore || !user) return null;
+      return collection(firestore, `users/${user.uid}/notes`);
   }, [firestore, user]);
+
+  const notesQuery = useMemoFirebase(() => {
+    if (!notesCollectionRef) return null;
+    return query(notesCollectionRef, orderBy("isPinned", "desc"), orderBy("createdAt", "desc"));
+  }, [notesCollectionRef]);
 
   const { data: notes = [], isLoading } = useCollection<Note>(notesQuery);
 
   const handleAddNote = async (title: string, content: string, color: string) => {
-    if (!firestore || !user) return;
-    const notesCollectionRef = collection(firestore, `users/${user.uid}/notes`);
+    if (!notesCollectionRef) return;
     await addDoc(notesCollectionRef, { title, content, color, createdAt: serverTimestamp(), isPinned: false, updatedAt: serverTimestamp() });
   };
   
   const handleUpdateNote = async (id: string, title: string, content: string, color: string) => {
-    if (!firestore || !user) return;
-    const noteDocRef = doc(firestore, `users/${user.uid}/notes`, id);
+    if (!notesCollectionRef) return;
+    const noteDocRef = doc(notesCollectionRef, id);
     await updateDoc(noteDocRef, { title, content, color, updatedAt: serverTimestamp() });
   };
 
   const handleDeleteNote = async (id: string) => {
-    if (!firestore || !user) return;
-    const noteDocRef = doc(firestore, `users/${user.uid}/notes`, id);
+    if (!notesCollectionRef) return;
+    const noteDocRef = doc(notesCollectionRef, id);
     await deleteDoc(noteDocRef);
   };
 
   const handlePinNote = async (id: string, currentStatus: boolean) => {
-    if (!firestore || !user) return;
-    const noteDocRef = doc(firestore, `users/${user.uid}/notes`, id);
+    if (!notesCollectionRef) return;
+    const noteDocRef = doc(notesCollectionRef, id);
     await updateDoc(noteDocRef, { isPinned: !currentStatus });
   };
   
@@ -1397,5 +1400,6 @@ function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, no
                 <Button onClick={handleSave}>Guardar</Button>
             </DialogFooter>
         </DialogContent>
-  )
+    </Dialog>
+  );
 }
