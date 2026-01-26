@@ -440,7 +440,7 @@ function NewAnnouncementCard({ onSend }: { onSend: (data: Partial<Announcement>)
         return null;
     }, [user]);
     
-    const availableClassNameForPosting = isGlobalAdmin ? userAssignedClass : adminSpecificClass;
+    const availableClassNameForPosting = isGlobalAdmin && userAssignedClass ? userAssignedClass : adminSpecificClass;
 
     const getInitialScope = useCallback((): AnnouncementScope => {
         if (isClassAdmin) return 'class';
@@ -577,7 +577,7 @@ function NewAnnouncementCard({ onSend }: { onSend: (data: Partial<Announcement>)
                             <SelectItem value="file" disabled><div className="flex items-center gap-2"><File className="h-4 w-4" /> Archivo</div></SelectItem>
                         </SelectContent>
                     </Select>
-                    <Select onValueChange={(v: AnnouncementScope) => setScope(v)} value={scope} disabled={!isGlobalAdmin && isCenterAdmin}>
+                    <Select onValueChange={(v: AnnouncementScope) => setScope(v)} value={scope} disabled={!isGlobalAdmin && !isCenterAdmin && !isClassAdmin}>
                         <SelectTrigger className="w-full sm:w-auto flex-grow sm:flex-grow-0 sm:min-w-[130px]">
                             <SelectValue />
                         </SelectTrigger>
@@ -1241,6 +1241,7 @@ function ClassChatPreview() {
     );
 }
 
+const noteColors = ['#E2E8F0', '#FECACA', '#FDE68A', '#A7F3D0', '#BFDBFE', '#C7D2FE', '#E9D5FF'];
 
 function NotesTab() {
   const { user } = useApp();
@@ -1286,7 +1287,6 @@ function NotesTab() {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
         if (a.updatedAt && b.updatedAt) {
-            // Check if toDate exists before calling
             const dateA = a.updatedAt.toDate ? a.updatedAt.toDate() : new Date(a.updatedAt.seconds * 1000);
             const dateB = b.updatedAt.toDate ? b.updatedAt.toDate() : new Date(b.updatedAt.seconds * 1000);
             return dateB.getTime() - dateA.getTime();
@@ -1320,7 +1320,7 @@ function NotesTab() {
       
       <div className="columns-1 md:columns-2 gap-4 space-y-4">
         {sortedNotes.map((note) => (
-          <Card key={note.uid} className="break-inside-avoid flex flex-col" style={{ borderTop: `4px solid ${note.color || 'hsl(var(--border))'}`}}>
+          <Card key={note.uid} className="break-inside-avoid flex flex-col" style={{ borderTop: `6px solid ${note.color || 'hsl(var(--border))'}`}}>
             <CardHeader className="flex-row items-start justify-between gap-2 pb-2">
               <CardTitle className="text-base line-clamp-2">{note.title}</CardTitle>
                <div className="flex items-center shrink-0">
@@ -1353,9 +1353,7 @@ function NotesTab() {
   );
 }
 
-const noteColors = ['#FFFFFF', '#FEE2E2', '#FEF3C7', '#D1FAE5', '#DBEAFE', '#E0E7FF', '#F3E8FF'];
-
-function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, note?: Note, onSave: (title: string, content: string, color: string) => void | ((id: string, title: string, content: string, color: string) => void) }) {
+function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, note?: Note, onSave: (idOrTitle: string, content: string, color: string, ...rest: any[]) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
