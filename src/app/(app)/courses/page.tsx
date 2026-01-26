@@ -1323,7 +1323,12 @@ function NotesTab() {
             </CardContent>
             <CardFooter className="pt-2 flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">
-                    {note.updatedAt ? `Actualizado ${formatDistanceToNow(note.updatedAt.toDate(), { addSuffix: true, locale: es })}` : `Creado ${formatDistanceToNow(note.createdAt.toDate(), { addSuffix: true, locale: es })}`}
+                    {note.updatedAt
+                        ? `Actualizado ${formatDistanceToNow(note.updatedAt.toDate(), { addSuffix: true, locale: es })}`
+                        : note.createdAt
+                        ? `Creado ${formatDistanceToNow(note.createdAt.toDate(), { addSuffix: true, locale: es })}`
+                        : "Ahora mismo..."
+                    }
                  </p>
                <Button variant="ghost" size="icon" className="text-destructive/60 hover:text-destructive h-8 w-8" onClick={() => handleDeleteNote(note.uid)}>
                   <Trash2 className="h-4 w-4" />
