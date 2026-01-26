@@ -56,6 +56,7 @@ import {
   Save,
   Sparkles,
   BrainCircuit,
+  TreePine,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -74,6 +75,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from 'next/link';
 import type { Center, TimerMode, CustomMode } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
+import { motion, AnimatePresence } from 'framer-motion';
 
 
 type Sound = {
@@ -386,13 +388,53 @@ export default function StudyPage() {
                     </div>
                     
                     <div className="relative flex items-center justify-center">
-                        <div className="relative w-56 h-56 rounded-full bg-background flex flex-col items-center justify-center shadow-inner">
-                            <p className="font-mono text-6xl font-bold tracking-tighter">
-                                {formatTime(timeLeft)}
-                            </p>
-                            <p className="text-sm font-semibold tracking-widest text-primary uppercase">
-                                {phase === 'focus' ? 'ENFOQUE' : 'DESCANSO'}
-                            </p>
+                       <div className="relative w-56 h-56 rounded-full bg-background flex flex-col items-center justify-center shadow-inner overflow-hidden">
+                           <AnimatePresence>
+                                {!isActive ? (
+                                    <motion.div
+                                        key="timer-inactive"
+                                        className="flex flex-col items-center justify-center"
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+                                        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                                    >
+                                        <p className="font-mono text-6xl font-bold tracking-tighter">
+                                            {formatTime(timeLeft)}
+                                        </p>
+                                        <p className="text-sm font-semibold tracking-widest text-primary uppercase">
+                                            {phase === 'focus' ? 'ENFOQUE' : 'DESCANSO'}
+                                        </p>
+                                    </motion.div>
+                                ) : (
+                                    <>
+                                        <motion.div
+                                            key="timer-active"
+                                            className="absolute top-4 text-center"
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.5, delay: 0.2 }}
+                                        >
+                                            <p className="font-mono text-3xl font-bold tracking-tighter">
+                                                {formatTime(timeLeft)}
+                                            </p>
+                                            <p className="text-xs font-semibold tracking-widest text-primary uppercase">
+                                                {phase === 'focus' ? 'ENFOQUE' : 'DESCANSO'}
+                                            </p>
+                                        </motion.div>
+                                        <motion.div
+                                            key="plant"
+                                            className="flex items-center justify-center"
+                                            initial={{ opacity: 0, scale: 0.5, y: 50 }}
+                                            animate={{ opacity: 1, scale: 1, y: 10 }}
+                                            exit={{ opacity: 0, scale: 0.5, y: 50, transition: { duration: 0.3 } }}
+                                            transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.3 }}
+                                        >
+                                            <TreePine className={cn("h-28 w-28", phase === 'focus' ? 'text-green-500' : 'text-green-400/70')} />
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
 
