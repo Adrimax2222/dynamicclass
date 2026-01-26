@@ -47,7 +47,7 @@ import { doc, increment, updateDoc } from "firebase/firestore";
 
 
 export default function SettingsPage() {
-  const { user, theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, toggleChatBubble, saveScannedDocs, setSaveScannedDocs } = useApp();
+  const { user, theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, setIsChatBubbleVisible, saveScannedDocs, setSaveScannedDocs } = useApp();
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
@@ -189,7 +189,7 @@ export default function SettingsPage() {
                 <Switch
                     id="ai-bubble-switch"
                     checked={isChatBubbleVisible}
-                    onCheckedChange={toggleChatBubble}
+                    onCheckedChange={setIsChatBubbleVisible}
                 />
             </div>
             <Separator />
