@@ -108,10 +108,10 @@ export default function ClassChatPage() {
         };
 
         try {
-            console.log("Sending message with data:", {
+            console.table({
+                userId: user.uid,
                 chatPath: chatPath,
                 messageData: newMessage,
-                userId: user.uid,
             });
             await addDoc(collection(firestore, chatPath), newMessage as any);
             setMessage('');
@@ -371,7 +371,12 @@ const MessageItem = React.forwardRef<HTMLDivElement, MessageItemProps>(
     const [editText, setEditText] = useState(msg.content);
 
     const isCurrentUser = msg.authorId === user.uid;
-    const { data: centerData } = useDoc<Center>(user.organizationId ? doc(firestore, 'centers', user.organizationId) : null);
+
+    const centerDocRef = useMemoFirebase(() => {
+        if (!firestore || !user.organizationId) return null;
+        return doc(firestore, 'centers', user.organizationId);
+    }, [firestore, user.organizationId]);
+    const { data: centerData } = useDoc<Center>(centerDocRef);
     
     const canManage = useMemo(() => {
         if (user.role === 'admin') return true;
@@ -524,3 +529,5 @@ const MessageItem = React.forwardRef<HTMLDivElement, MessageItemProps>(
     );
 });
 MessageItem.displayName = "MessageItem";
+
+    

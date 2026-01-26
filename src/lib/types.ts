@@ -205,3 +205,5 @@ export interface CustomMode {
   focus: number;
   break: number;
 }
+
+    
