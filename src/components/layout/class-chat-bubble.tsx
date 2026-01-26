@@ -37,7 +37,7 @@ export default function ClassChatBubble() {
   return (
     <Button
       size="icon"
-      className="fixed bottom-20 left-4 h-14 w-14 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg transition-transform hover:scale-110 active:scale-95"
+      className="fixed bottom-36 right-4 h-14 w-14 rounded-full bg-accent hover:bg-accent/90 shadow-lg transition-transform hover:scale-110 active:scale-95"
       onClick={() => router.push('/class-chat')}
       aria-label="Abrir Chat de Clase"
     >
