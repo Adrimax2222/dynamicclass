@@ -111,7 +111,7 @@ export default function ChatDrawer() {
         setActiveChatId(currentChatId);
     }
     
-    const userMessage: Omit<ChatMessage, 'id'> = {
+    const userMessage: Omit<ChatMessage, 'uid'> = {
       role: "user",
       content: input,
       timestamp: Timestamp.now(),
@@ -127,7 +127,7 @@ export default function ChatDrawer() {
       
       const result = await aiChatbotAssistance({ query: currentInput });
       
-      const assistantMessage: Omit<ChatMessage, 'id'> = {
+      const assistantMessage: Omit<ChatMessage, 'uid'> = {
         role: "assistant",
         content: result.response,
         timestamp: Timestamp.now(),
@@ -136,7 +136,7 @@ export default function ChatDrawer() {
 
     } catch (error: any) {
       console.error("AI Error:", error);
-      const errorMessage: Omit<ChatMessage, 'id'> = {
+      const errorMessage: Omit<ChatMessage, 'uid'> = {
         role: "system",
         content: `Lo siento, he encontrado un problema: ${error.message || 'Error desconocido'}. Por favor, inténtalo de nuevo.`,
         timestamp: Timestamp.now(),
@@ -269,7 +269,7 @@ export default function ChatDrawer() {
             ) : (
                 messages.map((message) => (
                 <div
-                    key={message.id}
+                    key={message.uid}
                     className={cn(
                     "flex items-end gap-3",
                     message.role === "user" ? "justify-end" : "justify-start"

@@ -227,7 +227,7 @@ export default function ChatbotPage() {
       const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
 
       // Save user message to Firestore
-      const userMessage: Omit<ChatMessage, 'id'> = {
+      const userMessage: Omit<ChatMessage, 'uid'> = {
         role: "user",
         content: messageToSend,
         timestamp: Timestamp.now(),
@@ -250,7 +250,7 @@ export default function ChatbotPage() {
       }
 
       // Save assistant's response to Firestore
-      const assistantMessage: Omit<ChatMessage, 'id'> = {
+      const assistantMessage: Omit<ChatMessage, 'uid'> = {
         role: "assistant",
         content: result.response,
         timestamp: Timestamp.now(),
@@ -285,7 +285,7 @@ export default function ChatbotPage() {
 
       // Save error message to chat for user reference
       if (currentChatId) {
-        const errorMessage: Omit<ChatMessage, 'id'> = {
+        const errorMessage: Omit<ChatMessage, 'uid'> = {
           role: "system",
           content: `⚠️ ${errorMsg}${canRetry ? ' Puedes reintentar con el botón de abajo.' : ''}`,
           timestamp: Timestamp.now(),
@@ -383,7 +383,7 @@ export default function ChatbotPage() {
           ) : (
             messages.map((message) => (
               <div
-                key={message.id}
+                key={message.uid}
                 className={cn(
                   "flex items-end gap-3 message-enter",
                   message.role === "user" ? "justify-end" : "justify-start"
@@ -411,9 +411,9 @@ export default function ChatbotPage() {
                       variant="ghost"
                       size="icon"
                       className="absolute -top-2 -right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity bg-background shadow-md hover:bg-accent"
-                      onClick={() => copyToClipboard(message.content, message.id)}
+                      onClick={() => copyToClipboard(message.content, message.uid)}
                     >
-                      {copiedMessageId === message.id ? (
+                      {copiedMessageId === message.uid ? (
                         <Check className="h-3 w-3 text-green-500" />
                       ) : (
                         <Copy className="h-3 w-3" />

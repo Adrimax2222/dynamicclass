@@ -115,7 +115,7 @@ export type Chat = {
 export type ResponseLength = 'breve' | 'normal' | 'detallada';
 
 export type ChatMessage = {
-  id: string;
+  uid: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Timestamp;
@@ -205,5 +205,3 @@ export interface CustomMode {
   focus: number;
   break: number;
 }
-
-    
