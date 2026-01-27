@@ -59,6 +59,7 @@ import { AvatarDisplay, allShopAvatars, SHOP_AVATARS_FEATURED, EXPANDED_SHOP_AVA
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { WipDialog } from "@/components/layout/wip-dialog";
 
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
@@ -133,7 +134,7 @@ export default function ProfilePage() {
   };
 
   const isUserAdmin = user?.role === 'admin';
-  const isCenterAdmin = user?.role === 'center-admin' && user.organizationId;
+  const isCenterAdmin = user?.role === 'center-admin';
   const isUserClassAdmin = user?.role?.startsWith('admin-') && user.role !== 'admin' && user.role !== 'center-admin';
   const isAnyAdmin = isUserAdmin || isCenterAdmin || isUserClassAdmin;
 
@@ -234,16 +235,16 @@ export default function ProfilePage() {
           <Card className={cn("mb-8", 
             isUserAdmin && "border-blue-500/50",
             isCenterAdmin && "border-purple-500/50",
-            isUserClassAdmin && !isUserAdmin && !isCenterAdmin && "border-green-500/50"
+            isUserClassAdmin && "border-green-500/50"
           )}>
             <CardHeader className="flex-row items-center justify-between p-4">
               <div>
                 <CardTitle className={cn("flex items-center gap-2 text-base",
                   isUserAdmin && "text-blue-500",
                   isCenterAdmin && "text-purple-600",
-                  isUserClassAdmin && !isUserAdmin && !isCenterAdmin && "text-green-600"
+                  isUserClassAdmin && "text-green-600"
                 )}>
-                  {isUserClassAdmin && !isUserAdmin && !isCenterAdmin ? <GraduationCap/> : <ShieldCheck />}
+                  {isUserClassAdmin ? <GraduationCap/> : <ShieldCheck />}
                   {isUserAdmin ? 'Panel de Administrador' : isCenterAdmin ? 'Panel de Admin Centro' : 'Panel de Admin Clase'}
                 </CardTitle>
               </div>
@@ -253,7 +254,7 @@ export default function ProfilePage() {
                 className={cn(
                   isUserAdmin && "bg-blue-500 hover:bg-blue-600",
                   isCenterAdmin && "bg-purple-600 hover:bg-purple-700",
-                  isUserClassAdmin && !isUserAdmin && !isCenterAdmin && "bg-green-600 hover:bg-green-700"
+                  isUserClassAdmin && "bg-green-600 hover:bg-green-700"
                 )}
               >
                 <Link href={isUserAdmin ? "/admin" : `/admin/groups/${user.organizationId}`}>
@@ -334,19 +335,25 @@ export default function ProfilePage() {
             ))}
 
             <FullHistoryDialog user={user}>
-                <AchievementCard
-                    title="Registro Completo"
-                    value="✓"
-                    icon={UserCheck}
-                    color="text-green-500"
-                />
+                <div className="cursor-pointer">
+                  <AchievementCard
+                      title="Registro Completo"
+                      value="✓"
+                      icon={UserCheck}
+                      color="text-green-500"
+                  />
+                </div>
             </FullHistoryDialog>
-            <AchievementCard
-                title="Mi Jardín"
-                value="Ver"
-                icon={TreePine}
-                color="text-emerald-500"
-            />
+            <WipDialog>
+                <div className="cursor-pointer">
+                    <AchievementCard
+                        title="Mi Jardín"
+                        value="Ver"
+                        icon={TreePine}
+                        color="text-emerald-500"
+                    />
+                </div>
+            </WipDialog>
         </div>
       </section>
     </div>
@@ -606,8 +613,6 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
   
   const isUserAdmin = user?.role === 'admin';
   const isCenterAdmin = user?.role === 'center-admin';
-  const isUserClassAdmin = user?.role?.startsWith('admin-');
-  const isAnyAdmin = isUserAdmin || isCenterAdmin || isUserClassAdmin;
 
   const initializeState = () => {
     if (user) {
@@ -817,7 +822,7 @@ const handleSaveChanges = async () => {
             }
 
             const newClassDefinition: ClassDefinition = {
-                name: `${newCourse.replace('eso','ESO')}-${newClassName}`,
+                name: `${newCourse.toUpperCase()}-${newClassName}`,
                 icalUrl: '',
                 schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] }
             };
@@ -1047,9 +1052,9 @@ const handleSaveChanges = async () => {
                                 <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'join' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
                                     <School className="h-5 w-5"/> <span className="text-xs font-semibold">Unirse/Centro</span>
                                 </Label>
-                                <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'create' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground", user.role === 'center-admin' && "cursor-not-allowed opacity-50")}>
+                                <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'create' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
                                     <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">Crear</span>
-                                    <RadioGroupItem value='create' className="sr-only" disabled={user.role === 'center-admin'}/>
+                                    <RadioGroupItem value='create' className="sr-only"/>
                                 </Label>
                                 <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'personal' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
                                     <UserIcon className="h-5 w-5"/> <span className="text-xs font-semibold">Personal</span>
@@ -1091,11 +1096,11 @@ const handleSaveChanges = async () => {
                                             </Select>
                                         </div>
                                     </div>
-                                    <Collapsible open={isCreatingClass} onOpenChange={setIsCreatingClass} className="mt-4" disabled={isAnyAdmin}>
+                                    <Collapsible open={isCreatingClass} onOpenChange={setIsCreatingClass} className="mt-4" disabled={!isCenterAdmin}>
                                         <CollapsibleTrigger asChild>
-                                             <Button variant="link" className="text-xs p-0 h-auto" disabled={isAnyAdmin}>¿Tu clase no está en la lista? Créala aquí.</Button>
+                                             <Button variant="link" className="text-xs p-0 h-auto" disabled={!isCenterAdmin}>¿Tu clase no está en la lista? Créala aquí.</Button>
                                         </CollapsibleTrigger>
-                                        {isAnyAdmin && <p className="text-xs text-muted-foreground">Ya tienes un rol de administrador, no puedes crear una clase.</p>}
+                                        {!isCenterAdmin && <p className="text-xs text-muted-foreground">Solo los administradores del centro pueden crear nuevas clases.</p>}
                                         <CollapsibleContent className="space-y-4 pt-2">
                                             <p className="text-xs text-muted-foreground p-3 bg-muted/50 border rounded-lg">Crea una nueva clase en tu centro. <strong className="text-foreground">Importante:</strong> te convertirás en el administrador de esta clase.</p>
                                              <div className="grid grid-cols-2 gap-4">
