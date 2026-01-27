@@ -335,15 +335,16 @@ export default function ProfilePage() {
             ))}
 
             <FullHistoryDialog user={user}>
-                <div className="cursor-pointer">
-                  <AchievementCard
-                      title="Registro Completo"
-                      value="✓"
-                      icon={UserCheck}
-                      color="text-green-500"
-                  />
-                </div>
+              <div className="cursor-pointer">
+                <AchievementCard
+                    title="Registro Completo"
+                    value="✓"
+                    icon={UserCheck}
+                    color="text-green-500"
+                />
+              </div>
             </FullHistoryDialog>
+
             <WipDialog>
                 <div className="cursor-pointer">
                     <AchievementCard
@@ -1361,7 +1362,10 @@ function HistoryDialog({ user, card }: { user: User; card: Omit<SummaryCardData,
                     </ScrollArea>
                 </Tabs>
                 
-                <DialogFooter className="p-4 border-t">
+                <DialogFooter className="p-4 border-t sm:justify-between">
+                    <FullHistoryDialog user={user}>
+                        <Button variant="link" className="p-0 h-auto">Ver historial completo</Button>
+                    </FullHistoryDialog>
                     <DialogClose asChild>
                         <Button variant="outline">Cerrar</Button>
                     </DialogClose>
