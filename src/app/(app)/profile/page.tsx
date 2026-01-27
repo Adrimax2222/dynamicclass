@@ -34,14 +34,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { SummaryCardData, User, CompletedItem, Center, ClassDefinition } from "@/lib/types";
+import type { SummaryCardData, User, CompletedItem, Center, ClassDefinition, CalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle, GraduationCap, School, PlusCircle, Search, Copy, Check, RefreshCw, Shield, ShieldCheck, Sparkles, Plus, Star, Crown, Dna, Brain, Beaker, Atom, Code, UserCheck, TreePine } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useMemo } from "react";
-import { doc, updateDoc, arrayUnion, increment, collection, query, orderBy, getDocs, addDoc, serverTimestamp, where, writeBatch } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, increment, collection, query, orderBy, getDocs, addDoc, serverTimestamp, where, writeBatch, getDoc } from "firebase/firestore";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +52,7 @@ import { GradeCalculatorDialog } from "@/components/layout/grade-calculator-dial
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { format } from "date-fns";
+import { format, formatDistanceToNow, isToday, isTomorrow, startOfToday, subWeeks, isWithinInterval } from "date-fns";
 import { es } from "date-fns/locale";
 import { Switch } from "@/components/ui/switch";
 import { AvatarDisplay, allShopAvatars, SHOP_AVATARS_FEATURED, EXPANDED_SHOP_AVATARS } from "@/components/profile/avatar-creator";
@@ -333,12 +333,14 @@ export default function ProfilePage() {
               <HistoryDialog key={card.title} user={user} card={card} />
             ))}
 
-            <AchievementCard
-                title="Registro Completo"
-                value="✓"
-                icon={UserCheck}
-                color="text-green-500"
-            />
+            <FullHistoryDialog user={user}>
+                <AchievementCard
+                    title="Registro Completo"
+                    value="✓"
+                    icon={UserCheck}
+                    color="text-green-500"
+                />
+            </FullHistoryDialog>
             <AchievementCard
                 title="Mi Jardín"
                 value="Ver"
@@ -349,6 +351,194 @@ export default function ProfilePage() {
       </section>
     </div>
   );
+}
+
+interface ParsedEvent extends CalendarEvent {
+    date: Date;
+}
+
+function FullHistoryDialog({ user, children }: { user: User; children: React.ReactNode; }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [events, setEvents] = useState<ParsedEvent[]>([]);
+  const [completedEventIds, setCompletedEventIds] = useState<string[]>([]);
+  const firestore = useFirestore();
+
+  const parseIcal = (icalData: string): ParsedEvent[] => {
+      const events: ParsedEvent[] = [];
+      const lines = icalData.split(/\r\n|\n|\r/);
+      let currentEvent: any = null;
+
+      for (const line of lines) {
+          if (line.startsWith('BEGIN:VEVENT')) {
+              currentEvent = {};
+          } else if (line.startsWith('END:VEVENT')) {
+              if (currentEvent && currentEvent.dtstart && currentEvent.summary) {
+                  try {
+                      const dateStrRaw = currentEvent.dtstart.split(':')[1];
+                      const dateStr = dateStrRaw.split('T')[0].replace(';VALUE=DATE', '');
+                      const year = parseInt(dateStr.substring(0, 4), 10);
+                      const month = parseInt(dateStr.substring(4, 6), 10) - 1;
+                      const day = parseInt(dateStr.substring(6, 8), 10);
+                      
+                      const eventDate = new Date(Date.UTC(year, month, day));
+                      
+                      events.push({
+                          id: currentEvent.uid || Math.random().toString(),
+                          title: currentEvent.summary,
+                          description: (currentEvent.description || 'No hay descripción.').replace(/\\n/g, '\n'),
+                          date: eventDate,
+                          type: 'class'
+                      });
+                  } catch(e) {
+                      console.error("Could not parse event date:", currentEvent.dtstart, e);
+                  }
+              }
+              currentEvent = null;
+          } else if (currentEvent) {
+              const [key, ...valueParts] = line.split(':');
+              const value = valueParts.join(':');
+              const mainKey = key.split(';')[0]; 
+
+              switch (mainKey) {
+                  case 'UID': currentEvent.uid = value; break;
+                  case 'SUMMARY': currentEvent.summary = value; break;
+                  case 'DESCRIPTION': currentEvent.description = value; break;
+                  case 'DTSTART': currentEvent.dtstart = line; break;
+              }
+          }
+      }
+      return events;
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const fetchData = async () => {
+      setIsLoading(true);
+      
+      const storedCompletedIds = localStorage.getItem('completedEventIds');
+      if (storedCompletedIds) {
+        setCompletedEventIds(JSON.parse(storedCompletedIds));
+      }
+
+      if (!firestore || !user.organizationId) {
+          setIsLoading(false);
+          return;
+      }
+      const centerDocRef = doc(firestore, 'centers', user.organizationId);
+      const centerDoc = await getDoc(centerDocRef);
+      
+      if (centerDoc.exists()) {
+          const centerData = centerDoc.data() as Center;
+          const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
+          const classDef = centerData.classes.find(c => c.name === userClassName);
+          const icalUrlToFetch = classDef?.icalUrl;
+
+          if (icalUrlToFetch) {
+              try {
+                  const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(icalUrlToFetch)}`);
+                  if (!response.ok) throw new Error('Failed to fetch calendar');
+                  const icalData = await response.text();
+                  const parsedEvents = parseIcal(icalData);
+
+                  const today = new Date();
+                  const twoWeeksAgo = subWeeks(startOfToday(), 2);
+                  const relevantEvents = parsedEvents.filter(event => 
+                      isWithinInterval(event.date, { start: twoWeeksAgo, end: today })
+                  ).sort((a,b) => b.date.getTime() - a.date.getTime());
+                  
+                  setEvents(relevantEvents);
+              } catch (error) {
+                  console.error("Error fetching calendar data:", error);
+                  setEvents([]);
+              }
+          }
+      }
+      setIsLoading(false);
+    };
+    
+    fetchData();
+  }, [isOpen, firestore, user]);
+
+  const groupedEvents = events.reduce((acc, event) => {
+      const dateStr = format(event.date, 'yyyy-MM-dd');
+      if (!acc[dateStr]) {
+          acc[dateStr] = [];
+      }
+      acc[dateStr].push(event);
+      return acc;
+  }, {} as Record<string, ParsedEvent[]>);
+
+  const getDayLabel = (dateStr: string) => {
+      const date = new Date(dateStr);
+      const localDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+      
+      if (isToday(localDate)) return "Hoy";
+      if (isTomorrow(localDate)) return "Mañana";
+      return format(localDate, "EEEE, d 'de' MMMM", { locale: es });
+  };
+    
+  return (
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>{children}</DialogTrigger>
+          <DialogContent className="max-w-md w-[95vw] p-0">
+              <DialogHeader className="p-6 text-left flex-row items-center gap-4 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">
+                  <div className="rounded-lg p-2 bg-background/50">
+                      <UserCheck className="h-6 w-6 text-green-500" />
+                  </div>
+                  <div>
+                      <DialogTitle>Registro Completo</DialogTitle>
+                      <DialogDescription className="text-current/80">
+                          Historial de actividad de las últimas 2 semanas.
+                      </DialogDescription>
+                  </div>
+              </DialogHeader>
+              <div className="my-4 max-h-[60vh] overflow-y-auto px-6">
+               {isLoading ? (
+                  <div className="flex items-center justify-center p-8">
+                      <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+               ) : events.length > 0 ? (
+                  <div className="space-y-6">
+                      {Object.entries(groupedEvents).map(([dateStr, dayEvents], index) => (
+                          <div key={dateStr} className="space-y-3">
+                              {index > 0 && <Separator />}
+                              <h3 className="text-sm font-bold text-muted-foreground px-1 pt-2">{getDayLabel(dateStr)}</h3>
+                              <div className="space-y-2">
+                                  {dayEvents.map(event => {
+                                      const isCompleted = completedEventIds.includes(event.id);
+                                      return (
+                                        <div key={event.id} className={cn("flex items-center gap-3 group p-3 rounded-lg border", isCompleted ? 'bg-green-500/10 border-green-500/20 text-muted-foreground' : 'bg-card')}>
+                                          {isCompleted ? <CheckCircle className="h-5 w-5 text-green-500 shrink-0" /> : <Clock className="h-5 w-5 text-yellow-500 shrink-0" />}
+                                          <div className="flex-1">
+                                            <p className={cn("font-semibold leading-tight", isCompleted && "line-through")}>{event.title}</p>
+                                          </div>
+                                        </div>
+                                      )
+                                  })}
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+               ) : (
+                  <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg min-h-[200px]">
+                      <Calendar className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                      <p className="font-semibold">Sin actividad</p>
+                      <p className="text-sm text-muted-foreground">
+                         No se encontraron tareas o exámenes en las últimas dos semanas.
+                      </p>
+                  </div>
+               )}
+              </div>
+               <DialogFooter className="p-4 border-t">
+                  <DialogClose asChild>
+                      <Button variant="outline">Cerrar</Button>
+                  </DialogClose>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
+  )
 }
 
 const AVATAR_COLORS = [
