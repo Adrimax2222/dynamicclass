@@ -36,7 +36,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SummaryCardData, User, CompletedItem, Center, ClassDefinition } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle, GraduationCap, School, PlusCircle, Search, Copy, Check, RefreshCw, Shield, ShieldCheck, Sparkles, Plus, Star, Crown, Dna, Brain, Beaker, Atom, Code } from "lucide-react";
+import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle, GraduationCap, School, PlusCircle, Search, Copy, Check, RefreshCw, Shield, ShieldCheck, Sparkles, Plus, Star, Crown, Dna, Brain, Beaker, Atom, Code, UserCheck, TreePine } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -332,6 +332,19 @@ export default function ProfilePage() {
             {achievements.map(card => (
               <HistoryDialog key={card.title} user={user} card={card} />
             ))}
+
+            <AchievementCard
+                title="Registro Completo"
+                value="✓"
+                icon={UserCheck}
+                color="text-green-500"
+            />
+            <AchievementCard
+                title="Mi Jardín"
+                value="Ver"
+                icon={TreePine}
+                color="text-emerald-500"
+            />
         </div>
       </section>
     </div>
@@ -488,7 +501,7 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
      setEditableAvatar(prev => ({ ...prev, id: avatarId }));
   };
 
-  const handlePurchaseAvatar = async (avatar: { id: string, price: number }) => {
+  const handlePurchaseAvatar = async (avatar: { id: string; price: number }) => {
      if (!firestore || !user || user.trophies < avatar.price) {
         toast({ title: "Fondos insuficientes", description: "No tienes suficientes trofeos para comprar este avatar.", variant: "destructive"});
         return;
@@ -843,7 +856,6 @@ const handleSaveChanges = async () => {
                             <RadioGroup value={mode} onValueChange={(v) => setMode(v as RegistrationMode)} className="grid grid-cols-3 gap-2">
                                 <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'join' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground")}>
                                     <School className="h-5 w-5"/> <span className="text-xs font-semibold">Unirse/Centro</span>
-                                    <RadioGroupItem value='join' className="sr-only"/>
                                 </Label>
                                 <Label className={cn("rounded-lg border-2 p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-accent/50", mode === 'create' ? "border-primary text-primary bg-primary/10" : "border-transparent text-muted-foreground", user.role === 'center-admin' && "cursor-not-allowed opacity-50")}>
                                     <PlusCircle className="h-5 w-5"/> <span className="text-xs font-semibold">Crear</span>
@@ -1216,30 +1228,3 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
     
 
     
-
-    
-
-    
-
-    
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
