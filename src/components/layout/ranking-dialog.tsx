@@ -50,7 +50,7 @@ export function RankingDialog({ children, user, openTo = "ranking" }: { children
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="max-w-md w-[95vw] p-0 flex flex-col h-[80vh]">
-                 <div className="absolute inset-0 bg-trophy-pattern opacity-5" style={{ backgroundSize: '100px 100px' }} />
+                 <div className="absolute inset-0 bg-trophy-pattern opacity-5 pointer-events-none" style={{ backgroundSize: '100px 100px' }} />
                  <Tabs defaultValue={openTo} className="w-full h-full flex flex-col">
                     <div className="p-6 pb-0 flex-shrink-0 z-10 bg-background/80 backdrop-blur-sm rounded-t-lg">
                         <DialogHeader>
@@ -383,5 +383,4 @@ const shopItems = [
     
 
     
-
-
+    
