@@ -57,6 +57,12 @@ export interface AppContextType {
   setCustomMode: (mode: CustomMode) => void;
   resetTimer: () => void;
   skipPhase: () => void;
+
+  // Notification states
+  hasNewAnnouncements: boolean;
+  setHasNewAnnouncements: (hasNew: boolean) => void;
+  hasNewChatMessages: boolean;
+  setHasNewChatMessages: (hasNew: boolean) => void;
 }
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
@@ -79,6 +85,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isChatsLoading, setIsChatsLoading] = useState(true);
+
+  // Notification states
+  const [hasNewAnnouncements, setHasNewAnnouncements] = useState(false);
+  const [hasNewChatMessages, setHasNewChatMessages] = useState(false);
 
   // Global Study Timer State
   const [timerMode, setTimerMode] = useState<TimerMode>("pomodoro");
@@ -474,6 +484,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCustomMode,
     resetTimer,
     skipPhase,
+    // Notifications
+    hasNewAnnouncements,
+    setHasNewAnnouncements,
+    hasNewChatMessages,
+    setHasNewChatMessages,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

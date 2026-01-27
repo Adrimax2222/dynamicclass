@@ -106,9 +106,16 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 export default function InfoPage() {
-  const { user } = useApp();
+  const { 
+      user, 
+      hasNewAnnouncements, 
+      setHasNewAnnouncements, 
+      hasNewChatMessages, 
+      setHasNewChatMessages 
+  } = useApp();
   const firestore = useFirestore();
 
+  // CHAT MESSAGES LOGIC
   const userClassName = useMemo(() => user ? `${user.course.replace('eso','ESO')}-${user.className}` : null, [user]);
 
   const chatPath = useMemo(() => {
@@ -128,6 +135,60 @@ export default function InfoPage() {
     return messages.some(msg => msg.authorId !== user.uid && !msg.viewedBy?.includes(user.uid));
   }, [messages, user]);
 
+  useEffect(() => {
+      setHasNewChatMessages(hasNewMessages);
+  }, [hasNewMessages, setHasNewChatMessages]);
+
+  // ANNOUNCEMENTS LOGIC
+  const announcementsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "announcements"), orderBy("createdAt", "desc"));
+  }, [firestore]);
+  
+  const { data: allAnnouncements = [], isLoading: isLoadingAnnouncements } = useCollection<Announcement>(announcementsCollection);
+  
+  const announcementsForUser = useMemo(() => {
+    if (!user) return [];
+    return allAnnouncements.filter(ann => {
+        if (ann.scope === 'general') return true;
+        if (ann.scope === 'center' && user.organizationId === ann.centerId) return true;
+        if (ann.scope === 'class' && user.organizationId === ann.centerId && userClassName === ann.className) return true;
+        return false;
+    });
+  }, [allAnnouncements, user, userClassName]);
+  
+  const hasNewAnnouncementsMemo = useMemo(() => {
+    if (!user) return false;
+    return announcementsForUser.some(ann => !ann.viewedBy?.includes(user.uid));
+  }, [announcementsForUser, user]);
+
+  useEffect(() => {
+    setHasNewAnnouncements(hasNewAnnouncementsMemo);
+  }, [hasNewAnnouncementsMemo, setHasNewAnnouncements]);
+  
+  const handleMarkAnnouncementsAsRead = useCallback(async () => {
+    if (!firestore || !user || !hasNewAnnouncementsMemo) return;
+  
+    const newAnnouncements = announcementsForUser.filter(ann => !ann.viewedBy?.includes(user.uid));
+    if (newAnnouncements.length === 0) return;
+  
+    const batch = writeBatch(firestore);
+    newAnnouncements.forEach(ann => {
+        const annRef = doc(firestore, "announcements", ann.uid);
+        batch.update(annRef, {
+            viewedBy: arrayUnion(user.uid)
+        });
+    });
+  
+    try {
+      await batch.commit();
+      // The onSnapshot listener will update the state automatically, setting hasNewAnnouncements to false.
+    } catch (error) {
+      console.error("Error marking announcements as read:", error);
+    }
+  }, [firestore, user, hasNewAnnouncementsMemo, announcementsForUser]);
+
+
   return (
     <div className="flex flex-col min-h-full">
       <header className="p-4 sm:p-6 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10">
@@ -144,12 +205,13 @@ export default function InfoPage() {
         <Tabs defaultValue="announcements" className="w-full">
           <div className="p-4 sm:p-6">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="announcements">
+              <TabsTrigger value="announcements" onClick={handleMarkAnnouncementsAsRead} className="relative">
                 <Building className="h-4 w-4 mr-2" /> Anuncios
+                {hasNewAnnouncements && <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-blue-500" />}
               </TabsTrigger>
               <TabsTrigger value="my-class" className="relative">
                 <GraduationCap className="h-4 w-4 mr-2" /> Mi Clase
-                {hasNewMessages && <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-blue-500" />}
+                {hasNewChatMessages && <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-blue-500" />}
               </TabsTrigger>
               <TabsTrigger value="notes">
                 <Notebook className="h-4 w-4 mr-2" /> Anotaciones
@@ -159,7 +221,10 @@ export default function InfoPage() {
 
           <div className="p-4 sm:p-6 pt-0">
             <TabsContent value="announcements">
-              <AnnouncementsTab />
+              <AnnouncementsTab 
+                announcements={announcementsForUser}
+                isLoading={isLoadingAnnouncements}
+              />
             </TabsContent>
             <TabsContent value="my-class">
               <MyClassTab hasNewMessages={hasNewMessages} />
@@ -176,15 +241,10 @@ export default function InfoPage() {
 
 type AnnouncementFilter = "all" | AnnouncementScope | "my-class";
 
-function AnnouncementsTab() {
+function AnnouncementsTab({ announcements, isLoading }: { announcements: Announcement[], isLoading: boolean }) {
   const { user } = useApp();
   const firestore = useFirestore();
   const [filter, setFilter] = useState<AnnouncementFilter>("all");
-
-  const announcementsCollection = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, "announcements"), orderBy("createdAt", "desc"));
-  }, [firestore]);
   
   const usersInCenterQuery = useMemoFirebase(() => {
     if (!firestore || !user?.organizationId) return null;
@@ -192,7 +252,6 @@ function AnnouncementsTab() {
   }, [firestore, user?.organizationId]);
 
   const { data: usersInCenter = [] } = useCollection<AppUser>(usersInCenterQuery);
-  const { data: announcements = [], isLoading } = useCollection<Announcement>(announcementsCollection);
 
   const handleAddAnnouncement = async (announcementData: Partial<Announcement>) => {
     if (!firestore || !user) return;
