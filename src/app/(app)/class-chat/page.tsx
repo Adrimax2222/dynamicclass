@@ -1,4 +1,5 @@
 
+      
 'use client';
 
 import * as React from 'react';
@@ -234,10 +235,10 @@ export default function ClassChatPage() {
                 <Button variant="ghost" size="icon" onClick={() => router.push('/courses')}>
                     <ChevronLeft />
                 </Button>
-                <div className="flex items-center gap-3 flex-1">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
                     <AvatarDisplay user={{ avatar: classImageUrl, name: constructedClassName }} className="h-10 w-10 shrink-0" />
-                    <div className="text-left">
-                        <h1 className="font-bold text-lg">{getFormattedClassName()}</h1>
+                    <div className="text-left truncate">
+                        <h1 className="font-bold text-lg truncate">{getFormattedClassName()}</h1>
                         <p className="text-xs text-muted-foreground truncate">{classDescription}</p>
                     </div>
                 </div>
@@ -529,5 +530,7 @@ const MessageItem = React.forwardRef<HTMLDivElement, MessageItemProps>(
     );
 });
 MessageItem.displayName = "MessageItem";
+
+    
 
     
