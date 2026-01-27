@@ -79,84 +79,84 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Plant Growth SVG Components ---
 
-const SproutIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg viewBox="0 0 64 64" fill="none" {...props}>
+const Stage1Icon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" {...props}>
         <motion.path 
-            d="M32 54V42" 
-            stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            d="M250 450V350" 
+            stroke="currentColor" strokeWidth="12" strokeLinecap="round"
             initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5, delay: 0.2 }}
         />
         <motion.path 
-            d="M32 42 C 26 40, 26 32, 32 30"
-            fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            d="M250 350 C 200 330, 200 250, 250 230"
+            fill="none" stroke="currentColor" strokeWidth="12" strokeLinecap="round"
             initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5 }}
         />
         <motion.path 
-            d="M32 42 C 38 40, 38 32, 32 30"
-            fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            d="M250 350 C 300 330, 300 250, 250 230"
+            fill="none" stroke="currentColor" strokeWidth="12" strokeLinecap="round"
             initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5, delay: 0.1 }}
         />
     </svg>
 );
 
-const PlantIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg viewBox="0 0 64 64" fill="none" {...props}>
+const Stage2Icon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" {...props}>
         <motion.path 
-            d="M32 54V30" 
-            stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            d="M250 450V230" 
+            stroke="currentColor" strokeWidth="12" strokeLinecap="round"
             initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5 }}
         />
         <motion.path 
-            d="M32 46 C 22 44, 22 34, 32 32"
-            fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            d="M250 390 C 170 370, 170 270, 250 250"
+            fill="none" stroke="currentColor" strokeWidth="12" strokeLinecap="round"
             initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}
         />
         <motion.path 
-            d="M32 46 C 42 44, 42 34, 32 32"
-            fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            d="M250 390 C 330 370, 330 270, 250 250"
+            fill="none" stroke="currentColor" strokeWidth="12" strokeLinecap="round"
             initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.3 }}
         />
         <motion.path 
-            d="M32 38 C 24 36, 24 28, 32 26"
-            fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            d="M250 310 C 190 290, 190 210, 250 190"
+            fill="none" stroke="currentColor" strokeWidth="12" strokeLinecap="round"
             initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.4 }}
         />
         <motion.path 
-            d="M32 38 C 40 36, 40 28, 32 26"
-            fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+            d="M250 310 C 310 290, 310 210, 250 190"
+            fill="none" stroke="currentColor" strokeWidth="12" strokeLinecap="round"
             initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.5 }}
         />
     </svg>
 );
 
-const TreeIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg viewBox="0 0 64 64" fill="none" {...props}>
+const Stage3Icon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" {...props}>
         <motion.path 
-            d="M32 54V26" 
-            stroke="currentColor" strokeWidth="4" strokeLinecap="round"
+            d="M250 450V190" 
+            stroke="currentColor" strokeWidth="15" strokeLinecap="round"
             initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5 }}
         />
         <motion.path 
-            d="M24 38 L32 26 L40 38"
-            fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"
+            d="M170 310 L250 190 L330 310"
+            fill="none" stroke="currentColor" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round"
             initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.3 }}
         />
         <motion.circle 
-            cx="32" cy="22" r="14" 
+            cx="250" cy="150" r="90" 
             fill="currentColor"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 200, damping: 10, delay: 0.5 }}
         />
          <motion.circle 
-            cx="22" cy="26" r="10" 
+            cx="150" cy="190" r="70" 
             fill="currentColor"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 200, damping: 10, delay: 0.6 }}
         />
          <motion.circle 
-            cx="42" cy="26" r="10" 
+            cx="350" cy="190" r="70" 
             fill="currentColor"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -164,6 +164,20 @@ const TreeIcon = (props: React.SVGProps<SVGSVGElement>) => (
         />
     </svg>
 );
+
+const Stage4Icon = Stage3Icon;
+
+const Stage5Icon = Stage3Icon;
+
+
+const PLANT_STAGES = [
+    null,
+    Stage1Icon,
+    Stage2Icon,
+    Stage3Icon,
+    Stage4Icon,
+    Stage5Icon
+];
 
 
 type Sound = {
@@ -232,7 +246,7 @@ export default function StudyPage() {
     const [isMounted, setIsMounted] = useState(false);
     const [isScheduleAvailable, setIsScheduleAvailable] = useState(false);
     const [isFocusMode, setIsFocusMode] = useState(false);
-    const [plantStage, setPlantStage] = useState(0); // 0: none, 1: sprout, 2: plant, 3: tree
+    const [plantStage, setPlantStage] = useState(0); 
 
 
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -408,13 +422,16 @@ export default function StudyPage() {
         const totalDuration = modes[timerMode].focus * 60;
         const timeElapsed = totalDuration - timeLeft;
         
-        const firstThird = totalDuration / 3;
-        const secondThird = (totalDuration / 3) * 2;
+        const stageDuration = totalDuration / 5; // 5 stages
         
         let newStage = 0;
-        if (timeElapsed >= secondThird) {
+        if (timeElapsed >= stageDuration * 4) {
+            newStage = 5;
+        } else if (timeElapsed >= stageDuration * 3) {
+            newStage = 4;
+        } else if (timeElapsed >= stageDuration * 2) {
             newStage = 3;
-        } else if (timeElapsed >= firstThird) {
+        } else if (timeElapsed >= stageDuration) {
             newStage = 2;
         } else {
             newStage = 1;
@@ -433,6 +450,8 @@ export default function StudyPage() {
     const phaseColors = phase === 'focus' 
         ? modes[timerMode].colors
         : "from-green-400 to-emerald-500";
+    
+    const CurrentPlantIcon = PLANT_STAGES[plantStage];
   
     return (
     <div className="flex flex-col h-screen bg-muted/30">
@@ -505,7 +524,7 @@ export default function StudyPage() {
                     </div>
                     
                     <div className="relative flex items-center justify-center">
-                       <div className="relative w-56 h-56 rounded-full bg-background flex flex-col items-center justify-center shadow-inner overflow-hidden">
+                       <div className="relative w-64 h-64 rounded-full bg-background flex flex-col items-center justify-center shadow-inner overflow-hidden">
                            <AnimatePresence>
                                 {!isActive ? (
                                     <motion.div
@@ -542,40 +561,16 @@ export default function StudyPage() {
                                         
                                         <div className="flex items-center justify-center">
                                             <AnimatePresence mode="wait">
-                                                {plantStage === 1 && (
+                                                {CurrentPlantIcon && (
                                                     <motion.div
-                                                        key="sprout"
+                                                        key={plantStage}
                                                         initial={{ opacity: 0, scale: 0.5 }}
                                                         animate={{ opacity: 1, scale: 1 }}
                                                         exit={{ opacity: 0, scale: 0.5 }}
                                                         transition={{ duration: 0.5 }}
-                                                        className="text-green-500 w-32 h-32 mt-6"
+                                                        className="text-green-500 w-40 h-40 mt-8"
                                                     >
-                                                        <SproutIcon className="w-full h-full" />
-                                                    </motion.div>
-                                                )}
-                                                {plantStage === 2 && (
-                                                    <motion.div
-                                                        key="plant"
-                                                        initial={{ opacity: 0, scale: 0.5 }}
-                                                        animate={{ opacity: 1, scale: 1 }}
-                                                        exit={{ opacity: 0, scale: 0.5 }}
-                                                        transition={{ duration: 0.5 }}
-                                                        className="text-green-500 w-32 h-32 mt-6"
-                                                    >
-                                                        <PlantIcon className="w-full h-full" />
-                                                    </motion.div>
-                                                )}
-                                                {plantStage === 3 && (
-                                                    <motion.div
-                                                        key="tree"
-                                                        initial={{ opacity: 0, scale: 0.5 }}
-                                                        animate={{ opacity: 1, scale: 1 }}
-                                                        exit={{ opacity: 0, scale: 0.5 }}
-                                                        transition={{ duration: 0.5 }}
-                                                        className="text-green-500 w-32 h-32 mt-6"
-                                                    >
-                                                        <TreeIcon className="w-full h-full" />
+                                                        <CurrentPlantIcon className="w-full h-full" />
                                                     </motion.div>
                                                 )}
                                             </AnimatePresence>
@@ -838,6 +833,8 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
     const [isCropping, setIsCropping] = useState(false);
     const [startCropPoint, setStartCropPoint] = useState<{ x: number; y: number } | null>(null);
     
+    const [stream, setStream] = useState<MediaStream | null>(null);
+
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -847,13 +844,18 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
     const activePage = useMemo(() => pages.find(p => p.id === activePageId), [pages, activePageId]);
 
     const stopCamera = useCallback(() => {
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
+        if (stream) {
             stream.getTracks().forEach(track => track.stop());
-            videoRef.current.srcObject = null;
+            setStream(null);
         }
         setIsCameraActive(false);
-    }, []);
+    }, [stream]);
+
+    useEffect(() => {
+        if (videoRef.current && stream) {
+            videoRef.current.srcObject = stream;
+        }
+    }, [stream]);
 
 
     useEffect(() => {
@@ -864,16 +866,18 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
 
     const getCameraPermission = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             setHasCameraPermission(true);
             setIsCameraActive(true);
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-            }
+            setStream(mediaStream);
         } catch (error) {
             console.error('Error accessing camera:', error);
             setHasCameraPermission(false);
             setIsCameraActive(false);
+            setStream(null);
             toast({
                 variant: 'destructive',
                 title: 'Acceso a la Cámara Denegado',
