@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { SummaryCardData, Schedule, User, ScheduleEntry, UpcomingClass, CalendarEvent, Announcement, Center } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity, Flame, ShoppingCart, TreePine, Gift, Lightbulb, Monitor } from "lucide-react";
+import { ArrowRight, Trophy, NotebookText, FileCheck2, Clock, MessageSquare, LifeBuoy, BookX, Loader2, CalendarIcon, CheckCircle, BrainCircuit, Infinity, Flame, ShoppingCart, TreePine, Gift, Lightbulb, Monitor, Users, HelpCircle, BookCopy } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useApp } from "@/lib/hooks/use-app";
@@ -626,6 +626,71 @@ export default function HomePage() {
       </section>
 
       <section className="mb-10">
+        <Dialog>
+            <DialogTrigger asChild>
+                <div className="relative rounded-lg p-6 bg-gradient-to-br from-teal-500 to-cyan-600 text-white cursor-pointer transition-transform hover:scale-[1.02] shadow-lg hover:shadow-xl overflow-hidden">
+                    <div className="relative z-10">
+                        <div className="absolute top-0 right-0 bg-white/20 text-white text-xs font-bold py-1 px-2 rounded-full">
+                            PRÓXIMAMENTE
+                        </div>
+                        <Users className="h-8 w-8 mb-2" />
+                        <h3 className="text-xl font-bold font-headline">Foro de la Comunidad</h3>
+                        <p className="opacity-80 text-sm mb-4">Conecta, aprende y comparte con otros estudiantes.</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 py-0.5 px-2 rounded-full">Dudas</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 py-0.5 px-2 rounded-full">Apuntes</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 py-0.5 px-2 rounded-full">Recursos</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 py-0.5 px-2 rounded-full">Salud</span>
+                        </div>
+                    </div>
+                </div>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-3 text-2xl">
+                        <Users className="h-7 w-7 text-teal-500" />
+                        Foro de la Comunidad
+                    </DialogTitle>
+                    <DialogDescription>
+                        Un espacio seguro y moderado para crecer juntos. ¡Próximamente en Dynamic Class!
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-6">
+                    <div>
+                        <h4 className="font-semibold text-lg flex items-center gap-2 mb-2"><HelpCircle className="h-5 w-5 text-primary" />Zona de Preguntas y Respuestas</h4>
+                        <p className="text-sm text-muted-foreground">
+                            ¿Atascado con un problema de mates? ¿No sabes qué bachillerato escoger? Este será tu espacio para preguntar y encontrar respuestas verificadas por la comunidad y moderadores. Un lugar para resolver dudas sobre:
+                        </p>
+                        <ul className="list-disc list-inside text-sm text-muted-foreground mt-2 space-y-1 pl-4">
+                            <li>Técnicas de estudio y organización.</li>
+                            <li>Orientación académica y profesional (FP, Bachillerato, Universidad).</li>
+                            <li>Salud mental y bienestar del estudiante.</li>
+                            <li>Dudas sobre el uso de la app y tecnología.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold text-lg flex items-center gap-2 mb-2"><BookCopy className="h-5 w-5 text-accent" />Biblioteca de Recursos</h4>
+                        <p className="text-sm text-muted-foreground">
+                            Comparte tus conocimientos y aprovecha los de los demás. En esta sección podrás:
+                        </p>
+                        <ul className="list-disc list-inside text-sm text-muted-foreground mt-2 space-y-1 pl-4">
+                            <li>Subir y descargar apuntes, resúmenes y trabajos.</li>
+                            <li>Filtrar recursos por asignatura y curso.</li>
+                            <li>Valorar los apuntes de otros para destacar los mejores.</li>
+                            <li>Crear un portfolio con tus mejores trabajos para futuras oportunidades.</li>
+                        </ul>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button className="w-full">¡Suena genial!</Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+      </section>
+
+      <section className="mb-10">
         <h3 className="text-xl font-semibold font-headline mb-4">{isScheduleAvailable ? upcomingClassesDay : "Próximas Clases"}</h3>
         <div className="space-y-4">
           {isScheduleAvailable ? (
@@ -947,3 +1012,4 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
 
 
     
+
