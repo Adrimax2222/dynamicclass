@@ -232,7 +232,8 @@ export default function StudyPage() {
         customMode,
         setCustomMode,
         resetTimer,
-        skipPhase
+        skipPhase,
+        plantCount,
     } = useApp();
     const router = useRouter();
     const firestore = useFirestore();
@@ -633,7 +634,7 @@ export default function StudyPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {(user?.studyMinutes ?? 0) > 0 ? (
+                    {(plantCount ?? 0) > 0 ? (
                         <Button asChild className="w-full bg-green-500 hover:bg-green-600">
                            <Link href="/study/collection">
                                 <TreePine className="mr-2 h-4 w-4" />
@@ -1832,3 +1833,4 @@ function UnitConverter() {
         </Tabs>
     );
 }
+
