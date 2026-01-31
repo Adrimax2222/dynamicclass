@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, Settings, Search, Leaf, Lock, Filter, Sprout, Trees, Flower, Sun, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WipDialog } from "@/components/layout/wip-dialog";
+import { useApp } from "@/lib/hooks/use-app";
 
 type Plant = {
     id: number;
@@ -74,6 +75,7 @@ export default function CollectionPage() {
     const router = useRouter();
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const { plantCount } = useApp();
 
     const filteredPlants = plantCollection.filter(plant => {
         const matchesFilter = filter === 'all' || (filter === 'unlocked' && plant.unlocked) || (filter === 'locked' && !plant.unlocked);
@@ -100,7 +102,7 @@ export default function CollectionPage() {
                     <Card>
                         <CardContent className="p-3 text-center">
                             <p className="text-xs text-muted-foreground">Plantas Totales</p>
-                            <p className="text-2xl font-bold">27 <span className="text-muted-foreground">/ 50</span></p>
+                            <p className="text-2xl font-bold">{plantCount} <span className="text-muted-foreground">/ 50</span></p>
                         </CardContent>
                     </Card>
                     <Card>

@@ -57,6 +57,8 @@ export interface AppContextType {
   setCustomMode: (mode: CustomMode) => void;
   resetTimer: () => void;
   skipPhase: () => void;
+  plantCount: number;
+  setPlantCount: React.Dispatch<React.SetStateAction<number>>;
 
   // Notification states
   hasNewAnnouncements: boolean;
@@ -95,6 +97,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<Phase>("focus");
   const [isActive, setIsActive] = useState(false);
   const [customMode, setCustomMode] = useState<CustomMode>({ focus: 45, break: 15 });
+  const [plantCount, setPlantCount] = useState(0);
 
   const modes = useMemo(() => ({
     pomodoro: { focus: 25, break: 5 },
@@ -124,7 +127,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (storedSaveDocs !== null) {
       setSaveScannedDocsState(JSON.parse(storedSaveDocs));
     }
+
+    const storedPlantCount = localStorage.getItem('plantCount');
+    if (storedPlantCount) {
+        setPlantCount(parseInt(storedPlantCount, 10));
+    }
   }, []);
+
+  useEffect(() => {
+      localStorage.setItem('plantCount', plantCount.toString());
+  }, [plantCount]);
+
 
   useEffect(() => {
     if (!auth || !firestore) return;
@@ -324,7 +337,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!isActive) {
       setTimeLeft(getInitialTime());
     }
-  }, [timerMode, phase, getInitialTime]);
+  }, [timerMode, phase, getInitialTime, isActive]);
 
 
   useEffect(() => {
@@ -391,10 +404,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const nextPhase = phase === "focus" ? "break" : "focus";
       const nextPhaseDuration = modes[timerMode][nextPhase];
       
-      toast({
-        title: `¡Tiempo de ${nextPhase === 'break' ? 'descanso' : 'enfoque'}!`,
-        description: `Comienza tu bloque de ${nextPhaseDuration} minutos.`,
-      });
+      if (phase === 'focus') {
+          setPlantCount(prev => prev + 1);
+          toast({
+              title: "¡Planta conseguida!",
+              description: `Has completado una sesión de estudio. ¡Sigue así!`,
+          });
+      } else {
+         toast({
+            title: `¡Tiempo de ${nextPhase === 'break' ? 'descanso' : 'enfoque'}!`,
+            description: `Comienza tu bloque de ${nextPhaseDuration} minutos.`,
+          });
+      }
 
       setPhase(nextPhase);
       setTimeLeft(modes[timerMode][nextPhase] * 60);
@@ -402,7 +423,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, timeLeft, timerMode, phase, toast, modes]);
+  }, [isActive, timeLeft, timerMode, phase, toast, modes, setPlantCount]);
   
   useEffect(() => {
     if (!firestore || !user || !isActive || phase !== 'focus') return;
@@ -484,6 +505,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCustomMode,
     resetTimer,
     skipPhase,
+    plantCount,
+    setPlantCount,
     // Notifications
     hasNewAnnouncements,
     setHasNewAnnouncements,
