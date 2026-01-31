@@ -67,7 +67,7 @@ Tu misión:
     prompt += 'Usa Markdown para formatear (negritas, listas, código si es necesario). Mantén un tono educativo positivo.';
 
     // Llamar a la API de Gemini
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'models/gemini-1.5-pro-latest' });
     
     const result = await model.generateContent(prompt);
     const response = result.response;
