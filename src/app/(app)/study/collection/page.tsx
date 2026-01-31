@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { WipDialog } from "@/components/layout/wip-dialog";
 import { useApp } from "@/lib/hooks/use-app";
 import { Progress } from "@/components/ui/progress";
+import Link from "next/link";
+import { AvatarDisplay } from "@/components/profile/avatar-creator";
 
 type Plant = {
     id: number;
@@ -64,7 +66,7 @@ const PlantCard = ({ plant, unlocked, phaseToUnlock }: { plant: Plant, unlocked:
 export default function CollectionPage() {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
-    const { plantCount } = useApp();
+    const { user, plantCount } = useApp();
 
     const filteredPlants = allPlants.filter(plant => 
         plant.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -79,15 +81,24 @@ export default function CollectionPage() {
     return (
         <div className="flex flex-col min-h-screen bg-muted/30">
             <header className="p-4 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
-                <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                    <ChevronLeft />
-                </Button>
-                <h1 className="text-lg font-bold font-headline">Mi Jardín Botánico</h1>
-                <WipDialog>
-                    <Button variant="ghost" size="icon">
-                        <Settings />
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                        <ChevronLeft />
                     </Button>
-                </WipDialog>
+                    <h1 className="text-lg font-bold font-headline">Mi Jardín Botánico</h1>
+                </div>
+                <div className="flex items-center gap-2">
+                    <WipDialog>
+                        <Button variant="ghost" size="icon">
+                            <Settings />
+                        </Button>
+                    </WipDialog>
+                    {user && (
+                        <Link href="/profile">
+                            <AvatarDisplay user={user} className="h-9 w-9" />
+                        </Link>
+                    )}
+                </div>
             </header>
 
             <main className="flex-1 p-4 space-y-6">
