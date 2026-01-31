@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock, Info, Timer, BrainCircuit, Globe, Fish, Lock } from "lucide-react";
+import { ChevronLeft, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock, Info, Timer, BrainCircuit, Globe, Fish, Lock, Leaf, Waves, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/hooks/use-app";
 import { Progress } from "@/components/ui/progress";
@@ -342,30 +342,44 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     {/* Terrestrial Path */}
-                    <Card className="border-primary/50 bg-primary/5 ring-2 ring-primary/50">
-                        <CardHeader className="flex flex-row items-center gap-4">
-                            <div className="p-3 rounded-lg bg-primary/10"><TreePine className="h-8 w-8 text-primary" /></div>
-                            <div>
-                                <CardTitle className="text-base">Camino Terrestre</CardTitle>
-                                <CardDescription>Explora la flora de nuestro planeta.</CardDescription>
-                            </div>
-                        </CardHeader>
-                        <CardFooter>
-                            <Button className="w-full" disabled>Seleccionado</Button>
-                        </CardFooter>
+                    <Card className="relative overflow-hidden border-green-500/50 bg-green-500/10 ring-2 ring-green-500/50">
+                        <div className="absolute inset-0 z-0 opacity-[0.03] text-green-800">
+                            <Leaf className="absolute -top-4 -left-8 h-24 w-24 -rotate-12" />
+                            <Sprout className="absolute -bottom-6 -right-5 h-20 w-20 rotate-12" />
+                            <TreePine className="absolute top-10 right-0 h-16 w-16 -rotate-6" />
+                        </div>
+                        <div className="relative z-10">
+                            <CardHeader className="flex flex-row items-center gap-4">
+                                <div className="p-3 rounded-lg bg-green-600/10"><TreePine className="h-8 w-8 text-green-600" /></div>
+                                <div>
+                                    <CardTitle className="text-base text-green-800 dark:text-green-200">Camino Terrestre</CardTitle>
+                                    <CardDescription className="text-green-700/80 dark:text-green-300/80">Explora la flora de nuestro planeta.</CardDescription>
+                                </div>
+                            </CardHeader>
+                            <CardFooter>
+                                <Button className="w-full bg-green-600 hover:bg-green-700" disabled>Seleccionado</Button>
+                            </CardFooter>
+                        </div>
                     </Card>
 
                     {/* Underwater Path */}
-                    <Card className={cn("overflow-hidden relative", !isTerrestrialComplete && "bg-muted/50")}>
-                        <CardHeader className={cn("flex flex-row items-center gap-4", !isTerrestrialComplete && "opacity-40")}>
-                            <div className="p-3 rounded-lg bg-blue-500/10"><Fish className="h-8 w-8 text-blue-500" /></div>
-                            <div>
-                                <CardTitle className="text-base text-blue-600">Camino Submarino</CardTitle>
-                                <CardDescription>Descubre las especies marinas y los secretos del océano.</CardDescription>
-                            </div>
-                        </CardHeader>
+                    <Card className={cn("overflow-hidden relative border-blue-500/30 bg-blue-500/10")}>
+                         <div className="absolute inset-0 z-0 opacity-[0.04] text-blue-800">
+                            <Fish className="absolute top-4 left-4 h-12 w-12 rotate-12" />
+                            <Waves className="absolute bottom-2 right-2 h-20 w-20" />
+                            <Fish className="absolute bottom-8 left-1/2 h-8 w-8 -rotate-12" />
+                        </div>
+                        <div className={cn("relative z-10", !isTerrestrialComplete && "opacity-50")}>
+                            <CardHeader className="flex flex-row items-center gap-4">
+                                <div className="p-3 rounded-lg bg-blue-600/10"><Fish className="h-8 w-8 text-blue-600" /></div>
+                                <div>
+                                    <CardTitle className="text-base text-blue-800 dark:text-blue-200">Camino Submarino</CardTitle>
+                                    <CardDescription className="text-blue-700/80 dark:text-blue-300/80">Descubre las especies marinas y los secretos del océano.</CardDescription>
+                                </div>
+                            </CardHeader>
+                        </div>
                          {!isTerrestrialComplete && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1.5 rounded-full bg-background/80 px-2 py-1 text-xs font-semibold text-muted-foreground border shadow-sm">
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5 rounded-full bg-background/80 px-2 py-1 text-xs font-semibold text-muted-foreground border shadow-sm z-20">
                                 <Lock className="h-3 w-3"/>
                                 Bloqueado
                             </div>
@@ -373,16 +387,23 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
                     </Card>
                     
                     {/* Spatial Path */}
-                    <Card className={cn("overflow-hidden relative", !isTerrestrialComplete && "bg-muted/50")}>
-                        <CardHeader className={cn("flex flex-row items-center gap-4", !isTerrestrialComplete && "opacity-40")}>
-                            <div className="p-3 rounded-lg bg-indigo-500/10"><Rocket className="h-8 w-8 text-indigo-500" /></div>
-                            <div>
-                                <CardTitle className="text-base text-indigo-600">Camino Espacial</CardTitle>
-                                <CardDescription>Viaja por el cosmos y explora planetas lejanos.</CardDescription>
-                            </div>
-                        </CardHeader>
+                    <Card className={cn("overflow-hidden relative border-indigo-500/30 bg-indigo-500/10")}>
+                        <div className="absolute inset-0 z-0 opacity-[0.04] text-indigo-800">
+                           <Sparkles className="absolute top-8 left-10 h-10 w-10 rotate-[30deg]" />
+                           <Rocket className="absolute bottom-4 right-8 h-16 w-16 -rotate-[25deg]" />
+                           <Sparkles className="absolute bottom-12 left-1/3 h-6 w-6 rotate-[-15deg]" />
+                        </div>
+                        <div className={cn("relative z-10", !isTerrestrialComplete && "opacity-50")}>
+                            <CardHeader className="flex flex-row items-center gap-4">
+                                <div className="p-3 rounded-lg bg-indigo-600/10"><Rocket className="h-8 w-8 text-indigo-600" /></div>
+                                <div>
+                                    <CardTitle className="text-base text-indigo-800 dark:text-indigo-200">Camino Espacial</CardTitle>
+                                    <CardDescription className="text-indigo-700/80 dark:text-indigo-300/80">Viaja por el cosmos y explora planetas lejanos.</CardDescription>
+                                </div>
+                            </CardHeader>
+                        </div>
                          {!isTerrestrialComplete && (
-                            <div className="absolute top-2 right-2 flex items-center gap-1.5 rounded-full bg-background/80 px-2 py-1 text-xs font-semibold text-muted-foreground border shadow-sm">
+                            <div className="absolute top-2 right-2 flex items-center gap-1.5 rounded-full bg-background/80 px-2 py-1 text-xs font-semibold text-muted-foreground border shadow-sm z-20">
                                 <Lock className="h-3 w-3"/>
                                 Bloqueado
                             </div>
