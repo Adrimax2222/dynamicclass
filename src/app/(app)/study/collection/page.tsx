@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Settings, Search, Sprout, Trees, Flower, Sun, Plus, TreePine } from "lucide-react";
+import { ChevronLeft, Settings, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WipDialog } from "@/components/layout/wip-dialog";
 import { useApp } from "@/lib/hooks/use-app";
@@ -55,8 +55,8 @@ const PlantCard = ({ plant, unlocked, phaseToUnlock }: { plant: Plant, unlocked:
                     <p className="font-bold text-sm mt-4 text-foreground">{plant.name}</p>
                 ) : (
                     <div className="mt-4 text-center">
-                        <p className="font-semibold text-sm text-muted-foreground">Completa la Fase {phaseToUnlock}</p>
-                        <p className="text-xs text-muted-foreground">para desbloquear</p>
+                        <p className="font-bold text-sm text-muted-foreground">{plant.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Completa la Fase {phaseToUnlock - 1} para desbloquear</p>
                     </div>
                 )}
             </CardContent>
