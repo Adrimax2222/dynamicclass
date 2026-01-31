@@ -43,7 +43,6 @@ import {
   History,
   Scale,
   ArrowRightLeft,
-  Camera,
   Upload,
   Download,
   FileCheck2,
@@ -403,9 +402,7 @@ export default function StudyPage() {
     };
 
     const formatStudyTime = (totalMinutes: number = 0) => {
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        return `${hours}h ${minutes}m`;
+        return `${totalMinutes}m`;
     };
 
     const progress = useMemo(() => {
@@ -461,19 +458,18 @@ export default function StudyPage() {
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
                 <ChevronLeft />
             </Button>
-            <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold">Modo Estudio</h1>
-                <ScannerDialog>
-                    <Button variant="ghost" size="icon">
-                        <Camera className="h-5 w-5" />
-                    </Button>
-                </ScannerDialog>
-            </div>
+            <h1 className="text-lg font-bold">Modo Estudio</h1>
             <div className="flex items-center gap-2">
                 <Badge variant="outline" className="flex items-center gap-1.5">
                     <Clock className="h-4 w-4"/>
                     <span>{formatStudyTime(user.studyMinutes)}</span>
                 </Badge>
+                <Link href="/study/collection">
+                    <Badge variant="outline" className="flex items-center gap-1.5 bg-green-100 dark:bg-green-900/50 border-green-300 dark:border-green-700 cursor-pointer">
+                        <TreePine className="h-4 w-4 text-green-600 dark:text-green-400"/>
+                        <span className="font-bold text-green-700 dark:text-green-300">{plantCount}</span>
+                    </Badge>
+                </Link>
                 <Badge variant="outline" className={cn("flex items-center gap-1.5", streakCount > 0 ? "bg-orange-100 dark:bg-orange-900/50 border-orange-300 dark:border-orange-700" : "")}>
                     <Flame className={cn("h-4 w-4", streakCount > 0 ? "text-orange-500" : "text-muted-foreground")} />
                     <span className="font-bold">{streakCount}</span>
