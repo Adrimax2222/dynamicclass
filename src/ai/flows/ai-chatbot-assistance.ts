@@ -30,7 +30,7 @@ export type AIChatbotAssistanceOutput = z.infer<typeof AIChatbotAssistanceOutput
 
 const assistancePrompt = ai.definePrompt({
   name: 'chatbotAssistancePrompt',
-  model: 'gemini-pro',
+  model: 'models/gemini-1.5-flash-latest',
   input: { schema: AIChatbotAssistanceInputSchema },
   output: {
     schema: AIChatbotAssistanceOutputSchema,
@@ -94,7 +94,7 @@ export async function aiChatbotAssistance(
 
     console.log('🔍 Enviando a Gemini:', {
       query: validatedInput.query,
-      model: 'gemini-pro',
+      model: 'models/gemini-1.5-flash-latest',
       apiKeyPresent: !!process.env.GOOGLE_GENAI_API_KEY,
     });
     
