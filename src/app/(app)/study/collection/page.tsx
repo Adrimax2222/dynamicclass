@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, Settings, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock } from "lucide-react";
@@ -269,3 +269,5 @@ export default function CollectionPage() {
         </div>
     );
 }
+
+    
