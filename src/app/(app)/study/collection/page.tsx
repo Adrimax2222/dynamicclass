@@ -4,17 +4,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock, Info, Timer, BrainCircuit } from "lucide-react";
+import { ChevronLeft, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock, Info, Timer, BrainCircuit, Globe, Fish, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/hooks/use-app";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
-import { WipDialog } from "@/components/layout/wip-dialog";
 
 type Plant = {
     id: number;
@@ -36,6 +35,7 @@ const allPlants: Plant[] = [
     { id: 7, name: 'Rosa Estelar', rarity: 'Épico', icon: Flower, unlocksAt: 30, description: "La rosa es una de las flores más cultivadas y apreciadas del mundo, un símbolo universal de amor y belleza. Existen miles de variedades, y sus pétalos se utilizan para producir aceites esenciales y perfumes.", imageUrl: "https://mamabruja.com/wp-content/uploads/2021/10/ivan-jevtic-p7mo8-CG5Gs-unsplash-2-scaled.jpg" },
     { id: 8, name: 'Árbol Solar', rarity: 'Épico', icon: Sun, unlocksAt: 35, description: "Inspirado en el Baobab, conocido como 'el Árbol de la Vida'. Este árbol africano puede vivir miles de años y almacenar hasta 120,000 litros de agua en su tronco para sobrevivir a las sequías extremas, siendo un pilar de su ecosistema.", imageUrl: "https://images.unsplash.com/photo-1692303366685-390f3e039bf9?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8JUMzJUExcmJvbCUyMGRlJTIwbGElMjB2aWRhfGVufDB8fDB8fHww" },
 ];
+
 
 const rarityStyles = {
     'Común': "border-green-500/30 bg-green-500/5 text-green-600",
@@ -118,6 +118,75 @@ const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, phase, plants
     );
 };
 
+function PathsDialog({ children, isTerrestrialComplete }: { children: React.ReactNode, isTerrestrialComplete: boolean }) {
+    return (
+        <Dialog>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Elige tu Camino de Conocimiento</DialogTitle>
+                    <DialogDescription>
+                        Completa un camino para desbloquear el siguiente. Cada sesión de estudio te acerca a tu meta.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    {/* Terrestrial Path */}
+                    <Card className="border-primary/50 bg-primary/5 ring-2 ring-primary/50">
+                        <CardHeader className="flex flex-row items-center gap-4">
+                            <TreePine className="h-8 w-8 text-primary" />
+                            <div>
+                                <CardTitle className="text-base">Camino Terrestre</CardTitle>
+                                <CardDescription>Explora la flora de nuestro planeta.</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardFooter>
+                            <Button className="w-full" disabled>Seleccionado</Button>
+                        </CardFooter>
+                    </Card>
+
+                    {/* Underwater Path */}
+                    <div className={cn("relative", !isTerrestrialComplete && "cursor-not-allowed")}>
+                        <Card className={cn(!isTerrestrialComplete && "opacity-50 pointer-events-none")}>
+                            <CardHeader className="flex flex-row items-center gap-4">
+                                <Fish className="h-8 w-8 text-muted-foreground" />
+                                <div>
+                                    <CardTitle className="text-base text-muted-foreground">Camino Submarino</CardTitle>
+                                    <CardDescription>Descubre las especies marinas y los secretos del océano.</CardDescription>
+                                </div>
+                            </CardHeader>
+                        </Card>
+                        {!isTerrestrialComplete && (
+                            <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg">
+                                <Lock className="h-6 w-6 mb-2"/>
+                                <p className="text-xs font-semibold">Completa el Camino Terrestre</p>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Spatial Path */}
+                    <div className={cn("relative", !isTerrestrialComplete && "cursor-not-allowed")}>
+                        <Card className={cn(!isTerrestrialComplete && "opacity-50 pointer-events-none")}>
+                            <CardHeader className="flex flex-row items-center gap-4">
+                                <Rocket className="h-8 w-8 text-muted-foreground" />
+                                <div>
+                                    <CardTitle className="text-base text-muted-foreground">Camino Espacial</CardTitle>
+                                    <CardDescription>Viaja por el cosmos y explora planetas lejanos.</CardDescription>
+                                </div>
+                            </CardHeader>
+                        </Card>
+                        {!isTerrestrialComplete && (
+                            <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg">
+                                <Lock className="h-6 w-6 mb-2"/>
+                                <p className="text-xs font-semibold">Completa el Camino Terrestre</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 export default function CollectionPage() {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
@@ -132,6 +201,7 @@ export default function CollectionPage() {
     
     const nextPlant = allPlants.find(p => p.unlocksAt > plantCount);
     const progressToNext = nextPlant ? (plantsInCurrentPhase / 5) * 100 : 100;
+    const isTerrestrialComplete = plantCount >= allPlants.length;
 
     return (
         <div className="flex flex-col min-h-screen bg-muted/30">
@@ -265,11 +335,11 @@ export default function CollectionPage() {
                             </CardTitle>
                             <CardDescription>Explora las diferentes sendas de conocimiento.</CardDescription>
                         </div>
-                        <WipDialog>
+                        <PathsDialog isTerrestrialComplete={isTerrestrialComplete}>
                             <Button variant="outline">
                                 Ver Caminos
                             </Button>
-                        </WipDialog>
+                        </PathsDialog>
                     </CardHeader>
                 </Card>
 
