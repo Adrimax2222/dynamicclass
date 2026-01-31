@@ -29,6 +29,9 @@ const allPlants: Plant[] = [
     { id: 3, name: 'Girasol Radiante', rarity: 'uncommon', icon: Sun, unlocksAt: 10 },
     { id: 4, name: 'Roble Ancestral', rarity: 'rare', icon: Trees, unlocksAt: 15 },
     { id: 5, name: 'Planta Carnívora', rarity: 'epic', icon: Sprout, unlocksAt: 20 },
+    { id: 6, name: 'Pino Místico', rarity: 'rare', icon: TreePine, unlocksAt: 25 },
+    { id: 7, name: 'Rosa Estelar', rarity: 'epic', icon: Flower, unlocksAt: 30 },
+    { id: 8, name: 'Árbol Solar', rarity: 'epic', icon: Sun, unlocksAt: 35 },
 ];
 
 const PlantCard = ({ plant, unlocked, phaseToUnlock }: { plant: Plant, unlocked: boolean, phaseToUnlock: number }) => {
