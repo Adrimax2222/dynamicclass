@@ -19,27 +19,27 @@ type Plant = {
     id: number;
     name: string;
     icon: React.ElementType;
-    rarity: 'common' | 'uncommon' | 'rare' | 'epic';
+    rarity: 'Común' | 'Poco Común' | 'Raro' | 'Épico';
     unlocksAt: number; // number of plants needed
 };
 
 const allPlants: Plant[] = [
-    { id: 1, name: 'Helecho Clásico', rarity: 'common', icon: Sprout, unlocksAt: 0 },
-    { id: 2, name: 'Lirio Acuático', rarity: 'uncommon', icon: Flower, unlocksAt: 5 },
-    { id: 3, name: 'Girasol Radiante', rarity: 'uncommon', icon: Sun, unlocksAt: 10 },
-    { id: 4, name: 'Roble Ancestral', rarity: 'rare', icon: Trees, unlocksAt: 15 },
-    { id: 5, name: 'Planta Carnívora', rarity: 'epic', icon: Sprout, unlocksAt: 20 },
-    { id: 6, name: 'Pino Místico', rarity: 'rare', icon: TreePine, unlocksAt: 25 },
-    { id: 7, name: 'Rosa Estelar', rarity: 'epic', icon: Flower, unlocksAt: 30 },
-    { id: 8, name: 'Árbol Solar', rarity: 'epic', icon: Sun, unlocksAt: 35 },
+    { id: 1, name: 'Helecho Clásico', rarity: 'Común', icon: Sprout, unlocksAt: 0 },
+    { id: 2, name: 'Lirio Acuático', rarity: 'Común', icon: Flower, unlocksAt: 5 },
+    { id: 3, name: 'Girasol Radiante', rarity: 'Poco Común', icon: Sun, unlocksAt: 10 },
+    { id: 4, name: 'Roble Ancestral', rarity: 'Poco Común', icon: Trees, unlocksAt: 15 },
+    { id: 5, name: 'Planta Carnívora', rarity: 'Raro', icon: Sprout, unlocksAt: 20 },
+    { id: 6, name: 'Pino Místico', rarity: 'Raro', icon: TreePine, unlocksAt: 25 },
+    { id: 7, name: 'Rosa Estelar', rarity: 'Épico', icon: Flower, unlocksAt: 30 },
+    { id: 8, name: 'Árbol Solar', rarity: 'Épico', icon: Sun, unlocksAt: 35 },
 ];
 
 const PlantCard = ({ plant, unlocked, phaseToUnlock }: { plant: Plant, unlocked: boolean, phaseToUnlock: number }) => {
     const rarityStyles = {
-        common: "border-green-500/30 bg-green-500/5 text-green-600",
-        uncommon: "border-blue-500/30 bg-blue-500/5 text-blue-600",
-        rare: "border-purple-500/30 bg-purple-500/5 text-purple-600",
-        epic: "border-amber-500/30 bg-amber-500/5 text-amber-600",
+        'Común': "border-green-500/30 bg-green-500/5 text-green-600",
+        'Poco Común': "border-blue-500/30 bg-blue-500/5 text-blue-600",
+        'Raro': "border-purple-500/30 bg-purple-500/5 text-purple-600",
+        'Épico': "border-amber-500/30 bg-amber-500/5 text-amber-600",
     };
 
     const Icon = plant.icon;
@@ -60,7 +60,7 @@ const PlantCard = ({ plant, unlocked, phaseToUnlock }: { plant: Plant, unlocked:
                     </div>
                 )}
             </CardContent>
-            {unlocked && <Badge variant="secondary" className={cn("absolute top-2 right-2 text-xs", rarityStyles[plant.rarity])}>{plant.rarity}</Badge>}
+            {<Badge variant="secondary" className={cn("absolute top-2 right-2 text-xs", unlocked ? rarityStyles[plant.rarity] : "bg-muted text-muted-foreground")}>{plant.rarity}</Badge>}
         </Card>
     );
 };
