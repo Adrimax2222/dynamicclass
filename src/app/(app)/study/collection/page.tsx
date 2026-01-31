@@ -4,13 +4,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, Settings, Search, Sprout, Trees, Flower, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WipDialog } from "@/components/layout/wip-dialog";
 import { useApp } from "@/lib/hooks/use-app";
+import { Progress } from "@/components/ui/progress";
 
 type Plant = {
     id: number;
@@ -30,18 +31,11 @@ const allPlants: Plant[] = [
 
 const PlantCard = ({ plant, unlocked, phaseToUnlock }: { plant: Plant, unlocked: boolean, phaseToUnlock: number }) => {
     const rarityStyles = {
-        common: "border-green-500/30 bg-green-500/5",
-        uncommon: "border-blue-500/30 bg-blue-500/5",
-        rare: "border-purple-500/30 bg-purple-500/5",
-        epic: "border-amber-500/30 bg-amber-500/5",
+        common: "border-green-500/30 bg-green-500/5 text-green-600",
+        uncommon: "border-blue-500/30 bg-blue-500/5 text-blue-600",
+        rare: "border-purple-500/30 bg-purple-500/5 text-purple-600",
+        epic: "border-amber-500/30 bg-amber-500/5 text-amber-600",
     };
-    
-    const rarityTextStyles = {
-        common: "text-green-600",
-        uncommon: "text-blue-600",
-        rare: "text-purple-600",
-        epic: "text-amber-600",
-    }
 
     const Icon = plant.icon;
 
@@ -51,7 +45,7 @@ const PlantCard = ({ plant, unlocked, phaseToUnlock }: { plant: Plant, unlocked:
             unlocked ? rarityStyles[plant.rarity] : 'border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900'
         )}>
             <CardContent className="p-4 flex flex-col items-center justify-center text-center aspect-square">
-                <Icon className={cn("w-16 h-16", unlocked ? rarityTextStyles[plant.rarity] : 'text-muted-foreground/50')} />
+                <Icon className={cn("w-16 h-16", unlocked ? rarityStyles[plant.rarity] : 'text-muted-foreground/50')} />
                 {unlocked ? (
                     <p className="font-bold text-sm mt-4 text-foreground">{plant.name}</p>
                 ) : (
@@ -61,7 +55,7 @@ const PlantCard = ({ plant, unlocked, phaseToUnlock }: { plant: Plant, unlocked:
                     </div>
                 )}
             </CardContent>
-            {unlocked && <Badge variant="secondary" className={cn("absolute top-2 right-2 text-xs", rarityStyles[plant.rarity], rarityTextStyles[plant.rarity])}>{plant.rarity}</Badge>}
+            {unlocked && <Badge variant="secondary" className={cn("absolute top-2 right-2 text-xs", rarityStyles[plant.rarity])}>{plant.rarity}</Badge>}
         </Card>
     );
 };
@@ -78,6 +72,9 @@ export default function CollectionPage() {
 
     const currentPhase = Math.floor(plantCount / 5) + 1;
     const plantsInCurrentPhase = plantCount % 5;
+    
+    const nextPlant = allPlants.find(p => p.unlocksAt > plantCount);
+    const progressToNext = nextPlant ? (plantsInCurrentPhase / 5) * 100 : 100;
 
     return (
         <div className="flex flex-col min-h-screen bg-muted/30">
@@ -108,6 +105,35 @@ export default function CollectionPage() {
                         </CardContent>
                     </Card>
                 </div>
+                
+                {nextPlant ? (
+                    <Card>
+                        <CardHeader className="p-3">
+                            <p className="text-xs text-muted-foreground text-center">Siguiente Desbloqueo</p>
+                        </CardHeader>
+                        <CardContent className="p-3 pt-0 space-y-2">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-muted rounded-lg">
+                                    <nextPlant.icon className="h-6 w-6 text-primary"/>
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold">{nextPlant.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Progreso: {plantsInCurrentPhase} / 5
+                                    </p>
+                                </div>
+                            </div>
+                            <Progress value={progressToNext} className="h-2" />
+                        </CardContent>
+                    </Card>
+                ) : (
+                     <Card className="bg-green-500/10 border-green-500/30">
+                        <CardContent className="p-4 text-center">
+                            <p className="font-bold text-green-700">¡Colección Completa!</p>
+                            <p className="text-xs text-muted-foreground">Has desbloqueado todas las plantas disponibles.</p>
+                        </CardContent>
+                    </Card>
+                )}
 
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
