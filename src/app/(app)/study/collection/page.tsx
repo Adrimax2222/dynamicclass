@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock, Info, Timer, BrainCircuit } from "lucide-react";
@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { WipDialog } from "@/components/layout/wip-dialog";
 
 type Plant = {
     id: number;
@@ -254,6 +255,23 @@ export default function CollectionPage() {
                         </CardContent>
                     </Card>
                 )}
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between p-4">
+                        <div>
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <TreePine className="h-5 w-5 text-green-600"/>
+                                Camino Terrestre
+                            </CardTitle>
+                            <CardDescription>Explora las diferentes sendas de conocimiento.</CardDescription>
+                        </div>
+                        <WipDialog>
+                            <Button variant="outline">
+                                Ver Caminos
+                            </Button>
+                        </WipDialog>
+                    </CardHeader>
+                </Card>
 
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
