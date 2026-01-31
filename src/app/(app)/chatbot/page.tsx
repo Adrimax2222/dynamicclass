@@ -239,9 +239,17 @@ export default function ChatbotPage() {
         setInput("");
       }
 
+      // Build context from the last 10 messages
+      const context = messages
+        .slice(-10)
+        .map(m => `${m.role === 'user' ? 'Usuario' : 'Asistente'}: ${m.content}`)
+        .join('\n\n');
+      
+      console.log("Iniciando generación con el modelo:", "gemini-1.5-flash"); // Critical log for debugging
       const result = await aiChatbotAssistance({ 
         query: messageToSend,
         responseLength,
+        context,
       });
 
       // Validate response
@@ -261,33 +269,16 @@ export default function ChatbotPage() {
 
     } catch (error: any) {
       console.error("❌ Error en handleSend:", error);
+      console.error("Error al obtener respuesta de la IA:", error.message);
 
-      let errorMsg = 'No se pudo obtener respuesta. ';
+      let errorMsg = error.message || 'No se pudo obtener respuesta. ';
       let canRetry = true;
-
-      if (error.message?.includes('Timeout')) {
-        errorMsg = 'La solicitud tardó demasiado. Intenta con una pregunta más corta.';
-      } else if (error.message?.includes('API key')) {
-        errorMsg = 'Error de configuración. Contacta al administrador.';
-        canRetry = false;
-      } else if (error.message?.includes('quota') || error.message?.includes('límite')) {
-        errorMsg = 'Se alcanzó el límite de uso. Intenta más tarde.';
-        canRetry = false;
-      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
-        errorMsg = 'Error de conexión. Verifica tu internet.';
-      }
-
-      setError({
-        hasError: true,
-        message: errorMsg,
-        canRetry,
-      });
 
       // Save error message to chat for user reference
       if (currentChatId) {
         const errorMessage: Omit<ChatMessage, 'uid'> = {
           role: "system",
-          content: `⚠️ ${errorMsg}${canRetry ? ' Puedes reintentar con el botón de abajo.' : ''}`,
+          content: `⚠️ Error: ${errorMsg}`,
           timestamp: Timestamp.now(),
         };
         try {
@@ -301,6 +292,7 @@ export default function ChatbotPage() {
       setIsSending(false);
     }
   };
+
 
   const handleRetry = () => {
     if (pendingMessage && error.canRetry) {
@@ -370,10 +362,6 @@ export default function ChatbotPage() {
               </div>
               <p className="text-lg font-semibold text-foreground">Tu Asistente Educativo Personal</p>
               <p className="mb-6">Pregúntame sobre cualquier tema...</p>
-              <Alert variant="destructive" className="max-w-sm text-xs">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>Advertencia: El sistema de IA ha sido desactivado temporalmente por motivos de desarrollo.</AlertDescription>
-              </Alert>
             </div>
           ) : isMessagesLoading ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-8 mt-16 text-muted-foreground">

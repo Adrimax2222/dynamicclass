@@ -31,7 +31,7 @@ export type AIChatbotAssistanceOutput = z.infer<typeof AIChatbotAssistanceOutput
 
 const assistancePrompt = ai.definePrompt({
   name: 'chatbotAssistancePrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: 'gemini-1.5-flash',
   input: { schema: AIChatbotAssistanceInputSchema },
   output: {
     schema: AIChatbotAssistanceOutputSchema,

@@ -1,3 +1,4 @@
+
 // src/ai/genkit.ts
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
@@ -29,7 +30,6 @@ export const ai = genkit({
   plugins: [
     googleAI({
       apiKey: apiKey,
-      defaultModel: 'gemini-1.5-flash',
     }),
   ],
   // En producción: 'error', en desarrollo: 'debug'
