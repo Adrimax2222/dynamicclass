@@ -4,17 +4,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Settings, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock } from "lucide-react";
+import { ChevronLeft, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock, Info, Timer, BrainCircuit } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { WipDialog } from "@/components/layout/wip-dialog";
 import { useApp } from "@/lib/hooks/use-app";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 
 type Plant = {
     id: number;
@@ -142,12 +141,58 @@ export default function CollectionPage() {
                     </Button>
                     <h1 className="text-lg font-bold font-headline">Mi Jardín Botánico</h1>
                 </div>
-                 <div className="flex items-center gap-2">
-                    <WipDialog>
-                        <Button variant="ghost" size="icon">
-                            <Settings />
-                        </Button>
-                    </WipDialog>
+                <div className="flex items-center gap-2">
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                                <Info className="h-5 w-5"/>
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2">
+                                    <TreePine className="h-6 w-6 text-primary" />
+                                    ¿Cómo funciona el Jardín?
+                                </DialogTitle>
+                                <DialogDescription>
+                                    Una guía rápida para hacer crecer tu colección.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="py-4 space-y-4 text-sm">
+                                <div className="flex items-start gap-3">
+                                    <div className="p-2 bg-primary/10 rounded-lg mt-1"><Timer className="h-5 w-5 text-primary" /></div>
+                                    <div>
+                                        <h4 className="font-semibold">Completa Sesiones de Estudio</h4>
+                                        <p className="text-muted-foreground">Cada vez que completas una sesión de enfoque en el "Modo Estudio", ganas una nueva planta para tu jardín.</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="p-2 bg-primary/10 rounded-lg mt-1"><Rocket className="h-5 w-5 text-primary" /></div>
+                                    <div>
+                                        <h4 className="font-semibold">Avanza por Fases</h4>
+                                        <p className="text-muted-foreground">Tu colección se divide en fases. Cada 5 plantas que consigues, completas una fase y avanzas a la siguiente.</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="p-2 bg-primary/10 rounded-lg mt-1"><Flower className="h-5 w-5 text-primary" /></div>
+                                    <div>
+                                        <h4 className="font-semibold">Desbloquea Nuevas Especies</h4>
+                                        <p className="text-muted-foreground">Al completar una fase, desbloqueas la siguiente planta de la colección, que será cada vez más exótica y rara.</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="p-2 bg-primary/10 rounded-lg mt-1"><BrainCircuit className="h-5 w-5 text-primary" /></div>
+                                    <div>
+                                        <h4 className="font-semibold">Aprende y Explora</h4>
+                                        <p className="text-muted-foreground">Haz clic en cada planta (¡incluso en las bloqueadas!) para ver tus estadísticas, el progreso de la fase y aprender datos reales y curiosos sobre cada especie.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogClose asChild>
+                                <Button className="w-full">¡Entendido!</Button>
+                            </DialogClose>
+                        </DialogContent>
+                    </Dialog>
                     {user && (
                         <Link href="/profile">
                             <AvatarDisplay user={user} className="h-9 w-9" />
@@ -223,10 +268,10 @@ export default function CollectionPage() {
                 <div className="grid grid-cols-2 gap-4">
                     {filteredPlants.map((plant) => {
                         const isUnlocked = plantCount >= plant.unlocksAt;
-                        const phaseToUnlock = (plant.unlocksAt / 5) + 1;
+                        const phaseToUnlock = (plant.unlocksAt / 5);
                         
                         return (
-                            <PlantInfoDialog 
+                             <PlantInfoDialog 
                                 key={plant.id} 
                                 plant={plant} 
                                 unlocked={isUnlocked}
@@ -243,7 +288,7 @@ export default function CollectionPage() {
                                         <plant.icon className={cn("w-16 h-16", isUnlocked ? rarityStyles[plant.rarity] : 'text-muted-foreground/50')} />
                                         <div className="mt-4 text-center">
                                             <p className={cn("font-bold text-sm", isUnlocked ? 'text-foreground' : 'text-muted-foreground')}>{plant.name}</p>
-                                            {!isUnlocked && <p className="text-xs text-muted-foreground mt-1">Completa la Fase {phaseToUnlock - 1} para desbloquear</p>}
+                                            {!isUnlocked && <p className="text-xs text-muted-foreground mt-1">Completa la Fase {phaseToUnlock} para desbloquear</p>}
                                         </div>
                                     </CardContent>
                                     <Badge variant="secondary" className={cn("absolute top-2 right-2 text-xs", isUnlocked ? rarityStyles[plant.rarity] : "bg-muted text-muted-foreground")}>{plant.rarity}</Badge>
@@ -263,5 +308,3 @@ export default function CollectionPage() {
         </div>
     );
 }
-
-    
