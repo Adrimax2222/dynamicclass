@@ -146,11 +146,11 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
 
                     {/* Underwater Path */}
                     <div className={cn("relative", !isTerrestrialComplete && "cursor-not-allowed")}>
-                        <Card className={cn(!isTerrestrialComplete && "opacity-50 pointer-events-none")}>
-                            <CardHeader className="flex flex-row items-center gap-4">
-                                <Fish className="h-8 w-8 text-muted-foreground" />
+                        <Card className={cn("overflow-hidden", !isTerrestrialComplete && "opacity-50 pointer-events-none")}>
+                            <CardHeader className="flex flex-row items-center gap-4 bg-blue-500/10 text-blue-800 dark:text-blue-300">
+                                <Fish className="h-8 w-8" />
                                 <div>
-                                    <CardTitle className="text-base text-muted-foreground">Camino Submarino</CardTitle>
+                                    <CardTitle className="text-base">Camino Submarino</CardTitle>
                                     <CardDescription>Descubre las especies marinas y los secretos del océano.</CardDescription>
                                 </div>
                             </CardHeader>
@@ -165,11 +165,11 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
                     
                     {/* Spatial Path */}
                     <div className={cn("relative", !isTerrestrialComplete && "cursor-not-allowed")}>
-                        <Card className={cn(!isTerrestrialComplete && "opacity-50 pointer-events-none")}>
-                            <CardHeader className="flex flex-row items-center gap-4">
-                                <Rocket className="h-8 w-8 text-muted-foreground" />
+                        <Card className={cn("overflow-hidden", !isTerrestrialComplete && "opacity-50 pointer-events-none")}>
+                            <CardHeader className="flex flex-row items-center gap-4 bg-indigo-500/10 text-indigo-800 dark:text-indigo-300">
+                                <Rocket className="h-8 w-8" />
                                 <div>
-                                    <CardTitle className="text-base text-muted-foreground">Camino Espacial</CardTitle>
+                                    <CardTitle className="text-base">Camino Espacial</CardTitle>
                                     <CardDescription>Viaja por el cosmos y explora planetas lejanos.</CardDescription>
                                 </div>
                             </CardHeader>
@@ -356,7 +356,7 @@ export default function CollectionPage() {
                 <div className="grid grid-cols-2 gap-4">
                     {filteredPlants.map((plant) => {
                         const isUnlocked = plantCount >= plant.unlocksAt;
-                        const phaseToUnlock = (plant.unlocksAt / 5);
+                        const phaseToUnlock = (plant.unlocksAt / 5) + 1;
                         
                         return (
                              <PlantInfoDialog 
@@ -376,7 +376,7 @@ export default function CollectionPage() {
                                         <plant.icon className={cn("w-16 h-16", isUnlocked ? rarityStyles[plant.rarity] : 'text-muted-foreground/50')} />
                                         <div className="mt-4 text-center">
                                             <p className={cn("font-bold text-sm", isUnlocked ? 'text-foreground' : 'text-muted-foreground')}>{plant.name}</p>
-                                            {!isUnlocked && <p className="text-xs text-muted-foreground mt-1">Completa la Fase {phaseToUnlock} para desbloquear</p>}
+                                            {!isUnlocked && <p className="text-xs text-muted-foreground mt-1">Completa la Fase {phaseToUnlock - 1} para desbloquear</p>}
                                         </div>
                                     </CardContent>
                                     <Badge variant="secondary" className={cn("absolute top-2 right-2 text-xs", isUnlocked ? rarityStyles[plant.rarity] : "bg-muted text-muted-foreground")}>{plant.rarity}</Badge>
@@ -396,3 +396,4 @@ export default function CollectionPage() {
         </div>
     );
 }
+
