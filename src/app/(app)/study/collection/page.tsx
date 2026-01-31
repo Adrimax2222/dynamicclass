@@ -40,10 +40,10 @@ const allPlants: Plant[] = [
     { id: 6, name: 'Pino Místico', rarity: 'Raro', icon: TreePine, unlocksAt: 25, description: "Los pinos son árboles de hoja perenne que se caracterizan por sus conos (piñas) y sus hojas en forma de aguja. Son una fuente crucial de madera y resina, y sus bosques son ecosistemas vitales en todo el mundo.", imageUrl: "https://vivergil.es/2874-large_default/pino-pinoneropinus-pinea-c-20.jpg" },
     { id: 7, name: 'Rosa Estelar', rarity: 'Épico', icon: Flower, unlocksAt: 30, description: "La rosa es una de las flores más cultivadas y apreciadas del mundo, un símbolo universal de amor y belleza. Existen miles de variedades, y sus pétalos se utilizan para producir aceites esenciales y perfumes.", imageUrl: "https://mamabruja.com/wp-content/uploads/2021/10/ivan-jevtic-p7mo8-CG5Gs-unsplash-2-scaled.jpg" },
     { id: 8, name: 'Árbol Solar', rarity: 'Épico', icon: Sun, unlocksAt: 35, description: "Inspirado en el Baobab, conocido como 'el Árbol de la Vida'. Este árbol africano puede vivir miles de años y almacenar hasta 120,000 litros de agua en su tronco para sobrevivir a las sequías extremas, siendo un pilar de su ecosistema.", imageUrl: "https://images.unsplash.com/photo-1692303366685-390f3e039bf9?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8JUMzJUExcmJvbCUyMGRlJTIwbGElMjB2aWRhfGVufDB8fDB8fHww" },
-    { id: 9, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 40, description: "Completa las fases anteriores para desbloquear esta planta.", imageUrl: "" },
-    { id: 10, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 45, description: "Completa las fases anteriores para desbloquear esta planta.", imageUrl: "" },
-    { id: 11, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 50, description: "Completa las fases anteriores para desbloquear esta planta.", imageUrl: "" },
-    { id: 12, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 55, description: "Completa las fases anteriores para desbloquear esta planta.", imageUrl: "" },
+    { id: 9, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 40, description: "Completa la fase 6 para desbloquearlo.", imageUrl: "" },
+    { id: 10, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 45, description: "Completa la fase 6 para desbloquearlo.", imageUrl: "" },
+    { id: 11, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 50, description: "Completa la fase 6 para desbloquearlo.", imageUrl: "" },
+    { id: 12, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 55, description: "Completa la fase 6 para desbloquearlo.", imageUrl: "" },
 ];
 
 
@@ -73,7 +73,6 @@ const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, children }: {
     const plantPhaseNumber = Math.floor(plant.unlocksAt / 5) + 1;
     const userPhaseNumber = Math.floor(plantCount / 5) + 1;
 
-    let phaseToShow = plantPhaseNumber;
     let progressInPhaseToShow = 0;
 
     if (plantPhaseNumber < userPhaseNumber) {
@@ -81,7 +80,7 @@ const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, children }: {
     } else if (plantPhaseNumber === userPhaseNumber) {
         progressInPhaseToShow = plantCount % 5; // Current progress in this phase
     }
-    // If plantPhaseNumber > userPhaseNumber, progressInPhaseToShow remains 0, which is correct.
+
 
     return (
         <Dialog>
@@ -119,7 +118,7 @@ const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, children }: {
                     </div>
                     <div>
                         <div className="flex justify-between items-center mb-1">
-                            <p className="text-xs font-semibold text-muted-foreground">Progreso Fase {phaseToShow}</p>
+                            <p className="text-xs font-semibold text-muted-foreground">Progreso Fase {plantPhaseNumber}</p>
                             <p className="text-xs font-bold">{progressInPhaseToShow} / 5</p>
                         </div>
                         <Progress value={(progressInPhaseToShow / 5) * 100} />
@@ -304,7 +303,6 @@ export default function CollectionPage() {
                      <Card className="bg-green-500/10 border-green-500/30">
                         <CardContent className="p-4 text-center">
                             <p className="font-bold text-green-700">¡Colección Completa!</p>
-                            <p className="text-xs text-muted-foreground">Has desbloqueado todas las plantas disponibles.</p>
                         </CardContent>
                     </Card>
                 )}
@@ -327,72 +325,69 @@ export default function CollectionPage() {
                 </Card>
 
                 {!isPersonalUser && (
-                    <Collapsible className="w-full">
+                     <Collapsible className="w-full">
                         <CollapsibleTrigger asChild>
-                            <div className="flex w-full items-center justify-between rounded-lg border bg-muted/50 p-4 transition-all hover:bg-muted cursor-pointer">
+                            <div className="group flex w-full cursor-pointer items-center justify-between rounded-lg border bg-muted/50 p-4 transition-all hover:bg-muted">
                                 <div className="flex items-center gap-3">
                                     <Users className="h-5 w-5 text-primary" />
                                     <h3 className="font-semibold">Jardín de Compañeros</h3>
                                 </div>
-                                {/* The chevron is part of the trigger to give visual feedback */}
-                                <CollapsibleTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform data-[state=open]:rotate-90" />
-                                    </Button>
-                                </CollapsibleTrigger>
+                                <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-90" />
                             </div>
                         </CollapsibleTrigger>
-                        <CollapsibleContent className="py-4">
-                            {isLoadingClassmates ? (
-                                <div className="p-4 text-center">
-                                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                                    <p className="text-sm text-muted-foreground mt-2">Cargando compañeros...</p>
-                                </div>
-                            ) : sortedClassmates.length > 0 ? (
-                                <Carousel
-                                    opts={{
-                                        align: "start",
-                                        loop: false,
-                                    }}
-                                    className="w-full"
-                                >
-                                    <CarouselContent className="-ml-2">
-                                        {sortedClassmates.map((classmate) => {
-                                            const classmatePlantCount = classmate.plantCount || 0;
-                                            const classmatePhase = Math.floor(classmatePlantCount / 5) + 1;
-                                            return (
-                                                <CarouselItem key={classmate.uid} className="pl-2 basis-[45%] sm:basis-1/3">
-                                                    <div className="p-1">
-                                                        <Card>
-                                                            <CardContent className="flex flex-col items-center justify-center p-3 sm:p-4 aspect-[4/5]">
-                                                                <AvatarDisplay user={classmate} className="h-12 w-12 sm:h-16 sm:w-16 mb-2" />
-                                                                <p className="font-bold text-sm text-center truncate w-full">{classmate.name}</p>
-                                                                <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-2">
-                                                                    <div className="flex items-center gap-1">
-                                                                        <TreePine className="h-3 w-3 text-green-500" />
-                                                                        <span>{classmatePlantCount}</span>
+                        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                            <div className="py-4">
+                                {isLoadingClassmates ? (
+                                    <div className="p-4 text-center">
+                                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                                        <p className="text-sm text-muted-foreground mt-2">Cargando compañeros...</p>
+                                    </div>
+                                ) : sortedClassmates.length > 0 ? (
+                                    <Carousel
+                                        opts={{
+                                            align: "start",
+                                            loop: false,
+                                        }}
+                                        className="w-full"
+                                    >
+                                        <CarouselContent className="-ml-2">
+                                            {sortedClassmates.map((classmate) => {
+                                                const classmatePlantCount = classmate.plantCount || 0;
+                                                const classmatePhase = Math.floor(classmatePlantCount / 5) + 1;
+                                                return (
+                                                    <CarouselItem key={classmate.uid} className="pl-2 basis-[45%] sm:basis-1/3">
+                                                        <div className="p-1">
+                                                            <Card>
+                                                                <CardContent className="flex flex-col items-center justify-center p-3 sm:p-4 aspect-[4/5]">
+                                                                    <AvatarDisplay user={classmate} className="h-12 w-12 sm:h-16 sm:w-16 mb-2" />
+                                                                    <p className="font-bold text-sm text-center truncate w-full">{classmate.name}</p>
+                                                                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-2">
+                                                                        <div className="flex items-center gap-1">
+                                                                            <TreePine className="h-3 w-3 text-green-500" />
+                                                                            <span>{classmatePlantCount}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1">
+                                                                            <Sprout className="h-3 w-3 text-blue-500" />
+                                                                            <span>Fase {classmatePhase}</span>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="flex items-center gap-1">
-                                                                        <Sprout className="h-3 w-3 text-blue-500" />
-                                                                        <span>Fase {classmatePhase}</span>
-                                                                    </div>
-                                                                </div>
-                                                                <Badge variant="outline" className="mt-2 text-xs">Terrestre</Badge>
-                                                            </CardContent>
-                                                        </Card>
-                                                    </div>
-                                                </CarouselItem>
-                                            );
-                                        })}
-                                    </CarouselContent>
-                                    <CarouselPrevious className="hidden sm:flex" />
-                                    <CarouselNext className="hidden sm:flex" />
-                                </Carousel>
-                            ) : (
-                                <div className="text-center text-sm text-muted-foreground p-4 border-dashed border-2 rounded-lg">
-                                    Aún no hay compañeros en tu clase.
-                                </div>
-                            )}
+                                                                    <Badge variant="outline" className="mt-2 text-xs">Terrestre</Badge>
+                                                                </CardContent>
+                                                            </Card>
+                                                        </div>
+                                                    </CarouselItem>
+                                                );
+                                            })}
+                                        </CarouselContent>
+                                        <CarouselPrevious className="hidden sm:flex" />
+                                        <CarouselNext className="hidden sm:flex" />
+                                    </Carousel>
+                                ) : (
+                                    <div className="text-center text-sm text-muted-foreground p-4 border-dashed border-2 rounded-lg">
+                                        Aún no hay compañeros en tu clase.
+                                    </div>
+                                )}
+                            </div>
                         </CollapsibleContent>
                     </Collapsible>
                 )}
