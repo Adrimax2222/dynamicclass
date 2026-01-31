@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Settings, Search, Lock, Sprout, Trees, Flower, Sun } from "lucide-react";
+import { ChevronLeft, Settings, Search, Sprout, Trees, Flower, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WipDialog } from "@/components/layout/wip-dialog";
 import { useApp } from "@/lib/hooks/use-app";
@@ -43,22 +43,21 @@ const PlantCard = ({ plant, unlocked, phaseToUnlock }: { plant: Plant, unlocked:
         epic: "text-amber-600",
     }
 
+    const Icon = plant.icon;
+
     return (
         <Card className={cn(
             "group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 border-2",
             unlocked ? rarityStyles[plant.rarity] : 'border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900'
         )}>
             <CardContent className="p-4 flex flex-col items-center justify-center text-center aspect-square">
+                <Icon className={cn("w-16 h-16", unlocked ? rarityTextStyles[plant.rarity] : 'text-muted-foreground/50')} />
                 {unlocked ? (
-                    <>
-                        <plant.icon className={cn("w-16 h-16", rarityTextStyles[plant.rarity])} />
-                        <p className="font-bold text-sm mt-4 text-foreground">{plant.name}</p>
-                    </>
+                    <p className="font-bold text-sm mt-4 text-foreground">{plant.name}</p>
                 ) : (
-                    <div className="flex flex-col items-center justify-center text-muted-foreground">
-                        <Lock className="w-10 h-10 mb-2" />
-                        <p className="font-semibold text-sm">Completa la Fase {phaseToUnlock}</p>
-                        <p className="text-xs">para desbloquear</p>
+                    <div className="mt-4 text-center">
+                        <p className="font-semibold text-sm text-muted-foreground">Completa la Fase {phaseToUnlock}</p>
+                        <p className="text-xs text-muted-foreground">para desbloquear</p>
                     </div>
                 )}
             </CardContent>
