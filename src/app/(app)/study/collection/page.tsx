@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Settings, Search, Sprout, Trees, Flower, Sun } from "lucide-react";
+import { ChevronLeft, Settings, Search, Sprout, Trees, Flower, Sun, Plus, TreePine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WipDialog } from "@/components/layout/wip-dialog";
 import { useApp } from "@/lib/hooks/use-app";
@@ -102,7 +102,16 @@ export default function CollectionPage() {
             </header>
 
             <main className="flex-1 p-4 space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
+                    <Card className="bg-green-500/10 border-green-500/30">
+                        <CardContent className="p-3 text-center">
+                            <p className="text-xs text-green-700 dark:text-green-300 font-semibold">Plantas</p>
+                            <div className="flex items-center justify-center gap-1">
+                                <TreePine className="h-5 w-5 text-green-600" />
+                                <p className="text-2xl font-bold">{plantCount}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
                     <Card>
                         <CardContent className="p-3 text-center">
                             <p className="text-xs text-muted-foreground">Fase Actual</p>
@@ -111,7 +120,7 @@ export default function CollectionPage() {
                     </Card>
                     <Card>
                         <CardContent className="p-3 text-center">
-                            <p className="text-xs text-muted-foreground">Progreso de Fase</p>
+                            <p className="text-xs text-muted-foreground">Progreso</p>
                             <p className="text-2xl font-bold">{plantsInCurrentPhase} <span className="text-muted-foreground">/ 5</span></p>
                         </CardContent>
                     </Card>
@@ -159,7 +168,7 @@ export default function CollectionPage() {
                 <div className="grid grid-cols-2 gap-4">
                     {filteredPlants.map((plant) => {
                         const isUnlocked = plantCount >= plant.unlocksAt;
-                        const phaseToUnlock = plant.unlocksAt / 5;
+                        const phaseToUnlock = (plant.unlocksAt / 5) + 1;
                         return (
                             <PlantCard 
                                 key={plant.id} 
