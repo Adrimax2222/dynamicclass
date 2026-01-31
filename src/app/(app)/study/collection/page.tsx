@@ -248,10 +248,10 @@ export default function CollectionPage() {
                         <CardContent className="p-3 pt-0 space-y-2">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-muted rounded-lg">
-                                    <nextPlant.icon className="h-6 w-6 text-primary"/>
+                                    <nextPlant.icon className="h-6 w-6 text-muted-foreground"/>
                                 </div>
                                 <div className="flex-1">
-                                    <p className="font-semibold">{nextPlant.name}</p>
+                                    <p className="font-semibold text-muted-foreground">{nextPlant.name}</p>
                                     <p className="text-xs text-muted-foreground">
                                         Progreso: {plantsInCurrentPhase} / 5
                                     </p>
@@ -421,3 +421,4 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
     
 
     
+
