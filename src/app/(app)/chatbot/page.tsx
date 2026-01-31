@@ -245,7 +245,6 @@ export default function ChatbotPage() {
         .map(m => `${m.role === 'user' ? 'Usuario' : 'Asistente'}: ${m.content}`)
         .join('\n\n');
       
-      console.log("Iniciando generación con el modelo:", "gemini-1.5-flash"); // Critical log for debugging
       const result = await aiChatbotAssistance({ 
         query: messageToSend,
         responseLength,
@@ -269,11 +268,8 @@ export default function ChatbotPage() {
 
     } catch (error: any) {
       console.error("❌ Error en handleSend:", error);
-      console.error("Error al obtener respuesta de la IA:", error.message);
-
-      let errorMsg = error.message || 'No se pudo obtener respuesta. ';
-      let canRetry = true;
-
+      const errorMsg = error.message || 'No se pudo obtener respuesta.';
+      
       // Save error message to chat for user reference
       if (currentChatId) {
         const errorMessage: Omit<ChatMessage, 'uid'> = {

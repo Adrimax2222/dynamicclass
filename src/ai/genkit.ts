@@ -24,7 +24,6 @@ if (apiKey.startsWith('TU_') || apiKey === '') {
 
 /**
  * Configuración centralizada de Genkit con Google AI
- * Usa Gemini 1.5 Flash para respuestas rápidas y económicas
  */
 export const ai = genkit({
   plugins: [

@@ -3,7 +3,6 @@
 
 /**
  * Flujo de IA para el chatbot educativo ADRIMAX AI
- * Usa Gemini 1.5 Flash para respuestas rápidas y precisas
  */
 
 import { ai } from '@/ai/genkit';
@@ -93,6 +92,12 @@ export async function aiChatbotAssistance(
   try {
     const validatedInput = AIChatbotAssistanceInputSchema.parse(input);
 
+    console.log('🔍 Enviando a Gemini:', {
+      query: validatedInput.query,
+      model: 'gemini-1.5-flash',
+      apiKeyPresent: !!process.env.GOOGLE_GENAI_API_KEY,
+    });
+    
     const { output } = await assistancePrompt(validatedInput);
 
     if (!output || !output.response) {
@@ -102,27 +107,10 @@ export async function aiChatbotAssistance(
     return {
       response: output.response.trim(),
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error(`❌ Error en aiChatbotAssistance:`, error);
-    let userMessage = 'Lo siento, he encontrado un problema al procesar tu solicitud.';
-    
-    if (error instanceof z.ZodError) {
-        userMessage = 'La consulta no es válida: ' + error.errors[0].message;
-    } else if (error instanceof Error) {
-        if (error.message.includes('API key') || error.message.includes('API_KEY')) {
-            userMessage = 'Error de configuración. Contacta al administrador.';
-        } else if (error.message.includes('quota') || error.message.includes('exceeded')) {
-            userMessage = 'Se ha alcanzado el límite de uso de la API. Por favor, intenta más tarde.';
-        } else if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
-            userMessage = 'La solicitud tardó demasiado. Por favor, intenta con una consulta más corta.';
-        } else if (error.message.includes('La IA no generó una respuesta válida')) {
-            userMessage = 'La IA no pudo generar una respuesta. Intenta reformular tu pregunta.';
-        }
-    }
-    
-    return {
-      response: `${userMessage}\n\n*Si el problema persiste, por favor contacta al soporte técnico.*`,
-    };
+    // Relanzar el error para que el frontend lo capture y muestre el mensaje específico.
+    throw new Error(error.message || 'Ocurrió un error desconocido al procesar la solicitud de IA.');
   }
 }
 
