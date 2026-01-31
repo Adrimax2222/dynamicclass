@@ -634,12 +634,12 @@ export default function StudyPage() {
                 </CardHeader>
                 <CardContent>
                     {(user?.studyMinutes ?? 0) > 0 ? (
-                        <WipDialog>
-                            <Button className="w-full bg-green-500 hover:bg-green-600">
+                        <Button asChild className="w-full bg-green-500 hover:bg-green-600">
+                           <Link href="/study/collection">
                                 <TreePine className="mr-2 h-4 w-4" />
                                 Ver mi colección
-                            </Button>
-                        </WipDialog>
+                           </Link>
+                        </Button>
                     ) : (
                         <div className="text-center text-muted-foreground p-4 border-2 border-dashed rounded-lg">
                             <p>Completa sesiones de estudio para hacer crecer tus plantas y coleccionarlas.</p>
