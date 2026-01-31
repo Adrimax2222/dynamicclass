@@ -36,14 +36,14 @@ const allPlants: Plant[] = [
     { id: 8, name: 'Árbol Solar', rarity: 'Épico', icon: Sun, unlocksAt: 35, description: "Inspirado en el Baobab, conocido como 'el Árbol de la Vida'. Este árbol africano puede vivir miles de años y almacenar hasta 120,000 litros de agua en su tronco para sobrevivir a las sequías extremas, siendo un pilar de su ecosistema." },
 ];
 
-const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, phase, plantsInPhase, children }: { 
+const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, phase, plantsInPhase, phaseToUnlock }: { 
     plant: Plant; 
     unlocked: boolean; 
     plantCount: number; 
     studyTime: number; 
     phase: number; 
     plantsInPhase: number; 
-    children: React.ReactNode;
+    phaseToUnlock: number;
 }) => {
     const Icon = plant.icon;
     const rarityStyles = {
@@ -60,7 +60,21 @@ const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, phase, plants
 
     return (
         <Dialog>
-            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogTrigger asChild>
+                <Card className={cn(
+                    "group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 border-2 cursor-pointer",
+                    unlocked ? rarityStyles[plant.rarity] : 'border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900'
+                )}>
+                    <CardContent className="p-4 flex flex-col items-center justify-center text-center aspect-square">
+                        <Icon className={cn("w-16 h-16", unlocked ? rarityStyles[plant.rarity] : 'text-muted-foreground/50')} />
+                        <div className="mt-4 text-center">
+                            <p className={cn("font-bold text-sm", unlocked ? 'text-foreground' : 'text-muted-foreground')}>{plant.name}</p>
+                            {!unlocked && <p className="text-xs text-muted-foreground mt-1">Completa la Fase {phaseToUnlock - 1} para desbloquear</p>}
+                        </div>
+                    </CardContent>
+                    <Badge variant="secondary" className={cn("absolute top-2 right-2 text-xs", unlocked ? rarityStyles[plant.rarity] : "bg-muted text-muted-foreground")}>{plant.rarity}</Badge>
+                </Card>
+            </DialogTrigger>
             <DialogContent className="max-w-xs w-full">
                 <DialogHeader className="text-center items-center">
                     <div className={cn("p-4 rounded-full w-fit mb-2", unlocked ? rarityStyles[plant.rarity] : 'bg-muted')}>
@@ -106,37 +120,10 @@ const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, phase, plants
     );
 };
 
-const PlantCard = ({ plant, unlocked, phaseToUnlock }: { plant: Plant, unlocked: boolean, phaseToUnlock: number }) => {
-    const rarityStyles = {
-        'Común': "border-green-500/30 bg-green-500/5 text-green-600",
-        'Poco Común': "border-blue-500/30 bg-blue-500/5 text-blue-600",
-        'Raro': "border-purple-500/30 bg-purple-500/5 text-purple-600",
-        'Épico': "border-amber-500/30 bg-amber-500/5 text-amber-600",
-    };
-
-    const Icon = plant.icon;
-
-    return (
-        <Card className={cn(
-            "group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 border-2 cursor-pointer",
-            unlocked ? rarityStyles[plant.rarity] : 'border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900'
-        )}>
-            <CardContent className="p-4 flex flex-col items-center justify-center text-center aspect-square">
-                <Icon className={cn("w-16 h-16", unlocked ? rarityStyles[plant.rarity] : 'text-muted-foreground/50')} />
-                <div className="mt-4 text-center">
-                    <p className={cn("font-bold text-sm", unlocked ? 'text-foreground' : 'text-muted-foreground')}>{plant.name}</p>
-                    {!unlocked && <p className="text-xs text-muted-foreground mt-1">Completa la Fase {phaseToUnlock - 1} para desbloquear</p>}
-                </div>
-            </CardContent>
-            <Badge variant="secondary" className={cn("absolute top-2 right-2 text-xs", unlocked ? rarityStyles[plant.rarity] : "bg-muted text-muted-foreground")}>{plant.rarity}</Badge>
-        </Card>
-    );
-};
-
 export default function CollectionPage() {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
-    const { user, plantCount, studyMinutes } = useApp();
+    const { user, plantCount } = useApp();
 
     const filteredPlants = allPlants.filter(plant => 
         plant.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -157,7 +144,7 @@ export default function CollectionPage() {
                     </Button>
                     <h1 className="text-lg font-bold font-headline">Mi Jardín Botánico</h1>
                 </div>
-                <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-2">
                     <WipDialog>
                         <Button variant="ghost" size="icon">
                             <Settings />
@@ -243,18 +230,13 @@ export default function CollectionPage() {
                             <PlantInfoDialog 
                                 key={plant.id} 
                                 plant={plant} 
-                                unlocked={isUnlocked} 
+                                unlocked={isUnlocked}
+                                phaseToUnlock={phaseToUnlock}
                                 plantCount={plantCount} 
                                 studyTime={user?.studyMinutes || 0}
                                 phase={currentPhase} 
                                 plantsInPhase={plantsInCurrentPhase}
-                            >
-                                <PlantCard 
-                                    plant={plant} 
-                                    unlocked={isUnlocked} 
-                                    phaseToUnlock={phaseToUnlock} 
-                                />
-                            </PlantInfoDialog>
+                            />
                         )
                     })}
                 </div>
@@ -269,5 +251,3 @@ export default function CollectionPage() {
         </div>
     );
 }
-
-    
