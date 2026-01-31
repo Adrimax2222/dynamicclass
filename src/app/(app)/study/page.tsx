@@ -634,18 +634,12 @@ export default function StudyPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {(plantCount ?? 0) > 0 ? (
-                        <Button asChild className="w-full bg-green-500 hover:bg-green-600">
-                           <Link href="/study/collection">
-                                <TreePine className="mr-2 h-4 w-4" />
-                                Ver mi colección
-                           </Link>
-                        </Button>
-                    ) : (
-                        <div className="text-center text-muted-foreground p-4 border-2 border-dashed rounded-lg">
-                            <p>Completa sesiones de estudio para hacer crecer tus plantas y coleccionarlas.</p>
-                        </div>
-                    )}
+                    <Button asChild className="w-full bg-green-500 hover:bg-green-600">
+                       <Link href="/study/collection">
+                            <TreePine className="mr-2 h-4 w-4" />
+                            Ver mi colección
+                       </Link>
+                    </Button>
                 </CardContent>
             </Card>
 
