@@ -342,12 +342,9 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     {/* Terrestrial Path */}
-                    <Card className="relative overflow-hidden border-green-500/50 bg-green-500/10 ring-2 ring-green-500/50">
-                        <div className="absolute inset-0 z-0 opacity-[0.03] text-green-800">
-                            <Leaf className="absolute -top-4 -left-8 h-24 w-24 -rotate-12" />
-                            <Sprout className="absolute -bottom-6 -right-5 h-20 w-20 rotate-12" />
-                            <TreePine className="absolute top-10 right-0 h-16 w-16 -rotate-6" />
-                        </div>
+                    <Card className="relative overflow-hidden border-2 border-green-500/30 bg-green-50 dark:bg-green-950">
+                        <Leaf className="absolute -top-2 -left-2 h-10 w-10 text-green-500/15 rotate-12" />
+                        <Sprout className="absolute -bottom-2 -right-2 h-10 w-10 text-green-500/15 -rotate-12" />
                         <div className="relative z-10">
                             <CardHeader className="flex flex-row items-center gap-4">
                                 <div className="p-3 rounded-lg bg-green-600/10"><TreePine className="h-8 w-8 text-green-600" /></div>
@@ -357,18 +354,15 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
                                 </div>
                             </CardHeader>
                             <CardFooter>
-                                <Button className="w-full bg-green-600 hover:bg-green-700" disabled>Seleccionado</Button>
+                                <Button className="w-full bg-green-600 hover:bg-green-700">Seleccionado</Button>
                             </CardFooter>
                         </div>
                     </Card>
 
                     {/* Underwater Path */}
-                    <Card className={cn("overflow-hidden relative border-blue-500/30 bg-blue-500/10")}>
-                         <div className="absolute inset-0 z-0 opacity-[0.04] text-blue-800">
-                            <Fish className="absolute top-4 left-4 h-12 w-12 rotate-12" />
-                            <Waves className="absolute bottom-2 right-2 h-20 w-20" />
-                            <Fish className="absolute bottom-8 left-1/2 h-8 w-8 -rotate-12" />
-                        </div>
+                    <Card className="relative overflow-hidden border border-blue-500/30 bg-blue-50 dark:bg-blue-950">
+                        <Fish className="absolute top-2 right-2 h-10 w-10 text-blue-500/15 rotate-12" />
+                        <Waves className="absolute bottom-1 left-4 h-10 w-10 text-blue-500/15" />
                         <div className={cn("relative z-10", !isTerrestrialComplete && "opacity-50")}>
                             <CardHeader className="flex flex-row items-center gap-4">
                                 <div className="p-3 rounded-lg bg-blue-600/10"><Fish className="h-8 w-8 text-blue-600" /></div>
@@ -387,12 +381,9 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
                     </Card>
                     
                     {/* Spatial Path */}
-                    <Card className={cn("overflow-hidden relative border-indigo-500/30 bg-indigo-500/10")}>
-                        <div className="absolute inset-0 z-0 opacity-[0.04] text-indigo-800">
-                           <Sparkles className="absolute top-8 left-10 h-10 w-10 rotate-[30deg]" />
-                           <Rocket className="absolute bottom-4 right-8 h-16 w-16 -rotate-[25deg]" />
-                           <Sparkles className="absolute bottom-12 left-1/3 h-6 w-6 rotate-[-15deg]" />
-                        </div>
+                    <Card className="relative overflow-hidden border border-indigo-500/30 bg-indigo-50 dark:bg-indigo-950">
+                        <Sparkles className="absolute top-2 left-2 h-10 w-10 text-indigo-500/15 rotate-[-30deg]" />
+                        <Rocket className="absolute bottom-2 right-2 h-10 w-10 text-indigo-500/15 rotate-[20deg]" />
                         <div className={cn("relative z-10", !isTerrestrialComplete && "opacity-50")}>
                             <CardHeader className="flex flex-row items-center gap-4">
                                 <div className="p-3 rounded-lg bg-indigo-600/10"><Rocket className="h-8 w-8 text-indigo-600" /></div>
