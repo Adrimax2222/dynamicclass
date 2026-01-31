@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { z } from 'zod';
 
 // Validar API key
-const apiKey = process.env.GOOGLE_GENAI_API_KEY;
+const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_GENAI_API_KEY;
 if (!apiKey) {
   throw new Error('GOOGLE_GENAI_API_KEY no está configurada');
 }
