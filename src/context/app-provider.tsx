@@ -130,10 +130,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (user?.uid) {
-      localStorage.setItem(`plantCount-${user.uid}`, plantCount.toString());
+    if (user?.uid && firestore && user.plantCount !== plantCount) {
+        localStorage.setItem(`plantCount-${user.uid}`, plantCount.toString());
+        const userDocRef = doc(firestore, 'users', user.uid);
+        // Do not await, let it run in the background
+        updateDoc(userDocRef, { plantCount }).catch(console.error);
     }
-  }, [plantCount, user?.uid]);
+  }, [plantCount, user, firestore]);
 
 
   useEffect(() => {
@@ -153,6 +156,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 
                 userData.streak = userData.streak || 0;
                 userData.studyMinutes = userData.studyMinutes || 0;
+                userData.plantCount = userData.plantCount || 0;
 
                 if (isAdmin && userData.role !== 'admin') {
                    await updateDoc(userDocRef, { role: 'admin' });
@@ -167,11 +171,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 setUser(userData);
                 
                 // Load user-specific plant count
-                const storedPlantCount = localStorage.getItem(`plantCount-${fbUser.uid}`);
-                if (storedPlantCount) {
-                    setPlantCount(parseInt(storedPlantCount, 10));
+                if (userData.plantCount !== undefined) {
+                    setPlantCount(userData.plantCount);
                 } else {
-                    setPlantCount(0); // Reset for new user or first time
+                    const storedPlantCount = localStorage.getItem(`plantCount-${fbUser.uid}`);
+                    setPlantCount(storedPlantCount ? parseInt(storedPlantCount, 10) : 0);
                 }
 
                 // Load settings from user profile, with fallbacks to localStorage or defaults

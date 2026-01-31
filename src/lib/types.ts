@@ -37,6 +37,7 @@ export type User = {
   saveScannedDocs?: boolean;
   language?: Language;
   weeklySummary?: boolean;
+  plantCount?: number;
 };
 
 // Simplified user type for center management

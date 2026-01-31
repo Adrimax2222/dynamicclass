@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock, Info, Timer, BrainCircuit, Globe, Fish, Lock, Leaf, Waves, Sparkles } from "lucide-react";
+import { ChevronLeft, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock, Info, Timer, BrainCircuit, Globe, Fish, Lock, Leaf, Waves, Sparkles, Users, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/hooks/use-app";
 import { Progress } from "@/components/ui/progress";
@@ -15,6 +15,11 @@ import Link from "next/link";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { WipDialog } from "@/components/layout/wip-dialog";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
+import type { User as AppUser } from "@/lib/types";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 type Plant = {
     id: number;
@@ -139,6 +144,30 @@ export default function CollectionPage() {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
     const { user, plantCount } = useApp();
+    
+    const isPersonalUser = user?.center === 'personal' || user?.center === 'default';
+
+    const firestore = useFirestore();
+    const classmatesQuery = useMemoFirebase(() => {
+        if (!firestore || !user || isPersonalUser) return null;
+        return query(
+            collection(firestore, "users"),
+            where("organizationId", "==", user.organizationId),
+            where("course", "==", user.course),
+            where("className", "==", user.className)
+        );
+    }, [firestore, user, isPersonalUser]);
+
+    const { data: classmatesData, isLoading: isLoadingClassmates } = useCollection<AppUser>(classmatesQuery);
+
+    const sortedClassmates = useMemo(() => {
+        if (!classmatesData) return [];
+        // Filter out the current user and sort
+        return classmatesData
+            .filter(c => c.uid !== user?.uid)
+            .sort((a, b) => (b.plantCount || 0) - (a.plantCount || 0));
+    }, [classmatesData, user]);
+
 
     const filteredPlants = allPlants.filter(plant => 
         plant.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -297,6 +326,78 @@ export default function CollectionPage() {
                     </CardHeader>
                 </Card>
 
+                {!isPersonalUser && (
+                    <Collapsible className="w-full">
+                        <CollapsibleTrigger asChild>
+                            <div className="flex w-full items-center justify-between rounded-lg border bg-muted/50 p-4 transition-all hover:bg-muted cursor-pointer">
+                                <div className="flex items-center gap-3">
+                                    <Users className="h-5 w-5 text-primary" />
+                                    <h3 className="font-semibold">Jardín de Compañeros</h3>
+                                </div>
+                                {/* The chevron is part of the trigger to give visual feedback */}
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform data-[state=open]:rotate-90" />
+                                    </Button>
+                                </CollapsibleTrigger>
+                            </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="py-4">
+                            {isLoadingClassmates ? (
+                                <div className="p-4 text-center">
+                                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                                    <p className="text-sm text-muted-foreground mt-2">Cargando compañeros...</p>
+                                </div>
+                            ) : sortedClassmates.length > 0 ? (
+                                <Carousel
+                                    opts={{
+                                        align: "start",
+                                        loop: false,
+                                    }}
+                                    className="w-full"
+                                >
+                                    <CarouselContent className="-ml-2">
+                                        {sortedClassmates.map((classmate) => {
+                                            const classmatePlantCount = classmate.plantCount || 0;
+                                            const classmatePhase = Math.floor(classmatePlantCount / 5) + 1;
+                                            return (
+                                                <CarouselItem key={classmate.uid} className="pl-2 basis-[45%] sm:basis-1/3">
+                                                    <div className="p-1">
+                                                        <Card>
+                                                            <CardContent className="flex flex-col items-center justify-center p-3 sm:p-4 aspect-[4/5]">
+                                                                <AvatarDisplay user={classmate} className="h-12 w-12 sm:h-16 sm:w-16 mb-2" />
+                                                                <p className="font-bold text-sm text-center truncate w-full">{classmate.name}</p>
+                                                                <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-2">
+                                                                    <div className="flex items-center gap-1">
+                                                                        <TreePine className="h-3 w-3 text-green-500" />
+                                                                        <span>{classmatePlantCount}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1">
+                                                                        <Sprout className="h-3 w-3 text-blue-500" />
+                                                                        <span>Fase {classmatePhase}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <Badge variant="outline" className="mt-2 text-xs">Terrestre</Badge>
+                                                            </CardContent>
+                                                        </Card>
+                                                    </div>
+                                                </CarouselItem>
+                                            );
+                                        })}
+                                    </CarouselContent>
+                                    <CarouselPrevious className="hidden sm:flex" />
+                                    <CarouselNext className="hidden sm:flex" />
+                                </Carousel>
+                            ) : (
+                                <div className="text-center text-sm text-muted-foreground p-4 border-dashed border-2 rounded-lg">
+                                    Aún no hay compañeros en tu clase.
+                                </div>
+                            )}
+                        </CollapsibleContent>
+                    </Collapsible>
+                )}
+
+
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
@@ -395,8 +496,9 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
                     </Card>
 
                     {/* Underwater Path */}
-                    <Card className="relative overflow-hidden border border-blue-500/30 bg-blue-50 dark:bg-blue-950">
-                         <Fish className="absolute top-2 right-2 h-10 w-10 text-blue-500/10 rotate-12" />
+                    <Card className={cn("relative overflow-hidden", !isTerrestrialComplete && "opacity-60")}>
+                        <div className="absolute inset-0 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-500/30" />
+                        <Fish className="absolute top-2 right-2 h-10 w-10 text-blue-500/10 rotate-12" />
                         <Waves className="absolute bottom-1 left-4 h-10 w-10 text-blue-500/10" />
                         <div className="relative z-10">
                             <CardHeader className="flex flex-row items-center gap-4">
@@ -416,7 +518,8 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
                     </Card>
                     
                     {/* Spatial Path */}
-                    <Card className="relative overflow-hidden border border-indigo-500/30 bg-indigo-50 dark:bg-indigo-950">
+                    <Card className={cn("relative overflow-hidden", !isTerrestrialComplete && "opacity-60")}>
+                         <div className="absolute inset-0 bg-indigo-50 dark:bg-indigo-950 rounded-lg border border-indigo-500/30" />
                          <Sparkles className="absolute top-2 left-2 h-10 w-10 text-indigo-500/10 rotate-[-30deg]" />
                         <Rocket className="absolute bottom-2 right-2 h-10 w-10 text-indigo-500/10 rotate-[20deg]" />
                         <div className="relative z-10">
