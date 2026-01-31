@@ -76,9 +76,9 @@ const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, children }: {
     let progressInPhaseToShow = 0;
 
     if (plantPhaseNumber < userPhaseNumber) {
-        progressInPhaseToShow = 5; // Phase complete
+        progressInPhaseToShow = 5;
     } else if (plantPhaseNumber === userPhaseNumber) {
-        progressInPhaseToShow = plantCount % 5; // Current progress in this phase
+        progressInPhaseToShow = plantCount % 5;
     }
 
 
@@ -355,7 +355,7 @@ export default function CollectionPage() {
                                                 const classmatePlantCount = classmate.plantCount || 0;
                                                 const classmatePhase = Math.floor(classmatePlantCount / 5) + 1;
                                                 return (
-                                                    <CarouselItem key={classmate.uid} className="pl-2 basis-[45%] sm:basis-1/3">
+                                                    <CarouselItem key={classmate.uid} className="pl-2 basis-1/2 md:basis-1/3">
                                                         <div className="p-1">
                                                             <Card>
                                                                 <CardContent className="flex flex-col items-center justify-center p-3 sm:p-4 aspect-[4/5]">
