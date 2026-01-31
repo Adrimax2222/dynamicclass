@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { WipDialog } from "@/components/layout/wip-dialog";
 
 type Plant = {
     id: number;
@@ -117,75 +118,6 @@ const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, phase, plants
         </Dialog>
     );
 };
-
-function PathsDialog({ children, isTerrestrialComplete }: { children: React.ReactNode, isTerrestrialComplete: boolean }) {
-    return (
-        <Dialog>
-            <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Elige tu Camino de Conocimiento</DialogTitle>
-                    <DialogDescription>
-                        Completa un camino para desbloquear el siguiente. Cada sesión de estudio te acerca a tu meta.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    {/* Terrestrial Path */}
-                    <Card className="border-primary/50 bg-primary/5 ring-2 ring-primary/50">
-                        <CardHeader className="flex flex-row items-center gap-4">
-                            <TreePine className="h-8 w-8 text-primary" />
-                            <div>
-                                <CardTitle className="text-base">Camino Terrestre</CardTitle>
-                                <CardDescription>Explora la flora de nuestro planeta.</CardDescription>
-                            </div>
-                        </CardHeader>
-                        <CardFooter>
-                            <Button className="w-full" disabled>Seleccionado</Button>
-                        </CardFooter>
-                    </Card>
-
-                    {/* Underwater Path */}
-                    <div className={cn("relative", !isTerrestrialComplete && "cursor-not-allowed")}>
-                        <Card className={cn("overflow-hidden", !isTerrestrialComplete && "opacity-50 pointer-events-none")}>
-                            <CardHeader className="flex flex-row items-center gap-4 bg-blue-500/10 text-blue-800 dark:text-blue-300">
-                                <Fish className="h-8 w-8" />
-                                <div>
-                                    <CardTitle className="text-base">Camino Submarino</CardTitle>
-                                    <CardDescription>Descubre las especies marinas y los secretos del océano.</CardDescription>
-                                </div>
-                            </CardHeader>
-                        </Card>
-                        {!isTerrestrialComplete && (
-                            <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg">
-                                <Lock className="h-6 w-6 mb-2"/>
-                                <p className="text-xs font-semibold">Completa el Camino Terrestre</p>
-                            </div>
-                        )}
-                    </div>
-                    
-                    {/* Spatial Path */}
-                    <div className={cn("relative", !isTerrestrialComplete && "cursor-not-allowed")}>
-                        <Card className={cn("overflow-hidden", !isTerrestrialComplete && "opacity-50 pointer-events-none")}>
-                            <CardHeader className="flex flex-row items-center gap-4 bg-indigo-500/10 text-indigo-800 dark:text-indigo-300">
-                                <Rocket className="h-8 w-8" />
-                                <div>
-                                    <CardTitle className="text-base">Camino Espacial</CardTitle>
-                                    <CardDescription>Viaja por el cosmos y explora planetas lejanos.</CardDescription>
-                                </div>
-                            </CardHeader>
-                        </Card>
-                        {!isTerrestrialComplete && (
-                            <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg">
-                                <Lock className="h-6 w-6 mb-2"/>
-                                <p className="text-xs font-semibold">Completa el Camino Terrestre</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </DialogContent>
-        </Dialog>
-    )
-}
 
 export default function CollectionPage() {
     const router = useRouter();
@@ -397,3 +329,73 @@ export default function CollectionPage() {
     );
 }
 
+function PathsDialog({ children, isTerrestrialComplete }: { children: React.ReactNode, isTerrestrialComplete: boolean }) {
+    return (
+        <Dialog>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Elige tu Camino de Conocimiento</DialogTitle>
+                    <DialogDescription>
+                        Completa un camino para desbloquear el siguiente. Cada sesión de estudio te acerca a tu meta.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    {/* Terrestrial Path */}
+                    <Card className="border-primary/50 bg-primary/5 ring-2 ring-primary/50">
+                        <CardHeader className="flex flex-row items-center gap-4">
+                            <TreePine className="h-8 w-8 text-primary" />
+                            <div>
+                                <CardTitle className="text-base">Camino Terrestre</CardTitle>
+                                <CardDescription>Explora la flora de nuestro planeta.</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardFooter>
+                            <Button className="w-full" disabled>Seleccionado</Button>
+                        </CardFooter>
+                    </Card>
+
+                    {/* Underwater Path */}
+                    <div className={cn("relative", !isTerrestrialComplete && "cursor-not-allowed")}>
+                        <Card className={cn("overflow-hidden", !isTerrestrialComplete && "opacity-50 pointer-events-none")}>
+                            <CardHeader className="flex flex-row items-center gap-4 bg-blue-500/10 text-blue-800 dark:text-blue-300">
+                                <Fish className="h-8 w-8" />
+                                <div>
+                                    <CardTitle className="text-base">Camino Submarino</CardTitle>
+                                    <CardDescription>Descubre las especies marinas y los secretos del océano.</CardDescription>
+                                </div>
+                            </CardHeader>
+                        </Card>
+                        {!isTerrestrialComplete && (
+                            <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg">
+                                <Lock className="h-6 w-6 mb-2"/>
+                                <p className="text-xs font-semibold">Completa el Camino Terrestre</p>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Spatial Path */}
+                    <div className={cn("relative", !isTerrestrialComplete && "cursor-not-allowed")}>
+                        <Card className={cn("overflow-hidden", !isTerrestrialComplete && "opacity-50 pointer-events-none")}>
+                             <CardHeader className="flex flex-row items-center gap-4 bg-indigo-500/10 text-indigo-800 dark:text-indigo-300">
+                                <Rocket className="h-8 w-8" />
+                                <div>
+                                    <CardTitle className="text-base">Camino Espacial</CardTitle>
+                                    <CardDescription>Viaja por el cosmos y explora planetas lejanos.</CardDescription>
+                                </div>
+                            </CardHeader>
+                        </Card>
+                        {!isTerrestrialComplete && (
+                             <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg">
+                                <Lock className="h-6 w-6 mb-2"/>
+                                <p className="text-xs font-semibold">Completa el Camino Terrestre</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+    
