@@ -1,125 +1,108 @@
-
 'use server';
 
-/**
- * Flujo de IA para el chatbot educativo ADRIMAX AI
- */
-
-import { ai } from '@/ai/genkit';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { z } from 'zod';
+
+// Validar API key
+const apiKey = process.env.GOOGLE_GENAI_API_KEY;
+if (!apiKey) {
+  throw new Error('GOOGLE_GENAI_API_KEY no está configurada');
+}
+
+// Inicializar Google AI
+const genAI = new GoogleGenerativeAI(apiKey);
 
 // ============= SCHEMAS =============
 
 const AIChatbotAssistanceInputSchema = z.object({
-  query: z.string().min(1, { message: 'La consulta no puede estar vacía.' }).max(4000, { message: 'La consulta es demasiado larga.' }),
+  query: z.string().min(1).max(4000),
   subject: z.string().optional(),
   responseLength: z.enum(['breve', 'normal', 'detallada']).default('normal'),
   context: z.string().optional(),
 });
 
 const AIChatbotAssistanceOutputSchema = z.object({
-  response: z.string().describe('La respuesta educativa clara y precisa a la consulta del usuario.'),
+  response: z.string(),
 });
-
-// ============= TYPES =============
 
 export type AIChatbotAssistanceInput = z.infer<typeof AIChatbotAssistanceInputSchema>;
 export type AIChatbotAssistanceOutput = z.infer<typeof AIChatbotAssistanceOutputSchema>;
 
-// ============= PROMPT DEFINITION =============
-
-const assistancePrompt = ai.definePrompt({
-  name: 'chatbotAssistancePrompt',
-  model: 'models/gemini-1.5-flash-latest',
-  input: { schema: AIChatbotAssistanceInputSchema },
-  output: {
-    schema: AIChatbotAssistanceOutputSchema,
-  },
-  config: {
-    temperature: 0.7,
-    topK: 40,
-    topP: 0.95,
-    maxOutputTokens: 2048,
-  },
-  prompt: `
-Eres ADRIMAX AI, un asistente educativo experto, amigable y motivador.
-
-**Tu misión:**
-- Explicar conceptos de forma clara y accesible
-- Adaptar tu respuesta al nivel del estudiante
-- Usar ejemplos prácticos y analogías
-- Fomentar el pensamiento crítico
-- Ser preciso pero nunca condescendiente
-
-{{#if subject}}
-**Tema principal:** {{subject}}
-{{/if}}
-
-{{#if context}}
-**Contexto de la conversación:**
-{{{context}}}
-{{/if}}
-
-**Pregunta del estudiante:**
-{{{query}}}
-
-**Formato de respuesta:**
-Ajusta la longitud según el parámetro "{{responseLength}}":
-- Si es "breve": Respuesta concisa (máximo 3 párrafos). Ve directo al punto.
-- Si es "detallada": Respuesta completa con explicación profunda, ejemplos prácticos, analogías y ejercicios.
-- Si es "normal" o vacío: Respuesta equilibrada y clara.
-
-**Instrucciones importantes:**
-1. Usa Markdown para formatear (negritas, listas, código si es necesario)
-2. Si la pregunta es ambigua, da la mejor interpretación posible
-3. Si no tienes información suficiente, admítelo con honestidad
-4. Siempre mantén un tono educativo positivo y motivador
-5. Evita jerga innecesaria, pero usa términos técnicos cuando sea apropiado
-
-Proporciona tu respuesta en formato JSON con la clave "response".
-`,
-});
-
 // ============= MAIN FUNCTION =============
 
-/**
- * Función principal del chatbot educativo
- * Procesa la consulta del estudiante y genera una respuesta con IA
- */
 export async function aiChatbotAssistance(
   input: AIChatbotAssistanceInput
 ): Promise<AIChatbotAssistanceOutput> {
   try {
     const validatedInput = AIChatbotAssistanceInputSchema.parse(input);
 
-    console.log('🔍 Enviando a Gemini:', {
-      query: validatedInput.query,
-      model: 'models/gemini-1.5-flash-latest',
-      apiKeyPresent: !!process.env.GOOGLE_GENAI_API_KEY,
-    });
-    
-    const { output } = await assistancePrompt(validatedInput);
+    // Construir el prompt
+    let prompt = `Eres ADRIMAX AI, un asistente educativo experto, amigable y motivador.
 
-    if (!output || !output.response) {
+Tu misión:
+- Explicar conceptos de forma clara y accesible
+- Adaptar tu respuesta al nivel del estudiante
+- Usar ejemplos prácticos y analogías
+- Fomentar el pensamiento crítico
+
+`;
+
+    if (validatedInput.subject) {
+      prompt += `Tema: ${validatedInput.subject}\n\n`;
+    }
+
+    if (validatedInput.context) {
+      prompt += `Conversación previa:\n${validatedInput.context}\n\n`;
+    }
+
+    prompt += `Pregunta del estudiante: ${validatedInput.query}\n\n`;
+
+    const lengthInstructions = {
+      breve: 'Responde de forma concisa en máximo 3 párrafos.',
+      normal: 'Responde con una explicación equilibrada y clara.',
+      detallada: 'Responde de forma completa con ejemplos, analogías y ejercicios.'
+    };
+
+    prompt += lengthInstructions[validatedInput.responseLength] + '\n\n';
+    prompt += 'Usa Markdown para formatear (negritas, listas, código si es necesario). Mantén un tono educativo positivo.';
+
+    // Llamar a la API de Gemini
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const text = response.text();
+
+    if (!text || text.trim() === '') {
       throw new Error('La IA no generó una respuesta válida.');
     }
 
     return {
-      response: output.response.trim(),
+      response: text.trim(),
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error(`❌ Error en aiChatbotAssistance:`, error);
-    // Relanzar el error para que el frontend lo capture y muestre el mensaje específico.
-    throw new Error(error.message || 'Ocurrió un error desconocido al procesar la solicitud de IA.');
+    
+    let userMessage = 'Lo siento, he encontrado un problema al procesar tu solicitud.';
+    
+    if (error instanceof z.ZodError) {
+      userMessage = `La consulta no es válida: ${error.errors[0].message}`;
+    } else if (error instanceof Error) {
+      if (error.message.includes('API key')) {
+        userMessage = 'Error de configuración de API. Contacta al administrador.';
+      } else if (error.message.includes('quota') || error.message.includes('exceeded')) {
+        userMessage = 'Se alcanzó el límite de uso de la API. Intenta más tarde.';
+      } else if (error.message.includes('timeout')) {
+        userMessage = 'La solicitud tardó demasiado. Intenta con una consulta más corta.';
+      }
+    }
+    
+    throw new Error(userMessage);
   }
 }
 
-// ============= UTILITY FUNCTIONS =============
+// ============= UTILITY =============
 
-/**
- * Verifica que la configuración de la IA esté lista
- * Útil para llamar en el inicio de la aplicación
- */
 export async function verifyAISetup(): Promise<{ success: boolean; message: string }> {
   try {
     const testResult = await aiChatbotAssistance({
@@ -136,12 +119,12 @@ export async function verifyAISetup(): Promise<{ success: boolean; message: stri
 
     return {
       success: true,
-      message: 'AI setup verificado correctamente',
+      message: '✅ AI setup verificado correctamente',
     };
   } catch (error) {
     return {
       success: false,
-      message: `Error en setup: ${(error as Error).message}`,
+      message: `❌ Error en setup: ${(error as Error).message}`,
     };
   }
 }
