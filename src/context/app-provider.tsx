@@ -130,10 +130,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Save plantCount to Firestore whenever it changes for the current user.
     if (user?.uid && firestore && user.plantCount !== plantCount) {
-        localStorage.setItem(`plantCount-${user.uid}`, plantCount.toString());
         const userDocRef = doc(firestore, 'users', user.uid);
-        // Do not await, let it run in the background
+        // Do not await, let it run in the background to not block UI
         updateDoc(userDocRef, { plantCount }).catch(console.error);
     }
   }, [plantCount, user, firestore]);
@@ -171,12 +171,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 setUser(userData);
                 
                 // Load user-specific plant count
-                if (userData.plantCount !== undefined) {
-                    setPlantCount(userData.plantCount);
-                } else {
-                    const storedPlantCount = localStorage.getItem(`plantCount-${fbUser.uid}`);
-                    setPlantCount(storedPlantCount ? parseInt(storedPlantCount, 10) : 0);
-                }
+                setPlantCount(userData.plantCount || 0);
 
                 // Load settings from user profile, with fallbacks to localStorage or defaults
                 const userTheme = userData.theme || (localStorage.getItem('classconnect-theme') as Theme) || 'light';
