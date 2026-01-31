@@ -127,16 +127,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (storedSaveDocs !== null) {
       setSaveScannedDocsState(JSON.parse(storedSaveDocs));
     }
-
-    const storedPlantCount = localStorage.getItem('plantCount');
-    if (storedPlantCount) {
-        setPlantCount(parseInt(storedPlantCount, 10));
-    }
   }, []);
 
   useEffect(() => {
-      localStorage.setItem('plantCount', plantCount.toString());
-  }, [plantCount]);
+    if (user?.uid) {
+      localStorage.setItem(`plantCount-${user.uid}`, plantCount.toString());
+    }
+  }, [plantCount, user?.uid]);
 
 
   useEffect(() => {
@@ -169,6 +166,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
                 setUser(userData);
                 
+                // Load user-specific plant count
+                const storedPlantCount = localStorage.getItem(`plantCount-${fbUser.uid}`);
+                if (storedPlantCount) {
+                    setPlantCount(parseInt(storedPlantCount, 10));
+                } else {
+                    setPlantCount(0); // Reset for new user or first time
+                }
+
                 // Load settings from user profile, with fallbacks to localStorage or defaults
                 const userTheme = userData.theme || (localStorage.getItem('classconnect-theme') as Theme) || 'light';
                 setThemeState(userTheme);
@@ -204,6 +209,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setChats([]);
         setActiveChatId(null);
         setIsChatsLoading(false);
+        setPlantCount(0);
       }
     });
 
