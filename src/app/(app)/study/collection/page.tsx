@@ -46,13 +46,11 @@ const rarityStyles = {
 };
 
 
-const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, phase, plantsInPhase, children }: { 
+const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, children }: { 
     plant: Plant; 
     unlocked: boolean; 
     plantCount: number; 
     studyTime: number; 
-    phase: number; 
-    plantsInPhase: number; 
     children: React.ReactNode;
 }) => {
     const Icon = plant.icon;
@@ -61,6 +59,19 @@ const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, phase, plants
         const minutes = totalMinutes % 60;
         return `${hours}h ${minutes}m`;
     };
+
+    const plantPhaseNumber = Math.floor(plant.unlocksAt / 5) + 1;
+    const userPhaseNumber = Math.floor(plantCount / 5) + 1;
+
+    let phaseToShow = plantPhaseNumber;
+    let progressInPhaseToShow = 0;
+
+    if (plantPhaseNumber < userPhaseNumber) {
+        progressInPhaseToShow = 5; // Phase complete
+    } else if (plantPhaseNumber === userPhaseNumber) {
+        progressInPhaseToShow = plantCount % 5; // Current progress in this phase
+    }
+    // If plantPhaseNumber > userPhaseNumber, progressInPhaseToShow remains 0, which is correct.
 
     return (
         <Dialog>
@@ -98,10 +109,10 @@ const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, phase, plants
                     </div>
                     <div>
                         <div className="flex justify-between items-center mb-1">
-                            <p className="text-xs font-semibold text-muted-foreground">Progreso Fase {phase}</p>
-                            <p className="text-xs font-bold">{plantsInPhase} / 5</p>
+                            <p className="text-xs font-semibold text-muted-foreground">Progreso Fase {phaseToShow}</p>
+                            <p className="text-xs font-bold">{progressInPhaseToShow} / 5</p>
                         </div>
-                        <Progress value={(plantsInPhase / 5) * 100} />
+                        <Progress value={(progressInPhaseToShow / 5) * 100} />
                     </div>
                     <div>
                         <p className="text-sm text-muted-foreground">{plant.description}</p>
@@ -288,7 +299,6 @@ export default function CollectionPage() {
                 <div className="grid grid-cols-2 gap-4">
                     {filteredPlants.map((plant) => {
                         const isUnlocked = plantCount >= plant.unlocksAt;
-                        const phaseToUnlock = (plant.unlocksAt / 5) + 1;
                         
                         return (
                              <PlantInfoDialog 
@@ -297,8 +307,6 @@ export default function CollectionPage() {
                                 unlocked={isUnlocked}
                                 plantCount={plantCount} 
                                 studyTime={user?.studyMinutes || 0}
-                                phase={currentPhase} 
-                                plantsInPhase={plantsInCurrentPhase}
                             >
                                 <Card className={cn(
                                     "group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 border-2 cursor-pointer",
@@ -308,7 +316,12 @@ export default function CollectionPage() {
                                         <plant.icon className={cn("w-16 h-16", isUnlocked ? rarityStyles[plant.rarity] : 'text-muted-foreground/50')} />
                                         <div className="mt-4 text-center">
                                             <p className={cn("font-bold text-sm", isUnlocked ? 'text-foreground' : 'text-muted-foreground')}>{plant.name}</p>
-                                            {!isUnlocked && <p className="text-xs text-muted-foreground mt-1">Completa la Fase {phaseToUnlock - 1} para desbloquear</p>}
+                                            {!isUnlocked && (
+                                                <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-1">
+                                                    <Lock className="h-3 w-3" />
+                                                    <span>Fase {Math.floor(plant.unlocksAt / 5) + 1}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </CardContent>
                                     <Badge variant="secondary" className={cn("absolute top-2 right-2 text-xs", isUnlocked ? rarityStyles[plant.rarity] : "bg-muted text-muted-foreground")}>{plant.rarity}</Badge>
