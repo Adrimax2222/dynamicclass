@@ -628,6 +628,20 @@ export default function StudyPage() {
             <Card className="w-full max-w-sm mx-auto shadow-lg">
                 <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
+                        <TreePine className="h-5 w-5 text-primary"/>
+                        Mis Plantas
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-center text-muted-foreground p-4 border-2 border-dashed rounded-lg">
+                        <p>Completa sesiones de estudio para hacer crecer tus plantas y coleccionarlas.</p>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="w-full max-w-sm mx-auto shadow-lg">
+                <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
                         <Headphones className="h-5 w-5 text-primary"/>
                         Ambiente Sonoro
                     </CardTitle>
