@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, Settings, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock } from "lucide-react";
@@ -37,23 +37,24 @@ const allPlants: Plant[] = [
     { id: 8, name: 'Árbol Solar', rarity: 'Épico', icon: Sun, unlocksAt: 35, description: "Inspirado en el Baobab, conocido como 'el Árbol de la Vida'. Este árbol africano puede vivir miles de años y almacenar hasta 120,000 litros de agua en su tronco para sobrevivir a las sequías extremas, siendo un pilar de su ecosistema.", imageUrl: "https://images.unsplash.com/photo-1692303366685-390f3e039bf9?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8JUMzJUExcmJvbCUyMGRlJTIwbGElMjB2aWRhfGVufDB8fDB8fHww" },
 ];
 
-const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, phase, plantsInPhase, phaseToUnlock, children }: { 
+const rarityStyles = {
+    'Común': "border-green-500/30 bg-green-500/5 text-green-600",
+    'Poco Común': "border-blue-500/30 bg-blue-500/5 text-blue-600",
+    'Raro': "border-purple-500/30 bg-purple-500/5 text-purple-600",
+    'Épico': "border-amber-500/30 bg-amber-500/5 text-amber-600",
+};
+
+
+const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, phase, plantsInPhase, children }: { 
     plant: Plant; 
     unlocked: boolean; 
     plantCount: number; 
     studyTime: number; 
     phase: number; 
     plantsInPhase: number; 
-    phaseToUnlock: number;
     children: React.ReactNode;
 }) => {
     const Icon = plant.icon;
-    const rarityStyles = {
-        'Común': "border-green-500/30 bg-green-500/5 text-green-600",
-        'Poco Común': "border-blue-500/30 bg-blue-500/5 text-blue-600",
-        'Raro': "border-purple-500/30 bg-purple-500/5 text-purple-600",
-        'Épico': "border-amber-500/30 bg-amber-500/5 text-amber-600",
-    };
     const formatStudyTime = (totalMinutes: number = 0) => {
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
@@ -223,12 +224,12 @@ export default function CollectionPage() {
                     {filteredPlants.map((plant) => {
                         const isUnlocked = plantCount >= plant.unlocksAt;
                         const phaseToUnlock = (plant.unlocksAt / 5) + 1;
+                        
                         return (
                             <PlantInfoDialog 
                                 key={plant.id} 
                                 plant={plant} 
                                 unlocked={isUnlocked}
-                                phaseToUnlock={phaseToUnlock}
                                 plantCount={plantCount} 
                                 studyTime={user?.studyMinutes || 0}
                                 phase={currentPhase} 
@@ -262,3 +263,5 @@ export default function CollectionPage() {
         </div>
     );
 }
+
+    
