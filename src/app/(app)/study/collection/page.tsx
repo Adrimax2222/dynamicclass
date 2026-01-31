@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -20,7 +20,7 @@ type Plant = {
     id: number;
     name: string;
     icon: React.ElementType;
-    rarity: 'Común' | 'Poco Común' | 'Raro' | 'Épico';
+    rarity: 'Común' | 'Poco Común' | 'Raro' | 'Épico' | 'Legendario';
     unlocksAt: number; // number of plants needed
     description: string;
     imageUrl: string;
@@ -35,6 +35,10 @@ const allPlants: Plant[] = [
     { id: 6, name: 'Pino Místico', rarity: 'Raro', icon: TreePine, unlocksAt: 25, description: "Los pinos son árboles de hoja perenne que se caracterizan por sus conos (piñas) y sus hojas en forma de aguja. Son una fuente crucial de madera y resina, y sus bosques son ecosistemas vitales en todo el mundo.", imageUrl: "https://vivergil.es/2874-large_default/pino-pinoneropinus-pinea-c-20.jpg" },
     { id: 7, name: 'Rosa Estelar', rarity: 'Épico', icon: Flower, unlocksAt: 30, description: "La rosa es una de las flores más cultivadas y apreciadas del mundo, un símbolo universal de amor y belleza. Existen miles de variedades, y sus pétalos se utilizan para producir aceites esenciales y perfumes.", imageUrl: "https://mamabruja.com/wp-content/uploads/2021/10/ivan-jevtic-p7mo8-CG5Gs-unsplash-2-scaled.jpg" },
     { id: 8, name: 'Árbol Solar', rarity: 'Épico', icon: Sun, unlocksAt: 35, description: "Inspirado en el Baobab, conocido como 'el Árbol de la Vida'. Este árbol africano puede vivir miles de años y almacenar hasta 120,000 litros de agua en su tronco para sobrevivir a las sequías extremas, siendo un pilar de su ecosistema.", imageUrl: "https://images.unsplash.com/photo-1692303366685-390f3e039bf9?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8JUMzJUExcmJvbCUyMGRlJTIwbGElMjB2aWRhfGVufDB8fDB8fHww" },
+    { id: 9, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 40, description: "Completa las fases anteriores para desbloquear esta planta.", imageUrl: "" },
+    { id: 10, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 45, description: "Completa las fases anteriores para desbloquear esta planta.", imageUrl: "" },
+    { id: 11, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 50, description: "Completa las fases anteriores para desbloquear esta planta.", imageUrl: "" },
+    { id: 12, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 55, description: "Completa las fases anteriores para desbloquear esta planta.", imageUrl: "" },
 ];
 
 
@@ -43,6 +47,7 @@ const rarityStyles = {
     'Poco Común': "border-blue-500/30 bg-blue-500/5 text-blue-600",
     'Raro': "border-purple-500/30 bg-purple-500/5 text-purple-600",
     'Épico': "border-amber-500/30 bg-amber-500/5 text-amber-600",
+    'Legendario': "border-pink-500/30 bg-pink-500/5 text-pink-600",
 };
 
 
@@ -305,6 +310,17 @@ export default function CollectionPage() {
                 <div className="grid grid-cols-2 gap-4">
                     {filteredPlants.map((plant) => {
                         const isUnlocked = plantCount >= plant.unlocksAt;
+                        const isPlaceholder = plant.unlocksAt > 35;
+
+                        if (isPlaceholder) {
+                            return (
+                                <Card key={plant.id} className="border-dashed bg-muted/50 flex flex-col items-center justify-center text-center aspect-square p-4">
+                                    <Lock className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                                    <p className="text-sm font-semibold text-muted-foreground">Próximamente...</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Completa la fase 6 para desbloquearlo</p>
+                                </Card>
+                            )
+                        }
                         
                         return (
                              <PlantInfoDialog 
@@ -382,7 +398,7 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
                     <Card className="relative overflow-hidden border border-blue-500/30 bg-blue-50 dark:bg-blue-950">
                          <Fish className="absolute top-2 right-2 h-10 w-10 text-blue-500/10 rotate-12" />
                         <Waves className="absolute bottom-1 left-4 h-10 w-10 text-blue-500/10" />
-                        <div className={cn("relative z-10", !isTerrestrialComplete && "opacity-50")}>
+                        <div className="relative z-10">
                             <CardHeader className="flex flex-row items-center gap-4">
                                 <div className="p-3 rounded-lg bg-blue-600/10"><Fish className="h-8 w-8 text-blue-600" /></div>
                                 <div>
@@ -403,7 +419,7 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
                     <Card className="relative overflow-hidden border border-indigo-500/30 bg-indigo-50 dark:bg-indigo-950">
                          <Sparkles className="absolute top-2 left-2 h-10 w-10 text-indigo-500/10 rotate-[-30deg]" />
                         <Rocket className="absolute bottom-2 right-2 h-10 w-10 text-indigo-500/10 rotate-[20deg]" />
-                        <div className={cn("relative z-10", !isTerrestrialComplete && "opacity-50")}>
+                        <div className="relative z-10">
                             <CardHeader className="flex flex-row items-center gap-4">
                                 <div className="p-3 rounded-lg bg-indigo-600/10"><Rocket className="h-8 w-8 text-indigo-600" /></div>
                                 <div>
