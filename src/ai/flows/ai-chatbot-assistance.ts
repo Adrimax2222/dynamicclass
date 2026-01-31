@@ -81,23 +81,16 @@ Tu misión:
       response: text.trim(),
     };
   } catch (error) {
+    // Log the full error for server-side debugging
     console.error(`❌ Error en aiChatbotAssistance:`, error);
     
-    let userMessage = 'Lo siento, he encontrado un problema al procesar tu solicitud.';
-    
-    if (error instanceof z.ZodError) {
-      userMessage = `La consulta no es válida: ${error.errors[0].message}`;
-    } else if (error instanceof Error) {
-      if (error.message.includes('API key')) {
-        userMessage = 'Error de configuración de API. Contacta al administrador.';
-      } else if (error.message.includes('quota') || error.message.includes('exceeded')) {
-        userMessage = 'Se alcanzó el límite de uso de la API. Intenta más tarde.';
-      } else if (error.message.includes('timeout')) {
-        userMessage = 'La solicitud tardó demasiado. Intenta con una consulta más corta.';
-      }
+    // Throw the original error message to be displayed on the client for better debugging
+    if (error instanceof Error) {
+        throw new Error(error.message);
     }
     
-    throw new Error(userMessage);
+    // Fallback for non-Error objects
+    throw new Error('Lo siento, he encontrado un problema al procesar tu solicitud.');
   }
 }
 
