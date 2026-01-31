@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -34,32 +33,39 @@ const plantCollection: Plant[] = [
 
 const PlantCard = ({ plant }: { plant: Plant }) => {
     const rarityStyles = {
-        common: "border-green-500/20",
-        uncommon: "border-blue-500/20",
-        rare: "border-purple-500/20",
-        epic: "border-amber-500/20",
+        common: "border-green-500/30 bg-green-500/5",
+        uncommon: "border-blue-500/30 bg-blue-500/5",
+        rare: "border-purple-500/30 bg-purple-500/5",
+        epic: "border-amber-500/30 bg-amber-500/5",
     };
+    
+    const rarityTextStyles = {
+        common: "text-green-600",
+        uncommon: "text-blue-600",
+        rare: "text-purple-600",
+        epic: "text-amber-600",
+    }
 
     return (
         <Card className={cn(
-            "group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 bg-slate-800/50 border-2",
-            plant.unlocked ? rarityStyles[plant.rarity] : 'border-slate-700'
+            "group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 border-2",
+            plant.unlocked ? rarityStyles[plant.rarity] : 'border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900'
         )}>
             <CardContent className="p-4 flex flex-col items-center justify-center text-center aspect-square">
                 {plant.unlocked ? (
                     <>
-                        <plant.icon className="w-16 h-16 text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.8)]" />
-                        <p className="font-bold text-sm mt-4 text-white">{plant.name}</p>
-                        <p className="text-xs text-slate-400">{plant.module}</p>
+                        <plant.icon className={cn("w-16 h-16", rarityTextStyles[plant.rarity])} />
+                        <p className="font-bold text-sm mt-4 text-foreground">{plant.name}</p>
+                        <p className="text-xs text-muted-foreground">{plant.module}</p>
                     </>
                 ) : (
-                    <div className="flex flex-col items-center justify-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground">
                         <Lock className="w-10 h-10" />
                         <p className="font-semibold text-sm mt-2">Bloqueado</p>
                     </div>
                 )}
             </CardContent>
-            {plant.unlocked && <Badge variant="secondary" className={cn("absolute top-2 right-2 text-xs", rarityStyles[plant.rarity])}>{plant.rarity}</Badge>}
+            {plant.unlocked && <Badge variant="secondary" className={cn("absolute top-2 right-2 text-xs", rarityStyles[plant.rarity], rarityTextStyles[plant.rarity])}>{plant.rarity}</Badge>}
         </Card>
     );
 };
@@ -76,8 +82,8 @@ export default function CollectionPage() {
     });
 
     return (
-        <div className="flex flex-col min-h-screen bg-slate-900 text-slate-200">
-            <header className="p-4 flex items-center justify-between sticky top-0 bg-slate-900/80 backdrop-blur-sm z-10 border-b border-slate-800">
+        <div className="flex flex-col min-h-screen bg-muted/30">
+            <header className="p-4 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
                 <Button variant="ghost" size="icon" onClick={() => router.back()}>
                     <ChevronLeft />
                 </Button>
@@ -91,41 +97,41 @@ export default function CollectionPage() {
 
             <main className="flex-1 p-4 space-y-6">
                 <div className="grid grid-cols-2 gap-4">
-                    <Card className="bg-slate-800/50 border-slate-700">
+                    <Card>
                         <CardContent className="p-3 text-center">
-                            <p className="text-xs text-slate-400">Plantas Totales</p>
-                            <p className="text-2xl font-bold">27 <span className="text-slate-500">/ 50</span></p>
+                            <p className="text-xs text-muted-foreground">Plantas Totales</p>
+                            <p className="text-2xl font-bold">27 <span className="text-muted-foreground">/ 50</span></p>
                         </CardContent>
                     </Card>
-                    <Card className="bg-slate-800/50 border-slate-700">
+                    <Card>
                         <CardContent className="p-3 text-center">
-                            <p className="text-xs text-slate-400">Módulos</p>
-                            <p className="text-2xl font-bold">8 <span className="text-slate-500">/ 12</span></p>
+                            <p className="text-xs text-muted-foreground">Módulos</p>
+                            <p className="text-2xl font-bold">8 <span className="text-muted-foreground">/ 12</span></p>
                         </CardContent>
                     </Card>
                 </div>
 
                 <Card className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30 p-4 flex items-center gap-4">
-                    <Leaf className="w-8 h-8 text-green-400"/>
+                    <Leaf className="w-8 h-8 text-green-500"/>
                     <div className="flex-1">
-                        <p className="text-xs text-green-300">Próximo Desbloqueo</p>
-                        <p className="font-bold text-white">Fase 3: Árboles Ancestrales</p>
+                        <p className="text-xs text-green-600">Próximo Desbloqueo</p>
+                        <p className="font-bold text-foreground">Fase 3: Árboles Ancestrales</p>
                     </div>
-                    <Trees className="w-12 h-12 text-green-400 opacity-60"/>
+                    <Trees className="w-12 h-12 text-green-500 opacity-60"/>
                 </Card>
 
                 <div className="space-y-4">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
                             placeholder="Buscar planta o módulo..." 
-                            className="bg-slate-800 border-slate-700 pl-10 focus:ring-green-500"
+                            className="bg-background border-input pl-10 focus:ring-primary"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <Tabs defaultValue="all" onValueChange={setFilter}>
-                        <TabsList className="grid w-full grid-cols-3 bg-slate-800">
+                        <TabsList className="grid w-full grid-cols-3">
                             <TabsTrigger value="all">Todas</TabsTrigger>
                             <TabsTrigger value="unlocked">Desbloqueadas</TabsTrigger>
                             <TabsTrigger value="locked">Bloqueadas</TabsTrigger>
@@ -138,7 +144,7 @@ export default function CollectionPage() {
                 </div>
 
                  {filteredPlants.length === 0 && (
-                    <div className="text-center py-12 text-slate-500">
+                    <div className="text-center py-12 text-muted-foreground">
                         <p className="font-semibold">No se encontraron plantas</p>
                         <p className="text-sm">Prueba a cambiar los filtros de búsqueda.</p>
                     </div>
