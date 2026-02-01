@@ -30,6 +30,7 @@ export type User = {
   isBanned?: boolean;
   isChatBanned?: boolean;
   accessCount?: number;
+  adminAccessCount?: number;
   hasSeenOnboarding?: boolean;
   theme?: Theme;
   isChatBubbleVisible?: boolean;

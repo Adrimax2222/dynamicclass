@@ -72,7 +72,11 @@ export default function ManageClassMembersPage() {
          setIsProcessing(true);
          try {
             const userDocRef = doc(firestore, 'users', member.uid);
-            await updateDoc(userDocRef, { role: newRole });
+            const updateData: { role: string; adminAccessCount?: number } = { role: newRole };
+            if (newRole.startsWith('admin-')) {
+                updateData.adminAccessCount = 0;
+            }
+            await updateDoc(userDocRef, updateData);
             toast({ title: "Rol actualizado", description: `${member.name} es ahora ${newRole === classAdminRole ? 'Admin de Clase' : 'Estudiante'}.` });
             setSelectedMember(prev => prev ? { ...prev, role: newRole } : null);
          } catch (error) {

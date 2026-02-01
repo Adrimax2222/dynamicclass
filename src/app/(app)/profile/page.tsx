@@ -838,6 +838,7 @@ const handleSaveChanges = async () => {
                 course: newCourse,
                 className: newClassName,
                 role: `admin-${newCourse.toUpperCase()}-${newClassName}`, // Assign class admin role
+                adminAccessCount: 0,
             };
             
             setValidatedCenter(prev => prev ? ({ ...prev, classes: [...prev.classes, newClassDefinition] }) : null);
@@ -887,6 +888,7 @@ const handleSaveChanges = async () => {
                 className: newClassName,
                 role: 'center-admin',
                 organizationId: newCenterRef.id,
+                adminAccessCount: 0,
             };
 
             toast({ title: "¡Centro Creado!", description: `"${newCenterName}" se ha creado con el código ${generatedCode}.` });
@@ -1424,6 +1426,4 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
         </div>
     );
 }
-    
-
     

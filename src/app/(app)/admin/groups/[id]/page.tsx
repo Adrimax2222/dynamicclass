@@ -5,13 +5,13 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useApp } from "@/lib/hooks/use-app";
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from "@/firebase";
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, writeBatch } from "firebase/firestore";
-import type { Center, User as CenterUser, ClassDefinition, Schedule } from "@/lib/types";
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, writeBatch, increment } from "firebase/firestore";
+import type { Center, User as CenterUser, ClassDefinition, Schedule, User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit, Group, User, ShieldCheck, Replace, UserX, Move, MessageSquare } from "lucide-react";
+import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit, Group, User as UserIcon, ShieldCheck, Replace, UserX, Move, MessageSquare } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -26,11 +26,67 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 
+function AdminWelcomeDialog({ user, isOpen, onOpenChange }: { user: User, isOpen: boolean, onOpenChange: (open: boolean) => void }) {
+  const isCenterAdmin = user.role === 'center-admin';
+  
+  const centerAdminFeatures = [
+    { icon: Edit, text: "Edita la información de tu centro y su código de acceso." },
+    { icon: PlusCircle, text: "Crea, modifica y elimina las clases de tu centro." },
+    { icon: Users, text: "Gestiona todos los miembros, muévelos entre clases o expúlsalos." },
+    { icon: ShieldCheck, text: "Promueve a otros usuarios a Administradores de Clase." },
+  ];
+
+  const classAdminFeatures = [
+    { icon: UserCog, text: "Gestiona los miembros de tu clase (silenciar, expulsar, mover)." },
+    { icon: Edit, text: "Edita la imagen y descripción de tu grupo de clase." },
+    { icon: BookOpen, text: "Configura el horario de tu clase." },
+    { icon: CalendarCog, text: "Añade el calendario iCal para sincronizar eventos." },
+  ];
+  
+  const features = isCenterAdmin ? centerAdminFeatures : classAdminFeatures;
+  const title = isCenterAdmin ? "¡Bienvenido, Administrador de Centro!" : "¡Bienvenido, Administrador de Clase!";
+  const description = isCenterAdmin 
+    ? "Como administrador de tu centro, tienes el control total sobre su gestión. Estas son tus principales herramientas:"
+    : "Como administrador de tu clase, tienes herramientas especiales para moderar y organizar tu grupo. Esto es lo que puedes hacer:";
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader className="text-center items-center">
+          <div className="p-3 bg-primary/10 rounded-full mb-2">
+            <ShieldCheck className="h-8 w-8 text-primary" />
+          </div>
+          <DialogTitle className="text-2xl font-headline">{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-3">
+          {features.map((feature, index) => {
+            const Icon = feature.icon;
+            return (
+              <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border">
+                <Icon className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <p className="text-sm text-muted-foreground">{feature.text}</p>
+              </div>
+            );
+          })}
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button className="w-full">¡Entendido!</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 export default function ManageGroupPage() {
-    const { user: currentUser } = useApp();
+    const { user: currentUser, updateUser } = useApp();
     const router = useRouter();
     const params = useParams();
     const centerId = params.id as string;
+    const [showAdminWelcome, setShowAdminWelcome] = useState(false);
     
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -59,6 +115,24 @@ export default function ManageGroupPage() {
             router.push('/admin');
         }
     }, [isLoading, center, router, toast]);
+
+    useEffect(() => {
+        if (!currentUser || !firestore) return;
+
+        const isCenterAdmin = currentUser.role === 'center-admin';
+        const isClassAdmin = currentUser.role.startsWith('admin-');
+        
+        if ((isCenterAdmin || isClassAdmin) && (currentUser.adminAccessCount || 0) < 2) {
+            setShowAdminWelcome(true);
+            const userDocRef = doc(firestore, 'users', currentUser.uid);
+            
+            updateDoc(userDocRef, { adminAccessCount: increment(1) })
+                .then(() => {
+                    updateUser({ adminAccessCount: (currentUser.adminAccessCount || 0) + 1 });
+                })
+                .catch(console.error);
+        }
+    }, [currentUser, firestore, updateUser]);
     
     if (isLoading || !currentUser || !allCenters) {
         return <LoadingScreen />;
@@ -86,6 +160,7 @@ export default function ManageGroupPage() {
 
     return (
         <div className="container mx-auto max-w-4xl p-4 sm:p-6">
+            <AdminWelcomeDialog user={currentUser} isOpen={showAdminWelcome} onOpenChange={setShowAdminWelcome} />
             <header className="mb-8 flex items-start justify-between">
                 <div className="flex items-start gap-4">
                     <Button variant="ghost" size="icon" onClick={() => router.push(isGlobalAdmin ? '/admin' : '/settings')}>
@@ -209,7 +284,11 @@ function MembersTab({ centerId, center, allCenters, isGlobalAdmin, isCenterAdmin
         setIsProcessing(true);
         try {
             const userDocRef = doc(firestore, 'users', member.uid);
-            await updateDoc(userDocRef, { role: newRole });
+            const updateData: {role: string, adminAccessCount?: number} = { role: newRole };
+            if (newRole === 'center-admin') {
+                updateData.adminAccessCount = 0;
+            }
+            await updateDoc(userDocRef, updateData);
             toast({ title: "Rol Actualizado", description: `${member.name} ahora es ${newRole === 'center-admin' ? 'Admin de Centro' : 'Estudiante'}.` });
             setSelectedMember(prev => prev ? { ...prev, role: newRole } : null);
         } catch (error) {

@@ -28,7 +28,8 @@
         "ownedAvatars": { "type": "array", "items": { "type": "string" } },
         "isChatBanned": { "type": "boolean", "description": "If true, the user is banned from using the class chat." },
         "accessCount": { "type": "number", "description": "Tracks the number of times the user has accessed the app." },
-        "hasSeenOnboarding": { "type": "boolean", "description": "Whether the user has completed the onboarding tour." }
+        "hasSeenOnboarding": { "type": "boolean", "description": "Whether the user has completed the onboarding tour." },
+        "adminAccessCount": { "type": "number", "description": "Tracks the number of times an admin has seen their specific onboarding." }
       },
       "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange", "isNewUser"]
     },

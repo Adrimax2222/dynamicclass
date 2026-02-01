@@ -370,7 +370,7 @@ export default function AuthPage() {
             course: course.toLowerCase().replace('º',''), className: className, 
             role: 'center-admin', // Assign center-admin role
             trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
-            isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [], plantCount: 0,
+            isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [], plantCount: 0, adminAccessCount: 0,
             organizationId: newCenterRef.id,
         };
         toast({ title: "¡Centro Creado!", description: `"${''}${values.newCenterName}" se ha creado con el código ${''}${generatedCode}.` });
@@ -396,6 +396,7 @@ export default function AuthPage() {
           lastStudyDay: '',
           ownedAvatars: [],
           plantCount: 0,
+          adminAccessCount: 0,
         };
         
         if (registrationMode === 'join' && validatedCenter?.uid) {
@@ -480,7 +481,7 @@ export default function AuthPage() {
             center: 'default', ageRange: 'default', 
             course: 'default', className: 'default', role: 'student',
             trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
-            isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [], plantCount: 0,
+            isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [], plantCount: 0, adminAccessCount: 0,
         };
         await setDoc(userDocRef, newUser);
       }
@@ -742,7 +743,7 @@ export default function AuthPage() {
                                           <RadioGroupItem value="personal" className="sr-only"/>
                                       </Label>
                                   </RadioGroup>
-
+                                
                                     <div className="p-3 bg-muted/50 rounded-lg text-center">
                                         <h4 className="font-semibold text-sm">{registrationModeInfo[registrationMode].title}</h4>
                                         <p className="text-xs text-muted-foreground">{registrationModeInfo[registrationMode].description}</p>
