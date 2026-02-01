@@ -29,7 +29,7 @@ export type AIChatbotAssistanceOutput = z.infer<typeof AIChatbotAssistanceOutput
 
 const prompt = ai.definePrompt({
     name: 'aiChatbotAssistancePrompt',
-    model: 'googleai/gemini-1.5-flash-latest',
+    model: 'googleai/gemini-1.5-flash',
     input: { schema: InternalPromptInputSchema },
     output: { schema: AIChatbotAssistanceOutputSchema },
     prompt: `Eres ADRIMAX AI, un asistente educativo experto, amigable y motivador.

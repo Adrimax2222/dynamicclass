@@ -34,7 +34,7 @@ export async function generateFlashcards(input: GenerateFlashcardsInput): Promis
 
 const prompt = ai.definePrompt({
   name: 'generateFlashcardsPrompt',
-  model: 'googleai/gemini-1.5-flash-latest', 
+  model: 'googleai/gemini-1.5-flash', 
   input: {schema: GenerateFlashcardsInputSchema},
   output: {schema: GenerateFlashcardsOutputSchema},
   prompt: `
