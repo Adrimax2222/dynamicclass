@@ -2,7 +2,6 @@
 
 /**
  * @fileOverview Generador de Flashcards de alto rendimiento.
- * Configurado para Gemini 2.0 Flash (2026).
  */
 
 import {ai} from '@/ai/genkit';
@@ -35,8 +34,7 @@ export async function generateFlashcards(input: GenerateFlashcardsInput): Promis
 
 const prompt = ai.definePrompt({
   name: 'generateFlashcardsPrompt',
-  // Usamos el modelo principal de 2026
-  model: 'googleai/gemini-2.0-flash', 
+  model: 'googleai/gemini-1.5-flash-latest', 
   input: {schema: GenerateFlashcardsInputSchema},
   output: {schema: GenerateFlashcardsOutputSchema},
   prompt: `
@@ -61,7 +59,6 @@ const generateFlashcardsFlow = ai.defineFlow(
     outputSchema: GenerateFlashcardsOutputSchema,
   },
   async input => {
-    // Este flujo se ejecutará en cuanto la cuota de la API se libere
     const {output} = await prompt(input);
     return output!;
   }
