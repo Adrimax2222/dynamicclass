@@ -13,7 +13,7 @@ import { signOut } from "firebase/auth";
 import { useFcmToken } from '@/lib/hooks/use-fcm-token';
 import FloatingStudyTimer from "@/components/layout/floating-study-timer";
 import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, increment } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -23,7 +23,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onboardingCheckDone, setOnboardingCheckDone] = useState(false);
   
   // Hook to handle FCM token logic
   useFcmToken();
@@ -37,34 +36,43 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Auth status check & Onboarding logic
   useEffect(() => {
     if (firebaseUser === undefined) {
-        return;
+        return; // Still waiting for auth state
     }
     if (firebaseUser === null) {
       router.replace("/");
-      return;
+      return; // Not logged in, redirect
     }
-    
-    if (user && !onboardingCheckDone) {
-        const shouldShow = (user.accessCount || 0) < 2;
 
+    // We have a firebaseUser, now wait for the full user profile from Firestore
+    if (user) {
+        // User profile is loaded, now check onboarding status
+        const shouldShow = (user.accessCount || 0) < 2;
         setShowOnboarding(shouldShow);
-        setOnboardingCheckDone(true);
-        setIsCheckingAuth(false);
-    } else if (user) {
         setIsCheckingAuth(false);
     }
-  }, [firebaseUser, user, router, onboardingCheckDone]);
+  }, [firebaseUser, user, router]);
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
   };
+  
+  const handleFinishOnboarding = async () => {
+    if (firestore && user) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await updateDoc(userDocRef, {
+            accessCount: increment(1)
+        });
+        // The local user state will update automatically via the onSnapshot listener in AppProvider
+    }
+  };
+
 
   if (isCheckingAuth || !user) {
     return <LoadingScreen />;
   }
   
   if (showOnboarding) {
-    return <OnboardingTour onComplete={handleOnboardingComplete} />;
+    return <OnboardingTour onComplete={handleOnboardingComplete} onFinishTour={handleFinishOnboarding} />;
   }
 
   return (
