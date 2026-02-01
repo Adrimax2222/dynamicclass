@@ -1,6 +1,7 @@
 'use server';
 
 import { ai } from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'zod';
 
 // ============= SCHEMAS =============
@@ -29,7 +30,7 @@ export type AIChatbotAssistanceOutput = z.infer<typeof AIChatbotAssistanceOutput
 
 const prompt = ai.definePrompt({
     name: 'aiChatbotAssistancePrompt',
-    model: 'googleai/gemini-1.5-flash',
+    model: googleAI.model('gemini-1.5-flash'),
     input: { schema: InternalPromptInputSchema },
     output: { schema: AIChatbotAssistanceOutputSchema },
     prompt: `Eres ADRIMAX AI, un asistente educativo experto, amigable y motivador.
