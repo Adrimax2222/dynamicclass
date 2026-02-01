@@ -4,13 +4,12 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        // Esta regla captura TODO lo que NO sea tu dominio oficial
         source: '/:path*',
         has: [
           {
             type: 'host',
-            // Si el valor NO es dynamicclass.app (importante el NOT aquí)
-            value: '(?<host>^(?!dynamicclass\\.app$).*)', 
+            // Solo redirigir si el usuario entra por el enlace feo de Google
+            value: 'studio--studio-7840988595-13b35.us-central1.hosted.app',
           },
         ],
         destination: 'https://dynamicclass.app/:path*',
@@ -18,12 +17,9 @@ const nextConfig: NextConfig = {
       },
     ]
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Mantén el resto de tu configuración igual (typescript, eslint, images...)
+  typescript: { ignoreBuildErrors: true },
+  eslint: { ignoreDuringBuilds: true },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'placehold.co', pathname: '/**' },
