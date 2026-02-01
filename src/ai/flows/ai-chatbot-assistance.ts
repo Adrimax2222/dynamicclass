@@ -1,43 +1,38 @@
 'use server';
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-
-// Validar API key
-const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_GENAI_API_KEY;
-if (!apiKey) {
-  throw new Error('GOOGLE_GENAI_API_KEY no está configurada');
-}
-
-// Inicializar Google AI
-const genAI = new GoogleGenerativeAI(apiKey);
 
 // ============= SCHEMAS =============
 
 const AIChatbotAssistanceInputSchema = z.object({
-  query: z.string().min(1).max(4000),
-  subject: z.string().optional(),
-  responseLength: z.enum(['breve', 'normal', 'detallada']).default('normal'),
-  context: z.string().optional(),
+  query: z.string().min(1, 'La consulta no puede estar vacía.').max(4000),
+  subject: z.string().optional().describe('El tema de la consulta, por ejemplo, "Matemáticas".'),
+  responseLength: z.enum(['breve', 'normal', 'detallada']).default('normal').describe('La longitud deseada para la respuesta de la IA.'),
+  context: z.string().optional().describe('El historial de la conversación para dar contexto.'),
+});
+
+// This internal schema includes the dynamically generated instruction.
+const InternalPromptInputSchema = AIChatbotAssistanceInputSchema.extend({
+    lengthInstruction: z.string().describe('La instrucción detallada sobre la longitud de la respuesta.')
 });
 
 const AIChatbotAssistanceOutputSchema = z.object({
-  response: z.string(),
+  response: z.string().describe('La respuesta generada por el asistente de IA.'),
 });
 
 export type AIChatbotAssistanceInput = z.infer<typeof AIChatbotAssistanceInputSchema>;
 export type AIChatbotAssistanceOutput = z.infer<typeof AIChatbotAssistanceOutputSchema>;
 
-// ============= MAIN FUNCTION =============
 
-export async function aiChatbotAssistance(
-  input: AIChatbotAssistanceInput
-): Promise<AIChatbotAssistanceOutput> {
-  try {
-    const validatedInput = AIChatbotAssistanceInputSchema.parse(input);
+// ============= GENKIT PROMPT =============
 
-    // Construir el prompt
-    let prompt = `Eres ADRIMAX AI, un asistente educativo experto, amigable y motivador.
+const prompt = ai.definePrompt({
+    name: 'aiChatbotAssistancePrompt',
+    model: 'googleai/gemini-1.5-flash',
+    input: { schema: InternalPromptInputSchema },
+    output: { schema: AIChatbotAssistanceOutputSchema },
+    prompt: `Eres ADRIMAX AI, un asistente educativo experto, amigable y motivador.
 
 Tu misión:
 - Explicar conceptos de forma clara y accesible
@@ -45,53 +40,60 @@ Tu misión:
 - Usar ejemplos prácticos y analogías
 - Fomentar el pensamiento crítico
 
-`;
+{{#if subject}}
+Tema: {{{subject}}}
+{{/if}}
 
-    if (validatedInput.subject) {
-      prompt += `Tema: ${validatedInput.subject}\n\n`;
-    }
+{{#if context}}
+Conversación previa:
+{{{context}}}
+{{/if}}
 
-    if (validatedInput.context) {
-      prompt += `Conversación previa:\n${validatedInput.context}\n\n`;
-    }
+Pregunta del estudiante: {{{query}}}
 
-    prompt += `Pregunta del estudiante: ${validatedInput.query}\n\n`;
+{{{lengthInstruction}}}
 
+Usa Markdown para formatear (negritas, listas, código si es necesario). Mantén un tono educativo positivo.
+`,
+});
+
+
+// ============= GENKIT FLOW =============
+
+const aiChatbotAssistanceFlow = ai.defineFlow(
+  {
+    name: 'aiChatbotAssistanceFlow',
+    inputSchema: AIChatbotAssistanceInputSchema,
+    outputSchema: AIChatbotAssistanceOutputSchema,
+  },
+  async (input) => {
     const lengthInstructions = {
       breve: 'Responde de forma concisa en máximo 3 párrafos.',
       normal: 'Responde con una explicación equilibrada y clara.',
       detallada: 'Responde de forma completa con ejemplos, analogías y ejercicios.'
     };
+    const instruction = lengthInstructions[input.responseLength];
 
-    prompt += lengthInstructions[validatedInput.responseLength] + '\n\n';
-    prompt += 'Usa Markdown para formatear (negritas, listas, código si es necesario). Mantén un tono educativo positivo.';
-
-    // Llamar a la API de Gemini
-    const model = genAI.getGenerativeModel({ model: 'models/gemini-1.5-pro-latest' });
+    const { output } = await prompt({
+      ...input,
+      lengthInstruction: instruction,
+    });
     
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
-
-    if (!text || text.trim() === '') {
-      throw new Error('La IA no generó una respuesta válida.');
-    }
-
-    return {
-      response: text.trim(),
-    };
-  } catch (error) {
-    // Log the full error for server-side debugging
-    console.error(`❌ Error en aiChatbotAssistance:`, error);
-    
-    // Throw the original error message to be displayed on the client for better debugging
-    if (error instanceof Error) {
-        throw new Error(error.message);
+    if (!output) {
+      throw new Error("La IA no generó una respuesta válida.");
     }
     
-    // Fallback for non-Error objects
-    throw new Error('Lo siento, he encontrado un problema al procesar tu solicitud.');
+    return output;
   }
+);
+
+// ============= MAIN FUNCTION =============
+
+export async function aiChatbotAssistance(
+  input: AIChatbotAssistanceInput
+): Promise<AIChatbotAssistanceOutput> {
+  const validatedInput = AIChatbotAssistanceInputSchema.parse(input);
+  return aiChatbotAssistanceFlow(validatedInput);
 }
 
 // ============= UTILITY =============
@@ -103,10 +105,10 @@ export async function verifyAISetup(): Promise<{ success: boolean; message: stri
       responseLength: 'breve',
     });
 
-    if (testResult.response.includes('Error') || testResult.response.includes('problema')) {
+    if (!testResult || !testResult.response || testResult.response.includes('Error') || testResult.response.includes('problema')) {
       return {
         success: false,
-        message: `La IA respondió con un error: ${testResult.response}`,
+        message: `La IA respondió con un error: ${testResult?.response || 'respuesta vacía'}`,
       };
     }
 
@@ -114,10 +116,11 @@ export async function verifyAISetup(): Promise<{ success: boolean; message: stri
       success: true,
       message: '✅ AI setup verificado correctamente',
     };
-  } catch (error) {
+  } catch (error: any) {
+    console.error(`❌ Error en verifyAISetup:`, error);
     return {
       success: false,
-      message: `❌ Error en setup: ${(error as Error).message}`,
+      message: `❌ Error en setup: ${error.message}`,
     };
   }
 }
