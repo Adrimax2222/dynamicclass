@@ -261,14 +261,14 @@ const SummaryStepContent = ({ onOpenSettingsInfo }: { onOpenSettingsInfo: () => 
             <Card className="shadow-lg border-primary/20 bg-background/90 backdrop-blur-md overflow-hidden">
                 <div className="flex flex-col sm:flex-row">
                     {/* Left Panel */}
-                    <div className="flex-shrink-0 w-full sm:w-48 bg-muted/50 p-6 flex flex-col items-center justify-center text-center border-b sm:border-b-0 sm:border-r">
-                        <AvatarDisplay user={user} className="w-24 h-24 ring-4 ring-background" />
-                        <h3 className="text-xl font-bold pt-4 truncate w-full">{user.name}</h3>
+                    <div className="flex-shrink-0 w-full sm:w-48 bg-muted/50 p-4 flex flex-col items-center justify-center text-center border-b sm:border-b-0 sm:border-r">
+                        <AvatarDisplay user={user} className="w-20 h-20 ring-4 ring-background" />
+                        <h3 className="text-xl font-bold pt-2 truncate w-full">{user.name}</h3>
                         <p className="text-sm text-muted-foreground truncate w-full">{user.email}</p>
                     </div>
 
                     {/* Right Panel */}
-                    <div className="flex-1 p-6 space-y-6">
+                    <div className="flex-1 p-4 space-y-4">
                         <div className="text-center sm:text-left">
                             <p className="text-xs font-semibold text-muted-foreground">CENTRO EDUCATIVO</p>
                             <p className="font-bold text-lg">{displayCenterName}</p>
@@ -279,7 +279,7 @@ const SummaryStepContent = ({ onOpenSettingsInfo }: { onOpenSettingsInfo: () => 
 
                         <Separator />
 
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                              <p className="text-xs font-semibold text-muted-foreground text-center sm:text-left">CONFIGURACIÓN</p>
                             {settings.map(s => {
                                 const SettingIcon = s.icon;
@@ -297,7 +297,7 @@ const SummaryStepContent = ({ onOpenSettingsInfo }: { onOpenSettingsInfo: () => 
                     </div>
                 </div>
             </Card>
-             <div className="mt-4">
+             <div className="mt-2">
                 <Button variant="ghost" className="w-full h-8 text-xs" onClick={onOpenSettingsInfo}>
                     Quiero cambiar la configuración
                 </Button>
