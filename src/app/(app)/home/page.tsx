@@ -68,7 +68,7 @@ const keywords = {
     task: ['tarea', 'ejercicios', 'deberes', 'lliurament', 'fitxa', 'feina', 'deures', 'entrega', 'presentació', 'actividad', 'proyecto', 'sortida', 'exposició', 'projecte'],
 };
 
-const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
+const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com', 'info.dynamicclass@gmail.com'];
 
 export default function HomePage() {
   const { user, updateUser } = useApp();
@@ -1012,4 +1012,6 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
 
 
     
+
+
 

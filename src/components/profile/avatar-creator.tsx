@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { User } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart, Star, Crown, Flame, Dna, Brain, Beaker, Atom, Code } from "lucide-react";
+import { Logo } from "@/components/icons";
 
 export const SHOP_AVATARS_FEATURED = [
     { id: 'paw', icon: PawPrint, price: 5 },
@@ -49,6 +50,18 @@ export function AvatarDisplay({ user, className }: AvatarDisplayProps) {
         );
     }
     
+    if (avatarUrl === 'dclogo') {
+        return (
+            <div className={cn("relative inline-block", className)}>
+                <Avatar className="w-full h-full">
+                    <div className="w-full h-full flex items-center justify-center bg-primary">
+                        <Logo className="h-[60%] w-[60%] text-primary-foreground" />
+                    </div>
+                </Avatar>
+            </div>
+        );
+    }
+
     const parts = avatarUrl.split('_');
     const id = parts[0];
     let letter, color;

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -62,7 +63,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { WipDialog } from "@/components/layout/wip-dialog";
 
 
-const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
+const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com', 'info.dynamicclass@gmail.com'];
 
 export default function ProfilePage() {
   const { user } = useApp();
@@ -111,7 +112,7 @@ export default function ProfilePage() {
   }
   
   const userCenter = centers.find(c => c.code === user.center);
-  const isCenterCodeValid = !!userCenter || user.course === 'default'; // valid if a center is found or if user is unassigned
+  const isCenterCodeValid = !!userCenter || user.center === 'personal' || user.course === 'default'; // valid if a center is found or if user is unassigned
   const displayCenter = user.center === 'personal' ? 'Uso Personal' : (isCenterCodeValid ? userCenter?.name : 'Código de centro obsoleto');
 
 
@@ -617,7 +618,7 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
 
   const initializeState = () => {
     if (user) {
-        const isPersonal = user.center === 'personal';
+        const isPersonal = user.center === 'personal' || user.center === 'default';
         setMode(isPersonal ? 'personal' : 'join');
         setName(user.name);
         setCenter(isPersonal ? '' : user.center || "");
@@ -1429,3 +1430,4 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
     
 
     
+

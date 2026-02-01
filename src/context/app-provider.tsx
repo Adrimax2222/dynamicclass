@@ -10,6 +10,7 @@ import { doc, onSnapshot, setDoc, deleteDoc, collection, query, orderBy, updateD
 import { useToast } from '@/hooks/use-toast';
 import { format as formatDate, subDays, isSameDay } from 'date-fns';
 
+const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com', 'info.dynamicclass@gmail.com'];
 
 export interface AppContextType {
   user: User | null;
@@ -66,8 +67,6 @@ export interface AppContextType {
   hasNewChatMessages: boolean;
   setHasNewChatMessages: (hasNew: boolean) => void;
 }
-
-const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -145,28 +144,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser); 
       if (fbUser) { 
-        const isAdmin = fbUser.email && ADMIN_EMAILS.includes(fbUser.email);
         
-        if (fbUser.emailVerified || isAdmin) {
+        if (fbUser.emailVerified || (fbUser.email && ADMIN_EMAILS.includes(fbUser.email))) {
             const userDocRef = doc(firestore, 'users', fbUser.uid);
             
             const unsubSnapshot = onSnapshot(userDocRef, async (docSnap) => {
               if (docSnap.exists()) {
                 let userData = { uid: docSnap.id, ...docSnap.data() } as User;
                 
+                const isAdmin = fbUser.email && ADMIN_EMAILS.includes(fbUser.email);
+                const isOfficialAccount = fbUser.email === 'info.dynamicclass@gmail.com';
+                
+                let updatesToPerform: { [key: string]: any } = {};
+
+                // Ensure admin role
+                if (isAdmin && userData.role !== 'admin') {
+                   updatesToPerform.role = 'admin';
+                }
+                
+                // Ensure official account details
+                if (isOfficialAccount) {
+                    if (userData.name !== 'Dynamic Class') {
+                        updatesToPerform.name = 'Dynamic Class';
+                    }
+                    if (userData.avatar !== 'dclogo') {
+                        updatesToPerform.avatar = 'dclogo';
+                    }
+                }
+                
+                // Ensure admin trophy count
+                if (isAdmin && userData.trophies !== 9999) {
+                    updatesToPerform.trophies = 9999;
+                }
+                
+                if (Object.keys(updatesToPerform).length > 0) {
+                    await updateDoc(userDocRef, updatesToPerform);
+                    userData = { ...userData, ...updatesToPerform };
+                }
+
+                // Initialize fields if they don't exist
                 userData.streak = userData.streak || 0;
                 userData.studyMinutes = userData.studyMinutes || 0;
                 userData.plantCount = userData.plantCount || 0;
-
-                if (isAdmin && userData.role !== 'admin') {
-                   await updateDoc(userDocRef, { role: 'admin' });
-                   userData.role = 'admin';
-                }
-
-                if (isAdmin) {
-                    await updateDoc(userDocRef, { trophies: 9999 });
-                    userData.trophies = 9999;
-                }
 
                 setUser(userData);
                 
