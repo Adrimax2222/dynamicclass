@@ -48,7 +48,7 @@ import type { Center } from "@/lib/types";
 
 
 export default function SettingsPage() {
-  const { user, theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, setIsChatBubbleVisible, isClassChatBubbleVisible, setIsClassChatBubbleVisible, saveScannedDocs, setSaveScannedDocs } = useApp();
+  const { user, theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, setIsChatBubbleVisible, isClassChatBubbleVisible, setIsClassChatBubbleVisible, saveScannedDocs, setSaveScannedDocs, weeklySummary, setWeeklySummary } = useApp();
   const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -247,24 +247,6 @@ export default function SettingsPage() {
                     onCheckedChange={setSaveScannedDocs}
                 />
             </div>
-            <Separator />
-             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <MailCheck className="h-5 w-5" />
-                    <Label htmlFor="weekly-summary-switch" className="flex flex-col">
-                        <span>Resúmenes Semanales</span>
-                        <span className="text-xs text-muted-foreground">Próximamente...</span>
-                    </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                    <WeeklySummaryInfoDialog />
-                    <Switch
-                        id="weekly-summary-switch"
-                        checked={false}
-                        disabled={true}
-                    />
-                </div>
-            </div>
           </CardContent>
         </Card>
 
@@ -313,18 +295,21 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="push-notifications" className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                <span>Notificaciones Push</span>
-              </Label>
-              <Switch id="push-notifications" checked />
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <Label htmlFor="email-notifications">
-                Notificaciones por Correo
-              </Label>
-              <Switch id="email-notifications" />
+              <div className="flex items-center gap-2">
+                  <MailCheck className="h-5 w-5" />
+                  <Label htmlFor="weekly-summary-switch" className="flex flex-col">
+                      <span>Resúmenes Semanales</span>
+                      <span className="text-xs text-muted-foreground">Próximamente...</span>
+                  </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                  <WeeklySummaryInfoDialog />
+                  <Switch
+                      id="weekly-summary-switch"
+                      checked={weeklySummary}
+                      onCheckedChange={setWeeklySummary}
+                  />
+              </div>
             </div>
           </CardContent>
         </Card>
