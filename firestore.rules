@@ -15,7 +15,8 @@ service cloud.firestore {
       let hardcodedAdmins = request.auth != null && request.auth.token.email in [
         'anavarrod@iestorredelpalau.cat',
         'lrotav@iestorredelpalau.cat',
-        'adrimax.dev@gmail.com'
+        'adrimax.dev@gmail.com',
+        'info.dynamicclass@gmail.com'
       ];
       // Role-based admin from firestore document
       let roleBasedAdmin = request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
