@@ -38,6 +38,7 @@ export type User = {
   saveScannedDocs?: boolean;
   language?: Language;
   weeklySummary?: boolean;
+  emailNotifications?: boolean;
   plantCount?: number;
 };
 

@@ -370,7 +370,7 @@ export default function AuthPage() {
             course: course.toLowerCase().replace('º',''), className: className, 
             role: 'center-admin', // Assign center-admin role
             trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
-            isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [], plantCount: 0, adminAccessCount: 0,
+            isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [], plantCount: 0, adminAccessCount: 0, emailNotifications: true,
             organizationId: newCenterRef.id,
         };
         toast({ title: "¡Centro Creado!", description: `"${''}${values.newCenterName}" se ha creado con el código ${''}${generatedCode}.` });
@@ -397,6 +397,7 @@ export default function AuthPage() {
           ownedAvatars: [],
           plantCount: 0,
           adminAccessCount: 0,
+          emailNotifications: true,
         };
         
         if (registrationMode === 'join' && validatedCenter?.uid) {
@@ -482,6 +483,7 @@ export default function AuthPage() {
             course: 'default', className: 'default', role: 'student',
             trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
             isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [], plantCount: 0, adminAccessCount: 0,
+            emailNotifications: true,
         };
         await setDoc(userDocRef, newUser);
       }

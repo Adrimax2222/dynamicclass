@@ -29,7 +29,8 @@
         "isChatBanned": { "type": "boolean", "description": "If true, the user is banned from using the class chat." },
         "accessCount": { "type": "number", "description": "Tracks the number of times the user has accessed the app." },
         "hasSeenOnboarding": { "type": "boolean", "description": "Whether the user has completed the onboarding tour." },
-        "adminAccessCount": { "type": "number", "description": "Tracks the number of times an admin has seen their specific onboarding." }
+        "adminAccessCount": { "type": "number", "description": "Tracks the number of times an admin has seen their specific onboarding." },
+        "emailNotifications": { "type": "boolean", "description": "Whether the user wants to receive general email notifications." }
       },
       "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange", "isNewUser"]
     },

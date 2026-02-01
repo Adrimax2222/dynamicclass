@@ -48,7 +48,7 @@ import type { Center } from "@/lib/types";
 
 
 export default function SettingsPage() {
-  const { user, theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, setIsChatBubbleVisible, isClassChatBubbleVisible, setIsClassChatBubbleVisible, saveScannedDocs, setSaveScannedDocs, weeklySummary, setWeeklySummary } = useApp();
+  const { user, theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, setIsChatBubbleVisible, isClassChatBubbleVisible, setIsClassChatBubbleVisible, saveScannedDocs, setSaveScannedDocs, weeklySummary, setWeeklySummary, emailNotifications, setEmailNotifications } = useApp();
   const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -295,11 +295,29 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
+                <Label htmlFor="email-notifications-switch" className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                        <Mail className="h-5 w-5" />
+                        <span>Notificaciones por Correo</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground pl-7">Novedades y noticias importantes.</span>
+                </Label>
+                <div className="flex items-center gap-2">
+                    <EmailNotificationsInfoDialog />
+                    <Switch
+                        id="email-notifications-switch"
+                        checked={emailNotifications}
+                        onCheckedChange={setEmailNotifications}
+                    />
+                </div>
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                   <MailCheck className="h-5 w-5" />
-                  <Label htmlFor="weekly-summary-switch" className="flex flex-col">
+                  <Label htmlFor="weekly-summary-switch" className="flex flex-col gap-1">
                       <span>Resúmenes Semanales</span>
-                      <span className="text-xs text-muted-foreground">Próximamente...</span>
+                      <span className="text-xs text-muted-foreground">Informe de tu progreso semanal.</span>
                   </Label>
               </div>
               <div className="flex items-center gap-2">
@@ -308,6 +326,7 @@ export default function SettingsPage() {
                       id="weekly-summary-switch"
                       checked={weeklySummary}
                       onCheckedChange={setWeeklySummary}
+                      disabled={true}
                   />
               </div>
             </div>
@@ -816,3 +835,45 @@ function WeeklySummaryInfoDialog() {
     </Dialog>
   );
 }
+
+function EmailNotificationsInfoDialog() {
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          <button className="text-muted-foreground hover:text-primary transition-colors">
+            <Info className="h-4 w-4" />
+            <span className="sr-only">Información sobre notificaciones por correo</span>
+          </button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" />
+              Notificaciones por Correo
+            </DialogTitle>
+            <DialogDescription>
+              Qué esperar de estas notificaciones.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3 text-sm">
+            <p>
+              Al activar esta opción, recibirás correos electrónicos puntuales sobre:
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-4 text-muted-foreground">
+              <li>Nuevas funcionalidades y actualizaciones importantes de la aplicación.</li>
+              <li>Anuncios generales sobre el estado del servicio.</li>
+              <li>Oportunidades para participar en betas o encuestas.</li>
+            </ul>
+            <p>
+              No te enviaremos spam. Podrás desactivar esta opción en cualquier momento.
+            </p>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button>Entendido</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }

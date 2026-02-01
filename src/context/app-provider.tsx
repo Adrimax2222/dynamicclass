@@ -26,6 +26,8 @@ export interface AppContextType {
   setLanguage: (language: Language) => void;
   weeklySummary: boolean;
   setWeeklySummary: (enabled: boolean) => void;
+  emailNotifications: boolean;
+  setEmailNotifications: (enabled: boolean) => void;
   
   isChatBubbleVisible: boolean;
   setIsChatBubbleVisible: (visible: boolean) => void;
@@ -77,6 +79,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('light');
   const [language, setLanguageState] = useState<Language>('esp');
   const [weeklySummary, setWeeklySummaryState] = useState(false);
+  const [emailNotifications, setEmailNotificationsState] = useState(true);
   const [isChatBubbleVisible, setIsChatBubbleVisibleState] = useState(true);
   const [isClassChatBubbleVisible, setIsClassChatBubbleVisibleState] = useState(true);
   const [isChatDrawerOpen, setChatDrawerOpen] = useState(false);
@@ -204,6 +207,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 const userSummary = userData.weeklySummary ?? false;
                 setWeeklySummaryState(userSummary);
 
+                const userEmailNotifications = userData.emailNotifications ?? true;
+                setEmailNotificationsState(userEmailNotifications);
+
                 const userBubbleVisible = userData.isChatBubbleVisible ?? true;
                 setIsChatBubbleVisibleState(userBubbleVisible);
 
@@ -290,6 +296,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (user && firestore) {
         const userDocRef = doc(firestore, 'users', user.uid);
         updateDoc(userDocRef, { weeklySummary: enabled }).catch(console.error);
+    }
+  }, [user, firestore]);
+
+  const setEmailNotifications = useCallback((enabled: boolean) => {
+    setEmailNotificationsState(enabled);
+    if (user && firestore) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        updateDoc(userDocRef, { emailNotifications: enabled }).catch(console.error);
     }
   }, [user, firestore]);
 
@@ -502,6 +516,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setLanguage,
     weeklySummary,
     setWeeklySummary,
+    emailNotifications,
+    setEmailNotifications,
     isChatBubbleVisible,
     setIsChatBubbleVisible,
     isClassChatBubbleVisible,
