@@ -71,8 +71,10 @@ service cloud.firestore {
       allow update: if isCenterAdmin(resource.data.organizationId) && 
                       request.resource.data.role != 'admin';
       
-      // Allow user to assign themselves as center-admin (only during center creation flow)
-      allow update: if isOwner(userId) && request.resource.data.role == 'center-admin';
+      // Allow user to assign themselves as center-admin (only when creating/joining a center for the first time)
+      allow update: if isOwner(userId) && 
+                      request.resource.data.role == 'center-admin' &&
+                      (resource.data.center == 'personal' || resource.data.center == 'default');
 
       // Allow user to update their own profile, but not their role or banned status
       allow update: if isOwner(userId) && 
