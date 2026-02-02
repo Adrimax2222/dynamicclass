@@ -242,6 +242,7 @@ function MembersTab({ centerId, center, allCenters, isGlobalAdmin, isCenterAdmin
     const { user: currentUser } = useApp();
     const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState("");
+    const [roleFilter, setRoleFilter] = useState("all");
     const [selectedMember, setSelectedMember] = useState<CenterUser | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -252,10 +253,19 @@ function MembersTab({ centerId, center, allCenters, isGlobalAdmin, isCenterAdmin
 
     const { data: members, isLoading } = useCollection<CenterUser>(membersQuery);
 
-    const filteredMembers = (members || []).filter(member =>
-        (member.name && member.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (member.email && member.email.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filteredMembers = (members || []).filter(member => {
+        const searchMatch = (member.name && member.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (member.email && member.email.toLowerCase().includes(searchTerm.toLowerCase()));
+
+        if (!searchMatch) return false;
+
+        if (roleFilter === "all") return true;
+        if (roleFilter === "student") return member.role === 'student';
+        if (roleFilter === "class-admin") return member.role.startsWith('admin-') && member.role !== 'admin' && member.role !== 'center-admin';
+        if (roleFilter === "center-admin") return member.role === 'center-admin';
+
+        return true;
+    });
 
     const handleKickFromCenter = async (member: CenterUser | null) => {
         if (!firestore || !member?.uid) return;
@@ -308,14 +318,27 @@ function MembersTab({ centerId, center, allCenters, isGlobalAdmin, isCenterAdmin
                 <CardDescription>Todos los usuarios que se han unido a este grupo con el código.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Buscar miembro..."
-                        className="pl-10"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                 <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Buscar miembro por nombre o email..."
+                            className="pl-10"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <Select value={roleFilter} onValueChange={setRoleFilter}>
+                        <SelectTrigger className="w-full sm:w-[200px]">
+                            <SelectValue placeholder="Filtrar por rol..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos los roles</SelectItem>
+                            <SelectItem value="student">Estudiantes</SelectItem>
+                            <SelectItem value="class-admin">Admins de Clase</SelectItem>
+                            <SelectItem value="center-admin">Admins de Centro</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
                 <Separator />
                 {isLoading ? (
@@ -325,7 +348,7 @@ function MembersTab({ centerId, center, allCenters, isGlobalAdmin, isCenterAdmin
                         <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
                         <p className="font-semibold">No hay miembros</p>
                         <p className="text-sm text-muted-foreground">
-                            Ningún usuario se ha unido a este centro todavía.
+                            Ningún usuario coincide con los filtros seleccionados.
                         </p>
                     </div>
                 ) : (
@@ -913,4 +936,3 @@ function ChatSettingsDialog({ children, center, classObj }: { children: React.Re
         </>
     );
 }
-
