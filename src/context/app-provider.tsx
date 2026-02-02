@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { createContext, useState, useEffect, useCallback, type ReactNode, useMemo, useRef } from 'react';
@@ -115,7 +114,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [timeLeft, setTimeLeft] = useState(getInitialTime());
 
   const lastLoggedMinuteRef = useRef<number | null>();
-  const streakUpdatedTodayRef = useRef<boolean>(false);
 
   const auth = useAuth();
   const firestore = useFirestore();
@@ -405,14 +403,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [isActive, setIsActive, toast]);
 
   const handleStreak = useCallback(async () => {
-    if (!firestore || !user || streakUpdatedTodayRef.current) return;
+    if (!firestore || !user) return;
     
     const today = new Date();
     const todayStr = formatDate(today, 'yyyy-MM-dd');
     const lastStudyDay = user.lastStudyDay ? new Date(user.lastStudyDay) : null;
 
     if (lastStudyDay && isSameDay(today, lastStudyDay)) {
-        streakUpdatedTodayRef.current = true;
         return;
     }
 
@@ -432,7 +429,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             lastStudyDay: todayStr,
         });
         updateUser({ streak: newStreak, lastStudyDay: todayStr });
-        streakUpdatedTodayRef.current = true;
     } catch (err) {
         console.error("Failed to update streak:", err);
     }
@@ -449,11 +445,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const nextPhaseDuration = modes[timerMode][nextPhase];
       
       if (phase === 'focus') {
-          setPlantCount(prev => prev + 1);
-          toast({
-              title: "¡Planta conseguida!",
-              description: `Has completado una sesión de estudio. ¡Sigue así!`,
-          });
+          if (modes[timerMode].focus >= 5) {
+            setPlantCount(prev => prev + 1);
+            toast({
+                title: "¡Planta conseguida!",
+                description: `Has completado una sesión de estudio. ¡Sigue así!`,
+            });
+          } else {
+            toast({
+                title: "Sesión completada",
+                description: `Para ganar plantas, la sesión debe ser de al menos 5 minutos.`,
+            });
+          }
       } else {
          toast({
             title: `¡Tiempo de ${nextPhase === 'break' ? 'descanso' : 'enfoque'}!`,
@@ -472,12 +475,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!firestore || !user || !isActive || phase !== 'focus') return;
 
-    if (!streakUpdatedTodayRef.current) {
+    const totalFocusDuration = modes[timerMode].focus * 60;
+    const fiveMinutesInSeconds = 5 * 60;
+
+    // Check if 5 minutes have passed in the current session to update streak
+    if (totalFocusDuration >= fiveMinutesInSeconds && timeLeft <= totalFocusDuration - fiveMinutesInSeconds) {
         handleStreak();
     }
 
-    const totalDuration = modes[timerMode].focus * 60;
-    const currentMinute = Math.floor((totalDuration - timeLeft) / 60);
+    const currentMinute = Math.floor((totalFocusDuration - timeLeft) / 60);
 
     if (currentMinute > 0 && currentMinute !== lastLoggedMinuteRef.current) {
         lastLoggedMinuteRef.current = currentMinute;

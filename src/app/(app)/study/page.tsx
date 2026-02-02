@@ -71,7 +71,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import jsPDF from 'jspdf';
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from 'next/link';
 import type { Center, TimerMode, CustomMode } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
@@ -623,6 +623,14 @@ export default function StudyPage() {
                 </CardContent>
             </Card>
 
+            <Alert className="w-full max-w-sm mx-auto bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-200 [&>svg]:text-amber-500">
+                <Flame className="h-4 w-4" />
+                <AlertTitle className="font-semibold">¡A por la racha!</AlertTitle>
+                <AlertDescription className="text-xs">
+                    Las sesiones de 5 minutos o más cuentan para tu racha diaria y te recompensan con una planta nueva para tu jardín.
+                </AlertDescription>
+            </Alert>
+            
             <Card className="w-full max-w-sm mx-auto shadow-lg">
                 <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
@@ -1339,14 +1347,21 @@ function CustomTimerDialog({ children, customMode, setCustomMode }: { children: 
     const [focus, setFocus] = useState(customMode.focus.toString());
     const [rest, setRest] = useState(customMode.break.toString());
     const [isOpen, setIsOpen] = useState(false);
+    const { toast } = useToast();
 
     const handleSave = () => {
         const focusNum = parseInt(focus, 10);
         const restNum = parseInt(rest, 10);
 
-        if (!isNaN(focusNum) && !isNaN(restNum) && focusNum > 0 && restNum > 0) {
+        if (!isNaN(focusNum) && !isNaN(restNum) && focusNum >= 5 && restNum > 0) {
             setGlobalCustomMode({ focus: focusNum, break: restNum });
             setIsOpen(false);
+        } else {
+            toast({
+                title: "Tiempo no válido",
+                description: "El tiempo de enfoque debe ser de al menos 5 minutos.",
+                variant: "destructive",
+            });
         }
     };
     
@@ -1378,6 +1393,7 @@ function CustomTimerDialog({ children, customMode, setCustomMode }: { children: 
                             value={focus} 
                             onChange={(e) => setFocus(e.target.value)} 
                             placeholder="Ej: 45"
+                            min="5"
                         />
                     </div>
                     <div className="space-y-2">
@@ -1388,6 +1404,7 @@ function CustomTimerDialog({ children, customMode, setCustomMode }: { children: 
                             value={rest}
                             onChange={(e) => setRest(e.target.value)}
                             placeholder="Ej: 15"
+                            min="1"
                         />
                     </div>
                 </div>
