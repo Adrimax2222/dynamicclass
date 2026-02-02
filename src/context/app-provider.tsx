@@ -180,6 +180,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     updatesToPerform.trophies = 9999;
                 }
                 
+                // Ensure center admin class is "Administración"
+                if (userData.role === 'center-admin' && (userData.course !== 'Administración' || userData.className !== 'Administración')) {
+                  updatesToPerform.course = 'Administración';
+                  updatesToPerform.className = 'Administración';
+                }
+                
                 if (Object.keys(updatesToPerform).length > 0) {
                     await updateDoc(userDocRef, updatesToPerform);
                     userData = { ...userData, ...updatesToPerform };

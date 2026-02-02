@@ -284,9 +284,11 @@ function MembersTab({ centerId, center, allCenters, isGlobalAdmin, isCenterAdmin
         setIsProcessing(true);
         try {
             const userDocRef = doc(firestore, 'users', member.uid);
-            const updateData: {role: string, adminAccessCount?: number} = { role: newRole };
+            const updateData: {role: string, adminAccessCount?: number, course?: string, className?: string} = { role: newRole };
             if (newRole === 'center-admin') {
                 updateData.adminAccessCount = 0;
+                updateData.course = "Administración";
+                updateData.className = "Administración";
             }
             await updateDoc(userDocRef, updateData);
             toast({ title: "Rol Actualizado", description: `${member.name} ahora es ${newRole === 'center-admin' ? 'Admin de Centro' : 'Estudiante'}.` });
@@ -911,3 +913,4 @@ function ChatSettingsDialog({ children, center, classObj }: { children: React.Re
         </>
     );
 }
+
