@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -86,8 +85,8 @@ export default function DeveloperPortalPage() {
                 <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                     <TabsTrigger value="users">Usuarios</TabsTrigger>
-                    <TabsTrigger value="notes">Notas Globales</TabsTrigger>
-                    <TabsTrigger value="chat">Chat Global</TabsTrigger>
+                    <TabsTrigger value="notes">Notas</TabsTrigger>
+                    <TabsTrigger value="chat">Chat</TabsTrigger>
                 </TabsList>
                 <div className="py-6">
                     <TabsContent value="dashboard">
@@ -498,7 +497,3 @@ function ChatMessageItem({ msg, currentUser }: { msg: GlobalChatMessage, current
         </div>
     );
 }
-
-    
-
-    
