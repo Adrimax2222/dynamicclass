@@ -119,8 +119,8 @@ function DashboardTab() {
     return (
         <div className="space-y-6">
             <GlobalAdminsPanel />
-            <TeamPanel />
             <AppInfoPanel />
+            <TeamPanel />
         </div>
     );
 }
@@ -156,6 +156,14 @@ function GlobalAdminsPanel() {
                     </div>
                 )}
             </CardContent>
+            <CardFooter>
+                 <Button asChild className="w-full">
+                    <Link href="/admin">
+                        <Wrench className="mr-2 h-4 w-4" />
+                        Ir al Panel de Administración
+                    </Link>
+                </Button>
+            </CardFooter>
         </Card>
     );
 }
@@ -617,3 +625,5 @@ function ChatMessageItem({ msg, currentUser }: { msg: GlobalChatMessage, current
         </div>
     );
 }
+
+    
