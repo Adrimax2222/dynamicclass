@@ -159,8 +159,8 @@ function GlobalAdminsPanel() {
 }
 
 function AppInfoPanel() {
-    const appVersion = "3.0.22.6";
-    const lastUpdate = "30 de Mayo, 2024";
+    const appVersion = "V 3.5.2";
+    const lastUpdate = "3 de febrero de 2026";
     const devTime = "5+ meses";
     const domain = "dynamicclass.app";
 
