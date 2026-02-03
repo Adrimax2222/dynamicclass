@@ -228,6 +228,8 @@ export default function StudyPage() {
         setPhase,
         isActive,
         setIsActive,
+        isFocusMode,
+        setIsFocusMode,
         timeLeft,
         customMode,
         setCustomMode,
@@ -246,7 +248,6 @@ export default function StudyPage() {
     const [activePlaylist, setActivePlaylist] = useState<Playlist>(defaultPlaylists[0]);
     const [isMounted, setIsMounted] = useState(false);
     const [isScheduleAvailable, setIsScheduleAvailable] = useState(false);
-    const [isFocusMode, setIsFocusMode] = useState(false);
     const [plantStage, setPlantStage] = useState(0); 
 
 
@@ -353,7 +354,7 @@ export default function StudyPage() {
         return () => {
             exitFullScreen();
         };
-    }, [isFocusMode, isActive, toast]);
+    }, [isFocusMode, isActive, toast, setIsFocusMode]);
 
 
     const handleModeChange = (newMode: TimerMode) => {

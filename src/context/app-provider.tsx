@@ -53,6 +53,8 @@ export interface AppContextType {
   setPhase: (phase: Phase) => void;
   isActive: boolean;
   setIsActive: (isActive: boolean) => void;
+  isFocusMode: boolean;
+  setIsFocusMode: (isFocus: boolean) => void;
   timeLeft: number;
   setTimeLeft: (time: number) => void;
   customMode: CustomMode;
@@ -97,6 +99,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [timerMode, setTimerMode] = useState<TimerMode>("pomodoro");
   const [phase, setPhase] = useState<Phase>("focus");
   const [isActive, setIsActive] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
   const [customMode, setCustomMode] = useState<CustomMode>({ focus: 45, break: 15 });
   const [plantCount, setPlantCount] = useState(0);
 
@@ -384,8 +387,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handleVisibilityChange = () => {
-      // Pausa el temporizador si la página se oculta y el temporizador está activo
-      if (document.visibilityState === 'hidden' && isActive) {
+      // If focus mode is active, pause the timer when tab is hidden.
+      if (document.visibilityState === 'hidden' && isActive && isFocusMode) {
         setIsActive(false);
         toast({
           title: "Estudio en pausa",
@@ -400,7 +403,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isActive, setIsActive, toast]);
+  }, [isActive, isFocusMode, setIsActive, toast]);
 
   const handleStreak = useCallback(async () => {
     if (!firestore || !user) return;
@@ -501,6 +504,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const resetTimer = useCallback(() => {
     setIsActive(false);
+    setIsFocusMode(false);
     setPhase("focus");
     setTimeLeft(getInitialTime());
     lastLoggedMinuteRef.current = null;
@@ -508,6 +512,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const skipPhase = useCallback(() => {
     setIsActive(false);
+    setIsFocusMode(false);
     const nextPhase = phase === "focus" ? "break" : "focus";
     setPhase(nextPhase);
     lastLoggedMinuteRef.current = null;
@@ -551,6 +556,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setPhase,
     isActive,
     setIsActive,
+    isFocusMode,
+    setIsFocusMode,
     timeLeft,
     setTimeLeft,
     customMode,
