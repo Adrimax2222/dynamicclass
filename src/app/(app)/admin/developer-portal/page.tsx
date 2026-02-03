@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/lib/hooks/use-app';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -43,6 +43,7 @@ import {
   Send,
   MoreHorizontal,
   Copy,
+  Trophy,
 } from 'lucide-react';
 import LoadingScreen from '@/components/layout/loading-screen';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
