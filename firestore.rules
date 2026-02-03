@@ -178,6 +178,16 @@ service cloud.firestore {
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollVoteCounts', 'votedUserIds']);
     }
 
+    // ============= GLOBAL ADMIN FEATURES =============
+
+    match /globalNotes/{noteId} {
+      allow read, write: if isGlobalAdmin();
+    }
+
+    match /globalChat/{messageId} {
+      allow read, write: if isGlobalAdmin();
+    }
+    
     // ============= CENTERS =============
 
     match /centers/{centerId} {
@@ -196,3 +206,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

@@ -59,6 +59,35 @@
       },
       "required": ["title", "content", "createdAt"]
     },
+    "GlobalNote": {
+      "title": "Global Note",
+      "description": "Represents a shared note for global admins.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "color": { "type": "string" }
+      },
+      "required": ["title", "content", "createdAt", "authorId", "authorName"]
+    },
+    "GlobalAdminChatMessage": {
+      "title": "Global Admin Chat Message",
+      "description": "A message in the global admin chat.",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorAvatar": { "type": "string", "format": "uri" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "authorName", "authorAvatar", "content", "timestamp"]
+    },
     "Announcement": {
       "title": "Announcement",
       "description": "Represents a global announcement for all users.",
@@ -252,6 +281,16 @@
     "/centers/{centerId}/classes/{className}/messages/{messageId}": {
         "schema": { "$ref": "#/entities/ClassChatMessage" },
         "description": "Stores messages for a specific class chat."
+    },
+    "/globalNotes/{noteId}": {
+      "schema": { "$ref": "#/entities/GlobalNote" },
+      "description": "Shared notes for global administrators."
+    },
+    "/globalChat/{messageId}": {
+      "schema": { "$ref": "#/entities/GlobalAdminChatMessage" },
+      "description": "Stores messages for the global admin chat."
     }
   }
 }
+
+    

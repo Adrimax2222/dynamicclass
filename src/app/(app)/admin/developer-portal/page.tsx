@@ -1,0 +1,513 @@
+
+"use client";
+
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { useApp } from '@/lib/hooks/use-app';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy, getDocs, doc, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc, writeBatch, Timestamp } from 'firebase/firestore';
+import type { User, Note as GlobalNote, ClassChatMessage as GlobalChatMessage, Center } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import { format, formatDistanceToNow } from 'date-fns';
+import { es } from "date-fns/locale";
+import Link from "next/link";
+import {
+  ChevronLeft,
+  ShieldCheck,
+  Package,
+  Wrench,
+  Users,
+  MessageSquare,
+  BookCopy,
+  User as UserIcon,
+  Search,
+  Mail,
+  Calendar,
+  Clock,
+  Loader2,
+  PlusCircle,
+  Edit,
+  Trash2,
+  Pin,
+  Send,
+  MoreHorizontal,
+  Copy,
+} from 'lucide-react';
+import LoadingScreen from '@/components/layout/loading-screen';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Textarea } from '@/components/ui/textarea';
+import { AvatarDisplay } from '@/components/profile/avatar-creator';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+
+const noteColors = ['#E2E8F0', '#FECACA', '#FDE68A', '#A7F3D0', '#BFDBFE', '#C7D2FE', '#E9D5FF'];
+
+// Main Page Component
+export default function DeveloperPortalPage() {
+    const { user } = useApp();
+    const router = useRouter();
+
+    if (!user) {
+        return <LoadingScreen />;
+    }
+
+    if (user.role !== 'admin') {
+        router.replace('/home');
+        return <LoadingScreen />;
+    }
+
+    return (
+        <div className="container mx-auto max-w-4xl p-4 sm:p-6">
+            <header className="mb-8 flex items-center gap-4">
+                <Button variant="ghost" size="icon" onClick={() => router.push('/settings')}>
+                    <ChevronLeft />
+                </Button>
+                <div>
+                    <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl flex items-center gap-2">
+                        <ShieldCheck className="text-purple-500"/>
+                        Portal de Desarrollador
+                    </h1>
+                </div>
+            </header>
+
+            <Tabs defaultValue="dashboard" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                    <TabsTrigger value="users">Usuarios</TabsTrigger>
+                    <TabsTrigger value="notes">Notas Globales</TabsTrigger>
+                    <TabsTrigger value="chat">Chat Global</TabsTrigger>
+                </TabsList>
+                <div className="py-6">
+                    <TabsContent value="dashboard">
+                        <DashboardTab />
+                    </TabsContent>
+                     <TabsContent value="users">
+                        <UserExplorerTab />
+                    </TabsContent>
+                    <TabsContent value="notes">
+                        <SharedNotesTab />
+                    </TabsContent>
+                    <TabsContent value="chat">
+                        <GlobalChatTab />
+                    </TabsContent>
+                </div>
+            </Tabs>
+        </div>
+    );
+}
+
+// Dashboard Tab
+function DashboardTab() {
+    return (
+        <div className="space-y-6">
+            <GlobalAdminsPanel />
+            <AppInfoPanel />
+        </div>
+    );
+}
+
+function GlobalAdminsPanel() {
+    const firestore = useFirestore();
+    const adminsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'users'), where('role', '==', 'admin'));
+    }, [firestore]);
+    const { data: admins, isLoading } = useCollection<User>(adminsQuery);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><ShieldCheck /> Administradores Globales</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? <Skeleton className="h-10 w-full" /> : (
+                    <div className="space-y-2">
+                        {admins.map(admin => (
+                            <div key={admin.uid} className="flex items-center gap-3 p-2 rounded-md bg-muted/50">
+                                <Avatar className="h-9 w-9">
+                                    <AvatarImage src={admin.avatar} alt={admin.name} />
+                                    <AvatarFallback>{admin.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-semibold text-sm">{admin.name}</p>
+                                    <p className="text-xs text-muted-foreground">{admin.email}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+function AppInfoPanel() {
+    const appVersion = "3.0.22.6";
+    const lastUpdate = "29 de Mayo, 2024";
+    const recentImprovements = [
+        "Implementado portal de desarrolladores.",
+        "Refinado sistema de roles para admins de centro.",
+        "Mejorada la lógica de recompensas del Modo Estudio.",
+        "Solucionados errores de renderizado en mensajes anclados."
+    ];
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Package />Información de la App</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Versión Actual:</span>
+                    <Badge variant="secondary">{appVersion}</Badge>
+                </div>
+                 <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Última Actualización:</span>
+                    <span className="font-semibold">{lastUpdate}</span>
+                </div>
+                <Separator />
+                <div>
+                    <h4 className="font-semibold text-sm mb-2">Mejoras Recientes:</h4>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                        {recentImprovements.map((item, index) => <li key={index}>{item}</li>)}
+                    </ul>
+                </div>
+            </CardContent>
+             <CardFooter>
+                <Button variant="outline" className="w-full">
+                    <Wrench className="mr-2 h-4 w-4" /> Ver registro de cambios completo
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+}
+
+
+// User Explorer Tab
+function UserExplorerTab() {
+    const firestore = useFirestore();
+    const usersQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'users'), orderBy('name')) : null, [firestore]);
+    const { data: allUsers, isLoading } = useCollection<User>(usersQuery);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+    const filteredUsers = useMemo(() => {
+        if (!allUsers) return [];
+        return allUsers.filter(u => 
+            u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            u.email.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [allUsers, searchTerm]);
+    
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[70vh]">
+            <Card className="md:col-span-1 flex flex-col">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Users /> Explorador de Usuarios</CardTitle>
+                    <div className="relative pt-2">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="Buscar usuario..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                    </div>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-y-auto p-2">
+                    {isLoading ? <p>Cargando usuarios...</p> : (
+                        <div className="space-y-1">
+                            {filteredUsers.map(u => (
+                                <button key={u.uid} onClick={() => setSelectedUser(u)} className={cn("w-full flex items-center gap-3 p-2 rounded-md text-left transition-colors", selectedUser?.uid === u.uid ? 'bg-primary/10' : 'hover:bg-muted/50')}>
+                                    <Avatar className="h-9 w-9">
+                                        <AvatarImage src={u.avatar} alt={u.name}/>
+                                        <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-sm truncate">{u.name}</p>
+                                        <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                                    </div>
+                                    <Badge variant={u.role === 'admin' ? 'destructive' : 'outline'} className="text-xs">{u.role}</Badge>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+            <Card className="md:col-span-2">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><UserIcon />Ficha Técnica</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {selectedUser ? <UserDetailPanel user={selectedUser} /> : (
+                        <div className="h-full flex items-center justify-center text-center text-muted-foreground">
+                            <p>Selecciona un usuario para ver sus detalles</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
+function UserDetailPanel({ user }: { user: User }) {
+    return (
+        <ScrollArea className="h-[60vh]">
+            <div className="space-y-4 pr-4">
+                <div className="flex items-center gap-4">
+                    <Avatar className="h-16 w-16">
+                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                        <h3 className="text-xl font-bold">{user.name}</h3>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <Badge variant="secondary" className="mt-1">{user.role}</Badge>
+                    </div>
+                </div>
+                <Separator />
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                    <InfoItem icon={Mail} label="Email" value={user.email} />
+                    <InfoItem icon={Calendar} label="Rango de Edad" value={user.ageRange} />
+                    <InfoItem icon={Users} label="Centro" value={user.center} />
+                    <InfoItem icon={Users} label="Curso" value={user.course} />
+                    <InfoItem icon={Users} label="Clase" value={user.className} />
+                    <InfoItem icon={Clock} label="Minutos de Estudio" value={user.studyMinutes || 0} />
+                    <InfoItem icon={Trophy} label="Trofeos" value={user.trophies} />
+                </div>
+            </div>
+        </ScrollArea>
+    );
+}
+
+const InfoItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string | number }) => (
+    <div className="p-3 rounded-md bg-muted/50">
+        <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Icon className="h-3 w-3"/>{label}</p>
+        <p className="font-semibold truncate">{value}</p>
+    </div>
+);
+
+
+// Shared Notes Tab
+function SharedNotesTab() {
+  const { user } = useApp();
+  const firestore = useFirestore();
+
+  const notesCollectionRef = useMemoFirebase(() => firestore ? collection(firestore, `globalNotes`) : null, [firestore]);
+  const notesQuery = useMemoFirebase(() => notesCollectionRef ? query(notesCollectionRef, orderBy("createdAt", "desc")) : null, [notesCollectionRef]);
+
+  const { data: notes = [], isLoading } = useCollection<GlobalNote>(notesQuery);
+
+  const handleAddNote = async (title: string, content: string, color: string) => {
+    if (!notesCollectionRef || !user) return;
+    await addDoc(notesCollectionRef, { title, content, color, createdAt: serverTimestamp(), authorId: user.uid, authorName: user.name, updatedAt: serverTimestamp() });
+  };
+  
+  const handleUpdateNote = async (id: string, title: string, content: string, color: string) => {
+    if (!notesCollectionRef) return;
+    const noteDocRef = doc(notesCollectionRef, id);
+    await updateDoc(noteDocRef, { title, content, color, updatedAt: serverTimestamp() });
+  };
+
+  const handleDeleteNote = async (id: string) => {
+    if (!notesCollectionRef) return;
+    const noteDocRef = doc(notesCollectionRef, id);
+    await deleteDoc(noteDocRef);
+  };
+  
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Notas Globales</h2>
+        <NoteDialog onSave={handleAddNote} />
+      </div>
+      {isLoading ? <Loader2 className="mx-auto my-8 h-8 w-8 animate-spin" /> : notes.length === 0 ? (
+         <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
+          <p className="font-semibold">No hay notas compartidas.</p>
+        </div>
+      ) : (
+        <div className="columns-1 md:columns-2 gap-4 space-y-4">
+          {notes.map((note) => (
+            <Card key={note.uid} className="break-inside-avoid flex flex-col" style={{ borderTop: `6px solid ${note.color || 'hsl(var(--border))'}`}}>
+              <CardHeader>
+                <CardTitle className="text-base">{note.title}</CardTitle>
+                <CardDescription>Por {note.authorName} - {note.createdAt ? formatDistanceToNow(note.createdAt.toDate(), { addSuffix: true, locale: es }) : ''}</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1">
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{note.content}</p>
+              </CardContent>
+              <CardFooter className="pt-2 flex items-center justify-end">
+                <NoteDialog note={note} onSave={handleUpdateNote}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground"><Edit className="h-4 w-4" /></Button>
+                </NoteDialog>
+                <Button variant="ghost" size="icon" className="text-destructive/60 hover:text-destructive h-8 w-8" onClick={() => handleDeleteNote(note.uid)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NoteDialog({ children, note, onSave }: { children?: React.ReactNode, note?: GlobalNote, onSave: (idOrTitle: string, content: string, color: string, ...rest: any[]) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [color, setColor] = useState("");
+  const isEditing = !!note;
+
+  useEffect(() => {
+    if (isOpen) {
+        setTitle(note?.title || "");
+        setContent(note?.content || "");
+        setColor(note?.color || noteColors[0]);
+    }
+  }, [isOpen, note]);
+
+  const handleSave = () => {
+    if (title) {
+        if (isEditing && note) {
+            (onSave as (id: string, title: string, content: string, color: string) => void)(note.uid, title, content, color);
+        } else {
+            (onSave as (title: string, content: string, color: string) => void)(title, content, color);
+        }
+        setIsOpen(false);
+    }
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+            {children || <Button><PlusCircle className="mr-2 h-4 w-4" /> Nueva Nota</Button>}
+        </DialogTrigger>
+        <DialogContent style={{ borderTop: `4px solid ${color || 'hsl(var(--border))'}`}}>
+            <DialogHeader>
+                <DialogTitle>{isEditing ? 'Editar Nota' : 'Nueva Nota Global'}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título de la nota" />
+                <Textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Escribe algo..." rows={6} />
+                <div className="flex flex-wrap gap-3">
+                    {noteColors.map(c => (
+                        <button key={c} type="button" onClick={() => setColor(c)} className={cn('h-8 w-8 rounded-full border-2 transition-transform hover:scale-110', color === c ? 'border-ring' : 'border-slate-300')} style={{backgroundColor: c}}/>
+                    ))}
+                </div>
+            </div>
+            <DialogFooter>
+                <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+                <Button onClick={handleSave}>Guardar</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+  );
+}
+
+
+// Global Chat Tab
+function GlobalChatTab() {
+    const { user } = useApp();
+    const firestore = useFirestore();
+    const [message, setMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const { toast } = useToast();
+
+    const chatPath = 'globalChat';
+
+    const messagesQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, chatPath), orderBy('timestamp', 'asc'));
+    }, [firestore]);
+
+    const { data: messages = [], isLoading: areMessagesLoading } = useCollection<GlobalChatMessage>(messagesQuery);
+
+    useEffect(() => {
+      const scrollContainer = scrollAreaRef.current;
+      if (scrollContainer) {
+        setTimeout(() => { scrollContainer.scrollTop = scrollContainer.scrollHeight; }, 100);
+      }
+    }, [messages]);
+
+    const handleSend = async () => {
+        if (!message.trim() || !user || !firestore) return;
+        setIsSending(true);
+
+        const newMessage = {
+            content: message,
+            authorId: user.uid,
+            authorName: user.name,
+            authorAvatar: user.avatar,
+            timestamp: serverTimestamp() as Timestamp,
+        };
+
+        try {
+            await addDoc(collection(firestore, chatPath), newMessage);
+            setMessage('');
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "No se pudo enviar el mensaje." });
+        } finally {
+            setIsSending(false);
+        }
+    };
+    
+    return (
+        <Card className="h-[70vh] flex flex-col">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><MessageSquare /> Chat de Administradores</CardTitle>
+                <CardDescription>Un canal de comunicación privado para el equipo de desarrollo.</CardDescription>
+            </CardHeader>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollAreaRef}>
+                {areMessagesLoading ? <Loader2 className="mx-auto my-8 h-8 w-8 animate-spin" /> : messages.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-16">
+                        <p className="font-semibold">Inicia la conversación.</p>
+                    </div>
+                ) : (
+                    messages.map((msg) => (
+                       <ChatMessageItem key={msg.uid} msg={msg} currentUser={user!} />
+                    ))
+                )}
+            </div>
+            <CardFooter className="p-4 border-t">
+                <div className="flex items-end gap-2 w-full">
+                    <Textarea 
+                        placeholder="Escribe un mensaje..."
+                        className="flex-1 bg-muted/50 border-0 focus-visible:ring-1"
+                        rows={1}
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
+                        disabled={isSending || !user}
+                    />
+                    <Button size="icon" onClick={handleSend} disabled={isSending || !message.trim() || !user}>
+                        {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </Button>
+                </div>
+            </CardFooter>
+        </Card>
+    );
+}
+
+function ChatMessageItem({ msg, currentUser }: { msg: GlobalChatMessage, currentUser: User }) {
+    const isSelf = msg.authorId === currentUser.uid;
+    return (
+        <div className={cn("flex items-end gap-2", isSelf ? "justify-end" : "justify-start")}>
+            {!isSelf && <AvatarDisplay user={{ name: msg.authorName, avatar: msg.authorAvatar }} className="h-8 w-8" />}
+            <div className={cn("max-w-[75%] p-3 rounded-xl shadow-sm", isSelf ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none")}>
+                {!isSelf && <p className="font-bold text-xs pb-1">{msg.authorName}</p>}
+                <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                <p className="text-right text-xs opacity-70 mt-1">{msg.timestamp ? format(msg.timestamp.toDate(), 'HH:mm') : ''}</p>
+            </div>
+            {isSelf && <AvatarDisplay user={currentUser} className="h-8 w-8" />}
+        </div>
+    );
+}
+
+    

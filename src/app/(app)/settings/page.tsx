@@ -750,10 +750,17 @@ function PrivacyPolicyDialog() {
 
 function DeveloperPortalDialog() {
   const [pin, setPin] = useState('');
+  const router = useRouter();
+  const { toast } = useToast();
 
-  // No logic for now, just UI
   const handleConfirm = () => {
-    // Future logic will go here
+    if (pin === '1821') {
+      toast({ title: "Acceso Concedido", description: "Redirigiendo al Portal de Desarrolladores." });
+      router.push('/admin/developer-portal');
+    } else {
+      toast({ title: "PIN Incorrecto", variant: "destructive" });
+      setPin('');
+    }
   };
 
   return (
@@ -780,6 +787,7 @@ function DeveloperPortalDialog() {
                     onChange={(e) => setPin(e.target.value)}
                     className="text-center text-2xl tracking-[0.5em]"
                     maxLength={4}
+                    onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
                 />
             </div>
             <DialogFooter>
@@ -877,3 +885,5 @@ function EmailNotificationsInfoDialog() {
       </Dialog>
     );
   }
+
+    
