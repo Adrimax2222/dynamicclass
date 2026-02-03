@@ -1217,31 +1217,27 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 </DialogHeader>
                 <div className="relative flex-grow flex flex-col min-h-0 space-y-4">
                     <div className="flex-grow min-h-0 relative border rounded-lg bg-muted/30 flex items-center justify-center">
-                        <div className="absolute inset-0 z-20" style={{ pointerEvents: mode === 'capture' ? 'auto' : 'none', opacity: mode === 'capture' ? 1 : 0 }}>
-                            {isCameraActive ? (
-                                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 bg-background">
-                                    <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                                    <div className="flex items-center gap-4 mt-4">
-                                        <Button onClick={stopCamera} variant="outline">
-                                            Cancelar
-                                        </Button>
-                                        <Button onClick={takePicture} className="h-16 w-16 rounded-full">
-                                            <Camera className="h-8 w-8" />
-                                        </Button>
-                                    </div>
+                        {mode === 'capture' && !isCameraActive && (
+                            <div className="bg-background p-8 rounded-lg shadow-2xl border">
+                                {renderCaptureUI()}
+                            </div>
+                        )}
+
+                        {isCameraActive && (
+                            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 bg-background">
+                                <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                                <div className="flex items-center gap-4 mt-4">
+                                    <Button onClick={stopCamera} variant="outline">
+                                        Cancelar
+                                    </Button>
+                                    <Button onClick={takePicture} className="h-16 w-16 rounded-full">
+                                        <Camera className="h-8 w-8" />
+                                    </Button>
                                 </div>
-                            ) : (
-                                mode === 'capture' && (
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <div className="bg-background p-8 rounded-lg shadow-2xl border">
-                                            {renderCaptureUI()}
-                                        </div>
-                                    </div>
-                                )
-                            )}
-                        </div>
+                            </div>
+                        )}
                         
-                        {pages.length > 0 && activePage ? (
+                        {pages.length > 0 && activePage && mode === 'preview' ? (
                              <div 
                                 ref={previewContainerRef}
                                 className="w-full h-full flex items-center justify-center p-2"
@@ -1296,7 +1292,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 </div>
                             ))}
                               <button
-                                onClick={() => setMode('capture')}
+                                onClick={() => { setIsCameraActive(false); setMode('capture'); }}
                                 className="h-20 w-20 flex flex-col items-center justify-center rounded-md border-2 border-dashed bg-muted/50 hover:bg-muted hover:border-primary transition-colors shrink-0"
                               >
                                 <PlusCircle className="h-6 w-6 text-muted-foreground" />
@@ -1842,4 +1838,3 @@ function UnitConverter() {
         </Tabs>
     );
 }
-
