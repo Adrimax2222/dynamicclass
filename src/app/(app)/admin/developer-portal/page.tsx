@@ -248,35 +248,29 @@ function UserExplorerTab() {
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent>
-                    {selectedUser && <UserDetailPanel user={selectedUser} />}
+                    {selectedUser && (
+                        <>
+                            <DialogHeader className="items-center text-center">
+                                <AvatarDisplay user={selectedUser} className="h-24 w-24 mb-2" />
+                                <DialogTitle className="text-2xl">{selectedUser.name}</DialogTitle>
+                                <DialogDescription>{selectedUser.email}</DialogDescription>
+                                <Badge variant="secondary" className="w-fit">{selectedUser.role}</Badge>
+                            </DialogHeader>
+                            <Separator />
+                            <div className="grid grid-cols-2 gap-4 text-sm pt-2">
+                                <InfoItem icon={Mail} label="Email" value={selectedUser.email} />
+                                <InfoItem icon={Calendar} label="Rango de Edad" value={selectedUser.ageRange || "No especificado"} />
+                                <InfoItem icon={Users} label="Centro" value={selectedUser.center || "No especificado"} />
+                                <InfoItem icon={Users} label="Curso" value={selectedUser.course || "No especificado"} />
+                                <InfoItem icon={Users} label="Clase" value={selectedUser.className || "No especificado"} />
+                                <InfoItem icon={Clock} label="Minutos de Estudio" value={selectedUser.studyMinutes || 0} />
+                                <InfoItem icon={Trophy} label="Trofeos" value={selectedUser.trophies || 0} />
+                            </div>
+                        </>
+                    )}
                 </DialogContent>
             </Dialog>
         </>
-    );
-}
-
-function UserDetailPanel({ user }: { user: User }) {
-    return (
-        <div className="space-y-4">
-            <div className="flex items-center gap-4">
-                <AvatarDisplay user={user} className="h-16 w-16" />
-                <div className="flex-1">
-                    <h3 className="text-xl font-bold">{user.name}</h3>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                    <Badge variant="secondary" className="mt-1">{user.role}</Badge>
-                </div>
-            </div>
-            <Separator />
-            <div className="grid grid-cols-2 gap-4 text-sm">
-                <InfoItem icon={Mail} label="Email" value={user.email} />
-                <InfoItem icon={Calendar} label="Rango de Edad" value={user.ageRange || "No especificado"} />
-                <InfoItem icon={Users} label="Centro" value={user.center || "No especificado"} />
-                <InfoItem icon={Users} label="Curso" value={user.course || "No especificado"} />
-                <InfoItem icon={Users} label="Clase" value={user.className || "No especificado"} />
-                <InfoItem icon={Clock} label="Minutos de Estudio" value={user.studyMinutes || 0} />
-                <InfoItem icon={Trophy} label="Trofeos" value={user.trophies || 0} />
-            </div>
-        </div>
     );
 }
 
@@ -504,5 +498,7 @@ function ChatMessageItem({ msg, currentUser }: { msg: GlobalChatMessage, current
         </div>
     );
 }
+
+    
 
     
