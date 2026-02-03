@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -43,6 +44,7 @@ import {
   MoreHorizontal,
   Copy,
   Trophy,
+  TreePine,
 } from 'lucide-react';
 import LoadingScreen from '@/components/layout/loading-screen';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
@@ -264,6 +266,8 @@ function UserExplorerTab() {
                                 <InfoItem icon={Users} label="Clase" value={selectedUser.className || "No especificado"} />
                                 <InfoItem icon={Clock} label="Minutos de Estudio" value={selectedUser.studyMinutes || 0} />
                                 <InfoItem icon={Trophy} label="Trofeos" value={selectedUser.trophies || 0} />
+                                <InfoItem icon={TreePine} label="Plantas" value={selectedUser.plantCount || 0} />
+                                <InfoItem icon={Calendar} label="Miembro desde" value={selectedUser.createdAt ? format(selectedUser.createdAt.toDate(), "d MMM, yyyy", { locale: es }) : "Desconocido"} />
                             </div>
                         </>
                     )}
@@ -497,3 +501,5 @@ function ChatMessageItem({ msg, currentUser }: { msg: GlobalChatMessage, current
         </div>
     );
 }
+
+    

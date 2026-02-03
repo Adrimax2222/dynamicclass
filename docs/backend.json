@@ -30,7 +30,9 @@
         "accessCount": { "type": "number", "description": "Tracks the number of times the user has accessed the app." },
         "hasSeenOnboarding": { "type": "boolean", "description": "Whether the user has completed the onboarding tour." },
         "adminAccessCount": { "type": "number", "description": "Tracks the number of times an admin has seen their specific onboarding." },
-        "emailNotifications": { "type": "boolean", "description": "Whether the user wants to receive general email notifications." }
+        "emailNotifications": { "type": "boolean", "description": "Whether the user wants to receive general email notifications." },
+        "plantCount": { "type": "number", "description": "The number of plants the user has collected in the study garden." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of when the user account was created." }
       },
       "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange", "isNewUser"]
     },

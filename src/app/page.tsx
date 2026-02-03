@@ -19,7 +19,7 @@ import {
   reauthenticateWithCredential,
   type User as FirebaseUser,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, collection, getDocs, query, where, addDoc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, getDocs, query, where, addDoc, serverTimestamp, updateDoc, Timestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -372,11 +372,12 @@ export default function AuthPage() {
             trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
             isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [], plantCount: 0, adminAccessCount: 0, emailNotifications: true,
             organizationId: newCenterRef.id,
+            createdAt: serverTimestamp() as Timestamp,
         };
         toast({ title: "¡Centro Creado!", description: `"${''}${values.newCenterName}" se ha creado con el código ${''}${generatedCode}.` });
 
       } else {
-        const baseData: Omit<User, 'uid' | 'organizationId'> & { organizationId?: string } = {
+        const baseData: Omit<User, 'uid' | 'organizationId'> & { organizationId?: string; createdAt: Timestamp } = {
           name: values.fullName,
           email: values.email,
           avatar: defaultAvatarUrl,
@@ -398,12 +399,12 @@ export default function AuthPage() {
           plantCount: 0,
           adminAccessCount: 0,
           emailNotifications: true,
+          createdAt: serverTimestamp() as Timestamp,
         };
         
         if (registrationMode === 'join' && validatedCenter?.uid) {
           userData = { ...baseData, organizationId: validatedCenter.uid };
         } else {
-          delete baseData.organizationId;
           userData = baseData;
         }
       }
@@ -484,6 +485,7 @@ export default function AuthPage() {
             trophies: 0, tasks: 0, exams: 0, pending: 0, activities: 0,
             isNewUser: true, studyMinutes: 0, streak: 0, lastStudyDay: '', ownedAvatars: [], plantCount: 0, adminAccessCount: 0,
             emailNotifications: true,
+            createdAt: serverTimestamp() as Timestamp,
         };
         await setDoc(userDocRef, newUser);
       }
@@ -918,3 +920,5 @@ export default function AuthPage() {
     </main>
   );
 }
+
+    

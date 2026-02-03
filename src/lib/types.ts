@@ -40,6 +40,7 @@ export type User = {
   weeklySummary?: boolean;
   emailNotifications?: boolean;
   plantCount?: number;
+  createdAt?: Timestamp;
 };
 
 // Simplified user type for center management
@@ -208,3 +209,5 @@ export interface CustomMode {
   focus: number;
   break: number;
 }
+
+    
