@@ -45,6 +45,8 @@ import {
   Copy,
   Trophy,
   TreePine,
+  Globe,
+  FileText,
 } from 'lucide-react';
 import LoadingScreen from '@/components/layout/loading-screen';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
@@ -158,40 +160,97 @@ function GlobalAdminsPanel() {
 
 function AppInfoPanel() {
     const appVersion = "3.0.22.6";
-    const lastUpdate = "29 de Mayo, 2024";
+    const lastUpdate = "30 de Mayo, 2024";
+    const devTime = "5+ meses";
+    const domain = "dynamicclass.app";
+
     const recentImprovements = [
-        "Implementado portal de desarrolladores.",
-        "Refinado sistema de roles para admins de centro.",
-        "Mejorada la lógica de recompensas del Modo Estudio.",
-        "Solucionados errores de renderizado en mensajes anclados."
+        "Añadido filtro por rol al explorador de usuarios del portal de desarrollador.",
+        "Mejorada la lógica de administradores de centro para mayor claridad.",
+        "Refinado el sistema de recompensas del Modo Estudio (requisito de 5 min).",
+        "Corregido error visual en mensajes anclados del chat de clase."
     ];
+
+    const languages = ["TypeScript", "JavaScript", "Python", "HTML/CSS", "Firestore Rules"];
+    const platforms = [
+        "Firebase Studio", "Next.js", "React", "Genkit", "Google Cloud",
+        "Google Gemini", "GitHub", "Vercel", "Visual Studio Code", "Android Studio", "Google AI Studio", "Google Colab"
+    ];
+    const tools = [
+        "Google Workspace", "Trello", "Framer", "Jotform", "n8n", "Drive", "NotebookLM", "ChatGPT"
+    ];
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Package />Información de la App</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Versión Actual:</span>
-                    <Badge variant="secondary">{appVersion}</Badge>
+            <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="p-3 rounded-md bg-muted/50">
+                        <p className="text-xs text-muted-foreground">Versión</p>
+                        <p className="font-semibold">{appVersion}</p>
+                    </div>
+                    <div className="p-3 rounded-md bg-muted/50">
+                        <p className="text-xs text-muted-foreground">Última Actualización</p>
+                        <p className="font-semibold">{lastUpdate}</p>
+                    </div>
+                    <div className="p-3 rounded-md bg-muted/50">
+                        <p className="text-xs text-muted-foreground">Tiempo de Desarrollo</p>
+                        <p className="font-semibold">{devTime}</p>
+                    </div>
+                    <div className="p-3 rounded-md bg-muted/50">
+                        <p className="text-xs text-muted-foreground">Dominio Oficial</p>
+                        <a href="https://dynamicclass.app" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">{domain}</a>
+                    </div>
                 </div>
-                 <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Última Actualización:</span>
-                    <span className="font-semibold">{lastUpdate}</span>
-                </div>
+
                 <Separator />
+                
                 <div>
-                    <h4 className="font-semibold text-sm mb-2">Mejoras Recientes:</h4>
+                    <h4 className="font-semibold text-sm mb-2">Mejoras Recientes</h4>
                     <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                         {recentImprovements.map((item, index) => <li key={index}>{item}</li>)}
                     </ul>
                 </div>
+                
+                <Separator />
+
+                <div>
+                    <h4 className="font-semibold text-sm mb-2">Stack Tecnológico</h4>
+                    <div className="space-y-3">
+                        <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-1.5">Lenguajes de Programación</p>
+                            <div className="flex flex-wrap gap-2">
+                                {languages.map(lang => <Badge key={lang} variant="secondary">{lang}</Badge>)}
+                            </div>
+                        </div>
+                         <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-1.5">Plataformas y Frameworks</p>
+                            <div className="flex flex-wrap gap-2">
+                                {platforms.map(p => <Badge key={p} variant="secondary" className="bg-blue-500/10 text-blue-700">{p}</Badge>)}
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-1.5">Herramientas de Soporte y Gestión</p>
+                            <div className="flex flex-wrap gap-2">
+                                {tools.map(tool => <Badge key={tool} variant="outline">{tool}</Badge>)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <Separator />
+                
+                <div>
+                    <h4 className="font-semibold text-sm mb-2">Soporte y Contacto</h4>
+                    <div className="space-y-2 text-sm">
+                        <a href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-muted-foreground hover:text-primary"><Globe className="h-4 w-4"/> Web Oficial</a>
+                        <a href="https://form.jotform.com/230622014643040" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-muted-foreground hover:text-primary"><FileText className="h-4 w-4"/> Formulario de Asistencia</a>
+                        <p className="flex items-center gap-2"><Mail className="h-4 w-4"/> info.dynamicclass@gmail.com</p>
+                    </div>
+                </div>
             </CardContent>
-             <CardFooter>
-                <Button variant="outline" className="w-full">
-                    <Wrench className="mr-2 h-4 w-4" /> Ver registro de cambios completo
-                </Button>
-            </CardFooter>
         </Card>
     );
 }
