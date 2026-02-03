@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -346,16 +345,14 @@ export default function ProfilePage() {
               </div>
             </FullHistoryDialog>
 
-            <WipDialog>
-                <div className="cursor-pointer">
-                    <AchievementCard
-                        title="Mi Jardín"
-                        value="Ver"
-                        icon={TreePine}
-                        color="text-emerald-500"
-                    />
-                </div>
-            </WipDialog>
+            <Link href="/study/collection" className="cursor-pointer">
+              <AchievementCard
+                  title="Mi Jardín"
+                  value="Ver"
+                  icon={TreePine}
+                  color="text-emerald-500"
+              />
+            </Link>
         </div>
       </section>
     </div>
@@ -1431,3 +1428,6 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
     
 
+
+
+    
