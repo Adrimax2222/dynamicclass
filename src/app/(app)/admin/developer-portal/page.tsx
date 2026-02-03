@@ -201,6 +201,12 @@ function UserExplorerTab() {
     const { data: allUsers, isLoading } = useCollection<User>(usersQuery);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    const handleUserSelect = (user: User) => {
+        setSelectedUser(user);
+        setIsDialogOpen(true);
+    };
 
     const filteredUsers = useMemo(() => {
         if (!allUsers) return [];
@@ -211,8 +217,8 @@ function UserExplorerTab() {
     }, [allUsers, searchTerm]);
     
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[70vh]">
-            <Card className="md:col-span-1 flex flex-col">
+        <>
+            <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Users /> Explorador de Usuarios</CardTitle>
                     <div className="relative pt-2">
@@ -220,69 +226,57 @@ function UserExplorerTab() {
                         <Input placeholder="Buscar usuario..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
                     </div>
                 </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto p-2">
-                    {isLoading ? <p>Cargando usuarios...</p> : (
-                        <div className="space-y-1">
-                            {filteredUsers.map(u => (
-                                <button key={u.uid} onClick={() => setSelectedUser(u)} className={cn("w-full flex items-center gap-3 p-2 rounded-md text-left transition-colors", selectedUser?.uid === u.uid ? 'bg-primary/10' : 'hover:bg-muted/50')}>
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarImage src={u.avatar} alt={u.name}/>
-                                        <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-sm truncate">{u.name}</p>
-                                        <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                                    </div>
-                                    <Badge variant={u.role === 'admin' ? 'destructive' : 'outline'} className="text-xs">{u.role}</Badge>
-                                </button>
-                            ))}
-                        </div>
+                <CardContent className="p-2">
+                    {isLoading ? <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div> : (
+                        <ScrollArea className="h-[60vh]">
+                            <div className="space-y-2 p-2">
+                                {filteredUsers.map(u => (
+                                    <button key={u.uid} onClick={() => handleUserSelect(u)} className="w-full flex items-center gap-3 p-3 rounded-lg border text-left hover:bg-muted/50 transition-colors">
+                                        <AvatarDisplay user={u} className="h-10 w-10" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-semibold text-sm truncate">{u.name}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                                        </div>
+                                        <Badge variant={u.role === 'admin' ? 'destructive' : 'outline'} className="text-xs">{u.role}</Badge>
+                                    </button>
+                                ))}
+                            </div>
+                        </ScrollArea>
                     )}
                 </CardContent>
             </Card>
-            <Card className="md:col-span-2">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><UserIcon />Ficha Técnica</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {selectedUser ? <UserDetailPanel user={selectedUser} /> : (
-                        <div className="h-full flex items-center justify-center text-center text-muted-foreground">
-                            <p>Selecciona un usuario para ver sus detalles</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        </div>
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent>
+                    {selectedUser && <UserDetailPanel user={selectedUser} />}
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
 
 function UserDetailPanel({ user }: { user: User }) {
     return (
-        <ScrollArea className="h-[60vh]">
-            <div className="space-y-4 pr-4">
-                <div className="flex items-center gap-4">
-                    <Avatar className="h-16 w-16">
-                        <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                        <h3 className="text-xl font-bold">{user.name}</h3>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                        <Badge variant="secondary" className="mt-1">{user.role}</Badge>
-                    </div>
-                </div>
-                <Separator />
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                    <InfoItem icon={Mail} label="Email" value={user.email} />
-                    <InfoItem icon={Calendar} label="Rango de Edad" value={user.ageRange} />
-                    <InfoItem icon={Users} label="Centro" value={user.center} />
-                    <InfoItem icon={Users} label="Curso" value={user.course} />
-                    <InfoItem icon={Users} label="Clase" value={user.className} />
-                    <InfoItem icon={Clock} label="Minutos de Estudio" value={user.studyMinutes || 0} />
-                    <InfoItem icon={Trophy} label="Trofeos" value={user.trophies} />
+        <div className="space-y-4">
+            <div className="flex items-center gap-4">
+                <AvatarDisplay user={user} className="h-16 w-16" />
+                <div className="flex-1">
+                    <h3 className="text-xl font-bold">{user.name}</h3>
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                    <Badge variant="secondary" className="mt-1">{user.role}</Badge>
                 </div>
             </div>
-        </ScrollArea>
+            <Separator />
+            <div className="grid grid-cols-2 gap-4 text-sm">
+                <InfoItem icon={Mail} label="Email" value={user.email} />
+                <InfoItem icon={Calendar} label="Rango de Edad" value={user.ageRange || "No especificado"} />
+                <InfoItem icon={Users} label="Centro" value={user.center || "No especificado"} />
+                <InfoItem icon={Users} label="Curso" value={user.course || "No especificado"} />
+                <InfoItem icon={Users} label="Clase" value={user.className || "No especificado"} />
+                <InfoItem icon={Clock} label="Minutos de Estudio" value={user.studyMinutes || 0} />
+                <InfoItem icon={Trophy} label="Trofeos" value={user.trophies || 0} />
+            </div>
+        </div>
     );
 }
 
