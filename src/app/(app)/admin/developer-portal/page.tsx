@@ -52,6 +52,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { AvatarDisplay } from '@/components/profile/avatar-creator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 const noteColors = ['#E2E8F0', '#FECACA', '#FDE68A', '#A7F3D0', '#BFDBFE', '#C7D2FE', '#E9D5FF'];
 
@@ -201,6 +203,7 @@ function UserExplorerTab() {
     const usersQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'users'), orderBy('name')) : null, [firestore]);
     const { data: allUsers, isLoading } = useCollection<User>(usersQuery);
     const [searchTerm, setSearchTerm] = useState('');
+    const [roleFilter, setRoleFilter] = useState('all');
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -211,20 +214,44 @@ function UserExplorerTab() {
 
     const filteredUsers = useMemo(() => {
         if (!allUsers) return [];
-        return allUsers.filter(u => 
-            u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            u.email.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [allUsers, searchTerm]);
+        return allUsers.filter(u => {
+            const searchMatch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                u.email.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            if (!searchMatch) return false;
+
+            if (roleFilter === 'all') return true;
+            if (roleFilter === 'student') return u.role === 'student';
+            if (roleFilter === 'class-admin') return u.role.startsWith('admin-') && u.role !== 'admin' && u.role !== 'center-admin';
+            if (roleFilter === 'center-admin') return u.role === 'center-admin';
+            if (roleFilter === 'admin') return u.role === 'admin';
+
+            return true;
+        });
+    }, [allUsers, searchTerm, roleFilter]);
     
     return (
         <>
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Users /> Explorador de Usuarios</CardTitle>
-                    <div className="relative pt-2">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Buscar usuario..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                    <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Buscar usuario por nombre o email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                        </div>
+                        <Select value={roleFilter} onValueChange={setRoleFilter}>
+                            <SelectTrigger className="w-full sm:w-[220px]">
+                                <SelectValue placeholder="Filtrar por rol..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todos los roles</SelectItem>
+                                <SelectItem value="student">Estudiantes</SelectItem>
+                                <SelectItem value="class-admin">Admins de Clase</SelectItem>
+                                <SelectItem value="center-admin">Admins de Centro</SelectItem>
+                                <SelectItem value="admin">Admins Globales</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </CardHeader>
                 <CardContent className="p-2">
@@ -315,7 +342,7 @@ function SharedNotesTab() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Notas Globales</h2>
+        <h2 className="text-lg font-semibold">Notas</h2>
         <NoteDialog onSave={handleAddNote} />
       </div>
       {isLoading ? <Loader2 className="mx-auto my-8 h-8 w-8 animate-spin" /> : notes.length === 0 ? (
@@ -453,7 +480,7 @@ function GlobalChatTab() {
     return (
         <Card className="h-[70vh] flex flex-col">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><MessageSquare /> Chat de Administradores</CardTitle>
+                <CardTitle className="flex items-center gap-2"><MessageSquare /> Chat</CardTitle>
                 <CardDescription>Un canal de comunicación privado para el equipo de desarrollo.</CardDescription>
             </CardHeader>
             <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollAreaRef}>
@@ -501,5 +528,3 @@ function ChatMessageItem({ msg, currentUser }: { msg: GlobalChatMessage, current
         </div>
     );
 }
-
-    
