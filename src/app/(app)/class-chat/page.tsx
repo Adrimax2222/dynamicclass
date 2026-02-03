@@ -452,17 +452,25 @@ const MessageItem = React.forwardRef<HTMLDivElement, MessageItemProps>(
             {!isCurrentUser && (
                 <AvatarDisplay user={{ name: msg.authorName, avatar: msg.authorAvatar }} className="h-8 w-8" />
             )}
-            <div className={cn("max-w-[75%] p-3 rounded-xl shadow-sm group", isCurrentUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none", msg.isPinned && "border-2 border-amber-500/50 bg-amber-500/5")}>
+            <div className={cn(
+                "max-w-[75%] p-3 rounded-xl shadow-sm group",
+                isCurrentUser ? "rounded-br-none" : "rounded-bl-none",
+                msg.isPinned
+                    ? "border-2 border-amber-500/50 bg-amber-500/5"
+                    : isCurrentUser
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card"
+            )}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-baseline gap-2">
                         <p className="font-bold text-base">{msg.authorName}</p>
-                        <p className={cn("text-xs opacity-70", isCurrentUser ? "text-primary-foreground" : "text-muted-foreground")}>
+                        <p className={cn("text-xs opacity-70", isCurrentUser && !msg.isPinned ? "text-primary-foreground" : "text-muted-foreground")}>
                             - {formatRole(msg.authorRole)}
                         </p>
                     </div>
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className={cn("h-6 w-6 opacity-0 group-hover:opacity-100", isCurrentUser ? "text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/20" : "text-muted-foreground")}>
+                            <Button variant="ghost" size="icon" className={cn("h-6 w-6 opacity-0 group-hover:opacity-100", isCurrentUser && !msg.isPinned ? "text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/20" : "text-muted-foreground")}>
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -530,6 +538,8 @@ const MessageItem = React.forwardRef<HTMLDivElement, MessageItemProps>(
     );
 });
 MessageItem.displayName = "MessageItem";
+
+    
 
     
 
