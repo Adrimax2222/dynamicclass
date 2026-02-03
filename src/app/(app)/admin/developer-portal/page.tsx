@@ -47,6 +47,7 @@ import {
   TreePine,
   Globe,
   FileText,
+  Briefcase,
 } from 'lucide-react';
 import LoadingScreen from '@/components/layout/loading-screen';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
@@ -118,6 +119,7 @@ function DashboardTab() {
     return (
         <div className="space-y-6">
             <GlobalAdminsPanel />
+            <TeamPanel />
             <AppInfoPanel />
         </div>
     );
@@ -156,6 +158,33 @@ function GlobalAdminsPanel() {
             </CardContent>
         </Card>
     );
+}
+
+function TeamPanel() {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Briefcase /> Equipo de Desarrollo</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center text-center space-y-4">
+                <a href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="transition-transform hover:scale-105">
+                    <img
+                        src="https://framerusercontent.com/images/wnf3W920QzNmsS575YQww1kIhLU.png"
+                        alt="Logo de Proyecto Adrimax"
+                        width={96}
+                        height={96}
+                        className="w-24 h-24 rounded-full mx-auto shadow-lg"
+                    />
+                </a>
+                <div>
+                    <h3 className="text-lg font-semibold">Adrià Navarro & Luc Rota</h3>
+                    <a href="https://proyectoadrimax.framer.website/" target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                        App impulsada por Proyecto Adrimax
+                    </a>
+                </div>
+            </CardContent>
+        </Card>
+    )
 }
 
 function AppInfoPanel() {
@@ -375,6 +404,7 @@ const InfoItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label
 function SharedNotesTab() {
   const { user } = useApp();
   const firestore = useFirestore();
+  const ref = useRef(null);
 
   const notesCollectionRef = useMemoFirebase(() => firestore ? collection(firestore, `globalNotes`) : null, [firestore]);
   const notesQuery = useMemoFirebase(() => notesCollectionRef ? query(notesCollectionRef, orderBy("createdAt", "desc")) : null, [notesCollectionRef]);

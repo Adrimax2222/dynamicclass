@@ -32,6 +32,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'res.cloudinary.com' },
       { protocol: 'https', hostname: 'vivergil.es' },
       { protocol: 'https', hostname: 'mamabruja.com' },
+      { protocol: 'https', hostname: 'framerusercontent.com' },
     ],
   },
 };
