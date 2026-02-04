@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useApp } from "@/lib/hooks/use-app";
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from "@/firebase";
@@ -663,18 +663,18 @@ function ClassCreationInfoDialog() {
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Creación de Clases</DialogTitle>
-                    <DialogDescription>
-                        Ahora puedes crear clases con nombres personalizados.
-                    </DialogDescription>
+                    <DialogTitle>Creación de Clases y Grupos</DialogTitle>
                 </DialogHeader>
-                <div className="py-4 space-y-2 text-sm">
-                    <p>Además de las clases estándar (ej: "4ESO-B"), puedes crear grupos con nombres personalizados como "Dirección", "Claustro" o "Departamento de Matemáticas".</p>
-                    <p className="font-semibold">Importante:</p>
-                    <ul className="list-disc list-inside text-muted-foreground pl-4">
-                        <li>Los usuarios <strong className="text-foreground">no verán</strong> estas clases personalizadas al registrarse.</li>
-                        <li>Solo los administradores pueden <strong className="text-foreground">asignar usuarios</strong> a estas clases.</li>
-                    </ul>
+                <div className="py-4 space-y-4 text-sm">
+                    <p>Ahora tienes dos maneras de organizar a los usuarios en tu centro:</p>
+                    <div className="p-4 rounded-lg border bg-muted/50">
+                        <h4 className="font-semibold text-foreground mb-2">1. Clases Estándar</h4>
+                        <p className="text-muted-foreground">Usa los menús desplegables para crear clases académicas con un formato fijo (ej: "4ESO-B"). Estas son las clases que los estudiantes verán y podrán seleccionar al registrarse.</p>
+                    </div>
+                     <div className="p-4 rounded-lg border bg-muted/50">
+                        <h4 className="font-semibold text-foreground mb-2">2. Grupos Personalizados</h4>
+                        <p className="text-muted-foreground">Usa el botón "Crear Grupo Personalizado" para grupos no académicos (ej: "Dirección", "Claustro", "Departamento de Mates"). Estos grupos <strong className="text-foreground">no son visibles</strong> para los estudiantes al registrarse; solo los administradores pueden asignar miembros a ellos.</p>
+                    </div>
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>
@@ -686,30 +686,101 @@ function ClassCreationInfoDialog() {
     )
 }
 
+function CustomClassDialog({ onAdd }: { onAdd: (name: string) => Promise<void> }) {
+    const [customName, setCustomName] = useState("");
+    const [isCreating, setIsCreating] = useState(false);
+    
+    const handleAdd = async () => {
+        if (!customName.trim()) return;
+        setIsCreating(true);
+        await onAdd(customName);
+        setIsCreating(false);
+        setCustomName("");
+    }
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                 <Button variant="outline" className="w-full justify-start gap-2 text-muted-foreground">
+                    <PlusCircle className="h-4 w-4 text-primary" /> Crear Grupo Personalizado (ej. Dirección)
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Crear Grupo Personalizado</DialogTitle>
+                    <DialogDescription>
+                        Crea un grupo con un nombre único para fines administrativos o de organización interna, como "Claustro" o "Departamento de Mates".
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-2">
+                    <Label htmlFor="custom-class-name">Nombre del Grupo</Label>
+                    <Input 
+                        id="custom-class-name"
+                        placeholder="Ej: Dirección"
+                        value={customName}
+                        onChange={(e) => setCustomName(e.target.value)}
+                        disabled={isCreating}
+                    />
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline" disabled={isCreating}>Cancelar</Button>
+                    </DialogClose>
+                    <DialogClose asChild>
+                        <Button onClick={handleAdd} disabled={isCreating || !customName.trim()}>
+                            {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                            Añadir Grupo
+                        </Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+const courseOptions = ['1ESO', '2ESO', '3ESO', '4ESO', '1BACH', '2BACH'];
+const classOptions = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+
 function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center, visibleClasses: ClassDefinition[], isGlobalAdmin: boolean }) {
-    const [newClassName, setNewClassName] = useState("");
+    const [newStandardCourse, setNewStandardCourse] = useState("");
+    const [newStandardClassName, setNewStandardClassName] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
     const firestore = useFirestore();
     const { toast } = useToast();
 
-    const handleAddClass = async () => {
-        if (!firestore || !center.uid || !newClassName.trim()) return;
+    const addClass = async (name: string) => {
+        if (!firestore || !center.uid || !name.trim()) return;
+
+        if (center.classes.some(c => c.name.toLowerCase() === name.trim().toLowerCase())) {
+            toast({ title: "Error", description: "Ya existe un grupo con este nombre.", variant: "destructive" });
+            return;
+        }
 
         setIsProcessing(true);
         const centerDocRef = doc(firestore, 'centers', center.uid);
-        const newClass: ClassDefinition = { name: newClassName.trim(), icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] }, isChatEnabled: true };
+        const newClass: ClassDefinition = { name: name.trim(), icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] }, isChatEnabled: true };
 
         try {
             await updateDoc(centerDocRef, {
                 classes: arrayUnion(newClass)
             });
-            setNewClassName("");
-            toast({ title: "Clase añadida", description: `La clase "${newClass.name}" ha sido añadida.` });
+            toast({ title: "Grupo añadido", description: `El grupo "${newClass.name}" ha sido creado.` });
         } catch (error) {
-            toast({ title: "Error", description: "No se pudo añadir la clase.", variant: "destructive" });
+            toast({ title: "Error", description: "No se pudo añadir el grupo.", variant: "destructive" });
         } finally {
             setIsProcessing(false);
         }
+    };
+    
+    const handleAddStandardClass = async () => {
+        if (!newStandardCourse || !newStandardClassName) {
+            toast({ title: "Error", description: "Debes seleccionar un curso y una clase.", variant: "destructive" });
+            return;
+        }
+        const classNameToAdd = `${newStandardCourse}-${newStandardClassName}`;
+        await addClass(classNameToAdd);
+        setNewStandardCourse("");
+        setNewStandardClassName("");
     };
 
     const handleRemoveClass = async (classObj: ClassDefinition) => {
@@ -758,26 +829,49 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
             <CardContent className="space-y-4">
                 {isGlobalAdmin && (
                     <>
-                        <div className="space-y-2">
-                           <div className="flex items-center gap-2">
-                             <Label htmlFor="class-name-input">Nombre de la Clase</Label>
-                             <ClassCreationInfoDialog />
-                           </div>
-                            <div className="flex items-end gap-2">
-                                <Input 
-                                  id="class-name-input"
-                                  placeholder="Ej: 4ESO-B o Dirección"
-                                  value={newClassName}
-                                  onChange={(e) => setNewClassName(e.target.value)}
-                                  disabled={isProcessing}
-                                />
-                                <Button onClick={handleAddClass} disabled={isProcessing || !newClassName.trim()}>
+                         <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <Label className="font-semibold">Crear Clase Estándar</Label>
+                                <ClassCreationInfoDialog />
+                            </div>
+                            <div className="flex flex-col sm:flex-row items-end gap-2">
+                                <div className="flex-1 w-full">
+                                    <Label htmlFor="std-course" className="text-xs">Curso</Label>
+                                    <Select value={newStandardCourse} onValueChange={setNewStandardCourse}>
+                                        <SelectTrigger id="std-course">
+                                            <SelectValue placeholder="Curso..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {courseOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex-1 w-full">
+                                    <Label htmlFor="std-class" className="text-xs">Clase</Label>
+                                    <Select value={newStandardClassName} onValueChange={setNewStandardClassName}>
+                                        <SelectTrigger id="std-class">
+                                            <SelectValue placeholder="Letra..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {classOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <Button onClick={handleAddStandardClass} disabled={isProcessing || !newStandardCourse || !newStandardClassName} className="w-full sm:w-auto">
                                     {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
                                     Añadir
                                 </Button>
                             </div>
                         </div>
-                        <Separator />
+
+                        <div className="relative flex items-center">
+                            <div className="flex-grow border-t border-border"></div>
+                            <span className="flex-shrink mx-4 text-xs uppercase text-muted-foreground">O</span>
+                            <div className="flex-grow border-t border-border"></div>
+                        </div>
+
+                        <CustomClassDialog onAdd={addClass} />
+                        <Separator className="my-4" />
                     </>
                 )}
                 {(visibleClasses || []).length === 0 ? (
