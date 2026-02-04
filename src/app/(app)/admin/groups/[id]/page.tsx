@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Link from "next/link";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { TeacherInfoDialog } from "@/components/layout/teacher-info-dialog";
@@ -457,40 +457,61 @@ function MembersTab({ centerId, center, allCenters, isGlobalAdmin, isCenterAdmin
 }
 
 function ChangeClassDialog({ member, center, children, onMove }: { member: CenterUser, center: Center | null, children: React.ReactNode, onMove: () => void }) {
-    const [targetCourse, setTargetCourse] = useState("");
-    const [targetClass, setTargetClass] = useState("");
+    const [selectedClass, setSelectedClass] = useState("");
     const [isMoving, setIsMoving] = useState(false);
     const firestore = useFirestore();
     const { toast } = useToast();
 
     if (!center) return <>{children}</>;
 
-    const availableClasses = useMemo(() => {
-        const classMap = new Map<string, Set<string>>();
+    const groupedClasses = useMemo(() => {
+        const standard: ClassDefinition[] = [];
+        const custom: ClassDefinition[] = [];
+        const standardCourseRegex = /^[1-4](eso|bach)$/i;
+
         center.classes.forEach(c => {
-            const [course, className] = c.name.split('-');
-            if (course && className) {
-                const courseKey = course.toLowerCase();
-                if (!classMap.has(courseKey)) {
-                    classMap.set(courseKey, new Set());
-                }
-                classMap.get(courseKey)!.add(className);
+            const [course] = c.name.split('-');
+            if (course && standardCourseRegex.test(course)) {
+                standard.push(c);
+            } else {
+                custom.push(c);
             }
         });
-        return classMap;
+        
+        const groupedByCourse = standard.reduce((acc, c) => {
+            const courseName = c.name.split('-')[0].toUpperCase();
+            if (!acc[courseName]) {
+                acc[courseName] = [];
+            }
+            acc[courseName].push(c);
+            return acc;
+        }, {} as Record<string, ClassDefinition[]>);
+
+        return { groupedByCourse, custom };
     }, [center.classes]);
 
     const handleMoveUser = async () => {
-        if (!firestore || !member.uid || !targetCourse || !targetClass) return;
+        if (!firestore || !member.uid || !selectedClass) return;
 
         setIsMoving(true);
         try {
             const userDocRef = doc(firestore, 'users', member.uid);
-            await updateDoc(userDocRef, {
-                course: targetCourse,
-                className: targetClass
-            });
-            toast({ title: "Usuario Movido", description: `${member.name} ha sido movido a la clase ${targetCourse.toUpperCase()}-${targetClass}.` });
+            
+            let course, className;
+            const standardCourseRegex = /^[1-4](eso|bach)-([A-G])$/i;
+            const match = selectedClass.match(standardCourseRegex);
+
+            if (match) {
+                course = match[1].toLowerCase();
+                className = match[2];
+            } else {
+                // It's a custom class
+                course = "management"; // Special course for custom classes
+                className = selectedClass;
+            }
+            
+            await updateDoc(userDocRef, { course, className });
+            toast({ title: "Usuario Movido", description: `${member.name} ha sido movido a la clase ${selectedClass}.` });
             onMove();
         } catch (error) {
             console.error("Error moving user:", error);
@@ -500,11 +521,8 @@ function ChangeClassDialog({ member, center, children, onMove }: { member: Cente
         }
     };
     
-    const courseOptions = Array.from(availableClasses.keys());
-    const classOptions = targetCourse ? Array.from(availableClasses.get(targetCourse) || []) : [];
-
     return (
-        <Dialog>
+        <Dialog onOpenChange={(isOpen) => !isOpen && setSelectedClass("")}>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -515,31 +533,29 @@ function ChangeClassDialog({ member, center, children, onMove }: { member: Cente
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="target-course">Nuevo Curso</Label>
-                        <Select onValueChange={(value) => { setTargetCourse(value); setTargetClass(""); }}>
-                            <SelectTrigger id="target-course"><SelectValue placeholder="Seleccionar curso..."/></SelectTrigger>
-                            <SelectContent>
-                                {courseOptions.map(course => (
-                                    <SelectItem key={course} value={course}>{course.toUpperCase()}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
                         <Label htmlFor="target-class">Nueva Clase</Label>
-                        <Select onValueChange={setTargetClass} value={targetClass} disabled={!targetCourse}>
+                        <Select onValueChange={setSelectedClass} value={selectedClass}>
                             <SelectTrigger id="target-class"><SelectValue placeholder="Seleccionar clase..."/></SelectTrigger>
                             <SelectContent>
-                                {classOptions.map(cls => (
-                                    <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                                {Object.entries(groupedClasses.groupedByCourse).map(([course, classes]) => (
+                                    <SelectGroup key={course}>
+                                        <Label className="px-2 py-1.5 text-xs font-semibold">{course}</Label>
+                                        {classes.map(c => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}
+                                    </SelectGroup>
                                 ))}
+                                {groupedClasses.custom.length > 0 && (
+                                     <SelectGroup>
+                                        <Label className="px-2 py-1.5 text-xs font-semibold">Otros</Label>
+                                        {groupedClasses.custom.map(c => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}
+                                    </SelectGroup>
+                                )}
                             </SelectContent>
                         </Select>
                     </div>
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button variant="outline" disabled={isMoving}>Cancelar</Button></DialogClose>
-                    <Button onClick={handleMoveUser} disabled={isMoving || !targetCourse || !targetClass}>
+                    <Button onClick={handleMoveUser} disabled={isMoving || !selectedClass}>
                         {isMoving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
                         Confirmar Movimiento
                     </Button>
@@ -637,29 +653,58 @@ function MoveCenterDialog({ member, allCenters, children, onMove }: { member: Ce
     );
 }
 
+function ClassCreationInfoDialog() {
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <button className="text-muted-foreground hover:text-primary">
+                    <Info className="h-4 w-4" />
+                </button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Creación de Clases</DialogTitle>
+                    <DialogDescription>
+                        Ahora puedes crear clases con nombres personalizados.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-2 text-sm">
+                    <p>Además de las clases estándar (ej: "4ESO-B"), puedes crear grupos con nombres personalizados como "Dirección", "Claustro" o "Departamento de Matemáticas".</p>
+                    <p className="font-semibold">Importante:</p>
+                    <ul className="list-disc list-inside text-muted-foreground pl-4">
+                        <li>Los usuarios <strong className="text-foreground">no verán</strong> estas clases personalizadas al registrarse.</li>
+                        <li>Solo los administradores pueden <strong className="text-foreground">asignar usuarios</strong> a estas clases.</li>
+                    </ul>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button>Entendido</Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center, visibleClasses: ClassDefinition[], isGlobalAdmin: boolean }) {
-    const [newCourse, setNewCourse] = useState("");
     const [newClassName, setNewClassName] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
     const firestore = useFirestore();
     const { toast } = useToast();
 
     const handleAddClass = async () => {
-        if (!firestore || !center.uid || !newCourse || !newClassName) return;
-
-        const combinedClassName = `${newCourse.replace('eso','ESO')}-${newClassName}`;
+        if (!firestore || !center.uid || !newClassName.trim()) return;
 
         setIsProcessing(true);
         const centerDocRef = doc(firestore, 'centers', center.uid);
-        const newClass: ClassDefinition = { name: combinedClassName, icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] }, isChatEnabled: true };
+        const newClass: ClassDefinition = { name: newClassName.trim(), icalUrl: '', schedule: { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [] }, isChatEnabled: true };
 
         try {
             await updateDoc(centerDocRef, {
                 classes: arrayUnion(newClass)
             });
-            setNewCourse("");
             setNewClassName("");
-            toast({ title: "Clase añadida", description: `La clase "${combinedClassName}" ha sido añadida.` });
+            toast({ title: "Clase añadida", description: `La clase "${newClass.name}" ha sido añadida.` });
         } catch (error) {
             toast({ title: "Error", description: "No se pudo añadir la clase.", variant: "destructive" });
         } finally {
@@ -713,40 +758,22 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
             <CardContent className="space-y-4">
                 {isGlobalAdmin && (
                     <>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            <div className="space-y-1">
-                                <Label htmlFor="course-select">Curso</Label>
-                                <Select onValueChange={setNewCourse} value={newCourse} disabled={isProcessing}>
-                                    <SelectTrigger id="course-select"><SelectValue placeholder="Curso..."/></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="1eso">1º ESO</SelectItem>
-                                        <SelectItem value="2eso">2º ESO</SelectItem>
-                                        <SelectItem value="3eso">3º ESO</SelectItem>
-                                        <SelectItem value="4eso">4º ESO</SelectItem>
-                                        <SelectItem value="1bach">1º Bach.</SelectItem>
-                                        <SelectItem value="2bach">2º Bach.</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label htmlFor="class-name-select">Clase</Label>
-                                <Select onValueChange={setNewClassName} value={newClassName} disabled={isProcessing}>
-                                    <SelectTrigger id="class-name-select"><SelectValue placeholder="Clase..."/></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="A">A</SelectItem>
-                                        <SelectItem value="B">B</SelectItem>
-                                        <SelectItem value="C">C</SelectItem>
-                                        <SelectItem value="D">D</SelectItem>
-                                        <SelectItem value="E">E</SelectItem>
-                                        <SelectItem value="F">F</SelectItem>
-                                        <SelectItem value="G">G</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="flex items-end">
-                                <Button onClick={handleAddClass} disabled={isProcessing || !newCourse || !newClassName} className="w-full">
+                        <div className="space-y-2">
+                           <div className="flex items-center gap-2">
+                             <Label htmlFor="class-name-input">Nombre de la Clase</Label>
+                             <ClassCreationInfoDialog />
+                           </div>
+                            <div className="flex items-end gap-2">
+                                <Input 
+                                  id="class-name-input"
+                                  placeholder="Ej: 4ESO-B o Dirección"
+                                  value={newClassName}
+                                  onChange={(e) => setNewClassName(e.target.value)}
+                                  disabled={isProcessing}
+                                />
+                                <Button onClick={handleAddClass} disabled={isProcessing || !newClassName.trim()}>
                                     {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                                    Añadir Clase
+                                    Añadir
                                 </Button>
                             </div>
                         </div>

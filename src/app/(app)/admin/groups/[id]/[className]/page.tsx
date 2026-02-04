@@ -19,7 +19,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
 export default function ManageClassMembersPage() {
@@ -43,8 +43,15 @@ export default function ManageClassMembersPage() {
     const { data: centerData, isLoading: isCenterLoading } = useDoc<Center>(centerDocRef);
     
     const [course, classLetter] = useMemo(() => {
+        const standardCourseRegex = /^[1-4](eso|bach)$/i;
         const parts = className.split('-');
-        return [parts[0]?.toLowerCase(), parts[1]];
+        const potentialCourse = parts[0]?.toLowerCase();
+        
+        if (parts.length === 2 && standardCourseRegex.test(potentialCourse)) {
+            return [potentialCourse, parts[1]];
+        }
+        // It's a custom class
+        return ["management", className];
     }, [className]);
     
     const membersQuery = useMemoFirebase(() => {
@@ -52,7 +59,7 @@ export default function ManageClassMembersPage() {
         return query(
             collection(firestore, 'users'), 
             where('organizationId', '==', centerId),
-            where('course', '==', course.toLowerCase()),
+            where('course', '==', course),
             where('className', '==', classLetter)
         );
     }, [firestore, centerId, course, classLetter]);
@@ -64,7 +71,7 @@ export default function ManageClassMembersPage() {
         (member.email && member.email.toLowerCase().includes(searchTerm.toLowerCase()))
     );
     
-    const classAdminRole = useMemo(() => `admin-${course.toUpperCase()}-${classLetter}`, [course, classLetter]);
+    const classAdminRole = useMemo(() => `admin-${className}`, [className]);
 
     const handleRoleChange = async (member: CenterUser | null, newRole: string) => {
          if (!firestore || !member?.uid) return;
@@ -201,7 +208,7 @@ export default function ManageClassMembersPage() {
                                                 <DialogDescription>{selectedMember.email}</DialogDescription>
                                                  <div className="flex gap-2 items-center">
                                                     <Badge variant={selectedMember.role === 'admin' ? 'destructive' : selectedMember.role === 'center-admin' ? 'secondary' : selectedMember.role.startsWith('admin-') ? 'default' : 'secondary'} className={cn(selectedMember.role === 'center-admin' && 'bg-purple-100 text-purple-800')}>
-                                                        {selectedMember.role === 'admin' ? "Admin Global" : selectedMember.role === 'center-admin' ? "Admin Centro" : selectedMember.role.startsWith('admin-') ? "Admin Clase" : "Estudiante"}
+                                                        {selectedMember.role === 'admin' ? "Admin Global" : selectedMember.role === 'center-admin' ? "Admin Centro" : selectedMember.role.startsWith('admin-') ? `Admin ${className}` : "Estudiante"}
                                                     </Badge>
                                                  </div>
                                             </DialogHeader>
@@ -264,40 +271,61 @@ export default function ManageClassMembersPage() {
 }
 
 function MoveUserDialog({ member, center, children, onMove }: { member: CenterUser, center: Center | null, children: React.ReactNode, onMove: () => void }) {
-    const [targetCourse, setTargetCourse] = useState("");
-    const [targetClass, setTargetClass] = useState("");
+    const [selectedClass, setSelectedClass] = useState("");
     const [isMoving, setIsMoving] = useState(false);
     const firestore = useFirestore();
     const { toast } = useToast();
 
     if (!center) return <>{children}</>;
 
-    const availableClasses = useMemo(() => {
-        const classMap = new Map<string, Set<string>>();
+    const groupedClasses = useMemo(() => {
+        const standard: ClassDefinition[] = [];
+        const custom: ClassDefinition[] = [];
+        const standardCourseRegex = /^[1-4](eso|bach)$/i;
+
         center.classes.forEach(c => {
-            const [course, className] = c.name.split('-');
-            if (course && className) {
-                const courseKey = course.toLowerCase();
-                if (!classMap.has(courseKey)) {
-                    classMap.set(courseKey, new Set());
-                }
-                classMap.get(courseKey)!.add(className);
+            const [course] = c.name.split('-');
+            if (course && standardCourseRegex.test(course)) {
+                standard.push(c);
+            } else {
+                custom.push(c);
             }
         });
-        return classMap;
+        
+        const groupedByCourse = standard.reduce((acc, c) => {
+            const courseName = c.name.split('-')[0].toUpperCase();
+            if (!acc[courseName]) {
+                acc[courseName] = [];
+            }
+            acc[courseName].push(c);
+            return acc;
+        }, {} as Record<string, ClassDefinition[]>);
+
+        return { groupedByCourse, custom };
     }, [center.classes]);
 
     const handleMoveUser = async () => {
-        if (!firestore || !member.uid || !targetCourse || !targetClass) return;
+        if (!firestore || !member.uid || !selectedClass) return;
 
         setIsMoving(true);
         try {
             const userDocRef = doc(firestore, 'users', member.uid);
-            await updateDoc(userDocRef, {
-                course: targetCourse,
-                className: targetClass
-            });
-            toast({ title: "Usuario Movido", description: `${member.name} ha sido movido a la clase ${targetCourse.toUpperCase()}-${targetClass}.` });
+            
+            let course, className;
+            const standardCourseRegex = /^[1-4](eso|bach)-([A-G])$/i;
+            const match = selectedClass.match(standardCourseRegex);
+
+            if (match) {
+                course = match[1].toLowerCase();
+                className = match[2];
+            } else {
+                // It's a custom class
+                course = "management"; // Special course for custom classes
+                className = selectedClass;
+            }
+            
+            await updateDoc(userDocRef, { course, className });
+            toast({ title: "Usuario Movido", description: `${member.name} ha sido movido a la clase ${selectedClass}.` });
             onMove();
         } catch (error) {
             console.error("Error moving user:", error);
@@ -306,12 +334,9 @@ function MoveUserDialog({ member, center, children, onMove }: { member: CenterUs
             setIsMoving(false);
         }
     };
-    
-    const courseOptions = Array.from(availableClasses.keys());
-    const classOptions = targetCourse ? Array.from(availableClasses.get(targetCourse) || []) : [];
 
     return (
-        <Dialog>
+        <Dialog onOpenChange={(isOpen) => !isOpen && setSelectedClass("")}>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -322,31 +347,29 @@ function MoveUserDialog({ member, center, children, onMove }: { member: CenterUs
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="target-course">Nuevo Curso</Label>
-                        <Select onValueChange={(value) => { setTargetCourse(value); setTargetClass(""); }}>
-                            <SelectTrigger id="target-course"><SelectValue placeholder="Seleccionar curso..."/></SelectTrigger>
-                            <SelectContent>
-                                {courseOptions.map(course => (
-                                    <SelectItem key={course} value={course}>{course.toUpperCase()}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
                         <Label htmlFor="target-class">Nueva Clase</Label>
-                        <Select onValueChange={setTargetClass} value={targetClass} disabled={!targetCourse}>
+                        <Select onValueChange={setSelectedClass} value={selectedClass}>
                             <SelectTrigger id="target-class"><SelectValue placeholder="Seleccionar clase..."/></SelectTrigger>
                             <SelectContent>
-                                {classOptions.map(cls => (
-                                    <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                                {Object.entries(groupedClasses.groupedByCourse).map(([course, classes]) => (
+                                    <SelectGroup key={course}>
+                                        <Label className="px-2 py-1.5 text-xs font-semibold">{course}</Label>
+                                        {classes.map(c => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}
+                                    </SelectGroup>
                                 ))}
+                                {groupedClasses.custom.length > 0 && (
+                                     <SelectGroup>
+                                        <Label className="px-2 py-1.5 text-xs font-semibold">Otros</Label>
+                                        {groupedClasses.custom.map(c => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}
+                                    </SelectGroup>
+                                )}
                             </SelectContent>
                         </Select>
                     </div>
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button variant="outline" disabled={isMoving}>Cancelar</Button></DialogClose>
-                    <Button onClick={handleMoveUser} disabled={isMoving || !targetCourse || !targetClass}>
+                    <Button onClick={handleMoveUser} disabled={isMoving || !selectedClass}>
                         {isMoving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
                         Confirmar Movimiento
                     </Button>
@@ -355,5 +378,3 @@ function MoveUserDialog({ member, center, children, onMove }: { member: CenterUs
         </Dialog>
     );
 }
-
-    

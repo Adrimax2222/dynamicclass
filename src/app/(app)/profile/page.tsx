@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup } from "@/components/ui/select";
 import type { SummaryCardData, User, CompletedItem, Center, ClassDefinition, CalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Edit, Settings, Loader2, Trophy, NotebookText, FileCheck2, Medal, Flame, Clock, PawPrint, Rocket, Pizza, Gamepad2, Ghost, Palmtree, CheckCircle, LineChart, CaseUpper, Cat, Heart, History, Calendar, Gift, User as UserIcon, AlertCircle, GraduationCap, School, PlusCircle, Search, Copy, Check, RefreshCw, Shield, ShieldCheck, Sparkles, Plus, Star, Crown, Dna, Brain, Beaker, Atom, Code, UserCheck, TreePine } from "lucide-react";
@@ -107,7 +107,8 @@ export default function ProfilePage() {
     "4eso": "4º ESO",
     "1bach": "1º Bachillerato",
     "2bach": "2º Bachillerato",
-    "personal": "No especificado"
+    "personal": "No especificado",
+    "management": "Gestión"
   }
   
   const userCenter = centers.find(c => c.code === user.center);
@@ -658,12 +659,19 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
 
   const availableClasses = useMemo(() => {
     if (!validatedCenter || !validatedCenter.classes) return { courses: [], classNames: [], existingClassNames: new Set() };
+    
+    const standardCourseRegex = /^[1-4](eso|bach)$/i;
 
     const courses = new Set<string>();
     const classNames = new Set<string>();
     const existingClassNames = new Set<string>();
 
-    validatedCenter.classes.forEach(c => {
+    validatedCenter.classes
+      .filter(c => {
+          const [course] = c.name.split('-');
+          return course && standardCourseRegex.test(course);
+      })
+      .forEach(c => {
         const [course, className] = c.name.split('-');
         existingClassNames.add(c.name);
         if (course) {
@@ -1071,7 +1079,7 @@ const handleSaveChanges = async () => {
                             {mode === 'join' && (
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="center-code">Código de Centro</Label>
+                                    <Label htmlFor="center-code">Código de Centro Educativo</Label>
                                     <div className="flex items-center gap-2">
                                         <Input id="center-code" value={center} onChange={e => formatAndSetCenterCode(e.target.value)} placeholder="123-456" disabled={isCenterValidated} />
                                         <Button type="button" onClick={handleValidateCenter} disabled={center.length < 7 || isLoading || isCenterValidated} variant={isCenterValidated ? "secondary" : "default"}>
@@ -1144,7 +1152,7 @@ const handleSaveChanges = async () => {
                                   </AlertDialog>
                                 <div className="space-y-2">
                                     <Label>Nombre del Nuevo Centro</Label>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex gap-2">
                                         <Input placeholder="Ej: Instituto Adrimax" value={newCenterName} onChange={e => setNewCenterName(e.target.value)} disabled={isCenterNameValidated} />
                                         <Button type="button" onClick={handleCheckCenterName} disabled={!newCenterName || isLoading || isCenterNameValidated} variant={isCenterNameValidated ? "secondary" : "default"}>
                                             {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterNameValidated ? <CheckCircle className="h-4 w-4"/> : <Search className="h-4 w-4"/>}

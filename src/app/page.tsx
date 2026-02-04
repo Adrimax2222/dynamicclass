@@ -275,13 +275,22 @@ export default function AuthPage() {
 
   const availableClasses = useMemo(() => {
     if (!validatedCenter || !validatedCenter.classes) return { courses: [], classNames: [] };
+    
+    const standardCourseRegex = /^[1-4](eso|bach)$/i;
     const courses = new Set<string>();
     const classNames = new Set<string>();
-    validatedCenter.classes.forEach(c => {
+    
+    validatedCenter.classes
+      .filter(c => {
+          const [course] = c.name.split('-');
+          return course && standardCourseRegex.test(course);
+      })
+      .forEach(c => {
         const [course, className] = c.name.split('-');
         if (course) courses.add(course.toLowerCase().replace('º', ''));
         if (className) classNames.add(className);
     });
+    
     return { courses: Array.from(courses), classNames: Array.from(classNames) };
   }, [validatedCenter]);
 
@@ -920,5 +929,3 @@ export default function AuthPage() {
     </main>
   );
 }
-
-    
