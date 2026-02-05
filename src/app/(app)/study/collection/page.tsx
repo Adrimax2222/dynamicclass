@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -217,7 +216,7 @@ export default function CollectionPage() {
     const CurrentPhaseIcon = lastUnlockedItem ? lastUnlockedItem.icon : (isAquaticPath ? Fish : Sprout);
 
     const pageTitle = isAquaticPath ? 'Mi Acuario Exótico' : 'Mi Jardín Botánico';
-    const pageIcon = isAquaticPath ? Waves : TreePine;
+    const PageIcon = isAquaticPath ? Waves : TreePine;
     const themeColor = isAquaticPath ? 'blue' : 'green';
 
     return (
@@ -228,7 +227,7 @@ export default function CollectionPage() {
                         <ChevronLeft />
                     </Button>
                     <h1 className="text-lg font-bold font-headline flex items-center gap-2">
-                        <pageIcon className={cn("h-5 w-5", `text-${themeColor}-600`)} />
+                        <PageIcon className={cn("h-5 w-5", `text-${themeColor}-600`)} />
                         {pageTitle}
                     </h1>
                 </div>
@@ -303,7 +302,7 @@ export default function CollectionPage() {
                         <CardContent className="p-3 text-center">
                             <p className={cn("text-xs font-semibold", isAquaticPath ? 'text-blue-700 dark:text-blue-300' : 'text-green-700 dark:text-green-300')}>Total</p>
                             <div className="flex items-center justify-center gap-1">
-                                <pageIcon className={cn("h-5 w-5", isAquaticPath ? 'text-blue-600' : 'text-green-600')} />
+                                <PageIcon className={cn("h-5 w-5", isAquaticPath ? 'text-blue-600' : 'text-green-600')} />
                                 <p className="text-2xl font-bold">{plantCount}</p>
                             </div>
                         </CardContent>
