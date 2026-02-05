@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -22,24 +23,49 @@ const loadingMessages = [
   "El ADN humano es idéntico al de un plátano en un 50%.",
   "En Júpiter y Saturno, la presión es tan fuerte que literalmente llueven diamantes.",
   "Un rayo es cinco veces más caliente que la superficie del Sol.",
+  "Los árboles se comunican por redes de hongos.",
+  "El olor a lluvia tiene nombre: se llama petricor.",
+  "Tu ADN es 99% igual al de un chimpancé.",
 
   // History & Curiosities
   "Las primeras almohadas en la antigua Mesopotamia eran de piedra.",
   "El antiguo Egipto usaba moho de pan para tratar infecciones, ¡miles de años antes de la penicilina!",
   "Las pirámides de Egipto eran originalmente de color blanco brillante.",
   "El primer correo electrónico de la historia se envió en 1971.",
+  "El color naranja se llamó así por la fruta, no al revés.",
+  "En Suiza es ilegal tener un solo hámster: necesitan amigos.",
+  "Islandia no tiene ejército desde 1869.",
+  "La Nobel de la Paz más joven tenía solo 17 años.",
+  "\"Salario\" viene del pago con sal a soldados romanos.",
+  "El papel moneda se inventó en China hace 1,000 años.",
 
+  // Technology
+  "Tu móvil es más potente que la NASA en 1969.",
+  "El primer \"bug\" fue una polilla real en un PC.",
+  "Internet pesa lo mismo que una fresa (en electrones).",
+  "Se suben 500 horas de video a YouTube cada minuto.",
+  "El Wi-Fi nació de una investigación sobre agujeros negros.",
+  "\"Hacker\" significaba originalmente \"solucionador creativo\".",
+  "La primera compra con Bitcoin fue por dos pizzas.",
+  "El primer cajero automático se inspiró en máquinas de chocolate.",
+  
   // Psychology & Learning
   "Tu cerebro genera suficiente electricidad para encender una bombilla LED.",
   "Aprender un nuevo idioma puede hacer que tu cerebro crezca físicamente.",
   "Escribir a mano te ayuda a recordar mejor las cosas que escribir en teclado.",
   "El cerebro procesa las imágenes 60.000 veces más rápido que el texto.",
+  "Tu gusto musical se define a los 14 años.",
+  "Los videojuegos de acción mejoran tus reflejos visuales.",
+  "Reír 100 veces equivale a 15 minutos de bicicleta.",
 
   // Random Facts
   "Las abejas pueden reconocer rostros humanos.",
   "Es físicamente imposible para los cerdos mirar al cielo.",
   "El nombre oficial de la forma de una patata Pringles es paraboloide hiperbólico.",
   "Un pulpo tiene tres corazones y su sangre es de color azul.",
+  "\"Adicción\" es una palabra inventada por Shakespeare.",
+  "El video más visto de YouTube supera la población mundial.",
+  "Bután mide su riqueza por la \"Felicidad Nacional Bruta\".",
   "¡Casi listo para empezar a aprender!",
 ];
 
