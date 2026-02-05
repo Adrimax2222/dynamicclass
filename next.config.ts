@@ -38,10 +38,19 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'upload.wikimedia.org' },
       { protocol: 'https', hostname: 'content.nationalgeographic.com.es' },
       { protocol: 'https', hostname: 'ichef.bbci.co.uk' },
+      { protocol: 'https', hostname: 'i.natgeofe.com' },
+      { protocol: 'https', hostname: 'www.biopedia.com' },
+      { protocol: 'https', hostname: 'aquanerd.com' },
+      { protocol: 'https', hostname: 'www.ecologiaverde.com' },
+      { protocol: 'https', hostname: 'www.aquariumcostadealmeria.com' },
+      { protocol: 'https', hostname: 'www.comunidadacuario.com' },
+      { protocol: 'https', hostname: 'www.australiangeographic.com.au' },
+      { protocol: 'https', hostname: 'www.infobae.com' },
+      { protocol: 'https', hostname: 'www.maldives-villahotels.com' },
+      { protocol: 'https', hostname: 't2.uc.ltmcdn.com' },
     ],
   },
 };
 
 export default nextConfig;
 
-    

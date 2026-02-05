@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock, Info, Timer, BrainCircuit, Globe, Fish, Lock, Leaf, Waves, Sparkles, Users, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock, Info, Timer, BrainCircuit, Globe, Fish, Lock, Leaf, Waves, Sparkles, Users, ChevronRight, Loader2, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/hooks/use-app";
 import { Progress } from "@/components/ui/progress";
@@ -46,6 +46,21 @@ const allPlants: Plant[] = [
     { id: 12, name: 'Pino Longevo', rarity: 'Legendario', icon: TreePine, unlocksAt: 55, description: "El Pinus longaeva es una de las especies de árboles más antiguas de la Tierra. Algunos ejemplares vivos superan los 4.800 años, sobreviviendo en condiciones extremas en las montañas del oeste de Estados Unidos.", imageUrl: "https://ichef.bbci.co.uk/ace/ws/640/amz/worldservice/live/assets/images/2016/05/02/160502122238_ciencia_matusalen_arbol_mas_viejo_mundo_624x415_rickgoldwaterwikimediacommons.jpg.webp" },
 ];
 
+const allFish: Plant[] = [
+    { id: 13, name: 'Pez Payaso Común', rarity: 'Común', icon: Fish, unlocksAt: 60, description: "Famoso por su vibrante color naranja y blanco, el pez payaso vive en simbiosis con las anémonas, protegiéndose mutuamente de los depredadores.", imageUrl: "https://i.natgeofe.com/n/a4604b18-b301-4475-a583-b78b05658e38/clown-anemonefish_thumb_4x3.JPG" },
+    { id: 14, name: 'Coral Cerebro', rarity: 'Común', icon: BrainCircuit, unlocksAt: 65, description: "Este tipo de coral duro forma colonias masivas que se asemejan a un cerebro humano. Son fundamentales para la construcción de los arrecifes de coral.", imageUrl: "https://www.biopedia.com/wp-content/uploads/2018/10/coral-cerebro.jpg" },
+    { id: 15, name: 'Pez Cirujano Azul', rarity: 'Poco Común', icon: Fish, unlocksAt: 70, description: "Conocido por su papel en 'Buscando a Nemo', este pez tiene un cuerpo azul intenso y una cola amarilla. Posee espinas afiladas en la base de su cola para defenderse.", imageUrl: "https://aquanerd.com/wp-content/uploads/2016/06/Blue-Tang.jpg" },
+    { id: 16, name: 'Caballito de Mar', rarity: 'Poco Común', icon: Fish, unlocksAt: 75, description: "Estas criaturas únicas nadan en posición vertical y son conocidas porque el macho es quien lleva los huevos en una bolsa incubadora hasta que eclosionan.", imageUrl: "https://www.ecologiaverde.com/wp-content/uploads/2018/11/donde-vive-el-caballito-de-mar-y-que-come.jpg" },
+    { id: 17, name: 'Medusa Luna', rarity: 'Raro', icon: Sparkles, unlocksAt: 80, description: "Una medusa translúcida y bioluminiscente que se encuentra en todos los océanos. Su suave pulsación y su brillo etéreo la convierten en un espectáculo hipnótico.", imageUrl: "https://www.aquariumcostadealmeria.com/wp-content/uploads/2019/08/aurelia-aurita-medusa-luna.jpg" },
+    { id: 18, name: 'Pez Mandarín', rarity: 'Raro', icon: Fish, unlocksAt: 85, description: "Considerado uno de los peces más coloridos del mundo, el pez mandarín exhibe un patrón psicodélico de azules, naranjas y verdes. Es tímido y difícil de avistar.", imageUrl: "https://www.comunidadacuario.com/wp-content/uploads/2020/09/pez-mandarin-Synchiropus-splendidus.jpg" },
+    { id: 19, name: 'Manta Gigante', rarity: 'Épico', icon: Waves, unlocksAt: 90, description: "Con una envergadura de hasta 7 metros, la manta gigante es el rey de las rayas. Son filtradores inteligentes que se alimentan de plancton y viajan grandes distancias.", imageUrl: "https://www.nationalgeographic.com.es/medio/2023/07/11/manta-gigante_3d44161a_230711130604_1280x720.jpg" },
+    { id: 20, name: 'Pulpo de Anillos Azules', rarity: 'Épico', icon: Sparkles, unlocksAt: 95, description: "Pequeño pero extremadamente venenoso. Cuando se siente amenazado, sus anillos azules iridiscentes parpadean como una advertencia antes de liberar su potente neurotoxina.", imageUrl: "https://www.australiangeographic.com.au/wp-content/uploads/2018/09/Blue-ringed-octopus-1.jpg" },
+    { id: 21, name: 'Dragón de Mar Foliado', rarity: 'Legendario', icon: Leaf, unlocksAt: 100, description: "Pariente del caballito de mar, este maestro del camuflaje tiene extensiones en forma de hoja por todo su cuerpo, lo que le permite mezclarse perfectamente con las algas.", imageUrl: "https://www.biopedia.com/wp-content/uploads/2012/01/dragon-de-mar-foliaceo-1.jpg" },
+    { id: 22, name: 'Pez León', rarity: 'Legendario', icon: Fish, unlocksAt: 105, description: "Con sus aletas pectorales en forma de abanico y sus espinas venenosas, el pez león es una especie invasora hermosa pero destructiva en el Atlántico.", imageUrl: "https://www.infobae.com/new-resizer/uG2A37v2QyG-8bFq7_f6gHwHw-c=/992x614/filters:format(webp):quality(85)/cloudfront-us-east-1.images.arcpublishing.com/infobae/M4YW6G25BFFY3BGBJGTJLET63A.jpg" },
+    { id: 23, name: 'Tiburón Ballena', rarity: 'Legendario', icon: Waves, unlocksAt: 110, description: "El pez más grande del mundo. A pesar de su enorme tamaño, este gigante gentil es un filtrador que se alimenta principalmente de plancton, moviéndose lentamente por los océanos tropicales.", imageUrl: "https://www.maldives-villahotels.com/wp-content/uploads/2023/07/swimming-with-whale-sharks-in-maldives.jpg" },
+    { id: 24, name: 'Calamar Gigante', rarity: 'Legendario', icon: Sparkles, unlocksAt: 115, description: "Una criatura de las profundidades marinas envuelta en misterio. Con ojos del tamaño de un plato, es uno de los invertebrados más grandes, y sus batallas con los cachalotes son legendarias.", imageUrl: "https://t2.uc.ltmcdn.com/es/posts/5/6/0/como_son_los_calamares_gigantes_52065_600.jpg" },
+];
+
 
 const rarityStyles = {
     'Común': "border-green-500/30 bg-green-500/5 text-green-600",
@@ -55,13 +70,13 @@ const rarityStyles = {
     'Legendario': "border-pink-500/30 bg-pink-500/5 text-pink-600",
 };
 
-
-const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, children }: { 
+const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, children, path }: { 
     plant: Plant; 
     unlocked: boolean; 
     plantCount: number; 
     studyTime: number; 
     children: React.ReactNode;
+    path: 'terrestrial' | 'aquatic';
 }) => {
     const Icon = plant.icon;
     const formatStudyTime = (totalMinutes: number = 0) => {
@@ -70,17 +85,20 @@ const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, children }: {
         return `${hours}h ${minutes}m`;
     };
 
-    const plantPhaseNumber = Math.floor(plant.unlocksAt / 5) + 1;
-    const userPhaseNumber = Math.floor(plantCount / 5) + 1;
+    const isAquatic = path === 'aquatic';
+    const unlockOffset = isAquatic ? 60 : 0;
+    const phaseOffset = isAquatic ? 12 : 0;
 
+    const plantPhaseNumber = Math.floor((plant.unlocksAt - unlockOffset) / 5) + 1 + phaseOffset;
+    const currentPathCount = isAquatic ? plantCount - unlockOffset : plantCount;
+    const userPhaseNumber = Math.floor(currentPathCount / 5) + 1 + phaseOffset;
+    
     let progressInPhaseToShow = 0;
-
     if (plantPhaseNumber < userPhaseNumber) {
         progressInPhaseToShow = 5;
     } else if (plantPhaseNumber === userPhaseNumber) {
-        progressInPhaseToShow = plantCount % 5;
+        progressInPhaseToShow = currentPathCount % 5;
     }
-
 
     return (
         <Dialog>
@@ -109,7 +127,7 @@ const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, children }: {
                             </div>
                         </div>
                         <div className="p-2 bg-muted/50 rounded-md">
-                            <p className="text-xs font-semibold text-muted-foreground">Plantas Totales</p>
+                            <p className="text-xs font-semibold text-muted-foreground">Total Recolectado</p>
                              <div className="flex items-center justify-center gap-1.5">
                                 <TreePine className="h-4 w-4 text-primary" />
                                 <p className="font-bold text-sm">{plantCount}</p>
@@ -143,7 +161,19 @@ export default function CollectionPage() {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
     const { user, plantCount } = useApp();
+    const [viewingPath, setViewingPath] = useState<'terrestrial' | 'aquatic'>('terrestrial');
     
+    useEffect(() => {
+        if (plantCount >= 60) {
+            setViewingPath('aquatic');
+        } else {
+            setViewingPath('terrestrial');
+        }
+    }, [plantCount]);
+    
+    const isAquaticUnlocked = plantCount >= 60;
+    const isAquaticPath = viewingPath === 'aquatic';
+
     const isPersonalUser = user?.center === 'personal' || user?.center === 'default';
 
     const firestore = useFirestore();
@@ -161,37 +191,53 @@ export default function CollectionPage() {
 
     const sortedClassmates = useMemo(() => {
         if (!classmatesData) return [];
-        // Filter out the current user and sort
         return classmatesData
             .filter(c => c.uid !== user?.uid)
             .sort((a, b) => (b.plantCount || 0) - (a.plantCount || 0));
     }, [classmatesData, user]);
 
+    // Dynamic data based on path
+    const activePathData = isAquaticPath ? allFish : allPlants;
+    const currentPathCount = isAquaticPath ? plantCount - 60 : plantCount;
+    const phaseOffset = isAquaticPath ? 12 : 0;
+    const unlockOffset = isAquaticPath ? 60 : 0;
 
-    const filteredPlants = allPlants.filter(plant => 
+    const filteredPlants = activePathData.filter(plant => 
         plant.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const currentPhase = Math.floor(plantCount / 5) + 1;
-    const plantsInCurrentPhase = plantCount % 5;
+    const currentPhase = Math.floor(currentPathCount / 5) + 1 + phaseOffset;
+    const plantsInCurrentPhase = currentPathCount % 5;
     
-    const nextPlant = allPlants.find(p => p.unlocksAt > plantCount);
-    const progressToNext = nextPlant ? (plantsInCurrentPhase / 5) * 100 : 100;
-    const isTerrestrialComplete = plantCount >= allPlants.length;
+    const nextItem = activePathData.find(p => (p.unlocksAt - unlockOffset) > currentPathCount);
+    const progressToNext = nextItem ? (plantsInCurrentPhase / 5) * 100 : 100;
+    const isTerrestrialComplete = plantCount >= 60;
 
-    const lastUnlockedPlant = allPlants.slice().reverse().find(p => plantCount >= p.unlocksAt);
-    const CurrentPhaseIcon = lastUnlockedPlant ? lastUnlockedPlant.icon : Sprout;
+    const lastUnlockedItem = activePathData.slice().reverse().find(p => currentPathCount >= (p.unlocksAt - unlockOffset));
+    const CurrentPhaseIcon = lastUnlockedItem ? lastUnlockedItem.icon : (isAquaticPath ? Fish : Sprout);
+
+    const pageTitle = isAquaticPath ? 'Mi Acuario Exótico' : 'Mi Jardín Botánico';
+    const pageIcon = isAquaticPath ? Waves : TreePine;
+    const themeColor = isAquaticPath ? 'blue' : 'green';
 
     return (
-        <div className="flex flex-col min-h-screen bg-muted/30">
+        <div className={cn("flex flex-col min-h-screen", isAquaticPath ? 'bg-blue-500/5' : 'bg-muted/30')}>
             <header className="p-4 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" onClick={() => router.back()}>
                         <ChevronLeft />
                     </Button>
-                    <h1 className="text-lg font-bold font-headline">Mi Jardín Botánico</h1>
+                    <h1 className="text-lg font-bold font-headline flex items-center gap-2">
+                        <pageIcon className={cn("h-5 w-5", `text-${themeColor}-600`)} />
+                        {pageTitle}
+                    </h1>
                 </div>
                 <div className="flex items-center gap-2">
+                    {isAquaticUnlocked && (
+                         <Button variant="outline" size="icon" onClick={() => setViewingPath(isAquaticPath ? 'terrestrial' : 'aquatic')}>
+                            <ChevronsRight className="h-4 w-4" />
+                        </Button>
+                    )}
                     <Dialog>
                         <DialogTrigger asChild>
                             <Button variant="ghost" size="icon">
@@ -213,28 +259,28 @@ export default function CollectionPage() {
                                     <div className="p-2 bg-primary/10 rounded-lg mt-1"><Timer className="h-5 w-5 text-primary" /></div>
                                     <div>
                                         <h4 className="font-semibold">Completa Sesiones de Estudio</h4>
-                                        <p className="text-muted-foreground">Cada vez que completas una sesión de enfoque en el "Modo Estudio", ganas una nueva planta para tu jardín.</p>
+                                        <p className="text-muted-foreground">Cada vez que completas una sesión de enfoque de al menos 7 minutos en el "Modo Estudio", ganas una nueva planta para tu jardín.</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <div className="p-2 bg-primary/10 rounded-lg mt-1"><Rocket className="h-5 w-5 text-primary" /></div>
                                     <div>
                                         <h4 className="font-semibold">Avanza por Fases</h4>
-                                        <p className="text-muted-foreground">Tu colección se divide en fases. Cada 5 plantas que consigues, completas una fase y avanzas a la siguiente.</p>
+                                        <p className="text-muted-foreground">Tu colección se divide en fases. Cada 5 plantas/peces que consigues, completas una fase y avanzas a la siguiente.</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <div className="p-2 bg-primary/10 rounded-lg mt-1"><Flower className="h-5 w-5 text-primary" /></div>
                                     <div>
                                         <h4 className="font-semibold">Desbloquea Nuevas Especies</h4>
-                                        <p className="text-muted-foreground">Al completar una fase, desbloqueas la siguiente planta de la colección, que será cada vez más exótica y rara.</p>
+                                        <p className="text-muted-foreground">Al completar una fase, desbloqueas la siguiente especie de la colección, que será cada vez más exótica y rara.</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <div className="p-2 bg-primary/10 rounded-lg mt-1"><BrainCircuit className="h-5 w-5 text-primary" /></div>
                                     <div>
                                         <h4 className="font-semibold">Aprende y Explora</h4>
-                                        <p className="text-muted-foreground">Haz clic en cada planta (¡incluso en las bloqueadas!) para ver tus estadísticas, el progreso de la fase y aprender datos reales y curiosos sobre cada especie.</p>
+                                        <p className="text-muted-foreground">Haz clic en cada especie para ver tus estadísticas, el progreso de la fase y aprender datos reales y curiosos.</p>
                                     </div>
                                 </div>
                             </div>
@@ -253,11 +299,11 @@ export default function CollectionPage() {
 
             <main className="flex-1 p-4 space-y-6">
                 <div className="grid grid-cols-3 gap-4">
-                    <Card className="bg-green-500/10 border-green-500/30">
+                    <Card className={cn(isAquaticPath ? 'bg-blue-500/10 border-blue-500/30' : 'bg-green-500/10 border-green-500/30')}>
                         <CardContent className="p-3 text-center">
-                            <p className="text-xs text-green-700 dark:text-green-300 font-semibold">Plantas</p>
+                            <p className={cn("text-xs font-semibold", isAquaticPath ? 'text-blue-700 dark:text-blue-300' : 'text-green-700 dark:text-green-300')}>Total</p>
                             <div className="flex items-center justify-center gap-1">
-                                <TreePine className="h-5 w-5 text-green-600" />
+                                <pageIcon className={cn("h-5 w-5", isAquaticPath ? 'text-blue-600' : 'text-green-600')} />
                                 <p className="text-2xl font-bold">{plantCount}</p>
                             </div>
                         </CardContent>
@@ -279,7 +325,18 @@ export default function CollectionPage() {
                     </Card>
                 </div>
                 
-                {nextPlant ? (
+                {plantCount >= 55 && plantCount < 60 ? (
+                    <Card className="bg-gradient-to-tr from-blue-500 to-cyan-400 text-white shadow-lg animate-pulse-slow">
+                        <CardHeader className="p-3">
+                             <p className="text-xs text-white/80 text-center">Siguiente Desbloqueo</p>
+                        </CardHeader>
+                        <CardContent className="p-3 pt-0 space-y-2 text-center">
+                            <Waves className="h-8 w-8 mx-auto" />
+                            <p className="font-bold">¡Camino Submarino!</p>
+                            <Progress value={progressToNext} className="h-2 [&>div]:bg-white/80" />
+                        </CardContent>
+                    </Card>
+                ) : nextItem ? (
                     <Card>
                         <CardHeader className="p-3">
                             <p className="text-xs text-muted-foreground text-center">Siguiente Desbloqueo</p>
@@ -287,10 +344,10 @@ export default function CollectionPage() {
                         <CardContent className="p-3 pt-0 space-y-2">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-muted rounded-lg">
-                                    <nextPlant.icon className="h-6 w-6 text-muted-foreground"/>
+                                    <nextItem.icon className="h-6 w-6 text-muted-foreground"/>
                                 </div>
                                 <div className="flex-1">
-                                    <p className="font-semibold text-muted-foreground">{nextPlant.name}</p>
+                                    <p className="font-semibold text-muted-foreground">{nextItem.name}</p>
                                     <p className="text-xs text-muted-foreground">
                                         Progreso: {plantsInCurrentPhase} / 5
                                     </p>
@@ -300,9 +357,11 @@ export default function CollectionPage() {
                         </CardContent>
                     </Card>
                 ) : (
-                     <Card className="bg-green-500/10 border-green-500/30">
+                     <Card className={cn("border-dashed", isAquaticPath ? "bg-blue-500/10 border-blue-500/30" : "bg-green-500/10 border-green-500/30")}>
                         <CardContent className="p-4 text-center">
-                            <p className="font-bold text-green-700">¡Colección Completa!</p>
+                            <p className={cn("font-bold", isAquaticPath ? "text-blue-700" : "text-green-700")}>
+                                ¡Felicidades! Has completado el {pageTitle}.
+                            </p>
                         </CardContent>
                     </Card>
                 )}
@@ -311,10 +370,10 @@ export default function CollectionPage() {
                     <CardHeader className="flex flex-row items-center justify-between p-4">
                         <div>
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <TreePine className="h-5 w-5 text-green-600"/>
-                                Camino Terrestre
+                                <Globe className="h-5 w-5 text-primary"/>
+                                Caminos de Conocimiento
                             </CardTitle>
-                            <CardDescription>Explora las diferentes sendas de conocimiento.</CardDescription>
+                            <CardDescription>Explora las diferentes sendas.</CardDescription>
                         </div>
                         <PathsDialog isTerrestrialComplete={isTerrestrialComplete}>
                             <Button variant="outline">
@@ -354,6 +413,7 @@ export default function CollectionPage() {
                                             {sortedClassmates.map((classmate) => {
                                                 const classmatePlantCount = classmate.plantCount || 0;
                                                 const classmatePhase = Math.floor(classmatePlantCount / 5) + 1;
+                                                const classmatePath = classmatePlantCount >= 60 ? 'Acuático' : 'Terrestre';
                                                 return (
                                                     <CarouselItem key={classmate.uid} className="pl-2 basis-1/2 md:basis-1/3">
                                                         <div className="p-1">
@@ -371,7 +431,7 @@ export default function CollectionPage() {
                                                                             <span>Fase {classmatePhase}</span>
                                                                         </div>
                                                                     </div>
-                                                                    <Badge variant="outline" className="mt-2 text-xs">Terrestre</Badge>
+                                                                    <Badge variant="outline" className={cn("mt-2 text-xs", classmatePath === 'Acuático' ? 'border-blue-500/50 bg-blue-500/10 text-blue-600' : '')}>{classmatePath}</Badge>
                                                                 </CardContent>
                                                             </Card>
                                                         </div>
@@ -398,7 +458,7 @@ export default function CollectionPage() {
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
-                        placeholder="Buscar planta..." 
+                        placeholder="Buscar especie..." 
                         className="bg-background border-input pl-10 focus:ring-primary"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -408,27 +468,16 @@ export default function CollectionPage() {
                 <div className="grid grid-cols-2 gap-4">
                     {filteredPlants.map((plant) => {
                         const isUnlocked = plantCount >= plant.unlocksAt;
-                        const isPlaceholder = plant.name === 'Próximamente';
-
+                        
                         const isLegendaryPlant = plant.rarity === 'Legendario';
-                        const isLegendaryPathUnlocked = plantCount >= 30; // After completing phase 6 (5 plants/phase * 6 phases)
+                        const isLegendaryPathUnlocked = plantCount >= 30;
 
-                        if (isLegendaryPlant && !isLegendaryPathUnlocked) {
+                        if (isLegendaryPlant && !isLegendaryPathUnlocked && !isAquaticPath) {
                             return (
                                 <Card key={plant.id} className="border-dashed bg-muted/50 flex flex-col items-center justify-center text-center aspect-square p-4">
                                     <Lock className="h-10 w-10 text-muted-foreground/50 mb-3" />
                                     <p className="text-sm font-semibold text-muted-foreground">Camino Legendario</p>
                                     <p className="text-xs text-muted-foreground mt-1">Completa hasta la fase 6 para desbloquear.</p>
-                                </Card>
-                            )
-                        }
-
-                        if (isPlaceholder) {
-                            return (
-                                <Card key={plant.id} className="border-dashed bg-muted/50 flex flex-col items-center justify-center text-center aspect-square p-4">
-                                    <Lock className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                                    <p className="text-sm font-semibold text-muted-foreground">Próximamente...</p>
-                                    <p className="text-xs text-muted-foreground mt-1">{plant.description}</p>
                                 </Card>
                             )
                         }
@@ -440,6 +489,7 @@ export default function CollectionPage() {
                                 unlocked={isUnlocked}
                                 plantCount={plantCount} 
                                 studyTime={user?.studyMinutes || 0}
+                                path={isAquaticPath ? 'aquatic' : 'terrestrial'}
                             >
                                 <Card className={cn(
                                     "group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 border-2 cursor-pointer",
@@ -452,7 +502,7 @@ export default function CollectionPage() {
                                             {!isUnlocked && (
                                                 <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-1">
                                                     <Lock className="h-3 w-3" />
-                                                    <span>Fase {Math.floor(plant.unlocksAt / 5) + 1}</span>
+                                                    <span>Fase {Math.floor((plant.unlocksAt - unlockOffset) / 5) + 1 + phaseOffset}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -466,7 +516,7 @@ export default function CollectionPage() {
 
                  {filteredPlants.length === 0 && (
                     <div className="text-center py-12 text-muted-foreground">
-                        <p className="font-semibold">No se encontraron plantas</p>
+                        <p className="font-semibold">No se encontraron especies</p>
                         <p className="text-sm">Prueba a cambiar los filtros de búsqueda.</p>
                     </div>
                 )}
@@ -488,7 +538,7 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     {/* Terrestrial Path */}
-                    <Card className="relative overflow-hidden border-2 border-green-500/30 bg-green-500 dark:bg-green-950">
+                    <Card className="relative overflow-hidden border-2 border-green-500/30 bg-green-500/5 dark:bg-green-950/50">
                         <Leaf className="absolute -top-2 -left-2 h-10 w-10 text-green-500/10 rotate-12" />
                         <Sprout className="absolute -bottom-2 -right-2 h-10 w-10 text-green-500/10 -rotate-12" />
                         <div className="relative z-10">
