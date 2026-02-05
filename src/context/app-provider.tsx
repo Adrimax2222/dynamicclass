@@ -159,6 +159,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
               if (docSnap.exists()) {
                 let userData = { uid: docSnap.id, ...docSnap.data() } as User;
                 
+                // Temporary logic to add plants for adrimax.dev@gmail.com
+                if (userData.email === 'adrimax.dev@gmail.com' && (userData.plantCount || 0) < 30) {
+                    await updateDoc(userDocRef, {
+                        plantCount: 30
+                    });
+                    userData.plantCount = 30; // Update local copy to prevent re-runs
+                }
+                
                 const isAdmin = fbUser.email && ADMIN_EMAILS.includes(fbUser.email);
                 const isOfficialAccount = fbUser.email === 'info.dynamicclass@gmail.com';
                 
@@ -591,5 +599,3 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
-
-    
