@@ -788,30 +788,53 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
         setIsProcessing(true);
         const centerDocRef = doc(firestore, 'centers', center.uid);
         try {
-            
-            const usersInClassQuery = query(collection(firestore, 'users'), 
-                where('organizationId', '==', center.uid), 
-                where('course', '==', classObj.name.split('-')[0].toLowerCase()), 
-                where('className', '==', classObj.name.split('-')[1])
-            );
+            const standardCourseRegex = /^[1-4](eso|bach)$/i;
+            const classNameParts = classObj.name.split('-');
+            const potentialCourse = classNameParts[0]?.toLowerCase();
+            const isStandardClass = classNameParts.length === 2 && standardCourseRegex.test(potentialCourse);
+
+            let usersInClassQuery;
+            if (isStandardClass) {
+                usersInClassQuery = query(collection(firestore, 'users'), 
+                    where('organizationId', '==', center.uid), 
+                    where('course', '==', potentialCourse), 
+                    where('className', '==', classNameParts[1])
+                );
+            } else { // It's a custom class like "Dirección"
+                usersInClassQuery = query(collection(firestore, 'users'), 
+                    where('organizationId', '==', center.uid), 
+                    where('course', '==', 'management'), 
+                    where('className', '==', classObj.name)
+                );
+            }
+
             const usersSnapshot = await getDocs(usersInClassQuery);
             
             const batch = writeBatch(firestore);
 
+            // Reset all users found in that class
             usersSnapshot.forEach(userDoc => {
-                batch.update(userDoc.ref, {
+                const updateData: { course: string; className: string; role?: string } = {
                     course: "default",
                     className: "default"
-                });
+                };
+
+                // If a user was an admin of this specific class, demote them.
+                if (userDoc.data().role === `admin-${classObj.name}`) {
+                    updateData.role = 'student';
+                }
+
+                batch.update(userDoc.ref, updateData);
             });
             
+            // Remove the class object from the center's array of classes
             batch.update(centerDocRef, {
                 classes: arrayRemove(classObj)
             });
 
             await batch.commit();
 
-            toast({ title: "Clase eliminada", description: `La clase "${classObj.name}" ha sido eliminada y sus miembros desasignados.`, variant: "destructive" });
+            toast({ title: "Clase eliminada", description: `El grupo "${classObj.name}" ha sido eliminado y sus miembros desasignados.`, variant: "destructive" });
         } catch (error) {
             console.error("Error removing class and updating users:", error);
             toast({ title: "Error", description: "No se pudo eliminar la clase. Revisa los permisos.", variant: "destructive" });
