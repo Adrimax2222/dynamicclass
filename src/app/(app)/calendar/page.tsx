@@ -4,8 +4,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { format, startOfToday, addDays, isWithinInterval, endOfDay, subDays } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit, MailCheck, Trophy, Flame, TreePine, Clock, FileCheck2, NotebookText, Star, RefreshCw } from "lucide-react";
+import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit, MailCheck, Trophy, Flame, TreePine, Clock, FileCheck2, NotebookText, Star, RefreshCw, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import jsPDF from "jspdf";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -525,6 +526,132 @@ function LoadingSummary() {
 
 function SummaryDisplay({ data, onRefresh }: { data: SummaryData; onRefresh: () => void; }) {
     
+    const handleDownloadPdf = () => {
+        const doc = new jsPDF();
+        let y = 15;
+
+        // Header
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.text("Resumen Semanal - Dynamic Class", 15, y);
+        y += 8;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text(`Generado el ${data.generationDate}`, 15, y);
+        y += 15;
+
+        // Stats Section
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0);
+        doc.text("Estadísticas Generales", 15, y);
+        y += 7;
+
+        const statsData = [
+            { label: 'Trofeos (5d)', value: data.trophiesGainedLast5Days },
+            { label: 'Racha', value: data.streak },
+            { label: 'Estudio Total', value: `${Math.floor(data.studyMinutes / 60)}h ${data.studyMinutes % 60}m` },
+            { label: 'Plantas Total', value: data.plantCount },
+        ];
+        
+        let x = 15;
+        statsData.forEach(stat => {
+            doc.setFontSize(10);
+            doc.setTextColor(150);
+            doc.text(stat.label, x, y);
+            doc.setFontSize(16);
+            doc.setTextColor(0);
+            doc.setFont("helvetica", "bold");
+            doc.text(String(stat.value), x, y + 7);
+            x += 48;
+        });
+        y += 20;
+
+        // Performance Section
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Rendimiento Académico", 15, y);
+        y += 7;
+
+        const performanceStatsData = [
+            { label: 'Media Actual', value: data.overallAverage.toFixed(1) },
+            { label: 'Tareas (5d)', value: data.tasksCompletedLast5Days },
+            { label: 'Exámenes (5d)', value: data.examsCompletedLast5Days },
+        ];
+        
+        x = 15;
+        performanceStatsData.forEach(stat => {
+            doc.setFontSize(10);
+            doc.setTextColor(150);
+            doc.text(stat.label, x, y);
+            doc.setFontSize(16);
+            doc.setTextColor(0);
+            doc.setFont("helvetica", "bold");
+            doc.text(String(stat.value), x, y + 7);
+            x += 65;
+        });
+        y += 20;
+
+        // Line separator
+        doc.setDrawColor(221, 221, 221);
+        doc.line(15, y - 5, 195, y - 5);
+        
+        // Upcoming Events
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0);
+        doc.text("Próximos 5 Días", 15, y);
+        y += 7;
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        if (data.upcomingEvents.length > 0) {
+            data.upcomingEvents.forEach(event => {
+                if (y > 280) { doc.addPage(); y = 20; }
+                doc.setTextColor(0);
+                doc.setFont("helvetica", "bold");
+                doc.text(`${format(event.date, 'EEEE d', { locale: es })}:`, 15, y);
+                doc.setTextColor(80);
+                doc.setFont("helvetica", "normal");
+                doc.text(event.title, 50, y, { maxWidth: 140 });
+                y += 7;
+            });
+        } else {
+            doc.setTextColor(150);
+            doc.text("No tienes eventos en los próximos 5 días.", 15, y);
+            y += 7;
+        }
+        y += 10;
+        
+        // Past Events
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0);
+        doc.text("Eventos de los últimos 5 días", 15, y);
+        y += 7;
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        if (data.pastEvents.length > 0) {
+            data.pastEvents.forEach(event => {
+                if (y > 280) { doc.addPage(); y = 20; }
+                doc.setTextColor(0);
+                doc.setFont("helvetica", "bold");
+                doc.text(`${format(event.date, 'EEEE d', { locale: es })}:`, 15, y);
+                doc.setTextColor(80);
+                doc.setFont("helvetica", "normal");
+                doc.text(event.title, 50, y, { maxWidth: 140 });
+                y += 7;
+            });
+        } else {
+            doc.setTextColor(150);
+            doc.text("No hubo eventos en los últimos 5 días.", 15, y);
+        }
+        
+        doc.save(`resumen_semanal_${new Date().toISOString().split('T')[0]}.pdf`);
+    };
+
     const stats = [
         { icon: Trophy, value: data.trophiesGainedLast5Days, label: 'Trofeos (5d)', color: 'text-amber-500' },
         { icon: Flame, value: data.streak, label: 'Racha', color: 'text-orange-500' },
@@ -545,9 +672,14 @@ function SummaryDisplay({ data, onRefresh }: { data: SummaryData; onRefresh: () 
                     <CardTitle>Tu Resumen Semanal</CardTitle>
                     <CardDescription>Generado el {data.generationDate}</CardDescription>
                 </div>
-                <Button variant="ghost" size="icon" onClick={onRefresh} aria-label="Actualizar resumen">
-                    <RefreshCw className="h-5 w-5 text-muted-foreground" />
-                </Button>
+                <div className="flex items-center">
+                    <Button variant="ghost" size="icon" onClick={handleDownloadPdf} aria-label="Descargar resumen">
+                        <Download className="h-5 w-5 text-muted-foreground" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={onRefresh} aria-label="Actualizar resumen">
+                        <RefreshCw className="h-5 w-5 text-muted-foreground" />
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="grid grid-cols-4 gap-2 text-center">
@@ -657,7 +789,7 @@ function WeeklySummary({ user, processedEvents, isGenerating, setIsGenerating, s
 
         const upcomingEvents = processedEvents
             .filter(event => event.type === 'class' && isWithinInterval(event.date, { start: today, end: nextFiveDays }))
-            .sort((a,b) => a.date.getTime() - a.date.getTime());
+            .sort((a,b) => a.date.getTime() - b.date.getTime());
         
         const pastEvents = processedEvents
             .filter(event => event.type === 'class' && isWithinInterval(event.date, { start: fiveDaysAgo, end: subDays(today, 1) }))
@@ -758,3 +890,5 @@ function WeeklySummary({ user, processedEvents, isGenerating, setIsGenerating, s
         </section>
     );
 }
+
+    
