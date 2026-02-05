@@ -462,7 +462,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const nextPhaseDuration = modes[timerMode][nextPhase];
       
       if (phase === 'focus') {
-          if (modes[timerMode].focus >= 5) {
+          if (modes[timerMode].focus >= 7) {
             setPlantCount(prev => prev + 1);
             toast({
                 title: "¡Planta conseguida!",
@@ -471,7 +471,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           } else {
             toast({
                 title: "Sesión completada",
-                description: `Para ganar plantas, la sesión debe ser de al menos 5 minutos.`,
+                description: `Para ganar plantas y mantener tu racha, la sesión debe ser de al menos 7 minutos.`,
             });
           }
       } else {
@@ -493,10 +493,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!firestore || !user || !isActive || phase !== 'focus') return;
 
     const totalFocusDuration = modes[timerMode].focus * 60;
-    const fiveMinutesInSeconds = 5 * 60;
+    const sevenMinutesInSeconds = 7 * 60;
 
-    // Check if 5 minutes have passed in the current session to update streak
-    if (totalFocusDuration >= fiveMinutesInSeconds && timeLeft <= totalFocusDuration - fiveMinutesInSeconds) {
+    // Check if 7 minutes have passed in the current session to update streak
+    if (totalFocusDuration >= sevenMinutesInSeconds && timeLeft <= totalFocusDuration - sevenMinutesInSeconds) {
         handleStreak();
     }
 
@@ -591,3 +591,5 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
+
+    

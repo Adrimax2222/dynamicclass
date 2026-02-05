@@ -339,7 +339,7 @@ export default function StudyPage() {
 
         if (isFocusMode && isActive) {
             document.documentElement.requestFullscreen().catch(err => {
-                console.error(`Error al activar pantalla completa: ${err.message}`);
+                console.error(`Error al activar pantalla completa: ${'\'\'\''}err.message${'\'\'\''}`);
                 setIsFocusMode(false);
                 toast({
                     title: "Error de Pantalla Completa",
@@ -628,7 +628,7 @@ export default function StudyPage() {
                 <Flame className="h-4 w-4" />
                 <AlertTitle className="font-semibold">¡A por la racha!</AlertTitle>
                 <AlertDescription className="text-xs">
-                    Las sesiones de 5 minutos o más cuentan para tu racha diaria y te recompensan con una planta nueva para tu jardín.
+                    Las sesiones de 7 minutos o más cuentan para tu racha diaria y te recompensan con una planta nueva para tu jardín.
                 </AlertDescription>
             </Alert>
             
@@ -1350,13 +1350,13 @@ function CustomTimerDialog({ children, customMode, setCustomMode }: { children: 
         const focusNum = parseInt(focus, 10);
         const restNum = parseInt(rest, 10);
 
-        if (!isNaN(focusNum) && !isNaN(restNum) && focusNum >= 5 && restNum > 0) {
+        if (!isNaN(focusNum) && !isNaN(restNum) && focusNum >= 7 && restNum > 0) {
             setGlobalCustomMode({ focus: focusNum, break: restNum });
             setIsOpen(false);
         } else {
             toast({
                 title: "Tiempo no válido",
-                description: "El tiempo de enfoque debe ser de al menos 5 minutos.",
+                description: "El tiempo de enfoque debe ser de al menos 7 minutos.",
                 variant: "destructive",
             });
         }
@@ -1390,7 +1390,7 @@ function CustomTimerDialog({ children, customMode, setCustomMode }: { children: 
                             value={focus} 
                             onChange={(e) => setFocus(e.target.value)} 
                             placeholder="Ej: 45"
-                            min="5"
+                            min="7"
                         />
                     </div>
                     <div className="space-y-2">
@@ -1838,3 +1838,5 @@ function UnitConverter() {
         </Tabs>
     );
 }
+
+    
