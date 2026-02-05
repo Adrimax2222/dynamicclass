@@ -13,7 +13,7 @@ import { useApp } from "@/lib/hooks/use-app";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { WipDialog } from "@/components/layout/wip-dialog";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
@@ -682,3 +682,5 @@ function PathsDialog({ children, isTerrestrialComplete, isAquaticComplete }: { c
         </Dialog>
     );
 }
+
+    
