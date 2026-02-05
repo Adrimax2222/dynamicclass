@@ -418,7 +418,7 @@ export default function CollectionPage() {
                                 <Card key={plant.id} className="border-dashed bg-muted/50 flex flex-col items-center justify-center text-center aspect-square p-4">
                                     <Lock className="h-10 w-10 text-muted-foreground/50 mb-3" />
                                     <p className="text-sm font-semibold text-muted-foreground">Camino Legendario</p>
-                                    <p className="text-xs text-muted-foreground mt-1">Completa 30 plantas para desbloquear.</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Completa hasta la fase 6 para desbloquear.</p>
                                 </Card>
                             )
                         }
