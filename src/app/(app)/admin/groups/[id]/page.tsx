@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit, Group, User as UserIcon, ShieldCheck, Replace, UserX, Move, MessageSquare, Pin, Palette } from "lucide-react";
+import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit, Group, User as UserIcon, ShieldCheck, Replace, UserX, Move, MessageSquare, Pin, Palette, ChevronUp, ChevronDown } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -750,6 +750,53 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin, canManageAllClasses
     const { toast } = useToast();
     const noteColors = ['#E2E8F0', '#FECACA', '#FDE68A', '#A7F3D0', '#BFDBFE', '#C7D2FE', '#E9D5FF'];
 
+    const sortedVisibleClasses = useMemo(() => {
+        const pinned: ClassDefinition[] = [];
+        const unpinned: ClassDefinition[] = [];
+        visibleClasses.forEach(c => {
+            if (c.isPinned) {
+                pinned.push(c);
+            } else {
+                unpinned.push(c);
+            }
+        });
+        return [...pinned, ...unpinned];
+    }, [visibleClasses]);
+
+    const handleMoveClass = async (classObj: ClassDefinition, direction: 'up' | 'down') => {
+        if (!firestore || !center.uid) return;
+
+        const currentIndex = sortedVisibleClasses.findIndex(c => c.name === classObj.name);
+        const neighborIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+        if (neighborIndex < 0 || neighborIndex >= sortedVisibleClasses.length) return;
+
+        const neighborObj = sortedVisibleClasses[neighborIndex];
+
+        const originalClassIndex = center.classes.findIndex(c => c.name === classObj.name);
+        const originalNeighborIndex = center.classes.findIndex(c => c.name === neighborObj.name);
+        
+        if (originalClassIndex === -1 || originalNeighborIndex === -1) {
+            toast({ title: "Error", description: "No se pudo encontrar la clase para mover.", variant: "destructive" });
+            return;
+        }
+        
+        const newClasses = [...center.classes];
+        [newClasses[originalClassIndex], newClasses[originalNeighborIndex]] = [newClasses[originalNeighborIndex], newClasses[originalClassIndex]];
+        
+        setIsProcessing(true);
+        const centerDocRef = doc(firestore, 'centers', center.uid);
+        try {
+            await updateDoc(centerDocRef, { classes: newClasses });
+            toast({ title: "Orden actualizado" });
+        } catch (error) {
+            console.error("Error moving class:", error);
+            toast({ title: "Error", description: "No se pudo cambiar el orden.", variant: "destructive" });
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
 
     const addClass = async (name: string) => {
         if (!firestore || !center.uid || !name.trim()) return;
@@ -891,17 +938,6 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin, canManageAllClasses
         }
     };
 
-    const sortedVisibleClasses = useMemo(() => {
-        return [...visibleClasses].sort((a, b) => {
-            const pinA = a.isPinned ?? false;
-            const pinB = b.isPinned ?? false;
-            if (pinA && !pinB) return -1;
-            if (!pinA && pinB) return 1;
-            return a.name.localeCompare(b.name);
-        });
-    }, [visibleClasses]);
-
-
     return (
         <Card>
             <CardHeader>
@@ -966,102 +1002,122 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin, canManageAllClasses
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        {sortedVisibleClasses.map((classObj, index) => (
-                           <div 
-                             key={`class-${index}-${classObj.name}`} 
-                             className={cn(
-                                "rounded-lg border",
-                                classObj.isPinned ? "bg-primary/5 border-primary/50" : "bg-card"
-                             )}
-                             style={{ borderTop: `4px solid ${classObj.color || (classObj.isPinned ? 'hsl(var(--primary) / 0.5)' : 'hsl(var(--border))')}` }}
-                           >
-                            <div className="flex items-center justify-between p-3">
-                                <div className="flex items-center gap-2">
-                                    {classObj.isPinned && <Pin className="h-4 w-4 text-primary shrink-0"/>}
-                                    <p className="font-semibold text-base">{classObj.name || "Clase sin nombre"}</p>
-                                    <TeacherInfoDialog />
-                                </div>
-                                <div className="flex items-center">
-                                    {canManageAllClasses && (
-                                        <>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                                                        <Palette className="h-4 w-4" />
+                        {sortedVisibleClasses.map((classObj, index) => {
+                            const isFirstItem = index === 0;
+                            const isLastItem = index === sortedVisibleClasses.length - 1;
+                            const isFirstUnpinned = !classObj.isPinned && (index === 0 || !!sortedVisibleClasses[index-1].isPinned);
+                            const isLastPinned = classObj.isPinned && (index === sortedVisibleClasses.length - 1 || !sortedVisibleClasses[index+1]?.isPinned);
+
+                            return (
+                               <div 
+                                 key={`class-${index}-${classObj.name}`} 
+                                 className={cn(
+                                    "rounded-lg border",
+                                    classObj.isPinned ? "bg-primary/5 border-primary/50" : "bg-card"
+                                 )}
+                               >
+                                <div 
+                                    className="flex items-center justify-between p-3"
+                                    style={{ borderTop: `4px solid ${classObj.color || (classObj.isPinned ? 'hsl(var(--primary) / 0.5)' : 'transparent')}`, borderTopLeftRadius: '0.5rem', borderTopRightRadius: '0.5rem' }}
+                                >
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        {classObj.isPinned && <Pin className="h-4 w-4 text-primary shrink-0"/>}
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-base break-words">{classObj.name || "Clase sin nombre"}</p>
+                                        </div>
+                                        <TeacherInfoDialog />
+                                    </div>
+                                    <div className="flex items-center ml-2">
+                                        {canManageAllClasses && (
+                                            <>
+                                                <div className="flex flex-col -my-2 mr-1 border-x">
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-none rounded-t-md" onClick={() => handleMoveClass(classObj, 'up')} disabled={isProcessing || isFirstItem || isFirstUnpinned}>
+                                                        <ChevronUp className="h-4 w-4" />
                                                     </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-2">
-                                                    <div className="flex gap-2">
-                                                        {noteColors.map(color => (
-                                                            <button
-                                                                key={color}
-                                                                type="button"
-                                                                onClick={() => handleSetClassColor(classObj, color)}
-                                                                className={cn("h-7 w-7 rounded-full border-2 transition-transform hover:scale-110", classObj.color === color ? 'border-ring' : 'border-transparent')}
-                                                                style={{ backgroundColor: color }}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                </PopoverContent>
-                                            </Popover>
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-none rounded-b-md" onClick={() => handleMoveClass(classObj, 'down')} disabled={isProcessing || isLastItem || isLastPinned}>
+                                                        <ChevronDown className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
 
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handlePinClass(classObj)} disabled={isProcessing}>
-                                                <Pin className={cn("h-4 w-4", classObj.isPinned && "fill-primary text-primary")} />
-                                            </Button>
-                                        </>
-                                    )}
-                                    {isGlobalAdmin && (
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0" disabled={isProcessing}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>¿Eliminar clase "{classObj.name}"?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                    Esta acción no se puede deshacer. Los miembros de esta clase serán desasignados y pasarán a un estado "sin clase".
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleRemoveClass(classObj)} className="bg-destructive hover:bg-destructive/90">Sí, eliminar</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    )}
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                                            <Palette className="h-4 w-4" />
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-2">
+                                                        <div className="flex gap-2">
+                                                            {noteColors.map(color => (
+                                                                <button
+                                                                    key={color}
+                                                                    type="button"
+                                                                    onClick={() => handleSetClassColor(classObj, color)}
+                                                                    className={cn("h-7 w-7 rounded-full border-2 transition-transform hover:scale-110", classObj.color === color ? 'border-ring' : 'border-transparent')}
+                                                                    style={{ backgroundColor: color }}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </PopoverContent>
+                                                </Popover>
+
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handlePinClass(classObj)} disabled={isProcessing}>
+                                                    <Pin className={cn("h-4 w-4", classObj.isPinned && "fill-primary text-primary")} />
+                                                </Button>
+                                            </>
+                                        )}
+                                        {isGlobalAdmin && (
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0" disabled={isProcessing}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>¿Eliminar clase "{classObj.name}"?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                        Esta acción no se puede deshacer. Los miembros de esta clase serán desasignados y pasarán a un estado "sin clase".
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleRemoveClass(classObj)} className="bg-destructive hover:bg-destructive/90">Sí, eliminar</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="p-3 border-t grid grid-cols-2 sm:grid-cols-4 gap-2">
-                               <Button asChild variant="secondary" size="sm">
-                                  <Link href={`/admin/groups/${center.uid}/${encodeURIComponent(classObj.name)}`}>
-                                   <UserCog className="h-4 w-4 mr-2" />
-                                   Miembros
-                                 </Link>
-                               </Button>
-                               <ChatSettingsDialog center={center} classObj={classObj}>
-                                   <Button variant="secondary" size="sm">
-                                       <MessageSquare className="h-4 w-4 mr-2"/>
-                                       Chat
+                                <div className="p-3 border-t grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                   <Button asChild variant="secondary" size="sm">
+                                      <Link href={`/admin/groups/${center.uid}/${encodeURIComponent(classObj.name)}`}>
+                                       <UserCog className="h-4 w-4 mr-2" />
+                                       Miembros
+                                     </Link>
                                    </Button>
-                               </ChatSettingsDialog>
-                               <Button asChild variant="secondary" size="sm">
-                                  <Link href={`/admin/schedule/editor/${center.uid}/${encodeURIComponent(classObj.name)}`}>
-                                   <BookOpen className="h-4 w-4 mr-2" />
-                                   Horario
-                                 </Link>
-                               </Button>
-                               <Button asChild variant="secondary" size="sm">
-                                 <Link href={`/admin/schedule/${center.uid}/${encodeURIComponent(classObj.name)}`}>
-                                   <CalendarCog className="h-4 w-4 mr-2" />
-                                   Calendario
-                                 </Link>
-                               </Button>
-                            </div>
-                           </div>
-                        ))}
+                                   <ChatSettingsDialog center={center} classObj={classObj}>
+                                       <Button variant="secondary" size="sm">
+                                           <MessageSquare className="h-4 w-4 mr-2"/>
+                                           Chat
+                                       </Button>
+                                   </ChatSettingsDialog>
+                                   <Button asChild variant="secondary" size="sm">
+                                      <Link href={`/admin/schedule/editor/${center.uid}/${encodeURIComponent(classObj.name)}`}>
+                                       <BookOpen className="h-4 w-4 mr-2" />
+                                       Horario
+                                     </Link>
+                                   </Button>
+                                   <Button asChild variant="secondary" size="sm">
+                                     <Link href={`/admin/schedule/${center.uid}/${encodeURIComponent(classObj.name)}`}>
+                                       <CalendarCog className="h-4 w-4 mr-2" />
+                                       Calendario
+                                     </Link>
+                                   </Button>
+                                </div>
+                               </div>
+                            )
+                        })}
                     </div>
                 )}
             </CardContent>
@@ -1177,3 +1233,5 @@ function ChatSettingsDialog({ children, center, classObj }: { children: React.Re
         </>
     );
 }
+
+    
