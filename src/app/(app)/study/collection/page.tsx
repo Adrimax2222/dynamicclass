@@ -379,8 +379,10 @@ export default function CollectionPage() {
                                                 );
                                             })}
                                         </CarouselContent>
-                                        <CarouselPrevious className="hidden sm:flex" />
-                                        <CarouselNext className="hidden sm:flex" />
+                                        <div className="flex justify-center gap-4 pt-4">
+                                          <CarouselPrevious className="static translate-y-0" />
+                                          <CarouselNext className="static translate-y-0" />
+                                        </div>
                                     </Carousel>
                                 ) : (
                                     <div className="text-center text-sm text-muted-foreground p-4 border-dashed border-2 rounded-lg">
@@ -551,5 +553,3 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
         </Dialog>
     )
 }
-
-    
