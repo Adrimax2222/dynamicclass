@@ -55,6 +55,7 @@ export type ClassDefinition = {
   description?: string;
   isChatEnabled?: boolean;
   isPinned?: boolean;
+  color?: string;
 }
 
 export type Center = {

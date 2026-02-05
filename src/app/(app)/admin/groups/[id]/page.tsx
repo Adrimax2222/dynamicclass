@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit, Group, User as UserIcon, ShieldCheck, Replace, UserX, Move, MessageSquare, Pin } from "lucide-react";
+import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit, Group, User as UserIcon, ShieldCheck, Replace, UserX, Move, MessageSquare, Pin, Palette } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +25,7 @@ import { TeacherInfoDialog } from "@/components/layout/teacher-info-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 function AdminWelcomeDialog({ user, isOpen, onOpenChange }: { user: User, isOpen: boolean, onOpenChange: (open: boolean) => void }) {
   const isCenterAdmin = user.role === 'center-admin';
@@ -747,6 +748,8 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin, canManageAllClasses
     const [isProcessing, setIsProcessing] = useState(false);
     const firestore = useFirestore();
     const { toast } = useToast();
+    const noteColors = ['#E2E8F0', '#FECACA', '#FDE68A', '#A7F3D0', '#BFDBFE', '#C7D2FE', '#E9D5FF'];
+
 
     const addClass = async (name: string) => {
         if (!firestore || !center.uid || !name.trim()) return;
@@ -866,6 +869,27 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin, canManageAllClasses
             setIsProcessing(false);
         }
     };
+    
+    const handleSetClassColor = async (classToUpdate: ClassDefinition, color: string) => {
+        if (!firestore || !center.uid) return;
+        
+        const updatedClasses = center.classes.map(c => 
+            c.name === classToUpdate.name 
+            ? { ...c, color: color } 
+            : c
+        );
+
+        try {
+            const centerDocRef = doc(firestore, 'centers', center.uid);
+            await updateDoc(centerDocRef, {
+                classes: updatedClasses
+            });
+            toast({ title: "Color actualizado" });
+        } catch (error) {
+            console.error("Error updating class color:", error);
+            toast({ title: "Error", description: "No se pudo actualizar el color.", variant: "destructive" });
+        }
+    };
 
     const sortedVisibleClasses = useMemo(() => {
         return [...visibleClasses].sort((a, b) => {
@@ -947,10 +971,11 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin, canManageAllClasses
                              key={`class-${index}-${classObj.name}`} 
                              className={cn(
                                 "rounded-lg border",
-                                classObj.isPinned ? "bg-primary/5 border-primary/50" : "bg-muted/50"
+                                classObj.isPinned ? "bg-primary/5 border-primary/50" : "bg-card"
                              )}
+                             style={{ borderTop: `4px solid ${classObj.color || (classObj.isPinned ? 'hsl(var(--primary) / 0.5)' : 'hsl(var(--border))')}` }}
                            >
-                            <div className="flex items-center justify-between p-3 border-b">
+                            <div className="flex items-center justify-between p-3">
                                 <div className="flex items-center gap-2">
                                     {classObj.isPinned && <Pin className="h-4 w-4 text-primary shrink-0"/>}
                                     <p className="font-semibold text-base">{classObj.name || "Clase sin nombre"}</p>
@@ -958,9 +983,32 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin, canManageAllClasses
                                 </div>
                                 <div className="flex items-center">
                                     {canManageAllClasses && (
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handlePinClass(classObj)} disabled={isProcessing}>
-                                            <Pin className={cn("h-4 w-4", classObj.isPinned && "fill-primary text-primary")} />
-                                        </Button>
+                                        <>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                                        <Palette className="h-4 w-4" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-2">
+                                                    <div className="flex gap-2">
+                                                        {noteColors.map(color => (
+                                                            <button
+                                                                key={color}
+                                                                type="button"
+                                                                onClick={() => handleSetClassColor(classObj, color)}
+                                                                className={cn("h-7 w-7 rounded-full border-2 transition-transform hover:scale-110", classObj.color === color ? 'border-ring' : 'border-transparent')}
+                                                                style={{ backgroundColor: color }}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </PopoverContent>
+                                            </Popover>
+
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handlePinClass(classObj)} disabled={isProcessing}>
+                                                <Pin className={cn("h-4 w-4", classObj.isPinned && "fill-primary text-primary")} />
+                                            </Button>
+                                        </>
                                     )}
                                     {isGlobalAdmin && (
                                         <AlertDialog>
@@ -986,7 +1034,7 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin, canManageAllClasses
                                 </div>
                             </div>
 
-                            <div className="p-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div className="p-3 border-t grid grid-cols-2 sm:grid-cols-4 gap-2">
                                <Button asChild variant="secondary" size="sm">
                                   <Link href={`/admin/groups/${center.uid}/${encodeURIComponent(classObj.name)}`}>
                                    <UserCog className="h-4 w-4 mr-2" />
