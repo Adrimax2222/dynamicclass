@@ -1,4 +1,3 @@
-
 "use client";
 
 import { createContext, useState, useEffect, useCallback, type ReactNode, useMemo, useRef } from 'react';
@@ -160,11 +159,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 let userData = { uid: docSnap.id, ...docSnap.data() } as User;
                 
                 // Temporary logic to add plants for adrimax.dev@gmail.com
-                if (userData.email === 'adrimax.dev@gmail.com' && (userData.plantCount || 0) < 30) {
+                if (userData.email === 'adrimax.dev@gmail.com' && (userData.plantCount || 0) < 59) {
                     await updateDoc(userDocRef, {
-                        plantCount: 30
+                        plantCount: 59
                     });
-                    userData.plantCount = 30; // Update local copy to prevent re-runs
+                    userData.plantCount = 59; // Update local copy to prevent re-runs
                 }
                 
                 const isAdmin = fbUser.email && ADMIN_EMAILS.includes(fbUser.email);
