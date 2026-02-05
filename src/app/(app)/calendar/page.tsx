@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { format, startOfToday, addDays, isWithinInterval, endOfDay } from "date-fns";
+import { format, startOfToday, addDays, isWithinInterval, endOfDay, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit, MailCheck, Trophy, Flame, TreePine, Clock, FileCheck2, NotebookText, Star } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,7 +27,7 @@ import {
     DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import type { CalendarEvent as AppCalendarEvent, Center, User } from "@/lib/types";
+import type { CalendarEvent as AppCalendarEvent, Center, User, CompletedItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -47,14 +47,15 @@ interface ParsedEvent extends AppCalendarEvent {
 }
 
 interface SummaryData {
-    tasksCompleted: number;
-    examsCompleted: number;
+    tasksCompletedLast5Days: number;
+    examsCompletedLast5Days: number;
+    trophiesGainedLast5Days: number;
     studyMinutes: number;
     streak: number;
     plantCount: number;
-    trophies: number;
     overallAverage: number;
     upcomingEvents: ParsedEvent[];
+    pastEvents: ParsedEvent[];
     generationDate: string;
 }
 
@@ -525,16 +526,16 @@ function LoadingSummary() {
 function SummaryDisplay({ data }: { data: SummaryData }) {
     
     const stats = [
-        { icon: Trophy, value: data.trophies, label: 'Trofeos', color: 'text-amber-500' },
+        { icon: Trophy, value: data.trophiesGainedLast5Days, label: 'Trofeos (5d)', color: 'text-amber-500' },
         { icon: Flame, value: data.streak, label: 'Racha', color: 'text-orange-500' },
-        { icon: Clock, value: `${Math.floor(data.studyMinutes / 60)}h ${data.studyMinutes % 60}m`, label: 'Estudio', color: 'text-teal-500' },
-        { icon: TreePine, value: data.plantCount, label: 'Plantas', color: 'text-green-500' },
+        { icon: Clock, value: `${Math.floor(data.studyMinutes / 60)}h ${data.studyMinutes % 60}m`, label: 'Estudio Total', color: 'text-teal-500' },
+        { icon: TreePine, value: data.plantCount, label: 'Plantas Total', color: 'text-green-500' },
     ];
 
     const performanceStats = [
         { icon: Star, value: data.overallAverage.toFixed(1), label: 'Media Actual', color: 'text-purple-500' },
-        { icon: NotebookText, value: data.tasksCompleted, label: 'Tareas', color: 'text-blue-500' },
-        { icon: FileCheck2, value: data.examsCompleted, label: 'Exámenes', color: 'text-red-500' },
+        { icon: NotebookText, value: data.tasksCompletedLast5Days, label: 'Tareas (5d)', color: 'text-blue-500' },
+        { icon: FileCheck2, value: data.examsCompletedLast5Days, label: 'Exámenes (5d)', color: 'text-red-500' },
     ];
     
     return (
@@ -595,6 +596,34 @@ function SummaryDisplay({ data }: { data: SummaryData }) {
                         <p className="text-center text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg">No tienes eventos en los próximos 5 días.</p>
                     )}
                 </div>
+
+                <Separator />
+                
+                <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="past-events">
+                        <AccordionTrigger className="text-sm font-semibold">
+                            Eventos de los últimos 5 días
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-2">
+                            {data.pastEvents.length > 0 ? (
+                                <div className="space-y-2">
+                                    {data.pastEvents.map(event => (
+                                        <div key={event.id} className="flex items-center gap-3 p-2 border rounded-lg bg-muted/50">
+                                            <div className="flex flex-col items-center justify-center p-2 bg-muted rounded-md">
+                                                <span className="text-xs font-bold text-muted-foreground">{format(event.date, 'MMM', { locale: es }).toUpperCase()}</span>
+                                                <span className="text-lg font-bold text-muted-foreground">{format(event.date, 'd')}</span>
+                                            </div>
+                                            <p className="flex-1 text-sm font-medium line-clamp-2 text-muted-foreground">{event.title}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-center text-sm text-muted-foreground p-4 bg-muted rounded-lg">No hubo eventos en los últimos 5 días.</p>
+                            )}
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
+
             </CardContent>
         </Card>
     );
@@ -608,6 +637,7 @@ function WeeklySummary({ user, processedEvents, isGenerating, setIsGenerating, s
     summary: SummaryData | null;
     setSummary: (summary: SummaryData | null) => void;
 }) {
+    const firestore = useFirestore();
 
     const handleGenerateSummary = async () => {
         if (!user) return;
@@ -618,10 +648,37 @@ function WeeklySummary({ user, processedEvents, isGenerating, setIsGenerating, s
 
         const today = startOfToday();
         const nextFiveDays = endOfDay(addDays(today, 4));
+        const fiveDaysAgo = subDays(today, 5);
 
         const upcomingEvents = processedEvents
             .filter(event => event.type === 'class' && isWithinInterval(event.date, { start: today, end: nextFiveDays }))
-            .sort((a,b) => a.date.getTime() - b.date.getTime());
+            .sort((a,b) => a.date.getTime() - a.date.getTime());
+        
+        const pastEvents = processedEvents
+            .filter(event => event.type === 'class' && isWithinInterval(event.date, { start: fiveDaysAgo, end: subDays(today, 1) }))
+            .sort((a,b) => b.date.getTime() - a.date.getTime());
+            
+        let tasksCompletedLast5Days = 0;
+        let examsCompletedLast5Days = 0;
+
+        if (firestore && user.uid) {
+            const completedItemsRef = collection(firestore, `users/${user.uid}/completedItems`);
+            const q = query(
+                completedItemsRef, 
+                where('completedAt', '>=', fiveDaysAgo)
+            );
+            const querySnapshot = await getDocs(q);
+            querySnapshot.forEach((doc) => {
+                const item = doc.data() as CompletedItem;
+                if (item.type === 'task') {
+                    tasksCompletedLast5Days++;
+                } else if (item.type === 'exam') {
+                    examsCompletedLast5Days++;
+                }
+            });
+        }
+        
+        const trophiesGainedLast5Days = tasksCompletedLast5Days + examsCompletedLast5Days;
 
         let overallAverage = 0;
         try {
@@ -649,14 +706,15 @@ function WeeklySummary({ user, processedEvents, isGenerating, setIsGenerating, s
         }
 
         const summaryData: SummaryData = {
-            tasksCompleted: user.tasks || 0,
-            examsCompleted: user.exams || 0,
+            tasksCompletedLast5Days,
+            examsCompletedLast5Days,
+            trophiesGainedLast5Days,
             studyMinutes: user.studyMinutes || 0,
             streak: user.streak || 0,
             plantCount: user.plantCount || 0,
-            trophies: user.trophies || 0,
             overallAverage: overallAverage,
             upcomingEvents: upcomingEvents,
+            pastEvents: pastEvents,
             generationDate: format(new Date(), "d 'de' MMMM, yyyy 'a las' HH:mm", { locale: es })
         };
 
@@ -695,5 +753,3 @@ function WeeklySummary({ user, processedEvents, isGenerating, setIsGenerating, s
         </section>
     );
 }
-
-    
