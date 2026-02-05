@@ -872,7 +872,7 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin, canManageAllClasses
             const pinA = a.isPinned ?? false;
             const pinB = b.isPinned ?? false;
             if (pinA && !pinB) return -1;
-            if (!aPinned && pinB) return 1;
+            if (!pinA && pinB) return 1;
             return a.name.localeCompare(b.name);
         });
     }, [visibleClasses]);
