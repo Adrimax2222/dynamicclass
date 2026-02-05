@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Users, Group, Trophy, ChevronLeft, Search, UserX, Trash2, CheckCircle, Ban, Loader2, Wrench, PlusCircle, MinusCircle, Copy, Check, Edit, Pin, Image as ImageIcon, RefreshCw } from "lucide-react";
+import { Shield, Users, Group, Trophy, ChevronLeft, Search, UserX, Trash2, CheckCircle, Ban, Loader2, Wrench, PlusCircle, MinusCircle, Copy, Check, Edit, Pin, Image as ImageIcon, RefreshCw, TreePine } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -65,9 +65,10 @@ export default function AdminPage() {
             </header>
 
             <Tabs defaultValue="groups" className="w-full">
-                <TabsList className={cn("grid w-full", user.role === 'center-admin' ? 'grid-cols-1' : 'grid-cols-3')}>
+                <TabsList className={cn("grid w-full", user.role === 'center-admin' ? 'grid-cols-1' : 'grid-cols-4')}>
                     {user.role === 'admin' && <TabsTrigger value="users"><Users className="h-4 w-4 mr-2" />Usuarios</TabsTrigger>}
                     {user.role === 'admin' && <TabsTrigger value="trophies"><Trophy className="h-4 w-4 mr-2" />Trofeos</TabsTrigger>}
+                    {user.role === 'admin' && <TabsTrigger value="plants"><TreePine className="h-4 w-4 mr-2" />Plantas</TabsTrigger>}
                     <TabsTrigger value="groups"><Group className="h-4 w-4 mr-2" />Grupos</TabsTrigger>
                 </TabsList>
 
@@ -79,6 +80,9 @@ export default function AdminPage() {
                             </TabsContent>
                             <TabsContent value="trophies">
                                 <TrophiesTab />
+                            </TabsContent>
+                            <TabsContent value="plants">
+                                <PlantsTab />
                             </TabsContent>
                         </>
                     )}
@@ -371,6 +375,116 @@ function TrophiesTab() {
         </UsersList>
     );
 }
+
+function PlantsTab() {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [allUsers, setAllUsers] = useState<User[]>([]);
+    const [plantAmounts, setPlantAmounts] = useState<Record<string, number>>({});
+    const [isProcessing, setIsProcessing] = useState<Record<string, boolean>>({});
+
+    const handleUpdatePlants = async (targetUser: User, amount: number) => {
+        if (!firestore || amount === 0) return;
+        setIsProcessing(prev => ({...prev, [targetUser.uid]: true}));
+        
+        try {
+            const userDocRef = doc(firestore, 'users', targetUser.uid);
+            await updateDoc(userDocRef, { plantCount: increment(amount) });
+            
+            setAllUsers(prevUsers => prevUsers.map(u => u.uid === targetUser.uid ? { ...u, plantCount: (u.plantCount || 0) + amount } : u));
+            setPlantAmounts(prev => ({...prev, [targetUser.uid]: 0}));
+
+            toast({
+                title: "Plantas Actualizadas",
+                description: `Se han ${amount > 0 ? 'añadido' : 'quitado'} ${Math.abs(amount)} plantas a ${targetUser.name}.`,
+            });
+        } catch (error) {
+            console.error("Error updating plant count:", error);
+            toast({ title: "Error", description: "No se pudieron actualizar las plantas.", variant: "destructive" });
+        } finally {
+            setIsProcessing(prev => ({...prev, [targetUser.uid]: false}));
+        }
+    };
+
+    const handlePlantAmountChange = (uid: string, value: string) => {
+        const amount = parseInt(value, 10);
+        setPlantAmounts(prev => ({ ...prev, [uid]: isNaN(amount) ? 0 : amount }));
+    };
+
+    return (
+        <UsersList onUsersLoaded={setAllUsers}>
+            {(users, isLoading, searchTerm, handleSearch) => (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Gestión de Plantas</CardTitle>
+                        <CardDescription>Añade o quita plantas a los usuarios manualmente.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Buscar por nombre o email..."
+                                className="pl-10"
+                                value={searchTerm}
+                                onChange={(e) => handleSearch(e.target.value)}
+                            />
+                        </div>
+                        <Separator />
+                         {isLoading ? (
+                            <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin"/></div>
+                        ) : (
+                            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+                                {users.map(u => (
+                                     <div key={u.uid} className="flex items-center gap-4 p-2 rounded-lg border">
+                                        <AvatarDisplay user={u} className="h-10 w-10" />
+                                        <div className="flex-1">
+                                            <p className="font-semibold">{u.name}</p>
+                                            <div className="flex items-center gap-1.5 text-sm">
+                                                <TreePine className="h-4 w-4 text-green-500" />
+                                                <span className="font-bold">{u.plantCount || 0}</span>
+                                            </div>
+                                        </div>
+                                         {u.role !== 'admin' && (
+                                            <div className="flex gap-2 items-center">
+                                                <Input 
+                                                    type="number" 
+                                                    className="w-20 h-8" 
+                                                    placeholder="Cant."
+                                                    value={plantAmounts[u.uid] || ""}
+                                                    onChange={(e) => handlePlantAmountChange(u.uid, e.target.value)}
+                                                    disabled={isProcessing[u.uid]}
+                                                />
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="icon" 
+                                                    className="h-8 w-8" 
+                                                    onClick={() => handleUpdatePlants(u, -(plantAmounts[u.uid] || 0))}
+                                                    disabled={isProcessing[u.uid] || !plantAmounts[u.uid] || plantAmounts[u.uid] <= 0}
+                                                >
+                                                    <MinusCircle className="h-4 w-4 text-red-500"/>
+                                                </Button>
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="icon" 
+                                                    className="h-8 w-8"
+                                                    onClick={() => handleUpdatePlants(u, plantAmounts[u.uid] || 0)}
+                                                    disabled={isProcessing[u.uid] || !plantAmounts[u.uid] || plantAmounts[u.uid] <= 0}
+                                                >
+                                                    <PlusCircle className="h-4 w-4 text-green-500"/>
+                                                </Button>
+                                            </div>
+                                         )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
+        </UsersList>
+    );
+}
+
 
 function GroupsTab({ user }: { user: User }) {
     const firestore = useFirestore();
