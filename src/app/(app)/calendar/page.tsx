@@ -1,10 +1,11 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { useState, useEffect, useMemo } from "react";
+import { format, startOfToday, addDays, isWithinInterval, endOfDay } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit, MailCheck } from "lucide-react";
+import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit, MailCheck, Trophy, Flame, TreePine, Clock, FileCheck2, NotebookText, Star } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -26,7 +27,7 @@ import {
     DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import type { CalendarEvent as AppCalendarEvent, Center } from "@/lib/types";
+import type { CalendarEvent as AppCalendarEvent, Center, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -36,12 +37,25 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
+import { Separator } from "@/components/ui/separator";
 
 type CalendarType = "personal" | "class";
 
 interface ParsedEvent extends AppCalendarEvent {
     // an extension of the base type to ensure date is a Date object during processing
     date: Date;
+}
+
+interface SummaryData {
+    tasksCompleted: number;
+    examsCompleted: number;
+    studyMinutes: number;
+    streak: number;
+    plantCount: number;
+    trophies: number;
+    overallAverage: number;
+    upcomingEvents: ParsedEvent[];
+    generationDate: string;
 }
 
 export default function CalendarPage() {
@@ -53,6 +67,9 @@ export default function CalendarPage() {
   const [error, setError] = useState<string | null>(null);
   const [date, setDate] = useState<Date | undefined>(new Date());
   
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [summary, setSummary] = useState<SummaryData | null>(null);
+
   const userIsInCenter = user?.center && user.center !== 'personal';
   
   // Logic to get the class iCal URL
@@ -424,23 +441,14 @@ export default function CalendarPage() {
                 )}
                 </CardContent>
             </Card>
-             <Card className="mt-8 bg-gradient-to-tr from-blue-50 to-indigo-100 dark:from-blue-950/80 dark:to-indigo-950/80 border-blue-200 dark:border-blue-800">
-                <CardHeader className="flex-row items-start gap-4">
-                    <div className="p-2 bg-white rounded-lg border shadow-sm">
-                        <MailCheck className="h-6 w-6 text-blue-500" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-lg">Resúmenes Semanales</h3>
-                        <p className="text-sm text-muted-foreground">Recibe cada viernes un resumen de tu rendimiento y tus próximas tareas directamente en tu correo.</p>
-                    </div>
-                </CardHeader>
-                <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-2">
-                    <WeeklySummaryInfoDialog />
-                    <Button disabled className="w-full sm:w-auto">
-                        Activar Próximamente
-                    </Button>
-                </CardContent>
-            </Card>
+             <WeeklySummary 
+                user={user!}
+                processedEvents={processedEvents}
+                isGenerating={isGeneratingSummary} 
+                setIsGenerating={setIsGeneratingSummary}
+                summary={summary}
+                setSummary={setSummary}
+             />
         </div>
         <section className="mt-8">
           <Link href="/study" className="block">
@@ -468,47 +476,224 @@ export default function CalendarPage() {
   );
 }
 
+const loadingTexts = ["Analizando tu calendario...", "Calculando tu rendimiento...", "Compilando tu informe..."];
 
-function WeeklySummaryInfoDialog() {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="link" className="text-blue-600 dark:text-blue-400 p-0 h-auto">
-          <Info className="h-4 w-4 mr-1" />
-          Saber más
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MailCheck className="h-5 w-5 text-primary" />
-            Resúmenes Semanales
-          </DialogTitle>
-          <DialogDescription>
-            Todo lo que necesitas saber sobre esta futura función.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4 space-y-3 text-sm">
-          <p>
-            Al activar esta opción, recibirás cada viernes un correo electrónico personalizado
-            enviado desde nuestra cuenta oficial.
-          </p>
-          <p className="font-semibold text-foreground">Este resumen incluirá:</p>
-          <ul className="list-disc list-inside space-y-1 pl-4 text-muted-foreground">
-            <li>Tu rendimiento general en Dynamic Class (notas, tareas completadas, etc.).</li>
-            <li>Un listado de las tareas y exámenes de la próxima semana, extraído directamente de tu calendario de clase.</li>
-          </ul>
-          <p>
-            Utilizamos tu historial de uso (que es privado) y el calendario de tu clase para generar este informe. Podrás activar o desactivar esta función en cualquier momento.
-          </p>
+function LoadingSummary() {
+    const [textIndex, setTextIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTextIndex(prev => (prev + 1) % loadingTexts.length);
+        }, 1500);
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
+            <div className="relative w-24 h-24">
+                <motion.div
+                    className="absolute inset-0"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                >
+                    <BrainCircuit className="h-full w-full text-primary opacity-20" />
+                </motion.div>
+                <motion.div
+                     className="absolute inset-0 flex items-center justify-center"
+                     animate={{ scale: [1, 1.1, 1] }}
+                     transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                >
+                    <CalendarIcon className="h-10 w-10 text-primary" />
+                </motion.div>
+            </div>
+            <AnimatePresence mode="wait">
+                <motion.p
+                    key={textIndex}
+                    className="font-semibold text-muted-foreground"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                >
+                    {loadingTexts[textIndex]}
+                </motion.p>
+            </AnimatePresence>
         </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button>Entendido</Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+    );
 }
 
+function SummaryDisplay({ data }: { data: SummaryData }) {
+    
+    const stats = [
+        { icon: Trophy, value: data.trophies, label: 'Trofeos', color: 'text-amber-500' },
+        { icon: Flame, value: data.streak, label: 'Racha', color: 'text-orange-500' },
+        { icon: Clock, value: `${Math.floor(data.studyMinutes / 60)}h ${data.studyMinutes % 60}m`, label: 'Estudio', color: 'text-teal-500' },
+        { icon: TreePine, value: data.plantCount, label: 'Plantas', color: 'text-green-500' },
+    ];
+
+    const performanceStats = [
+        { icon: Star, value: data.overallAverage.toFixed(1), label: 'Media Actual', color: 'text-purple-500' },
+        { icon: NotebookText, value: data.tasksCompleted, label: 'Tareas', color: 'text-blue-500' },
+        { icon: FileCheck2, value: data.examsCompleted, label: 'Exámenes', color: 'text-red-500' },
+    ];
+    
+    return (
+        <Card className="shadow-lg animate-in fade-in-50 duration-500">
+            <CardHeader>
+                <CardTitle>Tu Resumen Semanal</CardTitle>
+                <CardDescription>Generado el {data.generationDate}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="grid grid-cols-4 gap-2 text-center">
+                    {stats.map(stat => {
+                        const Icon = stat.icon;
+                        return (
+                            <div key={stat.label} className="p-2 bg-muted/50 rounded-lg">
+                                <Icon className={cn("h-6 w-6 mx-auto", stat.color)} />
+                                <p className="text-xl font-bold mt-1">{stat.value}</p>
+                                <p className="text-xs text-muted-foreground">{stat.label}</p>
+                            </div>
+                        )
+                    })}
+                </div>
+                
+                <Separator />
+
+                <div>
+                    <h4 className="font-semibold text-sm mb-3 text-center">Rendimiento Académico</h4>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                         {performanceStats.map(stat => {
+                            const Icon = stat.icon;
+                            return (
+                                <div key={stat.label} className="p-3 bg-muted/50 rounded-lg">
+                                    <Icon className={cn("h-5 w-5 mx-auto mb-1", stat.color)} />
+                                    <p className="font-bold">{stat.label}</p>
+                                    <p className="text-sm text-muted-foreground">{stat.value}</p>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                    <h4 className="font-semibold text-sm mb-3 text-center">Próximos 5 Días</h4>
+                    {data.upcomingEvents.length > 0 ? (
+                        <div className="space-y-2">
+                            {data.upcomingEvents.map(event => (
+                                <div key={event.id} className="flex items-center gap-3 p-2 border rounded-lg">
+                                    <div className="flex flex-col items-center justify-center p-2 bg-primary/10 rounded-md">
+                                        <span className="text-xs font-bold text-primary">{format(event.date, 'MMM', { locale: es }).toUpperCase()}</span>
+                                        <span className="text-lg font-bold text-primary">{format(event.date, 'd')}</span>
+                                    </div>
+                                    <p className="flex-1 text-sm font-medium line-clamp-2">{event.title}</p>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-center text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg">No tienes eventos en los próximos 5 días.</p>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+function WeeklySummary({ user, processedEvents, isGenerating, setIsGenerating, summary, setSummary }: {
+    user: User;
+    processedEvents: ParsedEvent[];
+    isGenerating: boolean;
+    setIsGenerating: (isGenerating: boolean) => void;
+    summary: SummaryData | null;
+    setSummary: (summary: SummaryData | null) => void;
+}) {
+
+    const handleGenerateSummary = async () => {
+        if (!user) return;
+        setIsGenerating(true);
+        setSummary(null);
+
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate AI thinking
+
+        const today = startOfToday();
+        const nextFiveDays = endOfDay(addDays(today, 4));
+
+        const upcomingEvents = processedEvents
+            .filter(event => event.type === 'class' && isWithinInterval(event.date, { start: today, end: nextFiveDays }))
+            .sort((a,b) => a.date.getTime() - b.date.getTime());
+
+        let overallAverage = 0;
+        try {
+            const savedConfigs = localStorage.getItem(`gradeConfigs-${user.uid}`);
+            if (savedConfigs) {
+                const parsedConfigs = JSON.parse(savedConfigs);
+                const calculatedSubjects = Object.values(parsedConfigs)
+                    .map((config: any) => {
+                        const filledGrades = config.grades.filter((g: any) => g.grade.trim() !== '' && g.weight.trim() !== '');
+                        if (filledGrades.length === 0) return null;
+                        const weightedSum = filledGrades.reduce((acc: number, g: any) => acc + (parseFloat(g.grade.replace(',', '.')) * parseFloat(g.weight.replace(',', '.'))), 0);
+                        const totalWeight = filledGrades.reduce((acc: number, g: any) => acc + parseFloat(g.weight.replace(',', '.')), 0);
+                        if (totalWeight === 0) return null;
+                        return { grade: weightedSum / totalWeight };
+                    })
+                    .filter(Boolean);
+
+                if (calculatedSubjects.length > 0) {
+                    const total = calculatedSubjects.reduce((acc: number, curr: any) => acc + curr.grade, 0);
+                    overallAverage = total / calculatedSubjects.length;
+                }
+            }
+        } catch (e) {
+            console.error("Could not get grade data", e);
+        }
+
+        const summaryData: SummaryData = {
+            tasksCompleted: user.tasks || 0,
+            examsCompleted: user.exams || 0,
+            studyMinutes: user.studyMinutes || 0,
+            streak: user.streak || 0,
+            plantCount: user.plantCount || 0,
+            trophies: user.trophies || 0,
+            overallAverage: overallAverage,
+            upcomingEvents: upcomingEvents,
+            generationDate: format(new Date(), "d 'de' MMMM, yyyy 'a las' HH:mm", { locale: es })
+        };
+
+        setSummary(summaryData);
+        setIsGenerating(false);
+    };
+
+    return (
+        <section className="mt-8">
+            {isGenerating ? (
+                <Card className="shadow-lg">
+                    <CardContent className="p-4">
+                        <LoadingSummary />
+                    </CardContent>
+                </Card>
+            ) : summary ? (
+                <SummaryDisplay data={summary} />
+            ) : (
+                <Card className="mt-8 bg-gradient-to-tr from-blue-50 to-indigo-100 dark:from-blue-950/80 dark:to-indigo-950/80 border-blue-200 dark:border-blue-800">
+                    <CardHeader className="flex-row items-start gap-4">
+                        <div className="p-2 bg-white rounded-lg border shadow-sm">
+                            <BrainCircuit className="h-6 w-6 text-blue-500" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-lg">Resumen Semanal Inteligente</h3>
+                            <p className="text-sm text-muted-foreground">Obtén un informe de tu rendimiento y tus próximas tareas con un solo clic.</p>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <Button onClick={handleGenerateSummary} disabled={isGenerating} className="w-full">
+                            ✨ Generar Resumen
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
+        </section>
+    );
+}
+
+    
