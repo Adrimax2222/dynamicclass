@@ -48,9 +48,16 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'www.infobae.com' },
       { protocol: 'https', hostname: 'www.maldives-villahotels.com' },
       { protocol: 'https', hostname: 't2.uc.ltmcdn.com' },
+      { protocol: 'https', hostname: 'cdn0.expertoanimal.com' },
+      { protocol: 'https', hostname: 'nubika.es' },
+      { protocol: 'https', hostname: 'cdn.nubika.es' },
+      { protocol: 'https', hostname: 'palmaaquarium.com' },
+      { protocol: 'https', hostname: 'media.es.wired.com' },
+      { protocol: 'https', hostname: 'e01-phantom-elmundo.uecdn.es' },
     ],
   },
 };
 
 export default nextConfig;
 
+    
