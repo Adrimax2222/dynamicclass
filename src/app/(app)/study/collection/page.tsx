@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock, Info, Timer, BrainCircuit, Globe, Fish, Lock, Leaf, Waves, Sparkles, Users, ChevronRight, Loader2, ChevronsRight, CheckCircle, Scale, Dna, Gamepad2, Code, Briefcase, SmilePlus, Activity, Banknote, DollarSign, Lightbulb, ShoppingCart, Building, Mountain, Zap, User as UserIcon, Heart, Vote } from "lucide-react";
+import { ChevronLeft, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock, Info, Timer, BrainCircuit, Globe, Fish, Lock, Leaf, Waves, Sparkles, Users, ChevronRight, Loader2, ChevronsRight, CheckCircle, Scale, Dna, Gamepad2, Code, Briefcase, SmilePlus, Activity, Banknote, DollarSign, Lightbulb, ShoppingCart, Building, Mountain, Zap, User as UserIcon, Heart, Vote, Brain, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/hooks/use-app";
 import { Progress } from "@/components/ui/progress";
@@ -55,11 +55,11 @@ const allFish: Plant[] = [
     { id: 16, name: 'Caballito de Mar', rarity: 'Poco Común', icon: Fish, unlocksAt: 75, description: "Estas criaturas únicas nadan en posición vertical y son conocidas porque el macho es quien lleva los huevos en una bolsa incubadora hasta que eclosionan.", imageUrl: "https://content.nationalgeographic.com.es/medio/2023/01/05/son-expertos-en-camuflaje_76041f32_230105114745_2000x1500.jpg" },
     { id: 17, name: 'Medusa Luna', rarity: 'Raro', icon: Sparkles, unlocksAt: 80, description: "Una medusa translúcida y bioluminiscente que se encuentra en todos los océanos. Su suave pulsación y su brillo etéreo la convierten en un espectáculo hipnótico.", imageUrl: "https://cdn0.expertoanimal.com/es/razas/9/9/8/medusa-luna_899_0_orig.jpg" },
     { id: 18, name: 'Pez Mandarín', rarity: 'Raro', icon: Fish, unlocksAt: 85, description: "Considerado uno de los peces más coloridos del mundo, el pez mandarín exhibe un patrón psicodélico de azules, naranjas y verdes. Es tímido y difícil de avistar.", imageUrl: "https://upload.wikimedia.org/wikipedia/commons/2/2d/Synchiropus_splendidus_2_Luc_Viatour.jpg" },
-    { id: 19, name: 'Manta Gigante', rarity: 'Épico', icon: Waves, unlocksAt: 90, description: "Con una envergadura de hasta 7 metros, la manta gigante es el rey de las rayas. Son filtradores inteligentes que se alimentan de plancton y viajan grandes distancias.", imageUrl: "https://www.maldives-villahotels.com/wp-content/uploads/2020/09/Manta-ray-swimming.jpg" },
+    { id: 19, name: 'Manta Gigante', rarity: 'Épico', icon: Waves, unlocksAt: 90, description: "Con una envergadura de hasta 7 metros, la manta gigante es el rey de las rayas. Son filtradores inteligentes que se alimentan de plancton y viajan grandes distancias.", imageUrl: "https://palmaaquarium.com/storage/app/uploads/public/677/e86/fe2/thumb_541_0_0_0_0_crop.webp" },
     { id: 20, name: 'Pulpo de Anillos Azules', rarity: 'Épico', icon: Sparkles, unlocksAt: 95, description: "Pequeño pero extremadamente venenoso. Cuando se siente amenazado, sus anillos azules iridiscentes parpadean como una advertencia antes de liberar su potente neurotoxina.", imageUrl: "https://cdn.nubika.es/wp-content/uploads/2022/08/pulpo-anillos-azules-caracteristicas-peculiaridades.jpg" },
-    { id: 21, name: 'Dragón de Mar Foliado', rarity: 'Legendario', icon: Leaf, unlocksAt: 100, description: "Pariente del caballito de mar, este maestro del camuflaje tiene extensiones en forma de hoja por todo su cuerpo, lo que le permite mezclarse perfectamente con las algas.", imageUrl: "https://www.australiangeographic.com.au/wp-content/uploads/2018/09/leafy-sea-dragon-1.jpg" },
-    { id: 22, name: 'Pez León', rarity: 'Legendario', icon: Fish, unlocksAt: 105, description: "Con sus aletas pectorales en forma de abanico y sus espinas venenosas, el pez león es una especie invasora hermosa pero destructiva en el Atlántico.", imageUrl: "https://www.infobae.com/new-resizer/s2BNg_G5KzGP2aYaVnCejp1CFgQ=/992x661/filters:format(webp):quality(85)/cloudfront-us-east-1.images.arcpublishing.com/infobae/M4PT36Y22NEBFA33NCD6P7K5VA.jpg" },
-    { id: 23, name: 'Tiburón Ballena', rarity: 'Legendario', icon: Waves, unlocksAt: 110, description: "El pez más grande del mundo. A pesar de su enorme tamaño, este gigante gentil es un filtrador que se alimenta principalmente de plancton, moviéndose lentamente por los océanos tropicales.", imageUrl: "https://t2.uc.ltmcdn.com/es/posts/4/9/4/como_se_reproduce_el_tiburon_ballena_49494_600.jpg" },
+    { id: 21, name: 'Dragón de Mar Foliado', rarity: 'Legendario', icon: Leaf, unlocksAt: 100, description: "Pariente del caballito de mar, este maestro del camuflaje tiene extensiones en forma de hoja por todo su cuerpo, lo que le permite mezclarse perfectamente con las algas.", imageUrl: "https://upload.wikimedia.org/wikipedia/commons/d/dc/Leafydragon.jpg" },
+    { id: 22, name: 'Pez León', rarity: 'Legendario', icon: Fish, unlocksAt: 105, description: "Con sus aletas pectorales en forma de abanico y sus espinas venenosas, el pez león es una especie invasora hermosa pero destructiva en el Atlántico.", imageUrl: "https://palmaaquarium.com/storage/app/uploads/public/677/e86/fe2/thumb_541_0_0_0_0_crop.webp" },
+    { id: 23, name: 'Tiburón Ballena', rarity: 'Legendario', icon: Waves, unlocksAt: 110, description: "El pez más grande del mundo. A pesar de su enorme tamaño, este gigante gentil es un filtrador que se alimenta principalmente de plancton, moviéndose lentamente por los océanos tropicales.", imageUrl: "https://media.es.wired.com/photos/68754280e5f49ae2052896bf/16:9/w_2560%2Cc_limit/tiburonballena.jpg" },
     { id: 24, name: 'Calamar Gigante', rarity: 'Legendario', icon: Sparkles, unlocksAt: 115, description: "Una criatura de las profundidades marinas envuelta en misterio. Con ojos del tamaño de un plato, es uno de los invertebrados más grandes, y sus batallas con los cachalotes son legendarias.", imageUrl: "https://e01-phantom-elmundo.uecdn.es/5b00b2632f094c0fdadb9e827bd63bf6/resize/1200/f/webp/assets/multimedia/imagenes/2022/10/20/16662629478420.jpg" },
 ];
 
@@ -573,7 +573,7 @@ function PathsDialog({ children, isTerrestrialComplete, isAquaticComplete }: { c
         paths: [
             { title: "El Futuro del Yo", icon: Dna, description: "Biotecnología, wearables y cómo la tecnología nos modifica.", status: 'locked' },
             { title: "Mundos Virtuales", icon: Gamepad2, description: "Gaming, metaverso y realidad aumentada.", status: 'locked' },
-            { title: "Inteligencia y Automatización", icon: BrainCircuit, description: "IA, robots y cómo las máquinas aprenden a 'pensar'.", status: 'locked' },
+            { title: "Inteligencia y Automatización", icon: BrainCircuit, description: "IA, robots y cómo las máquinas aprenden a 'pensar' y trabajar por nosotros.", status: 'locked' },
             { title: "Creación Digital", icon: Code, description: "Programación, diseño y arquitectura de nuevas herramientas.", status: 'locked' },
         ]
       },
@@ -581,10 +581,10 @@ function PathsDialog({ children, isTerrestrialComplete, isAquaticComplete }: { c
         sectionTitle: "Política y Sociedad",
         sectionIcon: Scale,
         paths: [
-            { title: "Impacto Social", icon: Users, description: "Activismo, ayuda comunitaria y acciones individuales.", status: 'locked' },
-            { title: "El Planeta en Juego", icon: Leaf, description: "Ecologismo, sostenibilidad y política ambiental.", status: 'locked' },
-            { title: "Poder y Ciudadanía", icon: Vote, description: "Instituciones, derechos humanos y cómo influir en las reglas.", status: 'locked' },
-            { title: "Economía y Futuro", icon: Briefcase, description: "Dinero, trabajo, vivienda y distribución de la riqueza.", status: 'locked' },
+            { title: "Impacto Social", icon: Users, description: "Activismo, ayuda comunitaria y cómo las acciones individuales afectan al colectivo.", status: 'locked' },
+            { title: "El Planeta en Juego", icon: Leaf, description: "Ecologismo, sostenibilidad y la política ambiental desde una visión joven.", status: 'locked' },
+            { title: "Poder y Ciudadanía", icon: Vote, description: "Cómo funcionan las instituciones, los derechos humanos y cómo se puede influir en las reglas del juego (voto, protestas, leyes).", status: 'locked' },
+            { title: "Economía y Futuro", icon: Briefcase, description: "El dinero, el trabajo, el acceso a la vivienda y cómo se distribuye la riqueza en la sociedad actual.", status: 'locked' },
         ]
       },
       {
@@ -601,20 +601,20 @@ function PathsDialog({ children, isTerrestrialComplete, isAquaticComplete }: { c
           sectionTitle: "Autonomía y Finanzas",
           sectionIcon: TrendingUp,
           paths: [
-              { title: "Survival Kit Económico", icon: Banknote, description: "Educación financiera básica (ahorro, impuestos, bancos).", status: 'locked' },
-              { title: "Nuevas Economías", icon: DollarSign, description: "Inversiones, cripto y economía colaborativa.", status: 'locked' },
-              { title: "Emprendimiento y Proyectos", icon: Lightbulb, description: "Cómo convertir una idea en algo real.", status: 'locked' },
-              { title: "Carreras del Futuro", icon: Rocket, description: "Orientación sobre trabajos que aún no existen.", status: 'locked' },
+              { title: "Survival Kit Económico", icon: Banknote, description: "Educación financiera básica (ahorro, impuestos, bancos) explicada de forma humana.", status: 'locked' },
+              { title: "Nuevas Economías", icon: DollarSign, description: "Inversiones, cripto, economía colaborativa y cómo generar ingresos por internet.", status: 'locked' },
+              { title: "Emprendimiento y Proyectos", icon: Lightbulb, description: "Cómo convertir una idea en algo real, desde un podcast hasta una marca de ropa.", status: 'locked' },
+              { title: "Carreras del Futuro", icon: Rocket, description: "Orientación sobre trabajos que aún no existen y cómo formarse de manera autodidacta.", status: 'locked' },
           ]
       },
       {
           sectionTitle: "Sostenibilidad y Planeta",
           sectionIcon: Leaf,
           paths: [
-              { title: "Consumo Consciente", icon: ShoppingCart, description: "Guías sobre qué comprar y a quién apoyar.", status: 'locked' },
+              { title: "Consumo Consciente", icon: ShoppingCart, description: "Guías sobre qué comprar, a quién apoyar y cómo reducir el rastro que dejamos.", status: 'locked' },
               { title: "Vivienda y Entorno", icon: Building, description: "Ciudades sostenibles y nomadismo digital.", status: 'locked' },
               { title: "Naturaleza y Aventura", icon: Mountain, description: "Reconexión con el medio ambiente y viajes de bajo impacto.", status: 'locked' },
-              { title: "Innovación Ecológica", icon: Zap, description: "Bio-materiales, energías limpias y soluciones a residuos.", status: 'locked' },
+              { title: "Innovación Ecológica", icon: Zap, description: "Bio-materiales, energías limpias y soluciones creativas a los residuos.", status: 'locked' },
           ]
       }
     ];
