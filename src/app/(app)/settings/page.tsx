@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/lib/hooks/use-app";
-import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap, Pin, Mail, Copy, Check, Gift, MailCheck, Info, MessageSquare } from "lucide-react";
+import { Moon, Sun, Bell, LogOut, ChevronLeft, LifeBuoy, Globe, FileText, ExternalLink, ShieldAlert, Trash2, Languages, KeyRound, Loader2, Eye, EyeOff, Sparkles, Shield, FlaskConical, Cat, ShieldCheck, Save, GraduationCap, Pin, Mail, Copy, Check, Gift, MailCheck, Info, MessageSquare, BrainCircuit } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
@@ -48,7 +49,7 @@ import type { Center } from "@/lib/types";
 
 
 export default function SettingsPage() {
-  const { user, theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, setIsChatBubbleVisible, isClassChatBubbleVisible, setIsClassChatBubbleVisible, saveScannedDocs, setSaveScannedDocs, weeklySummary, setWeeklySummary, emailNotifications, setEmailNotifications } = useApp();
+  const { user, theme, setTheme, logout: contextLogout, deleteAccount, isChatBubbleVisible, setIsChatBubbleVisible, isClassChatBubbleVisible, setIsClassChatBubbleVisible, isStudyBubbleVisible, setIsStudyBubbleVisible, saveScannedDocs, setSaveScannedDocs, weeklySummary, setWeeklySummary, emailNotifications, setEmailNotifications } = useApp();
   const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -220,6 +221,18 @@ export default function SettingsPage() {
                     id="ai-bubble-switch"
                     checked={isChatBubbleVisible}
                     onCheckedChange={setIsChatBubbleVisible}
+                />
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+                <Label htmlFor="study-bubble-switch" className="flex items-center gap-2">
+                    <BrainCircuit className="h-5 w-5 text-blue-500" />
+                    <span>Burbuja de Estudio</span>
+                </Label>
+                <Switch
+                    id="study-bubble-switch"
+                    checked={isStudyBubbleVisible}
+                    onCheckedChange={setIsStudyBubbleVisible}
                 />
             </div>
             <Separator />

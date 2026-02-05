@@ -35,6 +35,7 @@ export type User = {
   theme?: Theme;
   isChatBubbleVisible?: boolean;
   isClassChatBubbleVisible?: boolean;
+  isStudyBubbleVisible?: boolean;
   saveScannedDocs?: boolean;
   language?: Language;
   weeklySummary?: boolean;

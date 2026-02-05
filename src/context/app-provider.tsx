@@ -32,6 +32,8 @@ export interface AppContextType {
   setIsChatBubbleVisible: (visible: boolean) => void;
   isClassChatBubbleVisible: boolean;
   setIsClassChatBubbleVisible: (visible: boolean) => void;
+  isStudyBubbleVisible: boolean;
+  setIsStudyBubbleVisible: (visible: boolean) => void;
   
   isChatDrawerOpen: boolean;
   setChatDrawerOpen: (isOpen: boolean) => void;
@@ -83,6 +85,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [emailNotifications, setEmailNotificationsState] = useState(true);
   const [isChatBubbleVisible, setIsChatBubbleVisibleState] = useState(true);
   const [isClassChatBubbleVisible, setIsClassChatBubbleVisibleState] = useState(true);
+  const [isStudyBubbleVisible, setIsStudyBubbleVisibleState] = useState(true);
   const [isChatDrawerOpen, setChatDrawerOpen] = useState(false);
   const [saveScannedDocs, setSaveScannedDocsState] = useState(true);
   
@@ -223,6 +226,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 const userClassChatBubbleVisible = userData.isClassChatBubbleVisible ?? true;
                 setIsClassChatBubbleVisibleState(userClassChatBubbleVisible);
 
+                const userStudyBubbleVisible = userData.isStudyBubbleVisible ?? true;
+                setIsStudyBubbleVisibleState(userStudyBubbleVisible);
+
                 const storedSaveDocs = localStorage.getItem('saveScannedDocs');
                 const userSaveDocs = userData.saveScannedDocs ?? (storedSaveDocs !== null ? JSON.parse(storedSaveDocs) : true);
                 setSaveScannedDocsState(userSaveDocs);
@@ -336,6 +342,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (user && firestore) {
           const userDocRef = doc(firestore, 'users', user.uid);
           updateDoc(userDocRef, { isClassChatBubbleVisible: visible }).catch(console.error);
+      }
+  }, [user, firestore]);
+
+  const setIsStudyBubbleVisible = useCallback((visible: boolean) => {
+      setIsStudyBubbleVisibleState(visible);
+      if (user && firestore) {
+          const userDocRef = doc(firestore, 'users', user.uid);
+          updateDoc(userDocRef, { isStudyBubbleVisible: visible }).catch(console.error);
       }
   }, [user, firestore]);
 
@@ -539,6 +553,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setIsChatBubbleVisible,
     isClassChatBubbleVisible,
     setIsClassChatBubbleVisible,
+    isStudyBubbleVisible,
+    setIsStudyBubbleVisible,
     isChatDrawerOpen,
     setChatDrawerOpen,
     // Chat context values

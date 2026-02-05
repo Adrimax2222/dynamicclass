@@ -4,14 +4,15 @@
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/lib/hooks/use-app";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, BrainCircuit } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { Center } from "@/lib/types";
 import { useMemo } from "react";
 import { doc } from "firebase/firestore";
 
 export default function ClassChatBubble() {
-  const { isClassChatBubbleVisible, user } = useApp();
+  const { isClassChatBubbleVisible, user, isStudyBubbleVisible } = useApp();
   const router = useRouter();
   const firestore = useFirestore();
 
@@ -30,18 +31,31 @@ export default function ClassChatBubble() {
   }, [user, centerData]);
 
 
-  if (!isClassChatBubbleVisible || !user || user.center === 'personal' || !isChatEnabled) {
-    return null;
-  }
+  const showClassChatBubble = isClassChatBubbleVisible && user && user.center !== 'personal' && isChatEnabled;
 
   return (
-    <Button
-      size="icon"
-      className="fixed bottom-36 right-4 h-14 w-14 rounded-full bg-accent hover:bg-accent/90 shadow-lg transition-transform hover:scale-110 active:scale-95"
-      onClick={() => router.push('/class-chat')}
-      aria-label="Abrir Chat de Clase"
-    >
-      <MessageSquare className="h-7 w-7" />
-    </Button>
+    <>
+        {isStudyBubbleVisible && (
+            <Link href="/study" passHref>
+              <Button
+                size="icon"
+                className="fixed bottom-52 right-4 h-14 w-14 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg transition-transform hover:scale-110 active:scale-95 z-40"
+                aria-label="Abrir Modo Estudio"
+              >
+                <BrainCircuit className="h-7 w-7" />
+              </Button>
+            </Link>
+        )}
+        {showClassChatBubble && (
+            <Button
+                size="icon"
+                className="fixed bottom-36 right-4 h-14 w-14 rounded-full bg-accent hover:bg-accent/90 shadow-lg transition-transform hover:scale-110 active:scale-95"
+                onClick={() => router.push('/class-chat')}
+                aria-label="Abrir Chat de Clase"
+            >
+                <MessageSquare className="h-7 w-7" />
+            </Button>
+        )}
+    </>
   );
 }
