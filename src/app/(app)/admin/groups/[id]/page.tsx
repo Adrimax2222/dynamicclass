@@ -946,67 +946,72 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin, canManageAllClasses
                            <div 
                              key={`class-${index}-${classObj.name}`} 
                              className={cn(
-                                "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg border",
+                                "rounded-lg border",
                                 classObj.isPinned ? "bg-primary/5 border-primary/50" : "bg-muted/50"
                              )}
                            >
-                             <div className="flex items-center gap-2">
-                                {classObj.isPinned && <Pin className="h-4 w-4 text-primary shrink-0"/>}
-                                <p className="font-semibold text-base">{classObj.name || "Clase sin nombre"}</p>
-                                <TeacherInfoDialog />
-                             </div>
-                             <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap justify-end">
-                               <Button asChild variant="secondary" size="sm" className="flex-1 sm:flex-initial">
+                            <div className="flex items-center justify-between p-3 border-b">
+                                <div className="flex items-center gap-2">
+                                    {classObj.isPinned && <Pin className="h-4 w-4 text-primary shrink-0"/>}
+                                    <p className="font-semibold text-base">{classObj.name || "Clase sin nombre"}</p>
+                                    <TeacherInfoDialog />
+                                </div>
+                                <div className="flex items-center">
+                                    {canManageAllClasses && (
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handlePinClass(classObj)} disabled={isProcessing}>
+                                            <Pin className={cn("h-4 w-4", classObj.isPinned && "fill-primary text-primary")} />
+                                        </Button>
+                                    )}
+                                    {isGlobalAdmin && (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0" disabled={isProcessing}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>¿Eliminar clase "{classObj.name}"?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                    Esta acción no se puede deshacer. Los miembros de esta clase serán desasignados y pasarán a un estado "sin clase".
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleRemoveClass(classObj)} className="bg-destructive hover:bg-destructive/90">Sí, eliminar</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="p-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                               <Button asChild variant="secondary" size="sm">
                                   <Link href={`/admin/groups/${center.uid}/${encodeURIComponent(classObj.name)}`}>
                                    <UserCog className="h-4 w-4 mr-2" />
                                    Miembros
                                  </Link>
                                </Button>
                                <ChatSettingsDialog center={center} classObj={classObj}>
-                                   <Button variant="secondary" size="sm" className="flex-1 sm:flex-initial">
+                                   <Button variant="secondary" size="sm">
                                        <MessageSquare className="h-4 w-4 mr-2"/>
                                        Chat
                                    </Button>
                                </ChatSettingsDialog>
-                               <Button asChild variant="secondary" size="sm" className="flex-1 sm:flex-initial">
+                               <Button asChild variant="secondary" size="sm">
                                   <Link href={`/admin/schedule/editor/${center.uid}/${encodeURIComponent(classObj.name)}`}>
                                    <BookOpen className="h-4 w-4 mr-2" />
                                    Horario
                                  </Link>
                                </Button>
-                               <Button asChild variant="secondary" size="sm" className="flex-1 sm:flex-initial">
+                               <Button asChild variant="secondary" size="sm">
                                  <Link href={`/admin/schedule/${center.uid}/${encodeURIComponent(classObj.name)}`}>
                                    <CalendarCog className="h-4 w-4 mr-2" />
                                    Calendario
                                  </Link>
                                </Button>
-                                {canManageAllClasses && (
-                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handlePinClass(classObj)} disabled={isProcessing}>
-                                     <Pin className={cn("h-4 w-4", classObj.isPinned && "fill-primary text-primary")} />
-                                   </Button>
-                                )}
-                               {isGlobalAdmin && (
-                                   <AlertDialog>
-                                     <AlertDialogTrigger asChild>
-                                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0" disabled={isProcessing}>
-                                         <Trash2 className="h-4 w-4" />
-                                       </Button>
-                                     </AlertDialogTrigger>
-                                     <AlertDialogContent>
-                                       <AlertDialogHeader>
-                                         <AlertDialogTitle>¿Eliminar clase "{classObj.name}"?</AlertDialogTitle>
-                                         <AlertDialogDescription>
-                                           Esta acción no se puede deshacer. Los miembros de esta clase serán desasignados y pasarán a un estado "sin clase".
-                                         </AlertDialogDescription>
-                                       </AlertDialogHeader>
-                                       <AlertDialogFooter>
-                                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                         <AlertDialogAction onClick={() => handleRemoveClass(classObj)} className="bg-destructive hover:bg-destructive/90">Sí, eliminar</AlertDialogAction>
-                                       </AlertDialogFooter>
-                                     </AlertDialogContent>
-                                   </AlertDialog>
-                               )}
-                             </div>
+                            </div>
                            </div>
                         ))}
                     </div>
