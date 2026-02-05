@@ -40,10 +40,10 @@ const allPlants: Plant[] = [
     { id: 6, name: 'Pino Místico', rarity: 'Raro', icon: TreePine, unlocksAt: 25, description: "Los pinos son árboles de hoja perenne que se caracterizan por sus conos (piñas) y sus hojas en forma de aguja. Son una fuente crucial de madera y resina, y sus bosques son ecosistemas vitales en todo el mundo.", imageUrl: "https://vivergil.es/2874-large_default/pino-pinoneropinus-pinea-c-20.jpg" },
     { id: 7, name: 'Rosa Estelar', rarity: 'Épico', icon: Flower, unlocksAt: 30, description: "La rosa es una de las flores más cultivadas y apreciadas del mundo, un símbolo universal de amor y belleza. Existen miles de variedades, y sus pétalos se utilizan para producir aceites esenciales y perfumes.", imageUrl: "https://mamabruja.com/wp-content/uploads/2021/10/ivan-jevtic-p7mo8-CG5Gs-unsplash-2-scaled.jpg" },
     { id: 8, name: 'Árbol Solar', rarity: 'Épico', icon: Sun, unlocksAt: 35, description: "Inspirado en el Baobab, conocido como 'el Árbol de la Vida'. Este árbol africano puede vivir miles de años y almacenar hasta 120,000 litros de agua en su tronco para sobrevivir a las sequías extremas, siendo un pilar de su ecosistema.", imageUrl: "https://images.unsplash.com/photo-1692303366685-390f3e039bf9?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8JUMzJUExcmJvbCUyMGRlJTIwbGElMjB2aWRhfGVufDB8fDB8fHww" },
-    { id: 9, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 40, description: "Completa la fase 6 para desbloquearlo.", imageUrl: "" },
-    { id: 10, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 45, description: "Completa la fase 6 para desbloquearlo.", imageUrl: "" },
-    { id: 11, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 50, description: "Completa la fase 6 para desbloquearlo.", imageUrl: "" },
-    { id: 12, name: 'Próximamente', rarity: 'Legendario', icon: Lock, unlocksAt: 55, description: "Completa la fase 6 para desbloquearlo.", imageUrl: "" },
+    { id: 9, name: 'Flor de Luna', rarity: 'Legendario', icon: Sparkles, unlocksAt: 40, description: "La 'Kadupul', o Flor de Luna, es un cactus de Sri Lanka que florece solo por la noche. Sus delicadas flores blancas se abren después del anochecer y se marchitan antes del amanecer, un evento tan raro que es casi imposible de presenciar.", imageUrl: "" },
+    { id: 10, name: 'Sangre de Dragón', rarity: 'Legendario', icon: Leaf, unlocksAt: 45, description: "El árbol de Sangre de Dragón, nativo del archipiélago de Socotra, es famoso por su savia de color rojo intenso. Su forma de paraguas es una adaptación para sobrevivir en condiciones áridas, optimizando la captura de humedad.", imageUrl: "" },
+    { id: 11, name: 'Rafflesia Gigante', rarity: 'Legendario', icon: Flower, unlocksAt: 50, description: "La Rafflesia arnoldii es una planta parásita que produce la flor individual más grande del mundo. No tiene hojas ni raíces visibles y emite un olor fétido para atraer insectos polinizadores.", imageUrl: "" },
+    { id: 12, name: 'Pino Longevo', rarity: 'Legendario', icon: TreePine, unlocksAt: 55, description: "El Pinus longaeva es una de las especies de árboles más antiguas de la Tierra. Algunos ejemplares vivos superan los 4.800 años, sobreviviendo en condiciones extremas en las montañas del oeste de Estados Unidos.", imageUrl: "" },
 ];
 
 
@@ -406,14 +406,14 @@ export default function CollectionPage() {
                 <div className="grid grid-cols-2 gap-4">
                     {filteredPlants.map((plant) => {
                         const isUnlocked = plantCount >= plant.unlocksAt;
-                        const isPlaceholder = plant.unlocksAt > 35;
+                        const isPlaceholder = plant.name === 'Próximamente';
 
                         if (isPlaceholder) {
                             return (
                                 <Card key={plant.id} className="border-dashed bg-muted/50 flex flex-col items-center justify-center text-center aspect-square p-4">
                                     <Lock className="h-12 w-12 text-muted-foreground/50 mb-4" />
                                     <p className="text-sm font-semibold text-muted-foreground">Próximamente...</p>
-                                    <p className="text-xs text-muted-foreground mt-1">Completa la fase 6 para desbloquearlo</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{plant.description}</p>
                                 </Card>
                             )
                         }
@@ -538,3 +538,4 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
         </Dialog>
     )
 }
+
