@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { format, startOfToday, addDays, isWithinInterval, endOfDay, subDays } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit, MailCheck, Trophy, Flame, TreePine, Clock, FileCheck2, NotebookText, Star } from "lucide-react";
+import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit, MailCheck, Trophy, Flame, TreePine, Clock, FileCheck2, NotebookText, Star, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
@@ -523,7 +523,7 @@ function LoadingSummary() {
     );
 }
 
-function SummaryDisplay({ data }: { data: SummaryData }) {
+function SummaryDisplay({ data, onRefresh }: { data: SummaryData; onRefresh: () => void; }) {
     
     const stats = [
         { icon: Trophy, value: data.trophiesGainedLast5Days, label: 'Trofeos (5d)', color: 'text-amber-500' },
@@ -540,9 +540,14 @@ function SummaryDisplay({ data }: { data: SummaryData }) {
     
     return (
         <Card className="shadow-lg animate-in fade-in-50 duration-500">
-            <CardHeader>
-                <CardTitle>Tu Resumen Semanal</CardTitle>
-                <CardDescription>Generado el {data.generationDate}</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Tu Resumen Semanal</CardTitle>
+                    <CardDescription>Generado el {data.generationDate}</CardDescription>
+                </div>
+                <Button variant="ghost" size="icon" onClick={onRefresh} aria-label="Actualizar resumen">
+                    <RefreshCw className="h-5 w-5 text-muted-foreground" />
+                </Button>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="grid grid-cols-4 gap-2 text-center">
@@ -731,7 +736,7 @@ function WeeklySummary({ user, processedEvents, isGenerating, setIsGenerating, s
                     </CardContent>
                 </Card>
             ) : summary ? (
-                <SummaryDisplay data={summary} />
+                <SummaryDisplay data={summary} onRefresh={handleGenerateSummary} />
             ) : (
                 <Card className="mt-8 bg-gradient-to-tr from-blue-50 to-indigo-100 dark:from-blue-950/80 dark:to-indigo-950/80 border-blue-200 dark:border-blue-800">
                     <CardHeader className="flex-row items-start gap-4">
