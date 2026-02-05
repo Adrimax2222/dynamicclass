@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -33,8 +34,14 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'vivergil.es' },
       { protocol: 'https', hostname: 'mamabruja.com' },
       { protocol: 'https', hostname: 'framerusercontent.com' },
+      { protocol: 'https', hostname: 'media.admagazine.com' },
+      { protocol: 'https', hostname: 'upload.wikimedia.org' },
+      { protocol: 'https', hostname: 'content.nationalgeographic.com.es' },
+      { protocol: 'https', hostname: 'ichef.bbci.co.uk' },
     ],
   },
 };
 
 export default nextConfig;
+
+    
