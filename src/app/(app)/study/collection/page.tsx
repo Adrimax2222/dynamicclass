@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock, Info, Timer, BrainCircuit, Globe, Fish, Lock, Leaf, Waves, Sparkles, Users, ChevronRight, Loader2, ChevronsRight } from "lucide-react";
+import { ChevronLeft, Search, Sprout, Trees, Flower, Sun, Plus, TreePine, Rocket, Trophy, Clock, Info, Timer, BrainCircuit, Globe, Fish, Lock, Leaf, Waves, Sparkles, Users, ChevronRight, Loader2, ChevronsRight, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/hooks/use-app";
 import { Progress } from "@/components/ui/progress";
@@ -549,7 +550,13 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
                                 </div>
                             </CardHeader>
                             <CardFooter>
-                                <Button className="w-full bg-green-600 hover:bg-green-700">Seleccionado</Button>
+                                {isTerrestrialComplete ? (
+                                    <Button disabled className="w-full bg-green-600/50">
+                                        <CheckCircle className="mr-2 h-4 w-4" /> Completado
+                                    </Button>
+                                ) : (
+                                    <Button className="w-full bg-green-600 hover:bg-green-700">Seleccionado</Button>
+                                )}
                             </CardFooter>
                         </div>
                     </Card>
@@ -567,6 +574,11 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
                                     <CardDescription className="text-blue-700/80 dark:text-blue-300/80">Descubre las especies marinas y los secretos del océano.</CardDescription>
                                 </div>
                             </CardHeader>
+                            {isTerrestrialComplete && (
+                                <CardFooter>
+                                    <Button className="w-full bg-blue-600 hover:bg-blue-700">Seleccionado</Button>
+                                </CardFooter>
+                            )}
                         </div>
                          {!isTerrestrialComplete && (
                             <div className="absolute top-2 right-2 flex items-center gap-1.5 rounded-full bg-background/80 px-2 py-1 text-xs font-semibold text-muted-foreground border shadow-sm z-20">

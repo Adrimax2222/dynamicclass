@@ -298,7 +298,7 @@ export default function StudyPage() {
             const centerDoc = await getDoc(centerDocRef);
             if (centerDoc.exists()) {
                 const centerData = centerDoc.data() as Center;
-                const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
+                const userClassName = `${''}${user.course.replace('eso','ESO')}-${''}${user.className}`;
                 const userClassDef = centerData.classes.find(c => c.name === userClassName);
                 setIsScheduleAvailable(!!userClassDef?.schedule);
             } else {
@@ -339,7 +339,7 @@ export default function StudyPage() {
 
         if (isFocusMode && isActive) {
             document.documentElement.requestFullscreen().catch(err => {
-                console.error(`Error al activar pantalla completa: ${'\'\'\''}err.message${'\'\'\''}`);
+                console.error(`Error al activar pantalla completa: ${''}${err.message}`);
                 setIsFocusMode(false);
                 toast({
                     title: "Error de Pantalla Completa",
@@ -400,11 +400,11 @@ export default function StudyPage() {
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
-        return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+        return `${''}${String(mins).padStart(2, "0")}:${''}${String(secs).padStart(2, "0")}`;
     };
 
     const formatStudyTime = (totalMinutes: number = 0) => {
-        return `${totalMinutes}m`;
+        return `${''}${totalMinutes}m`;
     };
 
     const progress = useMemo(() => {
@@ -453,6 +453,12 @@ export default function StudyPage() {
     
     const CurrentPlantIcon = PLANT_STAGES[plantStage];
   
+    const isAquaticUnlocked = plantCount >= 60;
+    const collectionTitle = isAquaticUnlocked ? "Mi Acuario" : "Mis Plantas";
+    const CollectionIcon = isAquaticUnlocked ? Waves : TreePine;
+    const collectionButtonText = isAquaticUnlocked ? "Ver mi acuario" : "Ver mi colección";
+    const collectionThemeColor = isAquaticUnlocked ? "from-blue-400 to-cyan-500" : phaseColors;
+
     return (
     <div className="flex flex-col h-screen bg-muted/30">
         <audio ref={audioRef} crossOrigin="anonymous" loop />
@@ -628,22 +634,22 @@ export default function StudyPage() {
                 <Flame className="h-4 w-4" />
                 <AlertTitle className="font-semibold">¡A por la racha!</AlertTitle>
                 <AlertDescription className="text-xs">
-                    Las sesiones de 7 minutos o más cuentan para tu racha diaria y te recompensan con una planta nueva para tu jardín.
+                    Las sesiones de 7 minutos o más cuentan para tu racha diaria y te recompensan con una planta nueva.
                 </AlertDescription>
             </Alert>
             
             <Card className="w-full max-w-sm mx-auto shadow-lg">
                 <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
-                        <TreePine className="h-5 w-5 text-primary"/>
-                        Mis Plantas
+                        <CollectionIcon className="h-5 w-5 text-primary"/>
+                        {collectionTitle}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Button asChild className={cn("w-full bg-gradient-to-br", phaseColors)}>
+                    <Button asChild className={cn("w-full bg-gradient-to-br", collectionThemeColor)}>
                        <Link href="/study/collection">
-                            <TreePine className="mr-2 h-4 w-4" />
-                            Ver mi colección
+                            <CollectionIcon className="mr-2 h-4 w-4" />
+                            {collectionButtonText}
                        </Link>
                     </Button>
                 </CardContent>
@@ -1151,7 +1157,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
               };
               savedDocs.push(newDoc);
               localStorage.setItem('scannedDocuments', JSON.stringify(savedDocs));
-              toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${fileName}" en tu historial.` });
+              toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${''}${fileName}" en tu historial.` });
             } else {
               toast({ title: 'PDF Descargado', description: `El guardado en el historial está desactivado.` });
             }
@@ -1439,10 +1445,10 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
             return;
         }
 
-        const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator`;
+        const embedUrl = `https://open.spotify.com/embed/playlist/${''}${playlistId}?utm_source=generator`;
         
         const newPlaylist: Playlist = {
-            id: `user-${Date.now()}`,
+            id: `user-${''}${Date.now()}`,
             name: newPlaylistName,
             url: embedUrl,
         };
@@ -1450,7 +1456,7 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
         setUserPlaylists(prev => [...prev, newPlaylist]);
         setNewPlaylistName("");
         setNewPlaylistUrl("");
-        toast({ title: "¡Playlist añadida!", description: `"${newPlaylist.name}" se ha guardado.`});
+        toast({ title: "¡Playlist añadida!", description: `"${''}${newPlaylist.name}" se ha guardado.`});
     };
     
     const handleDeletePlaylist = (id: string) => {
@@ -1574,7 +1580,7 @@ function ScienceCalculatorDialog() {
             const resultString = String(result);
             setDisplay(resultString);
             setExpression(resultString);
-            setHistory(prev => [`${expression} = ${resultString}`, ...prev].slice(0, 10));
+            setHistory(prev => [`${''}${expression} = ${''}${resultString}`, ...prev].slice(0, 10));
         } catch (e) {
             setDisplay("Error");
             setExpression("");
