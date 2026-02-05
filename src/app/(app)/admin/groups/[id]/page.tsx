@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit, Group, User as UserIcon, ShieldCheck, Replace, UserX, Move, MessageSquare } from "lucide-react";
+import { ChevronLeft, Search, GraduationCap, PlusCircle, Trash2, Loader2, Copy, Check, Users, CalendarCog, BookOpen, UserCog, Info, Edit, Group, User as UserIcon, ShieldCheck, Replace, UserX, Move, MessageSquare, Pin } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -204,7 +204,7 @@ export default function ManageGroupPage() {
 
                 <div className="py-6">
                     <TabsContent value="classes">
-                        <ClassesTab center={center} visibleClasses={filteredClasses} isGlobalAdmin={canManageAllClasses}/>
+                        <ClassesTab center={center} visibleClasses={filteredClasses} isGlobalAdmin={isGlobalAdmin} canManageAllClasses={canManageAllClasses}/>
                     </TabsContent>
                     {canManageAllClasses && (
                         <TabsContent value="all-members">
@@ -741,7 +741,7 @@ function CustomClassDialog({ onAdd }: { onAdd: (name: string) => Promise<void> }
 const courseOptions = ['1ESO', '2ESO', '3ESO', '4ESO', '1BACH', '2BACH'];
 const classOptions = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
-function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center, visibleClasses: ClassDefinition[], isGlobalAdmin: boolean }) {
+function ClassesTab({ center, visibleClasses, isGlobalAdmin, canManageAllClasses }: { center: Center, visibleClasses: ClassDefinition[], isGlobalAdmin: boolean, canManageAllClasses: boolean }) {
     const [newStandardCourse, setNewStandardCourse] = useState("");
     const [newStandardClassName, setNewStandardClassName] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
@@ -842,6 +842,41 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
             setIsProcessing(false);
         }
     };
+    
+    const handlePinClass = async (classToPin: ClassDefinition) => {
+        if (!firestore || !center.uid) return;
+        setIsProcessing(true);
+        const centerDocRef = doc(firestore, 'centers', center.uid);
+        
+        const updatedClasses = center.classes.map(c => 
+            c.name === classToPin.name 
+            ? { ...c, isPinned: !(c.isPinned ?? false) } 
+            : c
+        );
+
+        try {
+            await updateDoc(centerDocRef, {
+                classes: updatedClasses
+            });
+            toast({ title: classToPin.isPinned ? "Clase desanclada" : "Clase anclada" });
+        } catch (error) {
+            console.error("Error pinning class:", error);
+            toast({ title: "Error", description: "No se pudo actualizar el anclaje.", variant: "destructive" });
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const sortedVisibleClasses = useMemo(() => {
+        return [...visibleClasses].sort((a, b) => {
+            const pinA = a.isPinned ?? false;
+            const pinB = b.isPinned ?? false;
+            if (pinA && !pinB) return -1;
+            if (!aPinned && pinB) return 1;
+            return a.name.localeCompare(b.name);
+        });
+    }, [visibleClasses]);
+
 
     return (
         <Card>
@@ -897,7 +932,7 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
                         <Separator className="my-4" />
                     </>
                 )}
-                {(visibleClasses || []).length === 0 ? (
+                {(sortedVisibleClasses || []).length === 0 ? (
                     <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
                         <GraduationCap className="h-12 w-12 text-muted-foreground/50 mb-4" />
                         <p className="font-semibold">No hay clases</p>
@@ -907,13 +942,17 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        {visibleClasses.map((classObj, index) => (
+                        {sortedVisibleClasses.map((classObj, index) => (
                            <div 
                              key={`class-${index}-${classObj.name}`} 
-                             className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg border bg-muted/50"
+                             className={cn(
+                                "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg border",
+                                classObj.isPinned ? "bg-primary/5 border-primary/50" : "bg-muted/50"
+                             )}
                            >
                              <div className="flex items-center gap-2">
-                                <p className="font-semibold text-base whitespace-nowrap">{classObj.name || "Clase sin nombre"}</p>
+                                {classObj.isPinned && <Pin className="h-4 w-4 text-primary shrink-0"/>}
+                                <p className="font-semibold text-base">{classObj.name || "Clase sin nombre"}</p>
                                 <TeacherInfoDialog />
                              </div>
                              <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap justify-end">
@@ -941,6 +980,11 @@ function ClassesTab({ center, visibleClasses, isGlobalAdmin }: { center: Center,
                                    Calendario
                                  </Link>
                                </Button>
+                                {canManageAllClasses && (
+                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handlePinClass(classObj)} disabled={isProcessing}>
+                                     <Pin className={cn("h-4 w-4", classObj.isPinned && "fill-primary text-primary")} />
+                                   </Button>
+                                )}
                                {isGlobalAdmin && (
                                    <AlertDialog>
                                      <AlertDialogTrigger asChild>

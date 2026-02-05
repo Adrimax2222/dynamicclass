@@ -54,6 +54,7 @@ export type ClassDefinition = {
   imageUrl?: string;
   description?: string;
   isChatEnabled?: boolean;
+  isPinned?: boolean;
 }
 
 export type Center = {
@@ -209,5 +210,3 @@ export interface CustomMode {
   focus: number;
   break: number;
 }
-
-    
