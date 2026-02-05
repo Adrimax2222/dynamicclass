@@ -640,7 +640,7 @@ export default function StudyPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Button asChild className="w-full bg-green-500 hover:bg-green-600">
+                    <Button asChild className={cn("w-full bg-gradient-to-br", phaseColors)}>
                        <Link href="/study/collection">
                             <TreePine className="mr-2 h-4 w-4" />
                             Ver mi colección
@@ -1838,5 +1838,3 @@ function UnitConverter() {
         </Tabs>
     );
 }
-
-    
