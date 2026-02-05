@@ -408,6 +408,19 @@ export default function CollectionPage() {
                         const isUnlocked = plantCount >= plant.unlocksAt;
                         const isPlaceholder = plant.name === 'Próximamente';
 
+                        const isLegendaryPlant = plant.rarity === 'Legendario';
+                        const isLegendaryPathUnlocked = plantCount >= 30; // After completing phase 6 (5 plants/phase * 6 phases)
+
+                        if (isLegendaryPlant && !isLegendaryPathUnlocked) {
+                            return (
+                                <Card key={plant.id} className="border-dashed bg-muted/50 flex flex-col items-center justify-center text-center aspect-square p-4">
+                                    <Lock className="h-10 w-10 text-muted-foreground/50 mb-3" />
+                                    <p className="text-sm font-semibold text-muted-foreground">Camino Legendario</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Completa 30 plantas para desbloquear.</p>
+                                </Card>
+                            )
+                        }
+
                         if (isPlaceholder) {
                             return (
                                 <Card key={plant.id} className="border-dashed bg-muted/50 flex flex-col items-center justify-center text-center aspect-square p-4">
@@ -473,7 +486,7 @@ function PathsDialog({ children, isTerrestrialComplete }: { children: React.Reac
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     {/* Terrestrial Path */}
-                    <Card className="relative overflow-hidden border-2 border-green-500/30 bg-green-50 dark:bg-green-950">
+                    <Card className="relative overflow-hidden border-2 border-green-500/30 bg-green-500 dark:bg-green-950">
                         <Leaf className="absolute -top-2 -left-2 h-10 w-10 text-green-500/10 rotate-12" />
                         <Sprout className="absolute -bottom-2 -right-2 h-10 w-10 text-green-500/10 -rotate-12" />
                         <div className="relative z-10">
