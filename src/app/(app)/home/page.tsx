@@ -602,21 +602,19 @@ export default function HomePage() {
               </CardContent>
           </Card>
         </div>
-        <div>
+        <div className="col-span-2">
             <WipDialog>
-                <Card className="border-accent/50 cursor-pointer hover:bg-accent/10 transition-colors">
-                    <CardHeader className="flex flex-row items-center justify-between p-4 space-y-0">
-                        <div>
-                            <CardTitle className="text-base text-accent flex items-center gap-2">
-                                Mis Cursos
-                                <Badge variant="outline">Próximamente</Badge>
-                            </CardTitle>
-                            <CardDescription>
-                                Cursos personalizados para ampliar tus conocimientos.
-                            </CardDescription>
-                        </div>
+                <Card className="border-accent/50 cursor-pointer hover:bg-accent/10 transition-colors h-full">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Mis Cursos</CardTitle>
                         <Lightbulb className="h-5 w-5 text-accent" />
                     </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">Próximamente</div>
+                        <p className="text-xs text-muted-foreground">
+                            Cursos personalizados para ampliar conocimientos.
+                        </p>
+                    </CardContent>
                 </Card>
             </WipDialog>
         </div>
