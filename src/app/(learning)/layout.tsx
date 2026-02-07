@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -52,22 +51,13 @@ export default function LearningLayout({
             })}
           </div>
            <div className="p-4 border-t">
-              <Button variant="outline" className="w-full" onClick={() => router.push('/home')}>
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Volver a Inicio
+              <Button variant="outline" className="w-full" onClick={() => router.back()}>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Volver
               </Button>
            </div>
         </nav>
 
         <div className="flex flex-col flex-1 md:h-screen md:overflow-hidden">
-            {/* Header for Mobile */}
-            <header className="flex-shrink-0 p-4 border-b flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur-sm z-10 md:hidden">
-              <Button variant="ghost" size="icon" onClick={() => router.push('/home')}>
-                    <ArrowLeft />
-                </Button>
-                <h1 className="text-lg font-bold font-headline">Dynamic Learning</h1>
-                <div className="w-9"></div> {/* Spacer */}
-            </header>
-
             {/* Main Content Area */}
             <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
                 {children}
