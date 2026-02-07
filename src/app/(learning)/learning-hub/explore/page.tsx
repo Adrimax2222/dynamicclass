@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Rocket, TrendingUp, Palette, FlaskConical, Brain, Zap, Wand2, Users, Globe, ShieldCheck } from "lucide-react";
+import { Rocket, TrendingUp, Palette, FlaskConical, Brain, Zap, Wand2, Users, Globe, ShieldCheck, Gamepad2, BrainCircuit, Smartphone, Monitor, Code } from "lucide-react";
 
 const courseSections = [
     {
@@ -122,10 +122,66 @@ const courseSections = [
         icon: ShieldCheck,
         color: "text-slate-500",
         courses: [
-            { title: "Tu Identidad bajo Candado: El Triángulo de Seguridad", description: "Protege tus cuentas de Google, Apple y Microsoft. Aprende a configurar 2FA, usar llaves físicas o biometría y revisar quién tiene acceso a tus cuentas. (Enfoque: Seguridad de cuentas)." },
-            { title: "IA sin Huella: Privacidad con ChatGPT y Midjourney", description: "Usa la IA de forma inteligente y privada. Aprende a usar el 'Modo Incógnito' en ChatGPT, a no subir archivos sensibles y a detectar Deepfakes. (Enfoque: Privacidad y IA)." },
-            { title: "CSI Redes Sociales: Privacidad Extrema", description: "Controla quién puede verte en Instagram y TikTok. Evita que te encuentren por tu número, limpia la ubicación de tus fotos y gestiona permisos de apps. (Enfoque: Privacidad en redes)." },
-            { title: "Manual de Supervivencia en la Calle: Wifi, QR y Enlaces", description: "Aprende a evitar los peligros del mundo físico. No uses Wi-Fis públicas para tu banco, identifica códigos QR maliciosos y enlaces falsos. (Enfoque: Seguridad en el mundo real)." },
+            { title: "Tu Identidad bajo Candado: El Triángulo de Seguridad", description: "Protege tus cuentas de Google, Apple y Microsoft. Aprende a configurar 2FA, usar llaves físicas o biometría y revisar quién tiene acceso a tus cuentas." },
+            { title: "IA sin Huella: Privacidad con ChatGPT y Midjourney", description: "Usa la IA de forma inteligente y privada. Aprende a usar el 'Modo Incógnito' en ChatGPT, a no subir archivos sensibles y a detectar Deepfakes." },
+            { title: "CSI Redes Sociales: Privacidad Extrema", description: "Controla quién puede verte en Instagram y TikTok. Evita que te encuentren por tu número, limpia la ubicación de tus fotos y gestiona permisos de apps." },
+            { title: "Manual de Supervivencia en la Calle: Wifi, QR y Enlaces", description: "Aprende a evitar los peligros del mundo físico. No uses Wi-Fis públicas para tu banco, identifica códigos QR maliciosos y enlaces falsos." },
+        ]
+    },
+    {
+        category: "Sector Aviación",
+        description: "Para los que sueñan con las nubes o simplemente aman la ingeniería de los aviones.",
+        icon: Rocket,
+        color: "text-sky-500",
+        courses: [
+            { title: "Aviation Masterclass: De Pasajero a Capitán", description: "Principios de aerodinámica, cómo leer una cabina 'Glass Cockpit' y fases de un vuelo en simulador. Nivel Pro: Rutas IFR, navegación por radio y emergencias." },
+        ]
+    },
+    {
+        category: "Creación de Videojuegos",
+        description: "Aprovechando que ya pasan tiempo ahí, ¡que aprendan a crearlo!",
+        icon: Gamepad2,
+        color: "text-red-500",
+        courses: [
+            { title: "Roblox Studio: Crea tu primer juego viral", description: "Interfaz de Roblox Studio, construcción de mapas con 'Parts' y nociones básicas de Luau para crear trampas, tiendas y sistemas de puntos." },
+        ]
+    },
+    {
+        category: "Inteligencia Artificial",
+        description: "Desmitificando la \"magia\" para entender la lógica.",
+        icon: BrainCircuit,
+        color: "text-blue-500",
+        courses: [
+            { title: "¿Cómo piensa una IA? Redes Neuronales con Pizza", description: "Aprende Machine Learning, algoritmos y LLMs con ejemplos visuales y sencillos." },
+        ]
+    },
+     {
+        category: "Hardware: Móviles y Gadgets",
+        description: "Para los que siempre miran las \"specs\" antes de comprar.",
+        icon: Smartphone,
+        color: "text-gray-500",
+        courses: [
+            { title: "Smartphone Anatomy: Chips, Sensores y Cámaras", description: "Diferencias entre procesadores, qué hace un sensor de 108MP y cómo leer una comparativa sin que te engañe el marketing." },
+        ]
+    },
+    {
+        category: "Hardware: El Mundo del PC",
+        description: "El curso definitivo para cualquier \"Gamer\" o futuro editor de vídeo.",
+        icon: Monitor,
+        color: "text-gray-700",
+        courses: [
+            { title: "PC Master Builder: Hardware y Optimización total", description: "Elige componentes según tu presupuesto (CPU, GPU, RAM), móntalos y configura el software (BIOS, Drivers) para que el PC vuele." },
+        ]
+    },
+    {
+        category: "Programación Práctica",
+        description: "Aprende a programar con proyectos reales y útiles desde el primer día.",
+        icon: Code,
+        color: "text-green-500",
+        courses: [
+            { title: "Python para 'Lazy People': Automatiza tus tareas", description: "Crea un bot de ofertas, organiza tus carpetas automáticamente o haz un raspado de datos de una web." },
+            { title: "HTML & CSS: Tu primera Web desde cero", description: "Aprende la estructura de internet (HTML) y el diseño visual (CSS) para publicar tu propia página personal online." },
+            { title: "Arduino Makers: Electrónica que cobra vida", description: "Usa la 'protoboard' y programa sensores de movimiento, luces LED rítmicas o un termómetro digital." },
         ]
     }
 ];
