@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Rocket, TrendingUp, Palette, FlaskConical, Brain, Zap, Wand2, Users, Globe } from "lucide-react";
+import { Rocket, TrendingUp, Palette, FlaskConical, Brain, Zap, Wand2, Users, Globe, ShieldCheck } from "lucide-react";
 
 const courseSections = [
     {
@@ -114,6 +114,18 @@ const courseSections = [
             { title: "Mitos del Espacio", description: "¿Explotas en el vacío? ¿Hay sonido en el espacio? (Enfoque: Astronomía básica)." },
             { title: "Historia de las Zapatillas (Sneakerhead 101)", description: "De las Jordan a las Yeezy, el negocio y la cultura. (Enfoque: Historia cultural y marketing)." },
             { title: "Mecánica de Bicicletas", description: "Arregla un pinchazo y ajusta los frenos tú mismo. (Enfoque: Mecánica básica)." },
+        ]
+    },
+    {
+        category: "Cursos de Autodefensa Digital",
+        description: "Aprende a proteger tu identidad y tus datos en el mundo online.",
+        icon: ShieldCheck,
+        color: "text-slate-500",
+        courses: [
+            { title: "Tu Identidad bajo Candado: El Triángulo de Seguridad", description: "Protege tus cuentas de Google, Apple y Microsoft. Aprende a configurar 2FA, usar llaves físicas o biometría y revisar quién tiene acceso a tus cuentas. (Enfoque: Seguridad de cuentas)." },
+            { title: "IA sin Huella: Privacidad con ChatGPT y Midjourney", description: "Usa la IA de forma inteligente y privada. Aprende a usar el 'Modo Incógnito' en ChatGPT, a no subir archivos sensibles y a detectar Deepfakes. (Enfoque: Privacidad y IA)." },
+            { title: "CSI Redes Sociales: Privacidad Extrema", description: "Controla quién puede verte en Instagram y TikTok. Evita que te encuentren por tu número, limpia la ubicación de tus fotos y gestiona permisos de apps. (Enfoque: Privacidad en redes)." },
+            { title: "Manual de Supervivencia en la Calle: Wifi, QR y Enlaces", description: "Aprende a evitar los peligros del mundo físico. No uses Wi-Fis públicas para tu banco, identifica códigos QR maliciosos y enlaces falsos. (Enfoque: Seguridad en el mundo real)." },
         ]
     }
 ];
