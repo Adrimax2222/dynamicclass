@@ -1,7 +1,8 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Rocket, TrendingUp, Palette, FlaskConical, Brain, Zap, Wand2, Users, Globe, ShieldCheck, Gamepad2, BrainCircuit, Smartphone, Monitor, Code } from "lucide-react";
+import { Rocket, TrendingUp, Palette, FlaskConical, Brain, Zap, Wand2, Users, Globe, ShieldCheck, Gamepad2, BrainCircuit, Smartphone, Monitor, Code, Scale } from "lucide-react";
 
 const courseSections = [
     {
@@ -117,7 +118,7 @@ const courseSections = [
         ]
     },
     {
-        category: "Cursos de Autodefensa Digital",
+        category: "Autodefensa Digital",
         description: "Aprende a proteger tu identidad y tus datos en el mundo online.",
         icon: ShieldCheck,
         color: "text-slate-500",
@@ -179,9 +180,48 @@ const courseSections = [
         icon: Code,
         color: "text-green-500",
         courses: [
-            { title: "Python para 'Lazy People': Automatiza tus tareas", description: "Crea un bot de ofertas, organiza tus carpetas automáticamente o haz un raspado de datos de una web." },
+            { title: "Python para \"Lazy People\": Automatiza tus tareas", description: "Crea un bot de ofertas, organiza tus carpetas automáticamente o haz un raspado de datos de una web." },
             { title: "HTML & CSS: Tu primera Web desde cero", description: "Aprende la estructura de internet (HTML) y el diseño visual (CSS) para publicar tu propia página personal online." },
             { title: "Arduino Makers: Electrónica que cobra vida", description: "Usa la 'protoboard' y programa sensores de movimiento, luces LED rítmicas o un termómetro digital." },
+        ]
+    },
+    {
+        category: "Sistemas Operativos (SO)",
+        description: "No es solo \"qué botones apretar\", sino entender el motor que mueve tu mundo.",
+        icon: Monitor,
+        color: "text-gray-700",
+        courses: [
+            { title: "Duelo de Sistemas: Windows, macOS o Linux, ¿cuál es tu \"Main\"?", description: "Cómo funciona el Kernel (el corazón del sistema), la gestión de archivos y la privacidad de datos. Incluye un test interactivo para encontrar tu SO ideal: ¿Eres un Power User (Linux), un creador (Mac) o un todoterreno (Windows)?" },
+        ]
+    },
+    {
+        category: "Programación Visual (STEAM)",
+        description: "Perfecto para los que quieren ver resultados físicos sin pelearse con el código escrito todavía.",
+        icon: Wand2,
+        color: "text-rose-500",
+        courses: [
+            { title: "Arduino STEAMakers: Programación por Bloques para Inventores", description: "La lógica de programación (bucles, variables, condicionales) usando el entorno de ArduinoBlocks. Aprenderán a conectar la placa STEAMakers para encender luces, mover motores o leer sensores ambientales sin escribir ni una línea de código." },
+        ]
+    },
+    {
+        category: "Verdad vs. Mentira en Internet",
+        description: "Habilidades de detective para no ser manipulado.",
+        icon: ShieldCheck,
+        color: "text-slate-500",
+        courses: [
+            { title: "Digital Detective: Cómo detectar Fake News y estafas en segundos", description: "Técnicas de \"Lectura Lateral\" (investigar quién dice qué), búsqueda inversa de imágenes para ver si una foto es vieja o falsa, y cómo funcionan los algoritmos de las redes para encerrarte en una \"burbuja de eco\"." },
+        ]
+    },
+    {
+        category: "Política y Sociedad (Neutral y Claro)",
+        description: "Para entender de qué hablan los adultos y formar tu propia opinión.",
+        icon: Scale,
+        color: "text-cyan-500",
+        courses: [
+            { title: "La Brújula Política: ¿Dónde estás tú?", description: "El origen de la \"Izquierda\" y la \"Derecha\" (desde la Revolución Francesa), qué significan conceptos como liberalismo, socialismo o conservadurismo, y cómo leer un programa electoral para saber qué apoyan realmente." },
+            { title: "Economía de Bolsillo: Impuestos, IVA y tu primer sueldo", description: "Explica de forma simple qué es el IVA que pagan al comprar un juego, por qué el gobierno quita una parte del sueldo (IRPF) y cómo funciona un banco por dentro." },
+            { title: "Psicología del Scroll Infinito: Hackea tu cerebro", description: "Enseña cómo las apps de redes sociales usan el sistema de recompensa (dopamina) para mantenerte enganchado y cómo recuperar el control de tu tiempo." },
+            { title: "Ética de la IA: ¿Es arte lo que hace Midjourney?", description: "Un curso de debate sobre los derechos de autor, el futuro del trabajo y si una IA debería tener \"responsabilidad\" por sus actos." },
         ]
     }
 ];
