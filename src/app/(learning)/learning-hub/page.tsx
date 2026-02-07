@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -35,7 +36,7 @@ function ExploreContent() {
                 <h2 className="text-2xl font-bold font-headline tracking-tight">Explora Nuevos Cursos</h2>
                 <p className="text-muted-foreground">Amplía tus conocimientos y descubre nuevas pasiones.</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {courseCategories.map(category => (
                     <Card key={category.title} className="hover:border-primary/50 transition-colors cursor-pointer hover:shadow-lg">
                         <CardHeader>
@@ -59,21 +60,23 @@ function MyCoursesContent() {
                 <h2 className="text-2xl font-bold font-headline tracking-tight">Mis Cursos</h2>
                 <p className="text-muted-foreground">Continúa donde lo dejaste.</p>
             </div>
-            {myCoursesData.map(course => (
-                 <Card key={course.title} className="overflow-hidden">
-                    <CardContent className="p-4">
-                        <p className="text-xs font-semibold uppercase text-primary">{course.category}</p>
-                        <h3 className="font-bold">{course.title}</h3>
-                        <div className="flex items-center gap-4 mt-2">
-                            <Progress value={course.progress} className="w-full h-2" />
-                            <span className="text-sm font-semibold">{course.progress}%</span>
-                        </div>
-                    </CardContent>
-                    <CardFooter className="bg-muted/50 p-3">
-                         <Button size="sm" className="w-full">Continuar Curso</Button>
-                    </CardFooter>
-                </Card>
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {myCoursesData.map(course => (
+                    <Card key={course.title} className="overflow-hidden">
+                        <CardContent className="p-4">
+                            <p className="text-xs font-semibold uppercase text-primary">{course.category}</p>
+                            <h3 className="font-bold">{course.title}</h3>
+                            <div className="flex items-center gap-4 mt-2">
+                                <Progress value={course.progress} className="w-full h-2" />
+                                <span className="text-sm font-semibold">{course.progress}%</span>
+                            </div>
+                        </CardContent>
+                        <CardFooter className="bg-muted/50 p-3">
+                            <Button size="sm" className="w-full">Continuar Curso</Button>
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
         </div>
     );
 }
@@ -102,11 +105,11 @@ function ClassmatesContent() {
 
     if (isLoading) {
         return (
-             <div className="space-y-4">
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
+             <div className="max-w-lg mx-auto space-y-3">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
             </div>
         )
     }
@@ -127,17 +130,19 @@ function ClassmatesContent() {
                 <h2 className="text-2xl font-bold font-headline tracking-tight">Compañeros de Clase</h2>
                 <p className="text-muted-foreground">Conecta con los miembros de tu grupo.</p>
             </div>
-            {classmates.map(c => (
-                <Card key={c.uid}>
-                    <CardContent className="p-3 flex items-center gap-4">
-                        <AvatarDisplay user={c} className="h-12 w-12" />
-                        <div>
-                            <p className="font-semibold">{c.name}</p>
-                            <p className="text-xs text-muted-foreground">{c.email}</p>
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
+            <div className="max-w-lg mx-auto space-y-3">
+                {classmates.map(c => (
+                    <Card key={c.uid}>
+                        <CardContent className="p-3 flex items-center gap-4">
+                            <AvatarDisplay user={c} className="h-12 w-12" />
+                            <div>
+                                <p className="font-semibold">{c.name}</p>
+                                <p className="text-xs text-muted-foreground">{c.email}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
         </div>
     );
 }
@@ -145,9 +150,9 @@ function ClassmatesContent() {
 
 export default function LearningHubPage() {
     return (
-        <div className="p-4 sm:p-6">
+        <div className="p-4 sm:p-6 md:p-8">
             <Tabs defaultValue="explore" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsList className="grid w-full max-w-lg mx-auto grid-cols-3 mb-6">
                     <TabsTrigger value="explore"><Compass className="h-4 w-4 mr-2"/>Explorar</TabsTrigger>
                     <TabsTrigger value="my-courses"><BookUser className="h-4 w-4 mr-2"/>Mis Cursos</TabsTrigger>
                     <TabsTrigger value="classmates"><Users className="h-4 w-4 mr-2"/>Compañeros</TabsTrigger>
