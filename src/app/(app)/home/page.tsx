@@ -55,6 +55,7 @@ import { Separator } from "@/components/ui/separator";
 import { TeacherInfoDialog } from "@/components/layout/teacher-info-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { WhatsNewDialog } from "@/components/layout/whats-new-dialog";
+import { WipDialog } from "@/components/layout/wip-dialog";
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Anuncios";
 
@@ -602,6 +603,21 @@ export default function HomePage() {
               </CardContent>
           </Card>
         </div>
+        <div className="col-span-2">
+            <WipDialog>
+                <Card className="border-accent/50 cursor-pointer hover:bg-accent/10 transition-colors">
+                    <CardHeader className="p-4">
+                        <CardTitle className="flex items-center gap-2 text-accent">
+                            <Lightbulb />
+                            Mis Cursos
+                        </CardTitle>
+                        <CardDescription>
+                            Cursos personalizados para ampliar tus conocimientos.
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            </WipDialog>
+        </div>
       </div>
 
        <section className="mb-10">
@@ -1015,3 +1031,6 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
 
 
 
+
+
+    
