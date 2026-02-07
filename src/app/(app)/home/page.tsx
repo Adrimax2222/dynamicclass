@@ -604,16 +604,13 @@ export default function HomePage() {
         </div>
         <div className="col-span-2">
             <WipDialog>
-                <Card className="border-accent/50 cursor-pointer hover:bg-accent/10 transition-colors h-full">
+                <Card className="border-accent/50 cursor-pointer hover:bg-accent/10 transition-colors">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Mis Cursos</CardTitle>
                         <Lightbulb className="h-5 w-5 text-accent" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">Próximamente</div>
-                        <p className="text-xs text-muted-foreground">
-                            Cursos personalizados para ampliar conocimientos.
-                        </p>
                     </CardContent>
                 </Card>
             </WipDialog>
@@ -1007,5 +1004,3 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
-
-    
