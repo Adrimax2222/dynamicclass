@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
+  { href: "/learning-hub/about", label: "Dynamic Learning", icon: GraduationCap },
   { href: "/learning-hub/explore", label: "Explorar", icon: Compass },
   { href: "/learning-hub/my-courses", label: "Mis Cursos", icon: BookUser },
   { href: "/learning-hub/classmates", label: "Compañeros", icon: Users },
@@ -65,7 +66,7 @@ export default function LearningLayout({
 
             {/* Bottom Nav for Mobile */}
             <nav className="flex-shrink-0 border-t bg-card/95 backdrop-blur-sm sticky bottom-0 z-10 md:hidden">
-            <div className="mx-auto grid h-16 max-w-md grid-cols-3 items-center">
+            <div className="mx-auto grid h-16 max-w-md grid-cols-4 items-center">
                 {navItems.map((item) => {
                 const isActive = pathname.startsWith(item.href);
                 return (
