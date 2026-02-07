@@ -1,8 +1,7 @@
-
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Rocket, TrendingUp, Palette, FlaskConical, Brain, Zap, Wand2, Users, Globe, ShieldCheck, Gamepad2, BrainCircuit, Smartphone, Monitor, Code, Scale } from "lucide-react";
+import { Rocket, TrendingUp, Palette, FlaskConical, Brain, Zap, Wand2, Users, Globe, ShieldCheck, Gamepad2, BrainCircuit, Smartphone, Monitor, Code, Scale, Heart } from "lucide-react";
 
 const courseSections = [
     {
@@ -63,6 +62,38 @@ const courseSections = [
             { title: "Neurociencia del Aprendizaje", description: "Hackea tu cerebro para estudiar menos y aprender más. (Enfoque: Psicología cognitiva y técnicas de estudio)." },
             { title: "Nutrición Deportiva Real", description: "Bioquímica de los alimentos vs. mitos de internet. (Enfoque: Biología y salud)." },
             { title: "Sostenibilidad y Moda", description: "El impacto ambiental de la ropa (Fast Fashion) y el Upcycling. (Enfoque: Ecología y sociología)." },
+            { title: "\"Adulting\" Starter Pack: Cosas que el colegio olvidó", description: "Cómo leer un contrato de alquiler, qué es una factura de la luz, cómo se pide una cita médica solo y qué hacer si pierdes el DNI." },
+        ]
+    },
+     {
+        category: "Inteligencia Emocional y Mental",
+        description: "Para entender qué pasa por la cabeza cuando todo parece un lío.",
+        icon: Brain,
+        color: "text-teal-500",
+        courses: [
+            { title: "Inteligencia Emocional: \"Modo Pro\"", description: "Cómo identificar qué sientes (¿es rabia o es tristeza?), técnicas para que una emoción no te arruine el día y cómo responder en lugar de reaccionar." },
+            { title: "Braintuning: El Manual contra la Ansiedad y el Estrés", description: "Por qué el cerebro se bloquea antes de un examen o una cita, y ejercicios prácticos (como la respiración 4-7-8) para bajar las revoluciones en 60 segundos." },
+        ]
+    },
+    {
+        category: "Cuerpo, Identidad y Relaciones",
+        description: "Sin filtros, centrado en el respeto y la realidad.",
+        icon: Heart,
+        color: "text-rose-500",
+        courses: [
+            { title: "Cuerpo y Relaciones: Lo que no sale en las películas (ni en el porno)", description: "La realidad de los cuerpos (diversidad, vello, estrías), el concepto de consentimiento real, cómo poner límites sin sentir culpa y salud sexual básica desde la prevención y el autocuidado." },
+            { title: "Amor Propio vs. El Espejo de Instagram", description: "Cómo los filtros y la edición afectan nuestra percepción, la diferencia entre \"quererse\" y ser narcisista, y cómo construir una relación sana con tu propia imagen." },
+        ]
+    },
+    {
+        category: "Socializar y Cultura del \"Clout\"",
+        description: "Para navegar la jungla social de hoy en día.",
+        icon: Users,
+        color: "text-cyan-500",
+        courses: [
+            { title: "Socializar en la Era del Algoritmo: El Arte de Conectar", description: "Cómo iniciar una conversación sin que sea \"awkward\", cómo leer el lenguaje corporal en una fiesta y la diferencia entre tener muchos \"seguidores\" y tener amigos reales." },
+            { title: "Presión Social y \"Clout\": ¿Lo haces porque quieres o por el vídeo?", description: "Por qué buscamos llamar la atención (la dopamina del reconocimiento), cómo decir \"no\" cuando todo el grupo hace algo que no te late, y el análisis de las polémicas virales (¿por qué nos enganchan?)." },
+            { title: "Marca Personal: Tú eres un logo (aunque no lo sepas)", description: "Todo lo que publicas en internet es tu CV del futuro. Cómo crear una imagen digital que te abra puertas en lugar de cerrarlas, sin dejar de ser tú mismo." },
         ]
     },
     {
@@ -118,7 +149,7 @@ const courseSections = [
         ]
     },
     {
-        category: "Autodefensa Digital",
+        category: "Cursos de Autodefensa Digital",
         description: "Aprende a proteger tu identidad y tus datos en el mundo online.",
         icon: ShieldCheck,
         color: "text-slate-500",
@@ -181,7 +212,7 @@ const courseSections = [
         color: "text-green-500",
         courses: [
             { title: "Python para \"Lazy People\": Automatiza tus tareas", description: "Crea un bot de ofertas, organiza tus carpetas automáticamente o haz un raspado de datos de una web." },
-            { title: "HTML & CSS: Tu primera Web desde cero", description: "Aprende la estructura de internet (HTML) y el diseño visual (CSS) para publicar tu propia página personal online." },
+            { title: "HTML & CSS: Tu primera Web desde cero", description: "Aprende la estructura de internet (etiquetas HTML) y el diseño visual (CSS) para publicar tu propia página personal online." },
             { title: "Arduino Makers: Electrónica que cobra vida", description: "Usa la 'protoboard' y programa sensores de movimiento, luces LED rítmicas o un termómetro digital." },
         ]
     },
