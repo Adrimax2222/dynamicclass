@@ -1,8 +1,7 @@
 
-
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -603,7 +602,7 @@ export default function HomePage() {
               </CardContent>
           </Card>
         </div>
-        <div className="col-span-2">
+        <div>
             <WipDialog>
                 <Card className="border-accent/50 cursor-pointer hover:bg-accent/10 transition-colors">
                     <CardHeader className="flex flex-row items-center justify-between p-4 space-y-0">
@@ -1010,30 +1009,5 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
-
-    
-
-    
-
-    
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
 
     
