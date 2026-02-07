@@ -1,8 +1,7 @@
-
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Rocket, TrendingUp, Palette, FlaskConical, Brain } from "lucide-react";
+import { Rocket, TrendingUp, Palette, FlaskConical, Brain, Zap, Wand2, Users, Globe } from "lucide-react";
 
 const courseSections = [
     {
@@ -63,6 +62,58 @@ const courseSections = [
             { title: "Neurociencia del Aprendizaje", description: "Hackea tu cerebro para estudiar menos y aprender más. (Enfoque: Psicología cognitiva y técnicas de estudio)." },
             { title: "Nutrición Deportiva Real", description: "Bioquímica de los alimentos vs. mitos de internet. (Enfoque: Biología y salud)." },
             { title: "Sostenibilidad y Moda", description: "El impacto ambiental de la ropa (Fast Fashion) y el Upcycling. (Enfoque: Ecología y sociología)." },
+        ]
+    },
+    {
+        category: "Habilidades Digitales \"Cool\" & Rápidas",
+        description: "Cosas que pueden usar ya mismo en sus móviles.",
+        icon: Zap,
+        color: "text-yellow-500",
+        courses: [
+            { title: "Edición Viral con CapCut", description: "Trucos de edición, transiciones y efectos para TikTok/Reels. (Enfoque: Narrativa audiovisual)." },
+            { title: "Crea tus propios Filtros de Instagram/TikTok", description: "Introducción a Spark AR. (Enfoque: Diseño y realidad aumentada básica)." },
+            { title: "Pixel Art", description: "Aprende a dibujar estilo \"retro\" 8-bit para videojuegos o iconos. (Enfoque: Arte digital y geometría)." },
+            { title: "Google Hacking", description: "Aprende a buscar en Google como un pro (comandos para encontrar archivos ocultos, PDFs, etc.). (Enfoque: Investigación y gestión de información)." },
+            { title: "Seguridad de Contraseñas", description: "Cómo crear claves invencibles y gestionar tus cuentas. (Enfoque: Higiene digital)." },
+        ]
+    },
+    {
+        category: "Creatividad y \"Flow\"",
+        description: "Arte y expresión, pero sin la teoría aburrida.",
+        icon: Wand2,
+        color: "text-rose-500",
+        courses: [
+            { title: "Cómo escribir barras de Rap/Trap", description: "Rimas, métrica y figuras retóricas (metáforas, similes). (Enfoque: Poesía y literatura)." },
+            { title: "Stop Motion con tu Móvil", description: "Anima tus Legos o muñecos frame a frame. (Enfoque: Principios de animación)." },
+            { title: "Lettering y Apuntes Bonitos", description: "Mejora tu letra y organiza tus cuadernos. (Enfoque: Caligrafía y diseño)." },
+            { title: "Fotografía de Producto con el Móvil", description: "Haz que tus zapatillas o comida se vean de anuncio para venderlas en Vinted/Wallapop. (Enfoque: Iluminación y composición)." },
+            { title: "Customiza tu Ropa (Upcycling)", description: "Pintura textil y cortes básicos para renovar camisetas viejas. (Enfoque: Diseño de moda y sostenibilidad)." },
+        ]
+    },
+    {
+        category: "Habilidades Sociales y Mentales",
+        description: "Trucos psicológicos y lógicos fáciles de digerir.",
+        icon: Users,
+        color: "text-cyan-500",
+        courses: [
+            { title: "Lenguaje Corporal Básico", description: "Cómo saber si alguien te miente o si le gustas. (Enfoque: Psicología del comportamiento)." },
+            { title: "Detectar Falacias Lógicas", description: "Que no te engañen en una discusión (el hombre de paja, ad hominem, etc.). (Enfoque: Lógica y pensamiento crítico)." },
+            { title: "Paradojas que te explotan la cabeza", description: "El gato de Schrödinger o la paradoja del abuelo explicadas fácil. (Enfoque: Filosofía y lógica)." },
+            { title: "Mindfulness para Gamers", description: "Cómo controlar el \"Rage Quit\" y la frustración al perder. (Enfoque: Inteligencia emocional)." },
+            { title: "Inglés de la Calle (Slang)", description: "Aprende las frases de las series y canciones que no salen en los libros de texto. (Enfoque: Sociolingüística)." },
+        ]
+    },
+    {
+        category: "Curiosidades y Mundo Real",
+        description: "Cultura general, pero divertida.",
+        icon: Globe,
+        color: "text-lime-500",
+        courses: [
+            { title: "Banderas del Mundo (Vexilología)", description: "Por qué son como son y cómo diseñar una bandera propia. (Enfoque: Geografía y diseño)." },
+            { title: "Supervivencia Básica", description: "Nudos, orientación sin brújula y potabilizar agua. (Enfoque: Escultismo y física aplicada)." },
+            { title: "Mitos del Espacio", description: "¿Explotas en el vacío? ¿Hay sonido en el espacio? (Enfoque: Astronomía básica)." },
+            { title: "Historia de las Zapatillas (Sneakerhead 101)", description: "De las Jordan a las Yeezy, el negocio y la cultura. (Enfoque: Historia cultural y marketing)." },
+            { title: "Mecánica de Bicicletas", description: "Arregla un pinchazo y ajusta los frenos tú mismo. (Enfoque: Mecánica básica)." },
         ]
     }
 ];
