@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -603,17 +602,19 @@ export default function HomePage() {
           </Card>
         </div>
         <div className="col-span-2">
-            <WipDialog>
+            <Link href="/learning-hub">
                 <Card className="border-accent/50 cursor-pointer hover:bg-accent/10 transition-colors">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Mis Cursos</CardTitle>
                         <Lightbulb className="h-5 w-5 text-accent" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">Próximamente</div>
+                        <div className="text-2xl font-bold flex items-center gap-2">
+                           Explorar <ArrowRight className="h-5 w-5" />
+                        </div>
                     </CardContent>
                 </Card>
-            </WipDialog>
+            </Link>
         </div>
       </div>
 
