@@ -2,17 +2,17 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useApp } from "@/lib/hooks/use-app";
 import { useRouter } from "next/navigation";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, doc, getDocs, writeBatch, query, orderBy, updateDoc, deleteDoc, increment, addDoc, serverTimestamp, setDoc, where } from "firebase/firestore";
-import type { User, Center } from "@/lib/types";
+import { collection, doc, getDocs, writeBatch, query, orderBy, updateDoc, deleteDoc, increment, addDoc, serverTimestamp, setDoc, where, collectionGroup, onSnapshot } from "firebase/firestore";
+import type { User, Center, ReservedCourse } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Users, Group, Trophy, ChevronLeft, Search, UserX, Trash2, CheckCircle, Ban, Loader2, Wrench, PlusCircle, MinusCircle, Copy, Check, Edit, Pin, Image as ImageIcon, RefreshCw, TreePine } from "lucide-react";
+import { Shield, Users, Group, Trophy, ChevronLeft, Search, UserX, Trash2, CheckCircle, Ban, Loader2, Wrench, PlusCircle, MinusCircle, Copy, Check, Edit, Pin, Image as ImageIcon, RefreshCw, TreePine, GraduationCap } from "lucide-react";
 import LoadingScreen from "@/components/layout/loading-screen";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -65,11 +65,12 @@ export default function AdminPage() {
             </header>
 
             <Tabs defaultValue="groups" className="w-full">
-                <TabsList className={cn("grid w-full", user.role === 'center-admin' ? 'grid-cols-1' : 'grid-cols-4')}>
-                    {user.role === 'admin' && <TabsTrigger value="users"><Users className="h-4 w-4 mr-2" />Usuarios</TabsTrigger>}
-                    {user.role === 'admin' && <TabsTrigger value="trophies"><Trophy className="h-4 w-4 mr-2" />Trofeos</TabsTrigger>}
-                    {user.role === 'admin' && <TabsTrigger value="plants"><TreePine className="h-4 w-4 mr-2" />Plantas</TabsTrigger>}
-                    <TabsTrigger value="groups"><Group className="h-4 w-4 mr-2" />Grupos</TabsTrigger>
+                <TabsList className={cn("grid w-full", user.role === 'center-admin' ? 'grid-cols-1' : 'grid-cols-5')}>
+                    {user.role === 'admin' && <TabsTrigger value="users"><Users className="h-5 w-5" /></TabsTrigger>}
+                    {user.role === 'admin' && <TabsTrigger value="trophies"><Trophy className="h-5 w-5" /></TabsTrigger>}
+                    {user.role === 'admin' && <TabsTrigger value="plants"><TreePine className="h-5 w-5" /></TabsTrigger>}
+                    <TabsTrigger value="groups"><Group className="h-5 w-5" /></TabsTrigger>
+                     {user.role === 'admin' && <TabsTrigger value="courses"><GraduationCap className="h-5 w-5" /></TabsTrigger>}
                 </TabsList>
 
                 <div className="py-6">
@@ -81,8 +82,11 @@ export default function AdminPage() {
                             <TabsContent value="trophies">
                                 <TrophiesTab />
                             </TabsContent>
-                            <TabsContent value="plants">
+                             <TabsContent value="plants">
                                 <PlantsTab />
+                            </TabsContent>
+                             <TabsContent value="courses">
+                                <CoursesTab />
                             </TabsContent>
                         </>
                     )}
@@ -485,6 +489,143 @@ function PlantsTab() {
     );
 }
 
+function CoursesTab() {
+    const firestore = useFirestore();
+    const [courses, setCourses] = useState<Map<string, { users: User[], category: string }>>(new Map());
+    const [allUsers, setAllUsers] = useState<Map<string, User>>(new Map());
+    const [allCenters, setAllCenters] = useState<Center[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!firestore) return;
+        
+        const fetchInitialData = async () => {
+            setIsLoading(true);
+            try {
+                const usersSnapshot = await getDocs(query(collection(firestore, "users")));
+                const usersMap = new Map<string, User>();
+                usersSnapshot.forEach(doc => {
+                    usersMap.set(doc.id, { uid: doc.id, ...doc.data() } as User);
+                });
+                setAllUsers(usersMap);
+                
+                const centersSnapshot = await getDocs(query(collection(firestore, "centers")));
+                const centersList = centersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Center));
+                setAllCenters(centersList);
+
+            } catch (error) {
+                console.error("Error fetching initial data for CoursesTab:", error);
+            }
+        };
+        
+        fetchInitialData();
+    }, [firestore]);
+
+    useEffect(() => {
+        if (!firestore || allUsers.size === 0) {
+            if (allUsers.size > 0) setIsLoading(false);
+            return;
+        }
+
+        const coursesQuery = collectionGroup(firestore, 'reservedCourses');
+        const unsubscribe = onSnapshot(coursesQuery, (snapshot) => {
+            const reservationsByCourse = new Map<string, { users: User[], category: string }>();
+            
+            snapshot.docs.forEach(doc => {
+                const courseData = doc.data() as ReservedCourse;
+                const userId = doc.ref.parent.parent?.id;
+
+                if (userId && allUsers.has(userId)) {
+                    const user = allUsers.get(userId)!;
+                    
+                    if (!reservationsByCourse.has(courseData.courseTitle)) {
+                        reservationsByCourse.set(courseData.courseTitle, { users: [], category: courseData.category });
+                    }
+                    reservationsByCourse.get(courseData.courseTitle)!.users.push(user);
+                }
+            });
+            setCourses(reservationsByCourse);
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Error listening to reserved courses:", error);
+            setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+
+    }, [firestore, allUsers]);
+    
+    const sortedCourses = useMemo(() => {
+        return Array.from(courses.entries()).sort((a, b) => b[1].users.length - a[1].users.length);
+    }, [courses]);
+
+    const getCenterName = (user: User) => {
+        const center = allCenters.find(c => c.uid === user.organizationId);
+        return center ? center.name : user.center;
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Cursos Reservados</CardTitle>
+                <CardDescription>Visualiza qué cursos tienen más interés entre los usuarios.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                    <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin"/></div>
+                ) : sortedCourses.length === 0 ? (
+                    <div className="text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg">
+                        <p className="font-semibold">Nadie ha reservado ningún curso todavía.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+                        {sortedCourses.map(([courseTitle, data]) => (
+                            <Dialog key={courseTitle}>
+                                <DialogTrigger asChild>
+                                    <button className="w-full flex items-center gap-4 p-3 rounded-lg border text-left hover:bg-muted/50 transition-colors">
+                                        <div className="flex-1">
+                                            <p className="font-semibold">{courseTitle}</p>
+                                            <p className="text-xs text-muted-foreground">{data.category}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 font-bold text-lg">
+                                            <Users className="h-5 w-5 text-muted-foreground"/>
+                                            <span>{data.users.length}</span>
+                                        </div>
+                                    </button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-lg">
+                                    <DialogHeader>
+                                        <DialogTitle>Reservas para "{courseTitle}"</DialogTitle>
+                                        <DialogDescription>{data.users.length} usuario(s) han reservado este curso.</DialogDescription>
+                                    </DialogHeader>
+                                    <div className="max-h-[50vh] overflow-y-auto -mx-6 px-6">
+                                        <div className="space-y-2">
+                                            {data.users.map(u => (
+                                                <div key={u.uid} className="flex items-center gap-3 p-2 rounded-md bg-muted/50">
+                                                    <AvatarDisplay user={u} className="h-9 w-9" />
+                                                    <div className="flex-1">
+                                                        <p className="font-semibold text-sm">{u.name}</p>
+                                                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                                                    </div>
+                                                    <Badge variant="outline">{getCenterName(u)}</Badge>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <DialogFooter>
+                                        <DialogClose asChild>
+                                            <Button variant="outline">Cerrar</Button>
+                                        </DialogClose>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        ))}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
 
 function GroupsTab({ user }: { user: User }) {
     const firestore = useFirestore();
@@ -651,3 +792,4 @@ function GroupsTab({ user }: { user: User }) {
     
 
     
+
