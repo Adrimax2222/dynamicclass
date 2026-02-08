@@ -266,6 +266,7 @@ function ShopTab({ user }: { user: User }) {
 function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof shopItems[0], trophiesPerEuro: number, userTrophies: number }) {
     const [selectedValue, setSelectedValue] = useState(item.values[0].toString());
     const cost = parseInt(selectedValue) * trophiesPerEuro;
+    const plantCost = cost / 2;
     const canAfford = userTrophies >= cost;
     const Icon = item.icon;
 
@@ -288,9 +289,15 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
                                 ))}
                             </SelectContent>
                         </Select>
-                        <div className="flex items-center gap-1 font-bold text-xs text-yellow-500 bg-amber-500/10 px-1.5 py-1 rounded-md">
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 text-center">
+                        <div className="flex items-center justify-center gap-1 font-bold text-xs text-yellow-500 bg-amber-500/10 px-1.5 py-1 rounded-md">
                             <Trophy className="h-3 w-3" />
                             <span>{cost}</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-1 font-bold text-xs text-green-500 bg-green-500/10 px-1.5 py-1 rounded-md">
+                            <TreePine className="h-3 w-3" />
+                            <span>{plantCost}</span>
                         </div>
                     </div>
                 </div>
