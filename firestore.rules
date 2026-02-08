@@ -92,6 +92,11 @@ service cloud.firestore {
       match /events/{eventId} {
         allow list, get, create, update, delete: if isOwner(userId);
       }
+
+      // Reserved Courses subcollection
+      match /reservedCourses/{courseId} {
+        allow list, get, create, delete: if isOwner(userId);
+      }
       
       // ============= CHATBOT: Chats & Messages =============
       
@@ -206,5 +211,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

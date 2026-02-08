@@ -36,6 +36,18 @@
       },
       "required": ["uid", "name", "email", "role", "avatar", "course", "className", "center", "ageRange", "isNewUser"]
     },
+    "ReservedCourse": {
+      "title": "Reserved Course",
+      "description": "Represents a course a user has reserved.",
+      "type": "object",
+      "properties": {
+        "courseTitle": { "type": "string" },
+        "category": { "type": "string" },
+        "progress": { "type": "number" },
+        "reservedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courseTitle", "category", "progress", "reservedAt"]
+    },
     "UserToken": {
       "title": "User Token",
       "description": "Stores a user's Firebase Cloud Messaging (FCM) token for push notifications.",
@@ -252,6 +264,10 @@
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profile information."
     },
+    "/users/{userId}/reservedCourses/{courseId}": {
+      "schema": { "$ref": "#/entities/ReservedCourse" },
+      "description": "Stores courses reserved by the user."
+    },
     "/users/{userId}/notes/{noteId}": {
       "schema": { "$ref": "#/entities/Note" },
       "description": "Stores personal notes for each user."
@@ -294,5 +310,3 @@
     }
   }
 }
-
-    

@@ -5,8 +5,14 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Search, Rocket, TrendingUp, Palette, FlaskConical, Brain, Code, ShieldCheck, Gamepad2, BrainCircuit, Users, Globe, Leaf, Waves, Clock } from "lucide-react";
+import { Search, Rocket, TrendingUp, Palette, FlaskConical, Brain, Code, ShieldCheck, Gamepad2, BrainCircuit, Users, Globe, Leaf, Waves, Clock, PlusCircle, CheckCircle, Loader2 } from "lucide-react";
+import { useApp } from "@/lib/hooks/use-app";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { addDoc, collection, serverTimestamp, type Timestamp } from "firebase/firestore";
+import type { ReservedCourse } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 const courseSections = [
     {
@@ -18,10 +24,10 @@ const courseSections = [
             { title: "Python para \"Lazy People\": Automatiza tus tareas", description: "Crea un bot de ofertas, organiza tus carpetas automáticamente o haz un raspado de datos de una web.", difficulty: "Medio", duration: "1h 45m" },
             { title: "HTML & CSS: Tu primera Web desde cero", description: "Aprende la estructura de internet (etiquetas HTML) y el diseño visual (CSS) para publicar tu propia página personal online.", difficulty: "Fácil", duration: "2h" },
             { title: "Arduino Makers: Electrónica que cobra vida", description: "Usa la 'protoboard' y programa sensores de movimiento, luces LED rítmicas o un termómetro digital.", difficulty: "Medio", duration: "1h 30m" },
-            { title: "Duelo de Sistemas: Windows, macOS o Linux, ¿cuál es tu \"Main\"?", description: "Cómo funciona el Kernel, la gestión de archivos y la privacidad de datos. Incluye un test para encontrar tu SO ideal.", difficulty: "Fácil", duration: "45 min" },
             { title: "PC Master Builder: Hardware y Optimización total", description: "Elige componentes según tu presupuesto, móntalos y configura el software (BIOS, Drivers) para que el PC vuele.", difficulty: "Difícil", duration: "2h" },
             { title: "Smartphone Anatomy: Chips, Sensores y Cámaras", description: "Diferencias entre procesadores, qué hace un sensor de 108MP y cómo leer una comparativa sin que te engañe el marketing.", difficulty: "Medio", duration: "1h" },
             { title: "Arduino STEAMakers: Programación por Bloques para Inventores", description: "Aprende la lógica de programación (bucles, variables, condicionales) usando el entorno de ArduinoBlocks sin escribir código.", difficulty: "Fácil", duration: "1h 15m" },
+            { title: "Duelo de Sistemas: Windows, macOS o Linux, ¿cuál es tu \"Main\"?", description: "Cómo funciona el Kernel, la gestión de archivos y la privacidad de datos. Incluye un test para encontrar tu SO ideal.", difficulty: "Fácil", duration: "45 min" },
         ]
     },
     {
@@ -124,7 +130,7 @@ const courseSections = [
             { title: "Mitos del Espacio", description: "¿Explotas en el vacío? ¿Hay sonido en el espacio? (Enfoque: Astronomía básica).", difficulty: "Fácil", duration: "45 min" },
             { title: "Historia de las Zapatillas (Sneakerhead 101)", description: "De las Jordan a las Yeezy, el negocio y la cultura. (Enfoque: Historia cultural y marketing).", difficulty: "Fácil", duration: "50 min" },
             { title: "Mecánica de Bicicletas", description: "Arregla un pinchazo y ajusta los frenos tú mismo. (Enfoque: Mecánica básica).", difficulty: "Medio", duration: "1h" },
-            { title: "Sector Aviación", description: "Para los que sueñan con las nubes o simplemente aman la ingeniería de los aviones.", difficulty: "Medio", duration: "1h 30m" },
+            { title: "Aviation Masterclass: De Pasajero a Capitán (Simulación y Realidad)", description: "Principios de aerodinámica, cómo leer una cabina \"Glass Cockpit\" y fases de un vuelo en simulador (Microsoft Flight Simulator).", difficulty: "Medio", duration: "1h 30m" },
             { title: "La Brújula Política: ¿Dónde estás tú?", description: "El origen de la \"Izquierda\" y la \"Derecha\", qué significan liberalismo, socialismo, etc., y cómo leer un programa electoral.", difficulty: "Medio", duration: "1h 15m" },
             { title: "Ética de la IA: ¿Es arte lo que hace Midjourney?", description: "Un curso de debate sobre los derechos de autor, el futuro del trabajo y si una IA debería tener \"responsabilidad\".", difficulty: "Medio", duration: "1h" },
         ]
@@ -133,6 +139,45 @@ const courseSections = [
 
 function ExploreContent() {
     const [searchTerm, setSearchTerm] = useState('');
+    const { user } = useApp();
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
+
+    const reservedCoursesQuery = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return collection(firestore, `users/${user.uid}/reservedCourses`);
+    }, [user, firestore]);
+
+    const { data: reservedCourses = [] } = useCollection<ReservedCourse>(reservedCoursesQuery);
+
+    const reservedCourseTitles = useMemo(() => new Set(reservedCourses.map(c => c.courseTitle)), [reservedCourses]);
+
+    const handleReserveCourse = async (courseTitle: string, category: string) => {
+        if (!user || !firestore) {
+            toast({ title: 'Debes iniciar sesión para reservar cursos.', variant: 'destructive' });
+            return;
+        }
+        setIsSubmitting(courseTitle);
+        try {
+            const reservedCourseData: Omit<ReservedCourse, 'uid'> = {
+                courseTitle,
+                category,
+                progress: 0,
+                reservedAt: serverTimestamp() as Timestamp,
+            };
+            await addDoc(collection(firestore, `users/${user.uid}/reservedCourses`), reservedCourseData);
+            toast({
+                title: '¡Curso reservado!',
+                description: `"${courseTitle}" se ha añadido a "Mis Cursos".`
+            });
+        } catch (error) {
+            console.error("Error reserving course:", error);
+            toast({ title: 'Error', description: 'No se pudo reservar el curso.', variant: 'destructive' });
+        } finally {
+            setIsSubmitting(null);
+        }
+    };
 
     const filteredCourseSections = useMemo(() => {
         if (!searchTerm.trim()) {
@@ -169,7 +214,7 @@ function ExploreContent() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                         type="text"
-                        placeholder="Buscar cursos por palabra clave..."
+                        placeholder="Buscar cursos por palabras clave..."
                         className="w-full pl-12 h-14 text-base rounded-full shadow-lg border-2 border-primary/10 focus:border-primary/50"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -191,25 +236,48 @@ function ExploreContent() {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {section.courses.map(course => (
-                                <Card key={course.title} className="hover:border-primary/50 transition-colors cursor-pointer hover:shadow-lg flex flex-col">
+                                <Card key={course.title} className="hover:border-primary/50 transition-colors hover:shadow-lg flex flex-col">
                                     <CardHeader>
                                         <CardTitle className="text-base">{course.title}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="flex-1">
                                         <CardDescription className="text-xs">{course.description}</CardDescription>
                                     </CardContent>
-                                    <CardFooter className="p-3 pt-0 flex flex-wrap gap-2">
-                                        <Badge variant="outline" className={cn(
-                                            course.difficulty === 'Fácil' && 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-200 dark:border-green-700',
-                                            course.difficulty === 'Medio' && 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/50 dark:text-blue-200 dark:border-blue-700',
-                                            course.difficulty === 'Difícil' && 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-200 dark:border-red-700'
-                                        )}>
-                                            {course.difficulty}
-                                        </Badge>
-                                        <Badge variant="secondary">
-                                            <Clock className="h-3 w-3 mr-1.5" />
-                                            {course.duration}
-                                        </Badge>
+                                    <CardFooter className="p-4 pt-0 flex flex-wrap items-center justify-between gap-2">
+                                        <div className="flex flex-wrap gap-2">
+                                            <Badge variant="outline" className={cn(
+                                                course.difficulty === 'Fácil' && 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-200 dark:border-green-700',
+                                                course.difficulty === 'Medio' && 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/50 dark:text-blue-200 dark:border-blue-700',
+                                                course.difficulty === 'Difícil' && 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-200 dark:border-red-700'
+                                            )}>
+                                                {course.difficulty}
+                                            </Badge>
+                                            <Badge variant="secondary">
+                                                <Clock className="h-3 w-3 mr-1.5" />
+                                                {course.duration}
+                                            </Badge>
+                                        </div>
+                                         {reservedCourseTitles.has(course.title) ? (
+                                            <Button variant="outline" size="sm" className="h-8 text-green-600 border-green-500/50" disabled>
+                                                <CheckCircle className="mr-2 h-4 w-4" />
+                                                Reservado
+                                            </Button>
+                                        ) : (
+                                            <Button 
+                                                variant="default" 
+                                                size="sm" 
+                                                className="h-8" 
+                                                onClick={() => handleReserveCourse(course.title, section.category)}
+                                                disabled={isSubmitting === course.title}
+                                            >
+                                                {isSubmitting === course.title ? (
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                                )}
+                                                Reservar
+                                            </Button>
+                                        )}
                                     </CardFooter>
                                 </Card>
                             ))}
@@ -233,5 +301,3 @@ export default function ExplorePage() {
         </div>
     );
 }
-
-    

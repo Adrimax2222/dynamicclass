@@ -44,6 +44,14 @@ export type User = {
   createdAt?: Timestamp;
 };
 
+export type ReservedCourse = {
+  uid: string; // The doc ID
+  courseTitle: string;
+  category: string;
+  progress: number;
+  reservedAt: Timestamp;
+};
+
 // Simplified user type for center management
 export type CenterUser = Pick<User, 'uid' | 'name' | 'email' | 'avatar' | 'role' | 'course' | 'className' | 'isChatBanned'>;
 
