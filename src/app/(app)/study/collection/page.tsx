@@ -22,6 +22,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { RankingDialog } from "@/components/layout/ranking-dialog";
 
 type Plant = {
     id: number;
@@ -236,6 +237,13 @@ export default function CollectionPage() {
                     </h1>
                 </div>
                 <div className="flex items-center gap-2">
+                    {user && (
+                        <RankingDialog user={user} openTo="shop">
+                            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full">
+                                <ShoppingCart className="h-5 w-5 text-primary"/>
+                            </Button>
+                        </RankingDialog>
+                    )}
                     {isAquaticUnlocked && (
                          <Button variant="outline" size="icon" onClick={() => setViewingPath(isAquaticPath ? 'terrestrial' : 'aquatic')}>
                             <ChevronsRight className="h-4 w-4" />
