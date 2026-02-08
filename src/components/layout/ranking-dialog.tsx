@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -17,7 +16,7 @@ import { collection, query, where, getDocs, orderBy, limit } from "firebase/fire
 import type { User } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart, Users, GraduationCap, PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart, CaseUpper, Gift, X, Clapperboard, Shirt, ShoppingBag, BookMarked, Info, Music, Play } from "lucide-react";
+import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart, Users, GraduationCap, PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart, CaseUpper, Gift, X, Clapperboard, Shirt, ShoppingBag, BookMarked, Info, Music, Play, TreePine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -57,7 +56,7 @@ export function RankingDialog({ children, user, openTo = "ranking" }: { children
                             <div className="flex items-center gap-3">
                                 <DialogTitle className="flex items-center gap-2">
                                     <Trophy className="text-yellow-400" />
-                                    Trofeos y Recompensas
+                                    Trofeos, Plantas y Recompensas
                                 </DialogTitle>
                                 <Badge variant="secondary">Beta</Badge>
                             </div>
@@ -218,10 +217,16 @@ function ShopTab({ user }: { user: User }) {
         <div className="p-6 pt-2 space-y-6">
             <Card className="sticky top-0 z-10 p-3 bg-background/90 backdrop-blur-sm shadow-sm">
                 <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold">Tus Trofeos</p>
-                    <div className="flex items-center gap-2">
-                        <Trophy className="h-5 w-5 text-yellow-400"/>
-                        <p className="text-lg font-bold">{isAdmin ? '∞' : user.trophies}</p>
+                    <p className="text-sm font-semibold">Tus Plantas y Trofeos</p>
+                    <div className="flex items-center gap-4">
+                         <div className="flex items-center gap-2">
+                            <TreePine className="h-5 w-5 text-green-500" />
+                            <p className="text-lg font-bold">{user.plantCount || 0}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Trophy className="h-5 w-5 text-yellow-400"/>
+                            <p className="text-lg font-bold">{isAdmin ? '∞' : user.trophies}</p>
+                        </div>
                     </div>
                 </div>
             </Card>
