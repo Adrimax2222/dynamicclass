@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from "react";
@@ -39,6 +40,7 @@ const courseSections = [
             { title: "Smartphone Anatomy: Chips, Sensores y Cámaras", description: "Diferencias entre procesadores, qué hace un sensor de 108MP y cómo leer una comparativa sin que te engañe el marketing.", difficulty: "Medio", duration: "1h" },
             { title: "Arduino STEAMakers: Programación por Bloques para Inventores", description: "Aprende la lógica de programación (bucles, variables, condicionales) usando el entorno de ArduinoBlocks sin escribir código.", difficulty: "Fácil", duration: "1h 15m" },
             { title: "Duelo de Sistemas: Windows, macOS o Linux, ¿cuál es tu \"Main\"?", description: "Cómo funciona el Kernel, la gestión de archivos y la privacidad de datos. Incluye un test para encontrar tu SO ideal.", difficulty: "Fácil", duration: "45 min" },
+             { title: "Arduino Makers: Electrónica que cobra vida", description: "Entender una placa de Arduino, usar la \"protoboard\" y programar sensores de movimiento, luces LED rítmicas o un termómetro digital.", difficulty: "Medio", duration: "1h" },
         ]
     },
     {
@@ -51,11 +53,12 @@ const courseSections = [
             { title: "Roblox Studio: Crea tu primer juego viral (Obby & Tycoon)", description: "Interfaz de Roblox Studio, construcción de mapas con 'Parts' y nociones básicas de Luau para crear trampas y tiendas.", difficulty: "Fácil", duration: "1h 15m" },
             { title: "¿Cómo piensa una IA? Redes Neuronales explicadas con Pizza", description: "Aprende Machine Learning, algoritmos y LLMs con ejemplos visuales y sencillos.", difficulty: "Fácil", duration: "45 min" },
             { title: "Ética de la IA: ¿Es arte lo que hace Midjourney?", description: "Un curso de debate sobre los derechos de autor, el futuro del trabajo y si una IA debería tener \"responsabilidad\".", difficulty: "Medio", duration: "1h" },
+            { title: "Desarrollo de Videojuegos 2D con Unity", description: "De la idea al código C#. (Enfoque: Programación y física mecánica).", difficulty: "Difícil", duration: "2h 30m" },
         ]
     },
     {
         category: "Seguridad y Sociedad Digital",
-        description: "Protege tu identidad y navega de forma segura.",
+        description: "Protege tu identidad, navega de forma segura y detecta la desinformación.",
         icon: ShieldCheck,
         color: "text-slate-500",
         courses: [
@@ -64,6 +67,7 @@ const courseSections = [
             { title: "IA sin Huella: Cómo usar ChatGPT y Midjourney sin regalar tus datos", description: "Usa la IA de forma inteligente y privada: Modo Incógnito, qué no subir y cómo detectar Deepfakes.", difficulty: "Fácil", duration: "40 min" },
             { title: "CSI Redes Sociales: Configuración de Privacidad Extrema", description: "Controla quién puede verte en Instagram y TikTok. Evita que te encuentren por tu número y limpia la ubicación de tus fotos.", difficulty: "Fácil", duration: "45 min" },
             { title: "Wifi, QR y Enlaces: El Manual de Supervivencia en la Calle", description: "Evita los peligros del mundo físico: Wi-Fis públicas, códigos QR maliciosos y enlaces falsos.", difficulty: "Fácil", duration: "25 min" },
+            { title: "Digital Detective: Cómo detectar Fake News y estafas en segundos", description: "Aprende técnicas de \"Lectura Lateral\", búsqueda inversa de imágenes y cómo funcionan los algoritmos de burbuja.", difficulty: "Medio", duration: "1h" },
         ]
     },
      {
@@ -83,6 +87,7 @@ const courseSections = [
             { title: "Lettering y Apuntes Bonitos", description: "Mejora tu letra y organiza tus cuadernos. (Enfoque: Caligrafía y diseño).", difficulty: "Fácil", duration: "45 min" },
             { title: "Fotografía de Producto con el Móvil", description: "Haz que tus zapatillas o comida se vean de anuncio para venderlas en Vinted/Wallapop. (Enfoque: Iluminación y composición).", difficulty: "Medio", duration: "1h" },
             { title: "Customiza tu Ropa (Upcycling)", description: "Pintura textil y cortes básicos para renovar camisetas viejas. (Enfoque: Diseño de moda y sostenibilidad).", difficulty: "Fácil", duration: "1h" },
+            { title: "Escritura Creativa para Guiones de Series y Cine", description: "Estructura narrativa y creación de personajes. (Enfoque: Literatura y dramaturgia).", difficulty: "Medio", duration: "1h 45m" },
         ]
     },
     {
@@ -91,28 +96,31 @@ const courseSections = [
         icon: TrendingUp,
         color: "text-teal-500",
         courses: [
-            { title: "Economía de Creadores", description: "Cómo monetizar un canal de YouTube/Twitch legalmente. (Enfoque: Modelos de negocio y fiscalidad básica).", difficulty: "Medio", duration: "1h 30m" },
-            { title: "Inversión Joven 101", description: "Entendiendo el interés compuesto, ETFs y la Bolsa. (Enfoque: Matemáticas financieras).", difficulty: "Medio", duration: "1h 15m" },
-            { title: "De la Idea a la Startup", description: "Metodología Lean para lanzar proyectos escolares o reales. (Enfoque: Administración de empresas).", difficulty: "Difícil", duration: "2h" },
-            { title: "Criptomonedas y Blockchain", description: "La tecnología detrás del Hype. (Enfoque: Economía digital y criptografía).", difficulty: "Difícil", duration: "1h 45m" },
-            { title: "Economía de Bolsillo: Impuestos, IVA y tu primer sueldo", description: "Explica de forma simple qué es el IVA que pagan al comprar un juego, por qué el gobierno quita una parte del sueldo (IRPF) y cómo funciona un banco por dentro.", difficulty: "Fácil", duration: "1h" },
+            { title: "Economía de Creadores: Cómo monetizar un canal de YouTube/Twitch legalmente.", description: "Aprende sobre modelos de negocio, fiscalidad básica y cómo gestionar tus ingresos como creador de contenido.", difficulty: "Medio", duration: "1h 30m" },
+            { title: "Inversión Joven 101: Entendiendo el interés compuesto, ETFs y la Bolsa.", description: "Una introducción a los conceptos básicos de la inversión para empezar a construir tu futuro financiero.", difficulty: "Medio", duration: "1h 15m" },
+            { title: "De la Idea a la Startup: Metodología Lean para lanzar proyectos escolares o reales.", description: "Aprende a validar ideas, crear un producto mínimo viable y presentar tu proyecto a posibles inversores.", difficulty: "Difícil", duration: "2h" },
+            { title: "Criptomonedas y Blockchain: La tecnología detrás del Hype.", description: "Entiende qué es una criptomoneda, cómo funciona la tecnología blockchain y los riesgos y oportunidades asociados.", difficulty: "Difícil", duration: "1h 45m" },
+            { title: "Economía de Bolsillo: Impuestos, IVA y tu primer sueldo", description: "Explica de forma simple qué es el IVA, por qué el gobierno quita una parte del sueldo (IRPF) y cómo funciona un banco por dentro.", difficulty: "Fácil", duration: "1h" },
         ]
     },
-    {
+     {
         category: "Desarrollo Personal y Bienestar",
         description: "Habilidades para la vida, inteligencia emocional y bienestar mental.",
         icon: Brain,
         color: "text-pink-500",
         courses: [
-            { title: "Neurociencia del Aprendizaje", description: "Hackea tu cerebro para estudiar menos y aprender más. (Enfoque: Psicología cognitiva y técnicas de estudio).", difficulty: "Medio", duration: "1h 20m" },
+            { title: "Neurociencia del Aprendizaje: Hackea tu cerebro para estudiar menos y aprender más.", description: "Descubre cómo funciona tu cerebro al aprender y aplica técnicas para mejorar tu retención y concentración.", difficulty: "Medio", duration: "1h 20m" },
+            { title: "Nutrición Deportiva Real: Bioquímica de los alimentos vs. mitos de internet.", description: "Aprende qué comer antes y después del ejercicio para maximizar tu rendimiento y recuperación.", difficulty: "Medio", duration: "1h" },
+            { title: "Sostenibilidad y Moda: El impacto ambiental de la ropa (Fast Fashion) y el Upcycling.", description: "Conviértete en un consumidor consciente y aprende a darle una segunda vida a tu ropa.", difficulty: "Fácil", duration: "45 min" },
             { title: "Inteligencia Emocional: \"Modo Pro\"", description: "Cómo identificar qué sientes, técnicas para que una emoción no te arruine el día y cómo responder en lugar de reaccionar.", difficulty: "Medio", duration: "1h 10m" },
             { title: "Braintuning: El Manual contra la Ansiedad y el Estrés", description: "Por qué el cerebro se bloquea antes de un examen y ejercicios prácticos (respiración 4-7-8) para bajar las revoluciones.", difficulty: "Fácil", duration: "45 min" },
-            { title: "Cuerpo y Relaciones: Lo que no sale en las películas", description: "La realidad de los cuerpos, el consentimiento real, cómo poner límites sin sentir culpa y salud sexual básica.", difficulty: "Fácil", duration: "1h" },
+            { title: "Cuerpo y Relaciones: Lo que no sale en las películas (ni en el porno)", description: "La realidad de los cuerpos, el consentimiento real, cómo poner límites sin sentir culpa y salud sexual básica.", difficulty: "Fácil", duration: "1h" },
             { title: "Amor Propio vs. El Espejo de Instagram", description: "Cómo los filtros y la edición afectan nuestra percepción y cómo construir una relación sana con tu propia imagen.", difficulty: "Fácil", duration: "50 min" },
-            { title: "Socializar en la Era del Algoritmo", description: "Cómo iniciar una conversación, cómo leer el lenguaje corporal y la diferencia entre 'seguidores' y amigos reales.", difficulty: "Fácil", duration: "1h" },
-            { title: "Presión Social y \"Clout\"", description: "Por qué buscamos la atención (dopamina), cómo decir \"no\" y el análisis de las polémicas virales.", difficulty: "Medio", duration: "1h" },
-            { title: "Marca Personal: Tú eres un logo", description: "Cómo crear una imagen digital que te abra puertas en lugar de cerrarlas, sin dejar de ser tú mismo.", difficulty: "Medio", duration: "1h 15m" },
+            { title: "Socializar en la Era del Algoritmo: El Arte de Conectar", description: "Cómo iniciar una conversación, cómo leer el lenguaje corporal y la diferencia entre 'seguidores' y amigos reales.", difficulty: "Fácil", duration: "1h" },
+            { title: "Presión Social y \"Clout\": ¿Lo haces porque quieres o por el vídeo?", description: "Por qué buscamos la atención (dopamina), cómo decir \"no\" y el análisis de las polémicas virales.", difficulty: "Medio", duration: "1h" },
+            { title: "Marca Personal: Tú eres un logo (aunque no lo sepas)", description: "Cómo crear una imagen digital que te abra puertas en lugar de cerrarlas, sin dejar de ser tú mismo.", difficulty: "Medio", duration: "1h 15m" },
             { title: "\"Adulting\" Starter Pack: Cosas que el colegio olvidó", description: "Cómo leer un contrato de alquiler, qué es una factura de la luz, cómo se pide una cita médica solo y qué hacer si pierdes el DNI.", difficulty: "Fácil", duration: "1h 30m" },
+             { title: "Mindfulness para Gamers: Cómo controlar el \"Rage Quit\" y la frustración al perder.", description: "Técnicas de respiración y mentalidad para mantener la calma en partidas competitivas y disfrutar más del juego.", difficulty: "Fácil", duration: "45 min" },
         ]
     },
     {
@@ -121,19 +129,22 @@ const courseSections = [
         icon: FlaskConical,
         color: "text-purple-500",
         courses: [
-            { title: "La Física de los Superhéroes", description: "Entendiendo a Newton a través de Marvel y DC. (Enfoque: Física clásica).", difficulty: "Fácil", duration: "1h" },
-            { title: "Bioética y Genética (CRISPR)", description: "¿Debemos editar el ADN humano? (Enfoque: Biología y ética filosófica).", difficulty: "Difícil", duration: "1h 45m" },
-            { title: "Japonés Básico a través del Anime y Manga", description: "Introducción al idioma y cultura. (Enfoque: Lingüística).", difficulty: "Fácil", duration: "1h 45m" },
-            { title: "Detectar Falacias Lógicas", description: "Que no te engañen en una discusión (el hombre de paja, ad hominem, etc.). (Enfoque: Lógica y pensamiento crítico).", difficulty: "Medio", duration: "1h" },
-            { title: "Lenguaje Corporal Básico", description: "Cómo saber si alguien te miente o si le gustas. (Enfoque: Psicología del comportamiento).", difficulty: "Fácil", duration: "45 min" },
-            { title: "Paradojas que te explotan la cabeza", description: "El gato de Schrödinger o la paradoja del abuelo explicadas fácil. (Enfoque: Filosofía y lógica).", difficulty: "Medio", duration: "1h" },
-            { title: "Inglés de la Calle (Slang)", description: "Aprende las frases de las series y canciones que no salen en los libros de texto.", difficulty: "Fácil", duration: "45 min" },
-            { title: "Banderas del Mundo (Vexilología)", description: "Por qué son como son y cómo diseñar una bandera propia. (Enfoque: Geografía y diseño).", difficulty: "Fácil", duration: "30 min" },
-            { title: "Supervivencia Básica", description: "Nudos, orientación sin brújula y potabilizar agua. (Enfoque: Escultismo y física aplicada).", difficulty: "Medio", duration: "1h" },
-            { title: "Mitos del Espacio", description: "¿Explotas en el vacío? ¿Hay sonido en el espacio? (Enfoque: Astronomía básica).", difficulty: "Fácil", duration: "45 min" },
-            { title: "Mecánica de Bicicletas", description: "Arregla un pinchazo y ajusta los frenos tú mismo. (Enfoque: Mecánica básica).", difficulty: "Medio", duration: "1h" },
+            { title: "La Física de los Superhéroes: Entendiendo a Newton a través de Marvel y DC.", description: "Analiza las leyes de la física a través de las hazañas de tus superhéroes favoritos.", difficulty: "Fácil", duration: "1h" },
+            { title: "Bioética y Genética (CRISPR): ¿Debemos editar el ADN humano?", description: "Un debate sobre las implicaciones éticas de la edición genética y el futuro de la humanidad.", difficulty: "Difícil", duration: "1h 45m" },
+            { title: "Historia a través de los Videojuegos: La Segunda Guerra Mundial o la Edad Media vistas desde \"Call of Duty\" o \"Age of Empires\".", description: "Aprende historia de una forma inmersiva, analizando la fidelidad histórica de tus videojuegos favoritos.", difficulty: "Medio", duration: "1h 30m" },
+            { title: "Japonés Básico a través del Anime y Manga: Introducción al idioma y cultura.", description: "Aprende frases y conceptos básicos de japonés mientras disfrutas de tus series y mangas favoritos.", difficulty: "Fácil", duration: "1h 45m" },
+            { title: "Google Hacking: Aprende a buscar en Google como un pro (comandos para encontrar archivos ocultos, PDFs, etc.).", description: "Descubre los secretos de la búsqueda avanzada de Google para encontrar cualquier cosa en internet.", difficulty: "Medio", duration: "45 min" },
+            { title: "Seguridad de Contraseñas: Cómo crear claves invencibles y gestionar tus cuentas.", description: "Aprende a proteger tus cuentas con contraseñas seguras y gestores de contraseñas.", difficulty: "Fácil", duration: "30 min" },
+            { title: "Lenguaje Corporal Básico: Cómo saber si alguien te miente o si le gustas.", description: "Una introducción a la comunicación no verbal para entender mejor a las personas que te rodean.", difficulty: "Fácil", duration: "45 min" },
+            { title: "Detectar Falacias Lógicas: Que no te engañen en una discusión (el hombre de paja, ad hominem, etc.).", description: "Aprende a identificar los errores más comunes en los argumentos para construir tus propias ideas de forma sólida.", difficulty: "Medio", duration: "1h" },
+            { title: "Paradojas que te explotan la cabeza: El gato de Schrödinger o la paradoja del abuelo explicadas fácil.", description: "Un viaje a los límites de la lógica y la física con las paradojas más famosas de la historia.", difficulty: "Medio", duration: "1h" },
+            { title: "Inglés de la Calle (Slang): Aprende las frases de las series y canciones que no salen en los libros de texto.", description: "Amplía tu vocabulario con el inglés que de verdad se habla en la calle.", difficulty: "Fácil", duration: "45 min" },
+            { title: "Banderas del Mundo (Vexilología): Por qué son como son y cómo diseñar una bandera propia.", description: "Descubre el significado de los colores y símbolos de las banderas de todo el mundo.", difficulty: "Fácil", duration: "30 min" },
+            { title: "Supervivencia Básica: Nudos, orientación sin brújula y potabilizar agua.", description: "Aprende habilidades prácticas que te podrían sacar de un apuro en la naturaleza.", difficulty: "Medio", duration: "1h" },
+            { title: "Mitos del Espacio: ¿Explotas en el vacío? ¿Hay sonido en el espacio?", description: "Desmontamos los mitos más comunes sobre el espacio que nos ha colado el cine.", difficulty: "Fácil", duration: "45 min" },
+            { title: "Historia de las Zapatillas (Sneakerhead 101): De las Jordan a las Yeezy, el negocio y la cultura.", description: "Un repaso a la historia de las zapatillas más icónicas y su impacto cultural.", difficulty: "Fácil", duration: "1h" },
+            { title: "Mecánica de Bicicletas: Arregla un pinchazo y ajusta los frenos tú mismo.", description: "Aprende a hacer el mantenimiento básico de tu bicicleta y ahorra en reparaciones.", difficulty: "Medio", duration: "1h" },
             { title: "Aviation Masterclass: De Pasajero a Capitán (Simulación y Realidad)", description: "Principios de aerodinámica, cómo leer una cabina \"Glass Cockpit\" y fases de un vuelo en simulador (Microsoft Flight Simulator).", difficulty: "Medio", duration: "1h 30m" },
-            { title: "Digital Detective: Cómo detectar Fake News y estafas en segundos", description: "Aprende técnicas de \"Lectura Lateral\", búsqueda inversa de imágenes y cómo funcionan los algoritmos de burbuja.", difficulty: "Medio", duration: "1h" },
         ]
     },
 ];
@@ -378,7 +389,6 @@ function ExploreContent() {
                                             </AlertDialog>
                                         ) : (
                                             <Button 
-                                                variant="default" 
                                                 size="sm" 
                                                 className="h-8" 
                                                 onClick={() => handleReserveCourse(course.title, section.category)}
@@ -400,6 +410,15 @@ function ExploreContent() {
                     <p className="font-semibold text-lg">No se encontraron cursos</p>
                     <p className="text-muted-foreground">Intenta con otra palabra clave.</p>
                 </div>
+            )}
+             {searchTerm.trim() === '' && (
+                <Alert className="text-center mt-8">
+                    <Rocket className="h-4 w-4" />
+                    <AlertTitle className="font-bold">¡Más cursos en camino!</AlertTitle>
+                    <AlertDescription>
+                        Estamos trabajando constantemente para ampliar nuestro catálogo de cursos. ¡Vuelve pronto para descubrir nuevas aventuras de aprendizaje!
+                    </AlertDescription>
+                </Alert>
             )}
         </div>
     );
