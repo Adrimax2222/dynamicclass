@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Search, Rocket, TrendingUp, Palette, FlaskConical, Brain, Code, ShieldCheck, Gamepad2, BrainCircuit, Users, Globe, Leaf, Waves, Clock, PlusCircle, CheckCircle, Loader2 } from "lucide-react";
+import { Search, Rocket, TrendingUp, Palette, FlaskConical, Brain, Code, ShieldCheck, Gamepad2, BrainCircuit, Users, Globe, Leaf, Waves, Clock, PlusCircle, CheckCircle, Loader2, Info, AlertTriangle } from "lucide-react";
 import { useApp } from "@/lib/hooks/use-app";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { addDoc, collection, serverTimestamp, type Timestamp } from "firebase/firestore";
 import type { ReservedCourse } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const courseSections = [
     {
@@ -42,7 +44,7 @@ const courseSections = [
             { title: "¿Cómo piensa una IA? Redes Neuronales explicadas con Pizza", description: "Aprende Machine Learning, algoritmos y LLMs con ejemplos visuales y sencillos.", difficulty: "Fácil", duration: "45 min" },
         ]
     },
-     {
+    {
         category: "Seguridad y Sociedad Digital",
         description: "Protege tu identidad y navega de forma segura.",
         icon: ShieldCheck,
@@ -107,7 +109,6 @@ const courseSections = [
             { title: "Presión Social y \"Clout\"", description: "Por qué buscamos la atención (dopamina), cómo decir \"no\" y el análisis de las polémicas virales.", difficulty: "Medio", duration: "1h" },
             { title: "Marca Personal: Tú eres un logo", description: "Cómo crear una imagen digital que te abra puertas en lugar de cerrarlas, sin dejar de ser tú mismo.", difficulty: "Medio", duration: "1h 15m" },
             { title: "\"Adulting\" Starter Pack: Cosas que el colegio olvidó", description: "Cómo leer un contrato de alquiler, qué es una factura de la luz, cómo se pide una cita médica solo y qué hacer si pierdes el DNI.", difficulty: "Fácil", duration: "1h 30m" },
-            { title: "Psicología del Scroll Infinito", description: "Enseña cómo las apps de redes sociales usan la dopamina para mantenerte enganchado y cómo recuperar el control.", difficulty: "Fácil", duration: "40 min" },
         ]
     },
     {
@@ -132,10 +133,53 @@ const courseSections = [
             { title: "Mecánica de Bicicletas", description: "Arregla un pinchazo y ajusta los frenos tú mismo. (Enfoque: Mecánica básica).", difficulty: "Medio", duration: "1h" },
             { title: "Aviation Masterclass: De Pasajero a Capitán (Simulación y Realidad)", description: "Principios de aerodinámica, cómo leer una cabina \"Glass Cockpit\" y fases de un vuelo en simulador (Microsoft Flight Simulator).", difficulty: "Medio", duration: "1h 30m" },
             { title: "La Brújula Política: ¿Dónde estás tú?", description: "El origen de la \"Izquierda\" y la \"Derecha\", qué significan liberalismo, socialismo, etc., y cómo leer un programa electoral.", difficulty: "Medio", duration: "1h 15m" },
+            { title: "Psicología del Scroll Infinito", description: "Enseña cómo las apps de redes sociales usan la dopamina para mantenerte enganchado y cómo recuperar el control.", difficulty: "Fácil", duration: "40 min" },
             { title: "Ética de la IA: ¿Es arte lo que hace Midjourney?", description: "Un curso de debate sobre los derechos de autor, el futuro del trabajo y si una IA debería tener \"responsabilidad\".", difficulty: "Medio", duration: "1h" },
         ]
     },
 ];
+
+function ReservationInfoDialog() {
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                    <Info className="h-5 w-5" />
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>¿Cómo funcionan las reservas?</DialogTitle>
+                    <DialogDescription>
+                        Todo lo que necesitas saber sobre reservar un curso.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <p>Al reservar un curso, te apuntas a la <strong>lista de espera</strong> para cuando se lance. Serás de los primeros en saberlo.</p>
+                    <Alert>
+                        <Rocket className="h-4 w-4" />
+                        <AlertTitle>Plazas Limitadas</AlertTitle>
+                        <AlertDescription>
+                            Algunos cursos tendrán un número máximo de plazas para garantizar la calidad. ¡Reservar te da prioridad!
+                        </AlertDescription>
+                    </Alert>
+                    <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Límite Temporal de 5 Cursos</AlertTitle>
+                        <AlertDescription>
+                            Para asegurar que todos tengan la oportunidad de explorar, hemos establecido un límite temporal de <strong>5 reservas</strong> por usuario.
+                        </AlertDescription>
+                    </Alert>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button>Entendido</Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 function ExploreContent() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -150,6 +194,9 @@ function ExploreContent() {
     }, [user, firestore]);
 
     const { data: reservedCourses = [] } = useCollection<ReservedCourse>(reservedCoursesQuery);
+    
+    const RESERVATION_LIMIT = 5;
+    const isLimitReached = reservedCourses.length >= RESERVATION_LIMIT;
 
     const reservedCourseTitles = useMemo(() => new Set(reservedCourses.map(c => c.courseTitle)), [reservedCourses]);
 
@@ -158,6 +205,16 @@ function ExploreContent() {
             toast({ title: 'Debes iniciar sesión para reservar cursos.', variant: 'destructive' });
             return;
         }
+
+        if (isLimitReached) {
+            toast({
+                title: 'Límite de reservas alcanzado',
+                description: 'Solo puedes reservar un máximo de 5 cursos por ahora.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
         setIsSubmitting(courseTitle);
         try {
             const reservedCourseData: Omit<ReservedCourse, 'uid'> = {
@@ -219,6 +276,9 @@ function ExploreContent() {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <ReservationInfoDialog />
+                    </div>
                 </div>
             </div>
 
@@ -268,7 +328,7 @@ function ExploreContent() {
                                                 size="sm" 
                                                 className="h-8" 
                                                 onClick={() => handleReserveCourse(course.title, section.category)}
-                                                disabled={isSubmitting === course.title}
+                                                disabled={isLimitReached || isSubmitting === course.title}
                                             >
                                                 {isSubmitting === course.title ? (
                                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
