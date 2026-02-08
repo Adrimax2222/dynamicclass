@@ -57,6 +57,7 @@ import {
   BrainCircuit,
   TreePine,
   Camera,
+  ShoppingCart,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -76,6 +77,7 @@ import Link from 'next/link';
 import type { Center, TimerMode, CustomMode } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
 import { motion, AnimatePresence } from 'framer-motion';
+import { RankingDialog } from "@/components/layout/ranking-dialog";
 
 // --- Plant Growth SVG Components ---
 
@@ -645,13 +647,19 @@ export default function StudyPage() {
                         {collectionTitle}
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="grid grid-cols-2 gap-2">
                     <Button asChild className={cn("w-full bg-gradient-to-br", collectionThemeColor)}>
                        <Link href="/study/collection">
                             <CollectionIcon className="mr-2 h-4 w-4" />
-                            {collectionButtonText}
+                            {collectionButtonText.replace('Ver mi ', '')}
                        </Link>
                     </Button>
+                    <RankingDialog user={user} openTo="shop">
+                        <Button variant="outline" className="w-full">
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            Tienda
+                        </Button>
+                    </RankingDialog>
                 </CardContent>
             </Card>
 
@@ -1844,3 +1852,5 @@ function UnitConverter() {
         </Tabs>
     );
 }
+
+    
