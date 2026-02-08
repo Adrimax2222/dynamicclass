@@ -6,14 +6,25 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Search, Rocket, TrendingUp, Palette, FlaskConical, Brain, Code, ShieldCheck, Gamepad2, BrainCircuit, Users, Globe, Leaf, Waves, Clock, PlusCircle, CheckCircle, Loader2, Info, AlertTriangle } from "lucide-react";
+import { Search, Rocket, TrendingUp, Palette, FlaskConical, Brain, Code, ShieldCheck, Gamepad2, BrainCircuit, Users, Globe, Leaf, Waves, Clock, PlusCircle, CheckCircle, Loader2, Info, AlertTriangle, BookOpenCheck } from "lucide-react";
 import { useApp } from "@/lib/hooks/use-app";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { addDoc, collection, serverTimestamp, type Timestamp } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, type Timestamp, doc, deleteDoc, query as firestoreQuery, where } from "firebase/firestore";
 import type { ReservedCourse } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const courseSections = [
     {
@@ -53,8 +64,6 @@ const courseSections = [
             { title: "IA sin Huella: Cómo usar ChatGPT y Midjourney sin regalar tus datos", description: "Usa la IA de forma inteligente y privada: Modo Incógnito, qué no subir y cómo detectar Deepfakes.", difficulty: "Fácil", duration: "40 min" },
             { title: "CSI Redes Sociales: Configuración de Privacidad Extrema", description: "Controla quién puede verte en Instagram y TikTok. Evita que te encuentren por tu número y limpia la ubicación de tus fotos.", difficulty: "Fácil", duration: "45 min" },
             { title: "Wifi, QR y Enlaces: El Manual de Supervivencia en la Calle", description: "Evita los peligros del mundo físico: Wi-Fis públicas, códigos QR maliciosos y enlaces falsos.", difficulty: "Fácil", duration: "25 min" },
-            { title: "Digital Detective: Cómo detectar Fake News y estafas en segundos", description: "Aprende técnicas de \"Lectura Lateral\", búsqueda inversa de imágenes y cómo funcionan los algoritmos de burbuja.", difficulty: "Medio", duration: "1h" },
-            { title: "Psicología del Scroll Infinito: Hackea tu cerebro", description: "Enseña cómo las apps de redes sociales usan el sistema de recompensa (dopamina) para mantenerte enganchado y cómo recuperar el control de tu tiempo.", difficulty: "Fácil", duration: "40 min" },
         ]
     },
      {
@@ -124,7 +133,7 @@ const courseSections = [
             { title: "Mitos del Espacio", description: "¿Explotas en el vacío? ¿Hay sonido en el espacio? (Enfoque: Astronomía básica).", difficulty: "Fácil", duration: "45 min" },
             { title: "Mecánica de Bicicletas", description: "Arregla un pinchazo y ajusta los frenos tú mismo. (Enfoque: Mecánica básica).", difficulty: "Medio", duration: "1h" },
             { title: "Aviation Masterclass: De Pasajero a Capitán (Simulación y Realidad)", description: "Principios de aerodinámica, cómo leer una cabina \"Glass Cockpit\" y fases de un vuelo en simulador (Microsoft Flight Simulator).", difficulty: "Medio", duration: "1h 30m" },
-            { title: "La Brújula Política: ¿Dónde estás tú?", description: "El origen de la \"Izquierda\" y la \"Derecha\", qué significan liberalismo, socialismo, etc., y cómo leer un programa electoral.", difficulty: "Medio", duration: "1h 15m" },
+            { title: "Digital Detective: Cómo detectar Fake News y estafas en segundos", description: "Aprende técnicas de \"Lectura Lateral\", búsqueda inversa de imágenes y cómo funcionan los algoritmos de burbuja.", difficulty: "Medio", duration: "1h" },
         ]
     },
 ];
@@ -225,6 +234,32 @@ function ExploreContent() {
             setIsSubmitting(null);
         }
     };
+    
+    const handleUnreserveCourse = async (courseTitle: string) => {
+        if (!user || !firestore) return;
+
+        const courseToRemove = reservedCourses.find(c => c.courseTitle === courseTitle);
+        if (!courseToRemove) {
+             toast({ title: 'Error', description: 'No se encontró el curso para anular la reserva.', variant: 'destructive' });
+            return;
+        }
+
+        setIsSubmitting(courseTitle);
+        try {
+            const courseDocRef = doc(firestore, `users/${user.uid}/reservedCourses`, courseToRemove.uid);
+            await deleteDoc(courseDocRef);
+            toast({
+                title: 'Reserva Anulada',
+                description: `Has cancelado tu reserva para "${courseTitle}".`,
+                variant: 'destructive',
+            });
+        } catch (error) {
+            console.error("Error unreserving course:", error);
+            toast({ title: 'Error', description: 'No se pudo anular la reserva.', variant: 'destructive' });
+        } finally {
+            setIsSubmitting(null);
+        }
+    };
 
     const filteredCourseSections = useMemo(() => {
         if (!searchTerm.trim()) {
@@ -307,11 +342,40 @@ function ExploreContent() {
                                                 {course.duration}
                                             </Badge>
                                         </div>
-                                         {reservedCourseTitles.has(course.title) ? (
-                                            <Button variant="outline" size="sm" className="h-8 text-green-600 border-green-500/50" disabled>
-                                                <CheckCircle className="mr-2 h-4 w-4" />
-                                                Reservado
-                                            </Button>
+                                        {reservedCourseTitles.has(course.title) ? (
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-8 text-green-600 border-green-500/50 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50"
+                                                        disabled={isSubmitting === course.title}
+                                                    >
+                                                        {isSubmitting === course.title ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <><CheckCircle className="mr-2 h-4 w-4" /> Reservado</>
+                                                        )}
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>¿Anular Reserva?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Perderás tu sitio en la lista de espera para el curso "{course.title}". ¿Estás seguro?
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Mantener Reserva</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                            className="bg-destructive hover:bg-destructive/80"
+                                                            onClick={() => handleUnreserveCourse(course.title)}
+                                                        >
+                                                            Sí, anular
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         ) : (
                                             <Button 
                                                 variant="default" 
