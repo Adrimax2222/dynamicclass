@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -42,6 +41,19 @@ const SHOP_AVATARS = [
 
 const shopAvatarMap = new Map(SHOP_AVATARS.map(item => [item.id, item]));
 
+const shopItems = [
+    { id: 'amazon', name: 'Amazon', icon: ShoppingBag, color: '#FF9900', values: [5, 10] },
+    { id: 'game', name: 'GAME', icon: Gamepad2, color: '#00AEEF', values: [5, 10] },
+    { id: 'shein', name: 'Shein', icon: Shirt, color: '#54C79D', values: [5, 10, 15] },
+    { id: 'druni', name: 'Druni', icon: Gem, color: '#EC008C', values: [5, 10, 15] },
+    { id: 'inditex', name: 'Inditex', icon: ShoppingBag, color: '#0A4B8D', values: [5, 10, 15, 20, 25] },
+    { id: 'abacus', name: 'Abacus', icon: BookMarked, color: '#E30613', values: [5, 10, 15, 20] },
+    { id: 'bureau-vallee', name: 'Bureau Vallée', icon: BookMarked, color: '#004B8D', values: [5, 10, 15, 20] },
+    { id: 'cinesa', name: 'Cinesa', icon: Clapperboard, color: '#00A1E0', values: [5, 10, 15, 20] },
+    { id: 'sephora', name: 'Sephora', icon: Gift, color: '#E53988', values: [5, 10, 15, 20] },
+    { id: 'google-play', name: 'Google Play', icon: Play, color: '#4CAF50', values: [5, 10, 15, 25] },
+    { id: 'spotify', name: 'Spotify', icon: Music, color: '#1DB954', values: [10, 30] },
+];
 
 export function RankingDialog({ children, user, openTo = "ranking" }: { children: React.ReactNode; user: User, openTo?: "ranking" | "shop" }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -210,6 +222,11 @@ function RankingTab({ user, isOpen }: { user: User; isOpen: boolean }) {
     );
 }
 
+const specialItems = [
+    { id: 'plant-pack', name: 'Pack de 250 Plantas', icon: TreePine, color: '#22C55E', costType: 'trophies' as const, cost: 500, reward: 250 },
+    { id: 'trophy-pack', name: 'Pack de 500 Trofeos', icon: Trophy, color: '#FBBF24', costType: 'plants' as const, cost: 250, reward: 500 },
+];
+
 function ShopTab({ user }: { user: User }) {
     const TROPHIES_PER_EURO = 100;
     const isAdmin = ADMIN_EMAILS.includes(user.email);
@@ -249,10 +266,11 @@ function ShopTab({ user }: { user: User }) {
                     />
                  ))}
                  {specialItems.map(item => (
-                    <PlantShopItemCard
+                    <SpecialShopItemCard
                         key={item.id}
                         item={item}
                         userTrophies={user.trophies}
+                        userPlants={user.plantCount || 0}
                     />
                  ))}
              </div>
@@ -309,9 +327,17 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
     );
 }
 
-function PlantShopItemCard({ item, userTrophies }: { item: { id: string; name: string; icon: React.ElementType; color: string; cost: number; reward: number }, userTrophies: number }) {
-    const canAfford = userTrophies >= item.cost;
+function SpecialShopItemCard({ item, userTrophies, userPlants }: {
+    item: { id: string; name: string; icon: React.ElementType; color: string; costType: 'trophies' | 'plants'; cost: number; },
+    userTrophies: number;
+    userPlants: number;
+}) {
+    const canAfford = item.costType === 'trophies' ? userTrophies >= item.cost : userPlants >= item.cost;
     const Icon = item.icon;
+    const CostIcon = item.costType === 'trophies' ? Trophy : TreePine;
+    const costColorClasses = item.costType === 'trophies' 
+        ? 'text-yellow-500 bg-amber-500/10' 
+        : 'text-green-500 bg-green-500/10';
 
     return (
         <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
@@ -321,8 +347,8 @@ function PlantShopItemCard({ item, userTrophies }: { item: { id: string; name: s
             <div className="flex-1 p-2 flex flex-col justify-between bg-card">
                 <div className="space-y-2">
                     <h4 className="font-bold text-xs text-center truncate">{item.name}</h4>
-                    <div className="flex items-center justify-center gap-1 font-bold text-sm text-yellow-500 bg-amber-500/10 px-1.5 py-1 rounded-md">
-                        <Trophy className="h-4 w-4" />
+                    <div className={cn("flex items-center justify-center gap-1 font-bold text-sm px-1.5 py-1 rounded-md", costColorClasses)}>
+                        <CostIcon className="h-4 w-4" />
                         <span>{item.cost}</span>
                     </div>
                 </div>
@@ -411,27 +437,3 @@ function RankingItem({ user, rank, isCurrentUser, scope }: { user: User; rank: n
         </div>
     );
 }
-
-const shopItems = [
-    { id: 'amazon', name: 'Amazon', icon: ShoppingBag, color: '#FF9900', values: [5, 10] },
-    { id: 'game', name: 'GAME', icon: Gamepad2, color: '#00AEEF', values: [5, 10] },
-    { id: 'shein', name: 'Shein', icon: Shirt, color: '#54C79D', values: [5, 10, 15] },
-    { id: 'druni', name: 'Druni', icon: Gem, color: '#EC008C', values: [5, 10, 15] },
-    { id: 'inditex', name: 'Inditex', icon: ShoppingBag, color: '#0A4B8D', values: [5, 10, 15, 20, 25] },
-    { id: 'abacus', name: 'Abacus', icon: BookMarked, color: '#E30613', values: [5, 10, 15, 20] },
-    { id: 'bureau-vallee', name: 'Bureau Vallée', icon: BookMarked, color: '#004B8D', values: [5, 10, 15, 20] },
-    { id: 'cinesa', name: 'Cinesa', icon: Clapperboard, color: '#00A1E0', values: [5, 10, 15, 20] },
-    { id: 'sephora', name: 'Sephora', icon: Gift, color: '#E53988', values: [5, 10, 15, 20] },
-    { id: 'google-play', name: 'Google Play', icon: Play, color: '#4CAF50', values: [5, 10, 15, 25] },
-    { id: 'spotify', name: 'Spotify', icon: Music, color: '#1DB954', values: [10, 30] },
-];
-
-const specialItems = [
-    { id: 'plant-pack', name: 'Pack de 250 Plantas', icon: TreePine, color: '#22C55E', cost: 500, reward: 250 },
-];
-    
-
-    
-    
-
-    
