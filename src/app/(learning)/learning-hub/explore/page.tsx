@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from "react";
@@ -120,7 +119,8 @@ const courseSections = [
             { title: "Presión Social y \"Clout\": ¿Lo haces porque quieres o por el vídeo?", description: "Por qué buscamos la atención (dopamina), cómo decir \"no\" y el análisis de las polémicas virales.", difficulty: "Medio", duration: "1h" },
             { title: "Marca Personal: Tú eres un logo (aunque no lo sepas)", description: "Cómo crear una imagen digital que te abra puertas en lugar de cerrarlas, sin dejar de ser tú mismo.", difficulty: "Medio", duration: "1h 15m" },
             { title: "\"Adulting\" Starter Pack: Cosas que el colegio olvidó", description: "Cómo leer un contrato de alquiler, qué es una factura de la luz, cómo se pide una cita médica solo y qué hacer si pierdes el DNI.", difficulty: "Fácil", duration: "1h 30m" },
-             { title: "Mindfulness para Gamers: Cómo controlar el \"Rage Quit\" y la frustración al perder.", description: "Técnicas de respiración y mentalidad para mantener la calma en partidas competitivas y disfrutar más del juego.", difficulty: "Fácil", duration: "45 min" },
+            { title: "Mindfulness para Gamers: Cómo controlar el \"Rage Quit\" y la frustración al perder.", description: "Técnicas de respiración y mentalidad para mantener la calma en partidas competitivas y disfrutar más del juego.", difficulty: "Fácil", duration: "45 min" },
+            { title: "Psicología del Scroll Infinito: Hackea tu cerebro", description: "Enseña cómo las apps de redes sociales usan la dopamina para mantenerte enganchado y cómo recuperar el control de tu tiempo.", difficulty: "Fácil", duration: "40 min" },
         ]
     },
     {
@@ -145,6 +145,7 @@ const courseSections = [
             { title: "Historia de las Zapatillas (Sneakerhead 101): De las Jordan a las Yeezy, el negocio y la cultura.", description: "Un repaso a la historia de las zapatillas más icónicas y su impacto cultural.", difficulty: "Fácil", duration: "1h" },
             { title: "Mecánica de Bicicletas: Arregla un pinchazo y ajusta los frenos tú mismo.", description: "Aprende a hacer el mantenimiento básico de tu bicicleta y ahorra en reparaciones.", difficulty: "Medio", duration: "1h" },
             { title: "Aviation Masterclass: De Pasajero a Capitán (Simulación y Realidad)", description: "Principios de aerodinámica, cómo leer una cabina \"Glass Cockpit\" y fases de un vuelo en simulador (Microsoft Flight Simulator).", difficulty: "Medio", duration: "1h 30m" },
+            { title: "La Brújula Política: ¿Dónde estás tú?", description: "Entiende el origen de la Izquierda y Derecha, qué significan conceptos como liberalismo o socialismo y aprende a leer un programa electoral.", difficulty: "Medio", duration: "1h 15m" },
         ]
     },
 ];
