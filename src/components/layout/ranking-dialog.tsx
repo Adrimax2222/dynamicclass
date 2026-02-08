@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -238,12 +239,19 @@ function ShopTab({ user }: { user: User }) {
                 </AlertDescription>
             </Alert>
             
-             <div className="grid grid-cols-3 gap-2">
+             <div className="grid grid-cols-2 gap-4">
                  {shopItems.map(item => (
                     <ShopItemCard 
                         key={item.id} 
                         item={item} 
                         trophiesPerEuro={TROPHIES_PER_EURO} 
+                        userTrophies={user.trophies}
+                    />
+                 ))}
+                 {specialItems.map(item => (
+                    <PlantShopItemCard
+                        key={item.id}
+                        item={item}
                         userTrophies={user.trophies}
                     />
                  ))}
@@ -284,6 +292,31 @@ function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof sh
                             <Trophy className="h-3 w-3" />
                             <span>{cost}</span>
                         </div>
+                    </div>
+                </div>
+                <Button size="sm" className="w-full mt-2 h-7 text-xs" disabled>
+                    Próximamente
+                </Button>
+            </div>
+        </Card>
+    );
+}
+
+function PlantShopItemCard({ item, userTrophies }: { item: { id: string; name: string; icon: React.ElementType; color: string; cost: number; reward: number }, userTrophies: number }) {
+    const canAfford = userTrophies >= item.cost;
+    const Icon = item.icon;
+
+    return (
+        <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
+            <div className="aspect-square relative flex-shrink-0 p-4 flex items-center justify-center shadow-inner rounded-t-lg" style={{ backgroundColor: item.color }}>
+                <Icon className="h-8 w-8 text-white" />
+            </div>
+            <div className="flex-1 p-2 flex flex-col justify-between bg-card">
+                <div className="space-y-2">
+                    <h4 className="font-bold text-xs text-center truncate">{item.name}</h4>
+                    <div className="flex items-center justify-center gap-1 font-bold text-sm text-yellow-500 bg-amber-500/10 px-1.5 py-1 rounded-md">
+                        <Trophy className="h-4 w-4" />
+                        <span>{item.cost}</span>
                     </div>
                 </div>
                 <Button size="sm" className="w-full mt-2 h-7 text-xs" disabled>
@@ -385,7 +418,13 @@ const shopItems = [
     { id: 'google-play', name: 'Google Play', icon: Play, color: '#4CAF50', values: [5, 10, 15, 25] },
     { id: 'spotify', name: 'Spotify', icon: Music, color: '#1DB954', values: [10, 30] },
 ];
+
+const specialItems = [
+    { id: 'plant-pack', name: 'Pack de 250 Plantas', icon: TreePine, color: '#22C55E', cost: 500, reward: 250 },
+];
     
 
     
+    
+
     
