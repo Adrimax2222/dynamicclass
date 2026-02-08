@@ -448,36 +448,34 @@ function PlantsTab() {
                                                 <span className="font-bold">{u.plantCount || 0}</span>
                                             </div>
                                         </div>
-                                         {u.role !== 'admin' && (
-                                            <div className="flex gap-2 items-center">
-                                                <Input 
-                                                    type="number" 
-                                                    className="w-20 h-8" 
-                                                    placeholder="Cant."
-                                                    value={plantAmounts[u.uid] || ""}
-                                                    onChange={(e) => handlePlantAmountChange(u.uid, e.target.value)}
-                                                    disabled={isProcessing[u.uid]}
-                                                />
-                                                <Button 
-                                                    variant="outline" 
-                                                    size="icon" 
-                                                    className="h-8 w-8" 
-                                                    onClick={() => handleUpdatePlants(u, -(plantAmounts[u.uid] || 0))}
-                                                    disabled={isProcessing[u.uid] || !plantAmounts[u.uid] || plantAmounts[u.uid] <= 0}
-                                                >
-                                                    <MinusCircle className="h-4 w-4 text-red-500"/>
-                                                </Button>
-                                                <Button 
-                                                    variant="outline" 
-                                                    size="icon" 
-                                                    className="h-8 w-8"
-                                                    onClick={() => handleUpdatePlants(u, plantAmounts[u.uid] || 0)}
-                                                    disabled={isProcessing[u.uid] || !plantAmounts[u.uid] || plantAmounts[u.uid] <= 0}
-                                                >
-                                                    <PlusCircle className="h-4 w-4 text-green-500"/>
-                                                </Button>
-                                            </div>
-                                         )}
+                                        <div className="flex gap-2 items-center">
+                                            <Input 
+                                                type="number" 
+                                                className="w-20 h-8" 
+                                                placeholder="Cant."
+                                                value={plantAmounts[u.uid] || ""}
+                                                onChange={(e) => handlePlantAmountChange(u.uid, e.target.value)}
+                                                disabled={isProcessing[u.uid]}
+                                            />
+                                            <Button 
+                                                variant="outline" 
+                                                size="icon" 
+                                                className="h-8 w-8" 
+                                                onClick={() => handleUpdatePlants(u, -(plantAmounts[u.uid] || 0))}
+                                                disabled={isProcessing[u.uid] || !plantAmounts[u.uid] || plantAmounts[u.uid] <= 0}
+                                            >
+                                                <MinusCircle className="h-4 w-4 text-red-500"/>
+                                            </Button>
+                                            <Button 
+                                                variant="outline" 
+                                                size="icon" 
+                                                className="h-8 w-8"
+                                                onClick={() => handleUpdatePlants(u, plantAmounts[u.uid] || 0)}
+                                                disabled={isProcessing[u.uid] || !plantAmounts[u.uid] || plantAmounts[u.uid] <= 0}
+                                            >
+                                                <PlusCircle className="h-4 w-4 text-green-500"/>
+                                            </Button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -792,4 +790,5 @@ function GroupsTab({ user }: { user: User }) {
     
 
     
+
 
