@@ -193,6 +193,11 @@ service cloud.firestore {
       allow read, write: if isGlobalAdmin();
     }
     
+    // ============= COLLECTION GROUP RULES =============
+    match /{path=**}/reservedCourses/{courseId} {
+        allow get, list: if isGlobalAdmin();
+    }
+    
     // ============= CENTERS =============
 
     match /centers/{centerId} {
