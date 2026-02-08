@@ -52,7 +52,7 @@ export default function LearningLayout({
             })}
           </div>
            <div className="p-4 border-t">
-              <Button variant="outline" className="w-full" onClick={() => router.back()}>
+              <Button variant="outline" className="w-full" onClick={() => router.push('/home')}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Volver
               </Button>
            </div>
