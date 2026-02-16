@@ -46,7 +46,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     // We have a firebaseUser, now wait for the full user profile from Firestore
     if (user) {
         // User profile is loaded, now check onboarding status
-        const shouldShow = (user.accessCount || 0) < 2;
+        const accessThreshold = user.email === 'adrimax.dev@gmail.com' ? 7 : 2;
+        const shouldShow = (user.accessCount || 0) < accessThreshold;
         setShowOnboarding(shouldShow);
         setIsCheckingAuth(false);
     }

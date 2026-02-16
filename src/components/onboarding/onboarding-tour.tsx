@@ -787,14 +787,28 @@ export function OnboardingTour({ onComplete, onFinishTour }: { onComplete: () =>
                             initial={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                         >
-                             <header className="relative z-20 flex items-center justify-between gap-3 h-10">
+                            <header className="relative z-20 flex items-center justify-between gap-3 h-10">
                                 <div className="flex items-center gap-3">
                                     <motion.div layoutId="onboarding-logo">
                                         <Logo className="h-8 w-8 text-primary" />
                                     </motion.div>
                                     <h1 className="text-lg font-bold font-headline">Dynamic Class - Introducción</h1>
                                 </div>
-                                <HelpDialog />
+                                <div className="flex items-center gap-2">
+                                    <HelpDialog />
+                                    <Button variant="ghost" onClick={goToPreviousStep} size="sm" className={cn("h-9 w-9 p-0", step === 0 && 'invisible')}>
+                                        <ArrowLeft className="h-5 w-5" />
+                                    </Button>
+                                    {isLastStep ? (
+                                        <Button onClick={handleNext} className="bg-blue-500 hover:bg-blue-600" size="sm">
+                                            Comenzar
+                                        </Button>
+                                    ) : (
+                                        <Button onClick={handleNext} size="sm">
+                                            Siguiente <ArrowRight className="ml-2 h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
                             </header>
 
                             <div className="flex-1 flex flex-col justify-center text-center">
@@ -827,24 +841,6 @@ export function OnboardingTour({ onComplete, onFinishTour }: { onComplete: () =>
                             
                             <footer className="space-y-4">
                                 <Progress value={((step + 1) / steps.length) * 100} className="h-2 w-full max-w-xs mx-auto" />
-                                
-                                <div className="grid grid-cols-3 gap-3">
-                                    <Button variant="outline" onClick={goToPreviousStep} size="lg" className={cn("col-span-1", step === 0 && 'invisible')}>
-                                        <ArrowLeft className="mr-2 h-4 w-4" /> Atrás
-                                    </Button>
-
-                                    {isLastStep ? (
-                                        <div className="col-span-2 space-y-2">
-                                            <Button onClick={handleNext} className="w-full bg-blue-500 hover:bg-blue-600" size="lg">
-                                                Comenzar a Explorar
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <Button onClick={handleNext} size="lg" className="col-span-2">
-                                            Siguiente
-                                        </Button>
-                                    )}
-                                </div>
                             </footer>
                         </motion.div>
                     )}
