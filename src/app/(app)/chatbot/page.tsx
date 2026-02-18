@@ -26,7 +26,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -50,7 +49,7 @@ import {
 } from "@/components/ui/sheet";
 
 // Custom Components & Hooks
-import type { ChatMessage, Chat, ResponseLength } from "@/lib/types";
+import type { ChatMessage, Chat } from "@/lib/types";
 import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance";
 import { useApp } from "@/lib/hooks/use-app";
 import { Logo } from "@/components/icons";
@@ -105,7 +104,6 @@ export default function ChatbotPage() {
   // States
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [responseLength, setResponseLength] = useState<ResponseLength>('normal');
   const [error, setError] = useState<ErrorState>({ hasError: false, message: '', canRetry: false });
   const [pendingMessage, setPendingMessage] = useState<string>("");
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
@@ -240,15 +238,13 @@ export default function ChatbotPage() {
       }
 
       // Build context from the last 10 messages
-      const context = messages
+      const history = messages
         .slice(-10)
-        .map(m => `${m.role === 'user' ? 'Usuario' : 'Asistente'}: ${m.content}`)
-        .join('\n\n');
+        .map(({ role, content }) => ({ role, content }));
       
       const result = await aiChatbotAssistance({ 
         query: messageToSend,
-        responseLength,
-        context,
+        history
       });
 
       // Validate response
@@ -522,47 +518,6 @@ export default function ChatbotPage() {
               )}
             </Button>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Select
-            onValueChange={(value: ResponseLength) => setResponseLength(value)}
-            defaultValue={responseLength}
-            disabled={isSending}
-          >
-            <SelectTrigger className="w-full h-9 text-xs border-border/50 hover:border-border transition-colors">
-              <SelectValue placeholder="Longitud de respuesta" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="breve">
-                <div className="flex items-center gap-2">
-                  <span>⚡</span>
-                  <div className="text-left">
-                    <div className="font-medium">Breve</div>
-                    <div className="text-xs text-muted-foreground">Respuesta directa</div>
-                  </div>
-                </div>
-              </SelectItem>
-              <SelectItem value="normal">
-                <div className="flex items-center gap-2">
-                  <span>📝</span>
-                  <div className="text-left">
-                    <div className="font-medium">Normal</div>
-                    <div className="text-xs text-muted-foreground">Explicación clara</div>
-                  </div>
-                </div>
-              </SelectItem>
-              <SelectItem value="detallada">
-                <div className="flex items-center gap-2">
-                  <span>📚</span>
-                  <div className="text-left">
-                    <div className="font-medium">Detallada</div>
-                    <div className="text-xs text-muted-foreground">Con ejemplos y profundidad</div>
-                  </div>
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
     </div>

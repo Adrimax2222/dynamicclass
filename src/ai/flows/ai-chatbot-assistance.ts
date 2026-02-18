@@ -1,127 +1,105 @@
 'use server';
 
-import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+/**
+ * @fileOverview Gestor de conversaciones para el chatbot de IA usando el SDK de Google.
+ *
+ * - aiChatbotAssistance: Función principal que gestiona la lógica de la conversación con Gemini.
+ * - AIChatbotAssistanceInput: El tipo de entrada para la función.
+ * - AIChatbotAssistanceOutput: El tipo de salida de la función.
+ */
+
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, type ChatSession, type EnhancedGenerateContentResponse } from "@google/generative-ai";
 import { z } from 'zod';
 
-// ============= SCHEMAS =============
+// --- Esquemas de Entrada y Salida ---
 
-const AIChatbotAssistanceInputSchema = z.object({
-  query: z.string().min(1, 'La consulta no puede estar vacía.').max(4000),
-  subject: z.string().optional().describe('El tema de la consulta, por ejemplo, "Matemáticas".'),
-  responseLength: z.enum(['breve', 'normal', 'detallada']).default('normal').describe('La longitud deseada para la respuesta de la IA.'),
-  context: z.string().optional().describe('El historial de la conversación para dar contexto.'),
+const ChatHistoryItemSchema = z.object({
+  role: z.enum(['user', 'assistant', 'system']),
+  content: z.string(),
 });
 
-// This internal schema includes the dynamically generated instruction.
-const InternalPromptInputSchema = AIChatbotAssistanceInputSchema.extend({
-    lengthInstruction: z.string().describe('La instrucción detallada sobre la longitud de la respuesta.')
-});
-
-const AIChatbotAssistanceOutputSchema = z.object({
-  response: z.string().describe('La respuesta generada por el asistente de IA.'),
+export const AIChatbotAssistanceInputSchema = z.object({
+  history: z.array(ChatHistoryItemSchema).optional().describe("Historial de la conversación para dar contexto al modelo."),
+  query: z.string().min(1, { message: "La consulta no puede estar vacía." }).describe("La nueva pregunta del usuario."),
+  subject: z.string().optional().describe("El tema principal de la conversación, ej: 'Matemáticas'."),
 });
 
 export type AIChatbotAssistanceInput = z.infer<typeof AIChatbotAssistanceInputSchema>;
+
+export const AIChatbotAssistanceOutputSchema = z.object({
+  response: z.string().describe("La respuesta generada por el asistente de IA."),
+});
+
 export type AIChatbotAssistanceOutput = z.infer<typeof AIChatbotAssistanceOutputSchema>;
 
 
-// ============= GENKIT PROMPT =============
-
-const prompt = ai.definePrompt({
-    name: 'aiChatbotAssistancePrompt',
-    model: googleAI.model('gemini-1.0-pro'),
-    input: { schema: InternalPromptInputSchema },
-    output: { schema: AIChatbotAssistanceOutputSchema },
-    prompt: `Eres ADRIMAX AI, un asistente educativo experto, amigable y motivador.
-
-Tu misión:
-- Explicar conceptos de forma clara y accesible
-- Adaptar tu respuesta al nivel del estudiante
-- Usar ejemplos prácticos y analogías
-- Fomentar el pensamiento crítico
-
-{{#if subject}}
-Tema: {{{subject}}}
-{{/if}}
-
-{{#if context}}
-Conversación previa:
-{{{context}}}
-{{/if}}
-
-Pregunta del estudiante: {{{query}}}
-
-{{{lengthInstruction}}}
-
-Usa Markdown para formatear (negritas, listas, código si es necesario). Mantén un tono educativo positivo.
-`,
-});
-
-
-// ============= GENKIT FLOW =============
-
-const aiChatbotAssistanceFlow = ai.defineFlow(
-  {
-    name: 'aiChatbotAssistanceFlow',
-    inputSchema: AIChatbotAssistanceInputSchema,
-    outputSchema: AIChatbotAssistanceOutputSchema,
-  },
-  async (input) => {
-    const lengthInstructions = {
-      breve: 'Responde de forma concisa en máximo 3 párrafos.',
-      normal: 'Responde con una explicación equilibrada y clara.',
-      detallada: 'Responde de forma completa con ejemplos, analogías y ejercicios.'
-    };
-    const instruction = lengthInstructions[input.responseLength];
-
-    const { output } = await prompt({
-      ...input,
-      lengthInstruction: instruction,
-    });
-    
-    if (!output) {
-      throw new Error("La IA no generó una respuesta válida.");
-    }
-    
-    return output;
+/**
+ * Procesa la consulta de un usuario y devuelve una respuesta de la IA, manteniendo el contexto de la conversación.
+ * Utiliza el modelo 'gemini-1.5-flash' y el SDK oficial de Google Generative AI.
+ * 
+ * @param input - Un objeto que contiene la consulta del usuario y el historial de chat.
+ * @returns Un objeto con la respuesta de la IA o un mensaje de error controlado.
+ */
+export async function aiChatbotAssistance(input: AIChatbotAssistanceInput): Promise<AIChatbotAssistanceOutput> {
+  // 1. Validar la entrada usando Zod.
+  const validation = AIChatbotAssistanceInputSchema.safeParse(input);
+  if (!validation.success) {
+    const errorMessage = "Entrada inválida: " + validation.error.errors.map(e => e.message).join(', ');
+    console.error(errorMessage);
+    return { response: 'Error en el formato de la solicitud.' };
   }
-);
 
-// ============= MAIN FUNCTION =============
+  // 2. Cargar la API Key de forma segura desde las variables de entorno.
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error("La variable de entorno GEMINI_API_KEY no está configurada.");
+    // En producción, es mejor no exponer detalles del error al cliente.
+    return { response: 'Error de configuración del servidor.' };
+  }
 
-export async function aiChatbotAssistance(
-  input: AIChatbotAssistanceInput
-): Promise<AIChatbotAssistanceOutput> {
-  const validatedInput = AIChatbotAssistanceInputSchema.parse(input);
-  return aiChatbotAssistanceFlow(validatedInput);
-}
-
-// ============= UTILITY =============
-
-export async function verifyAISetup(): Promise<{ success: boolean; message: string }> {
   try {
-    const testResult = await aiChatbotAssistance({
-      query: 'Hola, ¿estás funcionando?',
-      responseLength: 'breve',
+    // 3. Inicializar el cliente de la IA de Google.
+    const genAI = new GoogleGenerativeAI(apiKey);
+
+    // 4. Configurar y obtener el modelo 'gemini-1.5-flash'.
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      systemInstruction: `Eres ADRIMAX AI, un asistente educativo experto, amigable y motivador. Tu misión es explicar conceptos de forma clara y accesible, adaptar tu respuesta al nivel del estudiante, usar ejemplos prácticos y analogías, y fomentar el pensamiento crítico. ${validation.data.subject ? `El tema principal de la conversación es ${validation.data.subject}.` : ''} Usa Markdown para formatear el texto (negritas, listas, etc.). Mantén siempre un tono educativo y positivo.`,
     });
 
-    if (!testResult || !testResult.response || testResult.response.includes('Error') || testResult.response.includes('problema')) {
-      return {
-        success: false,
-        message: `La IA respondió con un error: ${testResult?.response || 'respuesta vacía'}`,
-      };
-    }
+    // 5. Formatear el historial para el SDK. El rol 'assistant' se mapea a 'model'.
+    const chatHistory = validation.data.history?.map(msg => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.content }],
+    })).filter(msg => msg.role === 'user' || msg.role === 'model') ?? [];
 
-    return {
-      success: true,
-      message: '✅ AI setup verificado correctamente',
-    };
-  } catch (error: any) {
-    console.error(`❌ Error en verifyAISetup:`, error);
-    return {
-      success: false,
-      message: `❌ Error en setup: ${error.message}`,
-    };
+    // 6. Iniciar una sesión de chat con el historial.
+    const chat: ChatSession = model.startChat({
+      history: chatHistory,
+      generationConfig: {
+        maxOutputTokens: 2048,
+      },
+      safetySettings: [ // Configuración de seguridad para el Free Tier
+          { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+          { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+          { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+          { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+      ],
+    });
+
+    // 7. Enviar el nuevo mensaje del usuario (la 'query') a la sesión de chat.
+    const userQuery: string = validation.data.query;
+    const result: EnhancedGenerateContentResponse = await chat.sendMessage(userQuery);
+    
+    // 8. Extraer la respuesta de texto.
+    const response = result.response;
+    const text = response.text();
+
+    return { response: text };
+
+  } catch (error) {
+    // 9. Capturar errores (ej. límites de cuota, problemas de red) y devolver el mensaje solicitado.
+    console.error("Error al llamar a la API de Google Generative AI:", error);
+    return { response: 'Tu tutor digital necesita unos segundos para pensar. Vuelve a intentarlo en un momento.' };
   }
 }

@@ -83,7 +83,7 @@ export async function processEditorAction(input: EditorActionInput): Promise<{ p
     
     // 3. Usar el nombre de modelo correcto y estable
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.0-pro" 
+      model: "gemini-1.5-flash" 
     });
 
     // 4. Construir el prompt completo
