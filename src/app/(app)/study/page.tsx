@@ -301,7 +301,7 @@ export default function StudyPage() {
             const centerDoc = await getDoc(centerDocRef);
             if (centerDoc.exists()) {
                 const centerData = centerDoc.data() as Center;
-                const userClassName = `${''}${user.course.replace('eso','ESO')}-${''}${user.className}`;
+                const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
                 const userClassDef = centerData.classes.find(c => c.name === userClassName);
                 setIsScheduleAvailable(!!userClassDef?.schedule);
             } else {
@@ -311,22 +311,37 @@ export default function StudyPage() {
         checkSchedule();
     }, [firestore, user]);
 
-   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    
-    if (selectedSound && isActive) {
-        if (audio.src !== selectedSound.url) {
-            audio.src = selectedSound.url;
-        }
-        if (audio.paused) {
-          audio.play().catch(error => console.log("Esperando interacción del usuario..."));
-        }
-    } else {
-      audio.pause();
-    }
-  }, [selectedSound, isActive]);
+    // Effect 1: Manage the audio source and volume based on user selection
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
 
+        if (selectedSound?.url) {
+            // Only update src if it's different to prevent re-loading
+            if (audio.src !== selectedSound.url) {
+                audio.src = selectedSound.url;
+            }
+            audio.volume = volume / 100;
+        } else {
+            // If no sound is selected, pause and reset
+            audio.pause();
+            audio.src = '';
+        }
+    }, [selectedSound, volume]);
+
+    // Effect 2: Control playback based on timer activity and sound selection
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        if (isActive && selectedSound) {
+            audio.play().catch(error => {
+                console.log("Audio playback failed, likely needs user interaction.", error);
+            });
+        } else {
+            audio.pause();
+        }
+    }, [isActive, selectedSound]);
     
     const handleToggleFocusMode = (checked: boolean) => {
         if (!isActive) return;
@@ -342,7 +357,7 @@ export default function StudyPage() {
 
         if (isFocusMode && isActive) {
             document.documentElement.requestFullscreen().catch(err => {
-                console.error(`Error al activar pantalla completa: ${''}${err.message}`);
+                console.error(`Error al activar pantalla completa: ${err.message}`);
                 setIsFocusMode(false);
                 toast({
                     title: "Error de Pantalla Completa",
@@ -376,11 +391,7 @@ export default function StudyPage() {
     };
   
     const handleVolumeChange = (value: number[]) => {
-        const newVolume = value[0];
-        setVolume(newVolume);
-        if (audioRef.current) {
-          audioRef.current.volume = newVolume / 100;
-        }
+        setVolume(value[0]);
     };
 
     const handleSoundSelect = (sound: Sound) => {
@@ -403,11 +414,11 @@ export default function StudyPage() {
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
-        return `${''}${String(mins).padStart(2, "0")}:${''}${String(secs).padStart(2, "0")}`;
+        return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
     };
 
     const formatStudyTime = (totalMinutes: number = 0) => {
-        return `${''}${totalMinutes}m`;
+        return `${totalMinutes}m`;
     };
 
     const progress = useMemo(() => {
@@ -1169,7 +1180,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
               };
               savedDocs.push(newDoc);
               localStorage.setItem('scannedDocuments', JSON.stringify(savedDocs));
-              toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${''}${fileName}" en tu historial.` });
+              toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${fileName}" en tu historial.` });
             } else {
               toast({ title: 'PDF Descargado', description: `El guardado en el historial está desactivado.` });
             }
@@ -1457,10 +1468,10 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
             return;
         }
 
-        const embedUrl = `https://open.spotify.com/embed/playlist/${''}${playlistId}?utm_source=generator`;
+        const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator`;
         
         const newPlaylist: Playlist = {
-            id: `user-${''}${Date.now()}`,
+            id: `user-${Date.now()}`,
             name: newPlaylistName,
             url: embedUrl,
         };
@@ -1468,7 +1479,7 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
         setUserPlaylists(prev => [...prev, newPlaylist]);
         setNewPlaylistName("");
         setNewPlaylistUrl("");
-        toast({ title: "¡Playlist añadida!", description: `"${''}${newPlaylist.name}" se ha guardado.`});
+        toast({ title: "¡Playlist añadida!", description: `"${newPlaylist.name}" se ha guardado.`});
     };
     
     const handleDeletePlaylist = (id: string) => {
@@ -1592,7 +1603,7 @@ function ScienceCalculatorDialog() {
             const resultString = String(result);
             setDisplay(resultString);
             setExpression(resultString);
-            setHistory(prev => [`${''}${expression} = ${''}${resultString}`, ...prev].slice(0, 10));
+            setHistory(prev => [`${expression} = ${resultString}`, ...prev].slice(0, 10));
         } catch (e) {
             setDisplay("Error");
             setExpression("");
