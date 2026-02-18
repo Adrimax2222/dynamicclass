@@ -88,6 +88,14 @@ const rarityStyles = {
     'Legendario': "border-pink-500/30 bg-pink-500/5 text-pink-600",
 };
 
+const spaceRarityStyles = {
+    'Común': "border-slate-500/50 bg-slate-800/40 text-slate-300",
+    'Poco Común': "border-cyan-500/50 bg-cyan-900/40 text-cyan-300",
+    'Raro': "border-purple-500/50 bg-purple-900/40 text-purple-300",
+    'Épico': "border-amber-500/50 bg-amber-900/40 text-amber-300",
+    'Legendario': "border-pink-500/50 bg-pink-900/40 text-pink-300",
+};
+
 const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, children, path }: { 
     plant: Plant; 
     unlocked: boolean; 
@@ -280,7 +288,7 @@ export default function CollectionPage() {
         )}>
             <header className={cn("p-4 flex items-center justify-between sticky top-0 z-10 border-b", viewingPath === 'space' ? 'bg-black/80 backdrop-blur-sm' : 'bg-background/80 backdrop-blur-sm')}>
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                    <Button variant="ghost" size="icon" onClick={() => router.back()} className={cn(viewingPath === 'space' && 'text-white hover:bg-slate-800')}>
                         <ChevronLeft />
                     </Button>
                     <h1 className="text-lg font-bold font-headline flex items-center gap-2">
@@ -291,19 +299,19 @@ export default function CollectionPage() {
                 <div className="flex items-center gap-2">
                     {user && (
                         <RankingDialog user={user} openTo="shop">
-                            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full">
+                            <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-full", viewingPath === 'space' && 'text-white hover:bg-slate-800')}>
                                 <ShoppingCart className="h-5 w-5 text-primary"/>
                             </Button>
                         </RankingDialog>
                     )}
                     {isAquaticUnlocked && (
-                         <Button variant="outline" size="icon" onClick={handlePathSwitch}>
+                         <Button variant="ghost" size="icon" onClick={handlePathSwitch} className={cn(viewingPath === 'space' && 'text-white hover:bg-slate-800')}>
                             <ChevronsRight className="h-4 w-4" />
                         </Button>
                     )}
                     <Dialog>
                         <DialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className={cn(viewingPath === 'space' && 'text-white hover:bg-slate-800')}>
                                 <Info className="h-5 w-5"/>
                             </Button>
                         </DialogTrigger>
@@ -365,37 +373,37 @@ export default function CollectionPage() {
                     <Card className={cn(
                         viewingPath === 'terrestrial' && 'bg-green-500/10 border-green-500/30',
                         viewingPath === 'aquatic' && 'bg-blue-500/10 border-blue-500/30',
-                        viewingPath === 'space' && 'bg-purple-500/10 border-purple-500/30',
+                        viewingPath === 'space' && 'bg-purple-900/40 border-purple-500/30 text-white',
                     )}>
                         <CardContent className="p-3 text-center">
                             <p className={cn("text-xs font-semibold", 
                                 viewingPath === 'terrestrial' && 'text-green-700 dark:text-green-300',
                                 viewingPath === 'aquatic' && 'text-blue-700 dark:text-blue-300',
-                                viewingPath === 'space' && 'text-purple-700 dark:text-purple-300',
+                                viewingPath === 'space' && 'text-purple-300',
                             )}>Total</p>
                             <div className="flex items-center justify-center gap-1">
                                 <TotalPathIcon className={cn("h-5 w-5", 
                                     viewingPath === 'terrestrial' && 'text-green-600',
                                     viewingPath === 'aquatic' && 'text-blue-600',
-                                    viewingPath === 'space' && 'text-purple-600',
+                                    viewingPath === 'space' && 'text-purple-400',
                                 )} />
                                 <p className="text-2xl font-bold">{plantCount}</p>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card>
+                    <Card className={cn(viewingPath === 'space' && 'bg-slate-900/50 border-slate-700 text-white')}>
                         <CardContent className="p-3 text-center">
-                            <p className="text-xs text-muted-foreground">Fase Actual</p>
+                            <p className={cn("text-xs text-muted-foreground", viewingPath === 'space' && 'text-slate-400')}>Fase Actual</p>
                              <div className="flex items-center justify-center gap-2">
-                                <CurrentPhaseIcon className="h-6 w-6 text-primary"/>
+                                <CurrentPhaseIcon className={cn("h-6 w-6", viewingPath === 'space' ? 'text-purple-400' : 'text-primary')}/>
                                 <p className="text-2xl font-bold">{currentPhase}</p>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card>
+                    <Card className={cn(viewingPath === 'space' && 'bg-slate-900/50 border-slate-700 text-white')}>
                         <CardContent className="p-3 text-center">
-                            <p className="text-xs text-muted-foreground">Progreso</p>
-                            <p className="text-2xl font-bold">{plantsInCurrentPhase} <span className="text-muted-foreground">/ 5</span></p>
+                            <p className={cn("text-xs text-muted-foreground", viewingPath === 'space' && 'text-slate-400')}>Progreso</p>
+                            <p className="text-2xl font-bold">{plantsInCurrentPhase} <span className={cn("text-muted-foreground", viewingPath === 'space' && 'text-slate-500')}>/ 5</span></p>
                         </CardContent>
                     </Card>
                 </div>
@@ -412,18 +420,18 @@ export default function CollectionPage() {
                         </CardContent>
                     </Card>
                 ) : nextItem ? (
-                    <Card>
+                    <Card className={cn(viewingPath === 'space' && 'bg-slate-900/50 border-slate-700 text-white')}>
                         <CardHeader className="p-3">
-                            <p className="text-xs text-muted-foreground text-center">Siguiente Desbloqueo</p>
+                            <p className={cn("text-xs text-muted-foreground text-center", viewingPath === 'space' && 'text-slate-400')}>Siguiente Desbloqueo</p>
                         </CardHeader>
                         <CardContent className="p-3 pt-0 space-y-2">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-muted rounded-lg">
-                                    <nextItem.icon className="h-6 w-6 text-muted-foreground"/>
+                                <div className={cn("p-2 rounded-lg", viewingPath === 'space' ? 'bg-slate-800' : 'bg-muted')}>
+                                    <nextItem.icon className={cn("h-6 w-6 text-muted-foreground", viewingPath === 'space' && 'text-slate-400')}/>
                                 </div>
                                 <div className="flex-1">
-                                    <p className="font-semibold text-muted-foreground">{nextItem.name}</p>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className={cn("font-semibold", viewingPath === 'space' ? 'text-slate-300' : 'text-muted-foreground')}>{nextItem.name}</p>
+                                    <p className={cn("text-xs", viewingPath === 'space' ? 'text-slate-500' : 'text-muted-foreground')}>
                                         Progreso: {plantsInCurrentPhase} / 5
                                     </p>
                                 </div>
@@ -435,13 +443,13 @@ export default function CollectionPage() {
                      <Card className={cn("border-dashed", 
                         viewingPath === 'terrestrial' && "bg-green-500/10 border-green-500/30",
                         viewingPath === 'aquatic' && "bg-blue-500/10 border-blue-500/30",
-                        viewingPath === 'space' && "bg-purple-500/10 border-purple-500/30"
+                        viewingPath === 'space' && "bg-purple-900/40 border-purple-500/30"
                      )}>
                         <CardContent className="p-4 text-center">
                             <p className={cn("font-bold", 
                                 viewingPath === 'terrestrial' && "text-green-700",
                                 viewingPath === 'aquatic' && "text-blue-700",
-                                viewingPath === 'space' && "text-purple-700"
+                                viewingPath === 'space' && "text-purple-300"
                             )}>
                                 ¡Felicidades! Has completado el {pageTitle}.
                             </p>
@@ -449,17 +457,17 @@ export default function CollectionPage() {
                     </Card>
                 )}
 
-                <Card>
+                <Card className={cn(viewingPath === 'space' && 'bg-slate-900/50 border-slate-700 text-white')}>
                     <CardHeader className="flex flex-row items-center justify-between p-4">
                         <div>
                             <CardTitle className="text-lg flex items-center gap-2">
                                 <Globe className="h-5 w-5 text-primary"/>
                                 Caminos de Conocimiento
                             </CardTitle>
-                            <CardDescription>Explora las diferentes sendas.</CardDescription>
+                            <CardDescription className={cn(viewingPath === 'space' && 'text-slate-400')}>Explora las diferentes sendas.</CardDescription>
                         </div>
                         <PathsDialog isTerrestrialComplete={isTerrestrialComplete} isAquaticComplete={isAquaticComplete} isSpaceComplete={isSpaceComplete}>
-                            <Button variant="outline">
+                            <Button variant="outline" className={cn(viewingPath === 'space' && 'bg-slate-800 text-white hover:bg-slate-700 border-slate-600')}>
                                 Ver Caminos
                             </Button>
                         </PathsDialog>
@@ -469,12 +477,12 @@ export default function CollectionPage() {
                 {!isPersonalUser && (
                      <Collapsible className="w-full">
                         <CollapsibleTrigger asChild>
-                            <div className="group flex w-full cursor-pointer items-center justify-between rounded-lg border bg-muted/50 p-4 transition-all hover:bg-muted">
+                            <div className={cn("group flex w-full cursor-pointer items-center justify-between rounded-lg border p-4 transition-all", viewingPath === 'space' ? 'bg-slate-900/50 border-slate-700 hover:bg-slate-800/80' : 'bg-muted/50 hover:bg-muted')}>
                                 <div className="flex items-center gap-3">
                                     <Users className="h-5 w-5 text-primary" />
                                     <h3 className="font-semibold">Jardín de Compañeros</h3>
                                 </div>
-                                <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-90" />
+                                <ChevronRight className={cn("h-5 w-5 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-90", viewingPath === 'space' && 'text-slate-400')} />
                             </div>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
@@ -500,24 +508,25 @@ export default function CollectionPage() {
                                                 return (
                                                     <CarouselItem key={classmate.uid} className="pl-2 basis-1/2 md:basis-1/3">
                                                         <div className="p-1">
-                                                            <Card>
+                                                            <Card className={cn(viewingPath === 'space' && 'bg-slate-800/80 border-slate-700')}>
                                                                 <CardContent className="flex flex-col items-center justify-center p-3 sm:p-4 aspect-[4/5]">
                                                                     <AvatarDisplay user={classmate} className="h-12 w-12 sm:h-16 sm:w-16 mb-2" />
                                                                     <p className="font-bold text-sm text-center truncate w-full">{classmate.name}</p>
                                                                     <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-2">
                                                                         <div className="flex items-center gap-1">
                                                                             <TreePine className="h-3 w-3 text-green-500" />
-                                                                            <span>{classmatePlantCount}</span>
+                                                                            <span className={cn(viewingPath === 'space' && 'text-slate-400')}>{classmatePlantCount}</span>
                                                                         </div>
                                                                         <div className="flex items-center gap-1">
                                                                             <Sprout className="h-3 w-3 text-blue-500" />
-                                                                            <span>Fase {classmatePhase}</span>
+                                                                            <span className={cn(viewingPath === 'space' && 'text-slate-400')}>Fase {classmatePhase}</span>
                                                                         </div>
                                                                     </div>
                                                                     <Badge variant="outline" className={cn(
                                                                         "mt-2 text-xs", 
                                                                         classmatePath === 'Acuático' && 'border-blue-500/50 bg-blue-500/10 text-blue-600',
-                                                                        classmatePath === 'Espacial' && 'border-purple-500/50 bg-purple-500/10 text-purple-600'
+                                                                        classmatePath === 'Espacial' && 'border-purple-500/50 bg-purple-500/10 text-purple-600',
+                                                                        viewingPath === 'space' && 'bg-slate-700 border-slate-600 text-slate-300'
                                                                     )}>{classmatePath}</Badge>
                                                                 </CardContent>
                                                             </Card>
@@ -527,8 +536,8 @@ export default function CollectionPage() {
                                             })}
                                         </CarouselContent>
                                         <div className="flex justify-center gap-4 pt-4">
-                                          <CarouselPrevious className="static translate-y-0" />
-                                          <CarouselNext className="static translate-y-0" />
+                                          <CarouselPrevious className={cn("static translate-y-0", viewingPath === 'space' && 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700')} />
+                                          <CarouselNext className={cn("static translate-y-0", viewingPath === 'space' && 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700')} />
                                         </div>
                                     </Carousel>
                                 ) : (
@@ -543,10 +552,10 @@ export default function CollectionPage() {
 
 
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground", viewingPath === 'space' && 'text-slate-400')} />
                     <Input 
                         placeholder="Buscar especie..." 
-                        className="bg-background border-input pl-10 focus:ring-primary"
+                        className={cn("pl-10 focus:border-primary/50", viewingPath === 'space' ? 'bg-slate-900/80 border-slate-700 placeholder:text-slate-400 focus:border-purple-500' : 'bg-background border-input')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -555,6 +564,8 @@ export default function CollectionPage() {
                 <div className="grid grid-cols-2 gap-4">
                     {filteredPlants.map((plant) => {
                         const isUnlocked = plantCount >= plant.unlocksAt;
+                        const styles = viewingPath === 'space' ? spaceRarityStyles : rarityStyles;
+                        const currentRarityStyle = styles[plant.rarity];
                         
                         return (
                              <PlantInfoDialog 
@@ -567,21 +578,21 @@ export default function CollectionPage() {
                             >
                                 <Card className={cn(
                                     "group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 border-2 cursor-pointer",
-                                    isUnlocked ? rarityStyles[plant.rarity] : 'border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900'
+                                    isUnlocked ? currentRarityStyle : (viewingPath === 'space' ? 'bg-slate-900/50 border-slate-800' : 'border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900')
                                 )}>
                                     <CardContent className="p-4 flex flex-col items-center justify-center text-center aspect-square">
-                                        <plant.icon className={cn("w-16 h-16", isUnlocked ? rarityStyles[plant.rarity] : 'text-muted-foreground/50')} />
+                                        <plant.icon className={cn("w-16 h-16", isUnlocked ? currentRarityStyle.replace(/text-[\w-]+/, (match) => match.replace('600', '500')) : (viewingPath === 'space' ? 'text-slate-600' : 'text-muted-foreground/50'))} />
                                         <div className="mt-4 text-center">
-                                            <p className={cn("font-bold text-sm", isUnlocked ? 'text-foreground' : 'text-muted-foreground')}>{plant.name}</p>
+                                            <p className={cn("font-bold text-sm", isUnlocked ? (viewingPath === 'space' ? 'text-white' : 'text-foreground') : 'text-muted-foreground')}>{plant.name}</p>
                                             {!isUnlocked && (
-                                                <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-1">
+                                                <div className={cn("flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-1", viewingPath === 'space' && 'text-slate-500')}>
                                                     <Lock className="h-3 w-3" />
                                                     <span>Fase {Math.floor((plant.unlocksAt - unlockOffset) / 5) + 1 + phaseOffset}</span>
                                                 </div>
                                             )}
                                         </div>
                                     </CardContent>
-                                    <Badge variant="secondary" className={cn("absolute top-2 right-2 text-xs", isUnlocked ? rarityStyles[plant.rarity] : "bg-muted text-muted-foreground")}>{plant.rarity}</Badge>
+                                    <Badge variant="secondary" className={cn("absolute top-2 right-2 text-xs", isUnlocked ? currentRarityStyle : (viewingPath === 'space' ? 'bg-slate-800/80 border-transparent text-slate-300' : 'bg-muted text-muted-foreground'))}>{plant.rarity}</Badge>
                                 </Card>
                             </PlantInfoDialog>
                         )
