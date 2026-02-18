@@ -1,116 +1,61 @@
 'use server';
 
 /**
- * @fileOverview Gestor de conversaciones para el chatbot de IA usando el SDK de Google.
- *
- * - aiChatbotAssistance: Función principal que gestiona la lógica de la conversación con Gemini.
+ * @fileOverview Minimal Viable Product for AI Chatbot Assistance.
+ * This is a simplified version for debugging purposes.
  */
 
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, type ChatSession, type EnhancedGenerateContentResponse, type Content } from "@google/generative-ai";
-import { z } from 'zod';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// Simple input/output types for debugging
+interface AIChatbotAssistanceInput {
+  query: string;
+}
+
+interface AIChatbotAssistanceOutput {
+  response: string;
+}
 
 /**
- * Procesa la consulta de un usuario y devuelve una respuesta de la IA, manteniendo el contexto de la conversación.
- * Utiliza el modelo 'gemini-1.5-flash' y el SDK oficial de Google Generative AI.
+ * Processes a user query and returns a simple AI response.
+ * Uses the 'gemini-1.5-flash' model with the v1 API.
  * 
- * @param input - Un objeto que contiene la consulta del usuario y el historial de chat.
- * @returns Un objeto con la respuesta de la IA o un mensaje de error controlado.
+ * @param input - An object containing the user's query.
+ * @returns An object with the AI's response or an error message.
  */
 export async function aiChatbotAssistance(input: AIChatbotAssistanceInput): Promise<AIChatbotAssistanceOutput> {
+  // 1. Verify API Key
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('Falta la API Key en las variables de entorno');
+  }
+
   try {
-    // 1. Cargar y verificar la API Key de forma segura desde las variables de entorno.
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('Falta la API Key en las variables de entorno');
-    }
-
-    // 2. Validar la entrada usando Zod.
-    const validation = AIChatbotAssistanceInputSchema.safeParse(input);
-    if (!validation.success) {
-      const errorMessage = "Entrada inválida: " + validation.error.errors.map(e => e.message).join(', ');
-      throw new Error(errorMessage);
-    }
-    
-    // 3. Inicializar el cliente de la IA de Google.
+    // 2. Initialize Google AI Client
     const genAI = new GoogleGenerativeAI(apiKey);
-
-    // 4. Configurar y obtener el modelo 'gemini-1.5-flash', forzando la versión 'v1' de la API.
-    // El 'systemInstruction' se inyecta en el historial para compatibilidad con 'v1'.
+    
+    // 3. Get model and force v1 API
     const model = genAI.getGenerativeModel(
         { model: "gemini-1.5-flash" },
-        { apiVersion: 'v1' } // Forzar el uso de la API estable v1
+        { apiVersion: 'v1' }
     );
 
-    // 5. Construir el historial, inyectando la personalidad al principio.
-    const systemPrompt = `Eres ADRIMAX AI, un asistente educativo experto, amigable y motivador. Tu misión es explicar conceptos de forma clara y accesible, adaptar tu respuesta al nivel del estudiante, usar ejemplos prácticos y analogías, y fomentar el pensamiento crítico. ${validation.data.subject ? `El tema principal de la conversación es ${validation.data.subject}.` : ''} Usa Markdown para formatear el texto (negritas, listas, etc.). Mantén siempre un tono educativo y positivo.`;
-
-    const formattedHistory: Content[] = [
-        {
-            role: 'user',
-            parts: [{ text: `Instrucciones de sistema: ${systemPrompt}. Entendido?` }]
-        },
-        {
-            role: 'model',
-            parts: [{ text: '¡Entendido! Soy ADRIMAX, tu tutor digital. ¿En qué puedo ayudarte hoy?' }]
-        },
-        // Añadir el historial de chat del usuario después del prompt de sistema
-        ...(validation.data.history?.map(msg => ({
-            role: msg.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: msg.content }],
-        })).filter(msg => msg.role === 'user' || msg.role === 'model') ?? [])
-    ];
-    
-    // 6. Iniciar una sesión de chat con el historial.
-    const chat: ChatSession = model.startChat({
-      history: formattedHistory,
-      generationConfig: {
-        maxOutputTokens: 2048,
-      },
-      safetySettings: [ // Configuración de seguridad para el Free Tier
-          { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-          { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-          { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-          { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-      ],
-    });
-
-    // 7. Enviar el nuevo mensaje del usuario (la 'query') a la sesión de chat.
-    const userQuery: string = validation.data.query;
-    const result: EnhancedGenerateContentResponse = await chat.sendMessage(userQuery);
-    
-    // 8. Extraer la respuesta de texto.
+    // 4. Send the prompt and get the result
+    const result = await model.generateContent(input.query);
     const response = result.response;
     const text = response.text();
 
+    if (!text) {
+      throw new Error("La IA devolvió una respuesta vacía.");
+    }
+    
     return { response: text };
 
   } catch (error: any) {
-    // 9. Capturar y registrar el error real en el servidor para depuración.
-    console.error('--- AI DEBUG ERROR ---', error);
+    // 5. Critical server-side logging for debugging
+    console.error('ERROR_REAL_AQUÍ:', error);
     
-    // 10. Devolver un mensaje de error descriptivo al cliente.
-    return { response: 'Tu tutor digital necesita unos segundos para pensar. Vuelve a intentarlo en un momento.' };
+    // 6. Return the actual error message to the client for debugging
+    return { response: `Error: ${error.message}` };
   }
 }
-
-
-// --- Esquemas y Tipos (locales para este archivo, sin export) ---
-
-const ChatHistoryItemSchema = z.object({
-  role: z.enum(['user', 'assistant', 'system']),
-  content: z.string(),
-});
-
-const AIChatbotAssistanceInputSchema = z.object({
-  history: z.array(ChatHistoryItemSchema).optional().describe("Historial de la conversación para dar contexto al modelo."),
-  query: z.string().min(1, { message: "La consulta no puede estar vacía." }).describe("La nueva pregunta del usuario."),
-  subject: z.string().optional().describe("El tema principal de la conversación, ej: 'Matemáticas'."),
-});
-
-type AIChatbotAssistanceInput = z.infer<typeof AIChatbotAssistanceInputSchema>;
-
-const AIChatbotAssistanceOutputSchema = z.object({
-  response: z.string().describe("La respuesta generada por el asistente de IA."),
-});
-
-type AIChatbotAssistanceOutput = z.infer<typeof AIChatbotAssistanceOutputSchema>;

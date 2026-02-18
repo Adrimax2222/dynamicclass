@@ -236,15 +236,9 @@ export default function ChatbotPage() {
       if (!retryMessage) {
         setInput("");
       }
-
-      // Build context from the last 10 messages
-      const history = messages
-        .slice(-10)
-        .map(({ role, content }) => ({ role, content }));
       
       const result = await aiChatbotAssistance({ 
         query: messageToSend,
-        history
       });
 
       // Validate response
