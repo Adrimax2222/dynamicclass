@@ -311,25 +311,22 @@ export default function StudyPage() {
         checkSchedule();
     }, [firestore, user]);
 
-    // Effect 1: Manage the audio source and volume based on user selection
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
 
         if (selectedSound?.url) {
-            // Only update src if it's different to prevent re-loading
             if (audio.src !== selectedSound.url) {
                 audio.src = selectedSound.url;
             }
+            audio.load(); // Pre-load the audio
             audio.volume = volume / 100;
         } else {
-            // If no sound is selected, pause and reset
             audio.pause();
             audio.src = '';
         }
     }, [selectedSound, volume]);
 
-    // Effect 2: Control playback based on timer activity and sound selection
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
