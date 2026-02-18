@@ -58,6 +58,7 @@ import {
   TreePine,
   Camera,
   ShoppingCart,
+  Globe,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -456,10 +457,13 @@ export default function StudyPage() {
     const CurrentPlantIcon = PLANT_STAGES[plantStage];
   
     const isAquaticUnlocked = plantCount >= 60;
-    const collectionTitle = isAquaticUnlocked ? "Mi Acuario" : "Mis Plantas";
-    const CollectionIcon = isAquaticUnlocked ? Waves : TreePine;
-    const collectionButtonText = isAquaticUnlocked ? "Ver mi acuario" : "Ver mi colección";
-    const collectionThemeColor = isAquaticUnlocked ? "from-blue-400 to-cyan-500" : phaseColors;
+    const isSpacePath = plantCount >= 120;
+    
+    const collectionTitle = isSpacePath ? "Mi Espacio" : isAquaticUnlocked ? "Mi Acuario" : "Mis Plantas";
+    const CollectionIcon = isSpacePath ? Globe : isAquaticUnlocked ? Waves : TreePine;
+    const collectionButtonText = isSpacePath ? "Ver mi espacio" : isAquaticUnlocked ? "Ver mi acuario" : "Ver mi colección";
+    const collectionThemeColor = isSpacePath ? "from-purple-600 via-slate-900 to-black" : isAquaticUnlocked ? "from-blue-400 to-cyan-500" : phaseColors;
+
 
     return (
     <div className="flex flex-col h-screen bg-muted/30">
@@ -643,7 +647,7 @@ export default function StudyPage() {
             <Card className="w-full max-w-sm mx-auto shadow-lg">
                 <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
-                        <CollectionIcon className="h-5 w-5 text-primary"/>
+                        <CollectionIcon className={cn("h-5 w-5", isSpacePath ? 'text-purple-400' : 'text-primary')}/>
                         {collectionTitle}
                     </CardTitle>
                 </CardHeader>
@@ -1852,5 +1856,3 @@ function UnitConverter() {
         </Tabs>
     );
 }
-
-    
