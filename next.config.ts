@@ -54,10 +54,14 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'palmaaquarium.com' },
       { protocol: 'https', hostname: 'media.es.wired.com' },
       { protocol: 'https', hostname: 'e01-phantom-elmundo.uecdn.es' },
+      { protocol: 'https', hostname: 's1.significados.com' },
+      { protocol: 'https', hostname: 'muyinteresante.okdiario.com' },
+      { protocol: 'https', hostname: 'img.rtve.es' },
+      { protocol: 'https', hostname: 'c.files.bbci.co.uk' },
+      { protocol: 'https', hostname: 'apod.nasa.gov' },
+      { protocol: 'https', hostname: 'e01-elmundo.uecdn.es' },
     ],
   },
 };
 
 export default nextConfig;
-
-    
