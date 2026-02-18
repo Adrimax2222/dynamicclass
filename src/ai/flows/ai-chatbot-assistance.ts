@@ -6,7 +6,7 @@
  * - aiChatbotAssistance: Función principal que gestiona la lógica de la conversación con Gemini.
  */
 
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, type ChatSession, type EnhancedGenerateContentResponse } from "@google/generative-ai";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, type ChatSession, type EnhancedGenerateContentResponse, type Content } from "@google/generative-ai";
 import { z } from 'zod';
 
 /**
@@ -35,23 +35,34 @@ export async function aiChatbotAssistance(input: AIChatbotAssistanceInput): Prom
     const genAI = new GoogleGenerativeAI(apiKey);
 
     // 4. Configurar y obtener el modelo 'gemini-1.5-flash', forzando la versión 'v1' de la API.
+    // El 'systemInstruction' se inyecta en el historial para compatibilidad con 'v1'.
     const model = genAI.getGenerativeModel(
-        {
-            model: "gemini-1.5-flash",
-            systemInstruction: `Eres ADRIMAX AI, un asistente educativo experto, amigable y motivador. Tu misión es explicar conceptos de forma clara y accesible, adaptar tu respuesta al nivel del estudiante, usar ejemplos prácticos y analogías, y fomentar el pensamiento crítico. ${validation.data.subject ? `El tema principal de la conversación es ${validation.data.subject}.` : ''} Usa Markdown para formatear el texto (negritas, listas, etc.). Mantén siempre un tono educativo y positivo.`,
-        },
+        { model: "gemini-1.5-flash" },
         { apiVersion: 'v1' } // Forzar el uso de la API estable v1
     );
 
-    // 5. Formatear el historial para el SDK. El rol 'assistant' se mapea a 'model'.
-    const chatHistory = validation.data.history?.map(msg => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.content }],
-    })).filter(msg => msg.role === 'user' || msg.role === 'model') ?? [];
+    // 5. Construir el historial, inyectando la personalidad al principio.
+    const systemPrompt = `Eres ADRIMAX AI, un asistente educativo experto, amigable y motivador. Tu misión es explicar conceptos de forma clara y accesible, adaptar tu respuesta al nivel del estudiante, usar ejemplos prácticos y analogías, y fomentar el pensamiento crítico. ${validation.data.subject ? `El tema principal de la conversación es ${validation.data.subject}.` : ''} Usa Markdown para formatear el texto (negritas, listas, etc.). Mantén siempre un tono educativo y positivo.`;
 
+    const formattedHistory: Content[] = [
+        {
+            role: 'user',
+            parts: [{ text: `Instrucciones de sistema: ${systemPrompt}. Entendido?` }]
+        },
+        {
+            role: 'model',
+            parts: [{ text: '¡Entendido! Soy ADRIMAX, tu tutor digital. ¿En qué puedo ayudarte hoy?' }]
+        },
+        // Añadir el historial de chat del usuario después del prompt de sistema
+        ...(validation.data.history?.map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content }],
+        })).filter(msg => msg.role === 'user' || msg.role === 'model') ?? [])
+    ];
+    
     // 6. Iniciar una sesión de chat con el historial.
     const chat: ChatSession = model.startChat({
-      history: chatHistory,
+      history: formattedHistory,
       generationConfig: {
         maxOutputTokens: 2048,
       },
@@ -78,7 +89,7 @@ export async function aiChatbotAssistance(input: AIChatbotAssistanceInput): Prom
     console.error('--- AI DEBUG ERROR ---', error);
     
     // 10. Devolver un mensaje de error descriptivo al cliente.
-    return { response: `Error al contactar la IA: ${error.message}` };
+    return { response: 'Tu tutor digital necesita unos segundos para pensar. Vuelve a intentarlo en un momento.' };
   }
 }
 
