@@ -9,10 +9,11 @@ import { useApp } from '@/lib/hooks/use-app';
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, query, orderBy, addDoc, serverTimestamp, Timestamp, doc, updateDoc, arrayUnion, deleteDoc, writeBatch } from 'firebase/firestore';
 import type { ClassChatMessage, Center, User } from '@/lib/types';
+import { motion, AnimatePresence, useMotionValue, useTransform, type PanInfo } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle, CheckCheck, Pencil, MicOff, MoreHorizontal, Copy, Trash2, Pin, Eye, MessageSquareOff } from 'lucide-react';
+import { ChevronLeft, Send, Loader2, Info, Smile, PlusCircle, CheckCheck, Pencil, MicOff, MoreHorizontal, Copy, Trash2, Pin, Eye, MessageSquareOff, Reply, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AvatarDisplay } from '@/components/profile/avatar-creator';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -36,6 +37,7 @@ export default function ClassChatPage() {
     const messageRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const { toast } = useToast();
+    const [replyingTo, setReplyingTo] = useState<ClassChatMessage | null>(null);
 
     const centerDocRef = useMemoFirebase(() => {
         if (!user || !user.organizationId) return null;
@@ -90,6 +92,15 @@ export default function ClassChatPage() {
         }
     }, [message]);
 
+    const handleSetReply = (message: ClassChatMessage) => {
+        setReplyingTo(message);
+        textareaRef.current?.focus();
+    };
+
+    const cancelReply = () => {
+        setReplyingTo(null);
+    };
+
     const handleSend = async () => {
         if (!message.trim() || !user || !chatPath || !firestore) {
             return;
@@ -105,7 +116,11 @@ export default function ClassChatPage() {
             authorRole: user.role,
             timestamp: serverTimestamp() as Timestamp,
             viewedBy: [],
-            isPinned: false
+            isPinned: false,
+            ...(replyingTo && {
+                replyToAuthor: replyingTo.authorName,
+                replyToContent: replyingTo.content,
+            }),
         };
 
         try {
@@ -116,6 +131,7 @@ export default function ClassChatPage() {
             });
             await addDoc(collection(firestore, chatPath), newMessage as any);
             setMessage('');
+            setReplyingTo(null);
         } catch (error) {
             console.error("Error sending message:", error);
             toast({ variant: "destructive", title: "Error", description: "No se pudo enviar el mensaje." });
@@ -287,13 +303,32 @@ export default function ClassChatPage() {
                                 onDelete={handleDeleteMessage}
                                 onUpdate={handleUpdateMessage}
                                 onPin={handlePinMessage}
+                                onReply={handleSetReply}
                            />
                         ))
                     )}
                 </div>
             </div>
             
-            <footer className="p-4 border-t bg-background">
+            <footer className="p-4 pt-0 border-t bg-background">
+                <AnimatePresence>
+                    {replyingTo && (
+                        <motion.div
+                            className="py-2"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                        >
+                            <div className="bg-muted/50 p-2 rounded-lg border-l-4 border-primary relative">
+                                <p className="font-bold text-sm text-primary">{replyingTo.authorName}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-1">{replyingTo.content}</p>
+                                <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={cancelReply}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
                 {user.isChatBanned ? (
                     <Alert variant="destructive" className="items-center">
                         <MicOff className="h-4 w-4" />
@@ -362,14 +397,17 @@ interface MessageItemProps {
     onDelete: (messageId: string) => void;
     onUpdate: (messageId: string, newContent: string) => void;
     onPin: (messageId: string, currentStatus: boolean) => void;
+    onReply: (message: ClassChatMessage) => void;
 }
 
 const MessageItem = React.forwardRef<HTMLDivElement, MessageItemProps>(
-  ({ msg, user, chatPath, onDelete, onUpdate, onPin }, ref) => {
+  ({ msg, user, chatPath, onDelete, onUpdate, onPin, onReply }, ref) => {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [isEditing, setIsEditing] = useState(false);
     const [editText, setEditText] = useState(msg.content);
+    const x = useMotionValue(0);
+    const iconOpacity = useTransform(x, [0, 50], [0, 1]);
 
     const isCurrentUser = msg.authorId === user.uid;
 
@@ -393,6 +431,12 @@ const MessageItem = React.forwardRef<HTMLDivElement, MessageItemProps>(
     const canDelete = isCurrentUser || canManage;
     const canEdit = isCurrentUser;
     const canPin = canManage;
+
+    const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+        if (info.offset.x > 60) {
+            onReply(msg);
+        }
+    };
 
     useEffect(() => {
         const observerRef = (ref as React.RefObject<HTMLDivElement>)?.current;
@@ -448,99 +492,119 @@ const MessageItem = React.forwardRef<HTMLDivElement, MessageItemProps>(
     };
 
     return (
-        <div ref={ref} className={cn("flex items-end gap-2", isCurrentUser ? "justify-end" : "justify-start")}>
-            {!isCurrentUser && (
-                <AvatarDisplay user={{ name: msg.authorName, avatar: msg.authorAvatar }} className="h-8 w-8" />
-            )}
-            <div className={cn(
-                "max-w-[75%] p-3 rounded-xl shadow-sm group",
-                isCurrentUser ? "rounded-br-none" : "rounded-bl-none",
-                msg.isPinned
-                    ? "border-2 border-amber-500/50 bg-amber-500/5"
-                    : isCurrentUser
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-card"
-            )}>
-                <div className="flex items-center justify-between">
-                    <div className="flex items-baseline gap-2">
-                        <p className="font-bold text-base">{msg.authorName}</p>
-                        <p className={cn("text-xs opacity-70", isCurrentUser && !msg.isPinned ? "text-primary-foreground" : "text-muted-foreground")}>
-                            - {formatRole(msg.authorRole)}
-                        </p>
-                    </div>
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className={cn("h-6 w-6 opacity-0 group-hover:opacity-100", isCurrentUser && !msg.isPinned ? "text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/20" : "text-muted-foreground")}>
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuItem onClick={handleCopy}><Copy className="mr-2 h-4 w-4"/>Copiar</DropdownMenuItem>
-                            {canEdit && <DropdownMenuItem onSelect={() => setIsEditing(true)}><Pencil className="mr-2 h-4 w-4"/>Editar</DropdownMenuItem>}
-                            {canPin && <DropdownMenuItem onSelect={() => onPin(msg.uid, !!msg.isPinned)}><Pin className="mr-2 h-4 w-4"/>{msg.isPinned ? "Desfijar" : "Fijar"}</DropdownMenuItem>}
-                            {canDelete && (
-                                <>
-                                    <DropdownMenuSeparator />
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={(e) => e.preventDefault()}>
-                                                <Trash2 className="mr-2 h-4 w-4"/>Eliminar
-                                            </DropdownMenuItem>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>¿Eliminar este mensaje?</AlertDialogTitle>
-                                                <AlertDialogDescription>Esta acción no se puede deshacer y lo eliminará para todos.</AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => onDelete(msg.uid)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </>
+        <div ref={ref} className="w-full">
+            <div className="relative group/message">
+                <motion.div
+                    style={{ opacity: iconOpacity }}
+                    className="absolute left-0 top-0 bottom-0 flex items-center pr-4"
+                >
+                    <Reply className="h-5 w-5 text-muted-foreground" />
+                </motion.div>
+                <motion.div
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={{ right: 0.05, left: 0.2 }}
+                    style={{ x }}
+                    onDragEnd={handleDragEnd}
+                    className="w-full relative z-[1]"
+                >
+                    <div className={cn("flex items-end gap-2", isCurrentUser ? "justify-end" : "justify-start")}>
+                        {!isCurrentUser && <AvatarDisplay user={{ name: msg.authorName, avatar: msg.authorAvatar }} className="h-8 w-8" />}
+                        <div className={cn(
+                            "max-w-[75%] p-3 rounded-xl shadow-sm group",
+                            isCurrentUser ? "rounded-br-none" : "rounded-bl-none",
+                            msg.isPinned
+                                ? "border-2 border-amber-500/50 bg-amber-500/5"
+                                : isCurrentUser
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-card"
+                        )}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-baseline gap-2">
+                                    <p className="font-bold text-base">{msg.authorName}</p>
+                                    <p className={cn("text-xs opacity-70", isCurrentUser && !msg.isPinned ? "text-primary-foreground" : "text-muted-foreground")}>
+                                        - {formatRole(msg.authorRole)}
+                                    </p>
+                                </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className={cn("h-6 w-6 opacity-0 group-hover:opacity-100", isCurrentUser && !msg.isPinned ? "text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/20" : "text-muted-foreground")}>
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem onClick={handleCopy}><Copy className="mr-2 h-4 w-4"/>Copiar</DropdownMenuItem>
+                                        {canEdit && <DropdownMenuItem onSelect={() => setIsEditing(true)}><Pencil className="mr-2 h-4 w-4"/>Editar</DropdownMenuItem>}
+                                        {canPin && <DropdownMenuItem onSelect={() => onPin(msg.uid, !!msg.isPinned)}><Pin className="mr-2 h-4 w-4"/>{msg.isPinned ? "Desfijar" : "Fijar"}</DropdownMenuItem>}
+                                        {canDelete && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={(e) => e.preventDefault()}>
+                                                            <Trash2 className="mr-2 h-4 w-4"/>Eliminar
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>¿Eliminar este mensaje?</AlertDialogTitle>
+                                                            <AlertDialogDescription>Esta acción no se puede deshacer y lo eliminará para todos.</AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => onDelete(msg.uid)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                             {msg.replyToAuthor && msg.replyToContent && (
+                                <div className={cn(
+                                    "mb-2 mt-1 p-2 rounded-md border-l-2",
+                                    isCurrentUser && !msg.isPinned ? "bg-white/10 border-white/50" : "bg-black/5 dark:bg-white/5 border-primary/50"
+                                )}>
+                                    <p className={cn("font-bold text-xs", isCurrentUser && !msg.isPinned ? "text-white" : "text-primary")}>{msg.replyToAuthor}</p>
+                                    <p className={cn("text-xs opacity-80 line-clamp-1", isCurrentUser && !msg.isPinned ? "text-white/90" : "text-muted-foreground")}>{msg.replyToContent}</p>
+                                </div>
                             )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-                {isEditing ? (
-                    <div className="space-y-2 mt-2">
-                        <Textarea 
-                            value={editText}
-                            onChange={(e) => setEditText(e.target.value)}
-                            onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); } }}
-                            className="bg-background text-foreground"
-                        />
-                        <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancelar</Button>
-                            <Button size="sm" onClick={handleSaveEdit}>Guardar</Button>
+                            {isEditing ? (
+                                <div className="space-y-2 mt-2">
+                                    <Textarea 
+                                        value={editText}
+                                        onChange={(e) => setEditText(e.target.value)}
+                                        onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); } }}
+                                        className="bg-background text-foreground"
+                                    />
+                                    <div className="flex justify-end gap-2">
+                                        <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancelar</Button>
+                                        <Button size="sm" onClick={handleSaveEdit}>Guardar</Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                            )}
+                            <div className="flex items-center justify-end gap-3 text-xs opacity-70 mt-1.5">
+                                {msg.editedAt && <span>(editado)</span>}
+                                <div className="flex items-center gap-1">
+                                    <Eye className="h-3 w-3" />
+                                    <span>{msg.viewedBy?.length || 0}</span>
+                                </div>
+                                <span>{msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), { locale: es, addSuffix: true }) : ''}</span>
+                                {isCurrentUser && (
+                                    <CheckCheck className={cn("h-4 w-4", (msg.viewedBy?.length ?? 0) > 0 ? "text-sky-400" : "")} />
+                                )}
+                            </div>
                         </div>
+                        {isCurrentUser && (
+                            <AvatarDisplay user={user} className="h-8 w-8" />
+                        )}
                     </div>
-                ) : (
-                    <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                )}
-                <div className="flex items-center justify-end gap-3 text-xs opacity-70 mt-1.5">
-                    {msg.editedAt && <span>(editado)</span>}
-                    <div className="flex items-center gap-1">
-                        <Eye className="h-3 w-3" />
-                        <span>{msg.viewedBy?.length || 0}</span>
-                    </div>
-                    <span>{msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), { locale: es, addSuffix: true }) : ''}</span>
-                    {isCurrentUser && (
-                        <CheckCheck className={cn("h-4 w-4", (msg.viewedBy?.length ?? 0) > 0 ? "text-sky-400" : "")} />
-                    )}
-                </div>
+                </motion.div>
             </div>
-            {isCurrentUser && (
-                <AvatarDisplay user={user} className="h-8 w-8" />
-            )}
         </div>
     );
 });
 MessageItem.displayName = "MessageItem";
-
-    
-
-    
-
-    

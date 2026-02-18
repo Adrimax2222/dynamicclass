@@ -147,6 +147,8 @@ export type ClassChatMessage = {
   viewedBy?: string[];
   isPinned?: boolean;
   editedAt?: Timestamp;
+  replyToAuthor?: string;
+  replyToContent?: string;
 };
 
 export type Note = {
