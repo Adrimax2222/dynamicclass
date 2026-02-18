@@ -270,7 +270,7 @@ export default function CollectionPage() {
     const pageTitle = viewingPath === 'space' ? 'Mi Universo' : viewingPath === 'aquatic' ? 'Mi Acuario Exótico' : 'Mi Jardín Botánico';
     const PageIcon = viewingPath === 'space' ? Rocket : viewingPath === 'aquatic' ? Waves : TreePine;
     const themeColor = viewingPath === 'space' ? 'purple' : viewingPath === 'aquatic' ? 'blue' : 'green';
-    const totalPathIcon = viewingPath === 'space' ? Globe : PageIcon;
+    const TotalPathIcon = viewingPath === 'space' ? Globe : PageIcon;
 
     return (
         <div className={cn("flex flex-col min-h-screen", 
@@ -374,7 +374,7 @@ export default function CollectionPage() {
                                 viewingPath === 'space' && 'text-purple-700 dark:text-purple-300',
                             )}>Total</p>
                             <div className="flex items-center justify-center gap-1">
-                                <totalPathIcon className={cn("h-5 w-5", 
+                                <TotalPathIcon className={cn("h-5 w-5", 
                                     viewingPath === 'terrestrial' && 'text-green-600',
                                     viewingPath === 'aquatic' && 'text-blue-600',
                                     viewingPath === 'space' && 'text-purple-600',
@@ -753,4 +753,3 @@ function PathsDialog({ children, isTerrestrialComplete, isAquaticComplete, isSpa
         </Dialog>
     );
 }
-    
