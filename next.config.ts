@@ -60,6 +60,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'c.files.bbci.co.uk' },
       { protocol: 'https', hostname: 'apod.nasa.gov' },
       { protocol: 'https', hostname: 'e01-elmundo.uecdn.es' },
+      { protocol: 'https', hostname: 'mantaray-world.com' },
     ],
   },
 };

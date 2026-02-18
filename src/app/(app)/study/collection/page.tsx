@@ -56,7 +56,7 @@ const allFish: Plant[] = [
     { id: 16, name: 'Caballito de Mar', rarity: 'Poco Común', icon: Fish, unlocksAt: 75, description: "Estas criaturas únicas nadan en posición vertical y son conocidas porque el macho es quien lleva los huevos en una bolsa incubadora hasta que eclosionan.", imageUrl: "https://content.nationalgeographic.com.es/medio/2023/01/05/son-expertos-en-camuflaje_76041f32_230105114745_2000x1500.jpg" },
     { id: 17, name: 'Medusa Luna', rarity: 'Raro', icon: Sparkles, unlocksAt: 80, description: "Una medusa translúcida y bioluminiscente que se encuentra en todos los océanos. Su suave pulsación y su brillo etéreo la convierten en un espectáculo hipnótico.", imageUrl: "https://cdn0.expertoanimal.com/es/razas/9/9/8/medusa-luna_899_0_orig.jpg" },
     { id: 18, name: 'Pez Mandarín', rarity: 'Raro', icon: Fish, unlocksAt: 85, description: "Considerado uno de los peces más coloridos del mundo, el pez mandarín exhibe un patrón psicodélico de azules, naranjas y verdes. Es tímido y difícil de avistar.", imageUrl: "https://upload.wikimedia.org/wikipedia/commons/2/2d/Synchiropus_splendidus_2_Luc_Viatour.jpg" },
-    { id: 19, name: 'Manta Gigante', rarity: 'Épico', icon: Waves, unlocksAt: 90, description: "Con una envergadura de hasta 7 metros, la manta gigante es el rey de las rayas. Son filtradores inteligentes que se alimentan de plancton y viajan grandes distancias.", imageUrl: "https://palmaaquarium.com/storage/app/uploads/public/677/e86/fe2/thumb_541_0_0_0_0_crop.webp" },
+    { id: 19, name: 'Manta Gigante', rarity: 'Épico', icon: Waves, unlocksAt: 90, description: "Con una envergadura de hasta 7 metros, la manta gigante es el rey de las rayas. Son filtradores inteligentes que se alimentan de plancton y viajan grandes distancias.", imageUrl: "https://mantaray-world.com/wp-content/uploads/mantarraya_gigante_624.jpg" },
     { id: 20, name: 'Pulpo de Anillos Azules', rarity: 'Épico', icon: Sparkles, unlocksAt: 95, description: "Pequeño pero extremadamente venenoso. Cuando se siente amenazado, sus anillos azules iridiscentes parpadean como una advertencia antes de liberar su potente neurotoxina.", imageUrl: "https://cdn.nubika.es/wp-content/uploads/2022/08/pulpo-anillos-azules-caracteristicas-peculiaridades.jpg" },
     { id: 21, name: 'Dragón de Mar Foliado', rarity: 'Legendario', icon: Leaf, unlocksAt: 100, description: "Pariente del caballito de mar, este maestro del camuflaje tiene extensiones en forma de hoja por todo su cuerpo, lo que le permite mezclarse perfectamente con las algas.", imageUrl: "https://upload.wikimedia.org/wikipedia/commons/d/dc/Leafydragon.jpg" },
     { id: 22, name: 'Pez León', rarity: 'Legendario', icon: Fish, unlocksAt: 105, description: "Con sus aletas pectorales en forma de abanico y sus espinas venenosas, el pez león es una especie invasora hermosa pero destructiva en el Atlántico.", imageUrl: "https://palmaaquarium.com/storage/app/uploads/public/677/e86/fe2/thumb_541_0_0_0_0_crop.webp" },
@@ -391,7 +391,7 @@ export default function CollectionPage() {
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className={cn(viewingPath === 'space' && 'bg-slate-900/50 border-slate-700 text-white')}>
+                    <Card className={cn(viewingPath === 'space' ? 'bg-slate-900/50 border-slate-700 text-white' : 'bg-background')}>
                         <CardContent className="p-3 text-center">
                             <p className={cn("text-xs text-muted-foreground", viewingPath === 'space' && 'text-slate-400')}>Fase Actual</p>
                              <div className="flex items-center justify-center gap-2">
@@ -400,7 +400,7 @@ export default function CollectionPage() {
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className={cn(viewingPath === 'space' && 'bg-slate-900/50 border-slate-700 text-white')}>
+                    <Card className={cn(viewingPath === 'space' ? 'bg-slate-900/50 border-slate-700 text-white' : 'bg-background')}>
                         <CardContent className="p-3 text-center">
                             <p className={cn("text-xs text-muted-foreground", viewingPath === 'space' && 'text-slate-400')}>Progreso</p>
                             <p className="text-2xl font-bold">{plantsInCurrentPhase} <span className={cn("text-muted-foreground", viewingPath === 'space' && 'text-slate-500')}>/ 5</span></p>
@@ -420,7 +420,7 @@ export default function CollectionPage() {
                         </CardContent>
                     </Card>
                 ) : nextItem ? (
-                    <Card className={cn(viewingPath === 'space' && 'bg-slate-900/50 border-slate-700 text-white')}>
+                    <Card className={cn(viewingPath === 'space' ? 'bg-slate-900/50 border-slate-700 text-white' : 'bg-background')}>
                         <CardHeader className="p-3">
                             <p className={cn("text-xs text-muted-foreground text-center", viewingPath === 'space' && 'text-slate-400')}>Siguiente Desbloqueo</p>
                         </CardHeader>
@@ -457,7 +457,7 @@ export default function CollectionPage() {
                     </Card>
                 )}
 
-                <Card className={cn(viewingPath === 'space' && 'bg-slate-900/50 border-slate-700 text-white')}>
+                <Card className={cn(viewingPath === 'space' ? 'bg-slate-900/50 border-slate-700 text-white' : 'bg-background')}>
                     <CardHeader className="flex flex-row items-center justify-between p-4">
                         <div>
                             <CardTitle className="text-lg flex items-center gap-2">
