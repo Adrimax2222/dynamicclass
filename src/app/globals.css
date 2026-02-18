@@ -223,3 +223,6 @@
     animation: fadeInUp 0.3s ease-out;
   }
   .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+}
