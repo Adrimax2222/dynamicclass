@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -35,11 +34,14 @@ export async function aiChatbotAssistance(input: AIChatbotAssistanceInput): Prom
     // 3. Inicializar el cliente de la IA de Google.
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // 4. Configurar y obtener el modelo 'gemini-1.5-flash'.
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      systemInstruction: `Eres ADRIMAX AI, un asistente educativo experto, amigable y motivador. Tu misión es explicar conceptos de forma clara y accesible, adaptar tu respuesta al nivel del estudiante, usar ejemplos prácticos y analogías, y fomentar el pensamiento crítico. ${validation.data.subject ? `El tema principal de la conversación es ${validation.data.subject}.` : ''} Usa Markdown para formatear el texto (negritas, listas, etc.). Mantén siempre un tono educativo y positivo.`,
-    });
+    // 4. Configurar y obtener el modelo 'gemini-1.5-flash', forzando la versión 'v1' de la API.
+    const model = genAI.getGenerativeModel(
+        {
+            model: "gemini-1.5-flash",
+            systemInstruction: `Eres ADRIMAX AI, un asistente educativo experto, amigable y motivador. Tu misión es explicar conceptos de forma clara y accesible, adaptar tu respuesta al nivel del estudiante, usar ejemplos prácticos y analogías, y fomentar el pensamiento crítico. ${validation.data.subject ? `El tema principal de la conversación es ${validation.data.subject}.` : ''} Usa Markdown para formatear el texto (negritas, listas, etc.). Mantén siempre un tono educativo y positivo.`,
+        },
+        { apiVersion: 'v1' } // Forzar el uso de la API estable v1
+    );
 
     // 5. Formatear el historial para el SDK. El rol 'assistant' se mapea a 'model'.
     const chatHistory = validation.data.history?.map(msg => ({
