@@ -59,13 +59,15 @@ import {
   Camera,
   ShoppingCart,
   Globe,
+  Users,
+  ChevronRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { GradeCalculatorDialog } from "@/components/layout/grade-calculator-dialog";
-import { useFirestore } from "@/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { doc, getDoc, collection, query, where, orderBy } from "firebase/firestore";
 import { WipDialog } from "@/components/layout/wip-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
@@ -75,10 +77,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import jsPDF from 'jspdf';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from 'next/link';
-import type { Center, TimerMode, CustomMode } from "@/lib/types";
+import type { Center, TimerMode, CustomMode, User as AppUser } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
 import { motion, AnimatePresence } from 'framer-motion';
 import { RankingDialog } from "@/components/layout/ranking-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { AvatarDisplay } from "@/components/profile/avatar-creator";
 
 // --- Plant Growth SVG Components ---
 
@@ -338,6 +353,28 @@ export default function StudyPage() {
     const [isMounted, setIsMounted] = useState(false);
     const [isScheduleAvailable, setIsScheduleAvailable] = useState(false);
     const [plantStage, setPlantStage] = useState(0); 
+
+    const isPersonalUser = user?.center === 'personal' || user?.center === 'default';
+
+    const classmatesQuery = useMemoFirebase(() => {
+        if (!firestore || !user || isPersonalUser) return null;
+        return query(
+            collection(firestore, "users"),
+            where("organizationId", "==", user.organizationId),
+            where("course", "==", user.course),
+            where("className", "==", user.className),
+            orderBy("studyMinutes", "desc")
+        );
+    }, [firestore, user, isPersonalUser]);
+
+    const { data: classmatesData, isLoading: isLoadingClassmates } = useCollection<AppUser>(classmatesQuery);
+
+    const sortedClassmates = useMemo(() => {
+        if (!classmatesData) return [];
+        return classmatesData
+            .filter(c => c.uid !== user?.uid)
+            .sort((a, b) => (b.studyMinutes || 0) - (a.studyMinutes || 0));
+    }, [classmatesData, user]);
 
 
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -739,6 +776,67 @@ export default function StudyPage() {
                     Las sesiones de 7 minutos o más cuentan para tu racha diaria y te recompensan con una planta nueva.
                 </AlertDescription>
             </Alert>
+
+            {!isPersonalUser && (
+              <Card className="w-full max-w-sm mx-auto shadow-lg">
+                  <Collapsible>
+                      <CollapsibleTrigger asChild>
+                          <div className="group flex w-full cursor-pointer items-center justify-between p-4">
+                              <div className="flex items-center gap-3">
+                                  <Users className="h-5 w-5 text-primary"/>
+                                  <h3 className="font-semibold">Estudio de Compañeros</h3>
+                              </div>
+                              <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-90" />
+                          </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                          <div className="px-4 pb-4">
+                              {isLoadingClassmates ? (
+                                  <div className="p-4 text-center">
+                                      <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                                      <p className="text-sm text-muted-foreground mt-2">Cargando compañeros...</p>
+                                  </div>
+                              ) : sortedClassmates.length > 0 ? (
+                                  <Carousel
+                                      opts={{
+                                          align: "start",
+                                          loop: false,
+                                      }}
+                                      className="w-full"
+                                  >
+                                      <CarouselContent className="-ml-2">
+                                          {sortedClassmates.map((classmate) => (
+                                              <CarouselItem key={classmate.uid} className="pl-2 basis-1/2 md:basis-1/3">
+                                                  <div className="p-1">
+                                                      <Card>
+                                                          <CardContent className="flex flex-col items-center justify-center p-3 sm:p-4 aspect-[4/5]">
+                                                              <AvatarDisplay user={classmate} className="h-12 w-12 sm:h-16 sm:w-16 mb-2" />
+                                                              <p className="font-bold text-sm text-center truncate w-full">{classmate.name}</p>
+                                                              <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-2">
+                                                                  <Clock className="h-3 w-3 text-primary" />
+                                                                  <span className="font-bold">{formatStudyTime(classmate.studyMinutes)}</span>
+                                                              </div>
+                                                          </CardContent>
+                                                      </Card>
+                                                  </div>
+                                              </CarouselItem>
+                                          ))}
+                                      </CarouselContent>
+                                      <div className="flex justify-center gap-4 pt-4">
+                                          <CarouselPrevious className="static translate-y-0" />
+                                          <CarouselNext className="static translate-y-0" />
+                                      </div>
+                                  </Carousel>
+                              ) : (
+                                  <div className="text-center text-sm text-muted-foreground p-4 border-dashed border-2 rounded-lg">
+                                      Aún no hay compañeros en tu clase.
+                                  </div>
+                              )}
+                          </div>
+                      </CollapsibleContent>
+                  </Collapsible>
+              </Card>
+            )}
             
             <Card className="w-full max-w-sm mx-auto shadow-lg">
                 <CardHeader>
@@ -1301,7 +1399,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 <div className="relative flex-grow flex flex-col min-h-0 space-y-4">
                     <div className="flex-grow min-h-0 relative border rounded-lg bg-muted/30 flex items-center justify-center">
                         {mode === 'capture' ? (
-                            stream ? (
+                             stream ? (
                                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 bg-background">
                                     <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
                                     <div className="flex items-center gap-4 mt-4">
@@ -1381,7 +1479,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 </div>
                             ))}
                               <button
-                                onClick={() => { setMode('capture'); stopCamera(); }}
+                                onClick={() => { setMode('capture'); getCameraPermission(); }}
                                 className="h-20 w-20 flex flex-col items-center justify-center rounded-md border-2 border-dashed bg-muted/50 hover:bg-muted hover:border-primary transition-colors shrink-0"
                               >
                                 <PlusCircle className="h-6 w-6 text-muted-foreground" />
