@@ -64,6 +64,21 @@ const allFish: Plant[] = [
     { id: 24, name: 'Calamar Gigante', rarity: 'Legendario', icon: Sparkles, unlocksAt: 115, description: "Una criatura de las profundidades marinas envuelta en misterio. Con ojos del tamaño de un plato, es uno de los invertebrados más grandes, y sus batallas con los cachalotes son legendarias.", imageUrl: "https://e01-phantom-elmundo.uecdn.es/5b00b2632f094c0fdadb9e827bd63bf6/resize/1200/f/webp/assets/multimedia/imagenes/2022/10/20/16662629478420.jpg" },
 ];
 
+const allPlanets: Plant[] = [
+    { id: 25, name: 'Mercurio', rarity: 'Común', icon: Globe, unlocksAt: 120, description: "El planeta más cercano al Sol. Tiene una superficie llena de cráteres, similar a la Luna, y experimenta las temperaturas más extremas del sistema solar.", imageUrl: "https://framerusercontent.com/images/3V9s9o6S3vG4s7a9d3c9m9Q.jpg" },
+    { id: 26, name: 'Venus', rarity: 'Común', icon: Globe, unlocksAt: 125, description: "Un planeta con una atmósfera tóxica y un efecto invernadero descontrolado. Su superficie es tan caliente que podría derretir plomo.", imageUrl: "https://framerusercontent.com/images/k8R4N7p0c9E7t9x8f6W5B0A.jpg" },
+    { id: 27, name: 'Tierra', rarity: 'Poco Común', icon: Globe, unlocksAt: 130, description: "Nuestro hogar. El único planeta conocido con vida, océanos de agua líquida en su superficie y una atmósfera rica en oxígeno.", imageUrl: "https://framerusercontent.com/images/d3f7e6c9b1a5d2c4e8i7o6p.jpg" },
+    { id: 28, name: 'Marte', rarity: 'Poco Común', icon: Globe, unlocksAt: 135, description: "Conocido como el Planeta Rojo por su óxido de hierro. Tiene casquetes polares, volcanes gigantes y cañones inmensos. Es el objetivo principal de la exploración humana.", imageUrl: "https://framerusercontent.com/images/m3b1c0d9e8f7a6b5c4d3e2f.jpg" },
+    { id: 29, name: 'Júpiter', rarity: 'Raro', icon: Globe, unlocksAt: 140, description: "El gigante gaseoso. Es tan masivo que podría contener a todos los demás planetas del sistema solar. Su Gran Mancha Roja es una tormenta más grande que la Tierra.", imageUrl: "https://framerusercontent.com/images/j8g7h6i5f4e3d2c1b0a9z8y.jpg" },
+    { id: 30, name: 'Saturno', rarity: 'Raro', icon: Globe, unlocksAt: 145, description: "Famoso por su espectacular sistema de anillos, compuestos de hielo y roca. A pesar de su tamaño, es el planeta menos denso; podría flotar en el agua.", imageUrl: "https://framerusercontent.com/images/s1a2b3c4d5e6f7g8h9i0j1k.jpg" },
+    { id: 31, name: 'Urano', rarity: 'Épico', icon: Globe, unlocksAt: 150, description: "Un gigante de hielo que rota de lado, con sus anillos orientados verticalmente. Su atmósfera de metano le da un característico color azul verdoso.", imageUrl: "https://framerusercontent.com/images/u6r5a4n3i2o1p0q9r8s7t6u.jpg" },
+    { id: 32, name: 'Neptuno', rarity: 'Épico', icon: Globe, unlocksAt: 155, description: "El planeta más alejado del Sol. Un mundo oscuro, frío y azotado por vientos supersónicos, con una atmósfera de un azul intenso y tormentas gigantes.", imageUrl: "https://framerusercontent.com/images/n1e2p3t4u5n6e7p8t9u0n1e.jpg" },
+    { id: 33, name: 'Plutón', rarity: 'Legendario', icon: Globe, unlocksAt: 160, description: "El planeta enano más famoso. Tiene una órbita excéntrica, montañas de hielo y un 'corazón' de nitrógeno congelado en su superficie.", imageUrl: "https://framerusercontent.com/images/p1l2u3t4o5n6e7x8y9z0a1b.jpg" },
+    { id: 34, name: 'Ceres', rarity: 'Legendario', icon: Globe, unlocksAt: 165, description: "El objeto más grande del cinturón de asteroides. Se cree que bajo su corteza helada podría albergar un océano de agua salada.", imageUrl: "https://framerusercontent.com/images/c3e2r1e0s9z8y7x6w5v4u3t.jpg" },
+    { id: 35, name: 'Kepler-186f', rarity: 'Legendario', icon: Globe, unlocksAt: 170, description: "El primer exoplaneta de tamaño similar a la Tierra descubierto en la zona habitable de otra estrella. Podría tener agua líquida en su superficie.", imageUrl: "https://framerusercontent.com/images/k1e8p6l3e2r1f0a9b8c7d6e.jpg" },
+    { id: 36, name: 'TRAPPIST-1e', rarity: 'Legendario', icon: Globe, unlocksAt: 175, description: "Considerado uno de los exoplanetas potencialmente habitables más prometedores. Orbita una estrella enana ultrafría y tiene un tamaño y masa muy similares a los de la Tierra.", imageUrl: "https://framerusercontent.com/images/t1r0a9p8p7i6s5t4e3d2c1b.jpg" },
+];
+
 
 const rarityStyles = {
     'Común': "border-green-500/30 bg-green-500/5 text-green-600",
@@ -79,7 +94,7 @@ const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, children, pat
     plantCount: number; 
     studyTime: number; 
     children: React.ReactNode;
-    path: 'terrestrial' | 'aquatic';
+    path: 'terrestrial' | 'aquatic' | 'space';
 }) => {
     const Icon = plant.icon;
     const formatStudyTime = (totalMinutes: number = 0) => {
@@ -88,12 +103,19 @@ const PlantInfoDialog = ({ plant, unlocked, plantCount, studyTime, children, pat
         return `${hours}h ${minutes}m`;
     };
 
-    const isAquatic = path === 'aquatic';
-    const unlockOffset = isAquatic ? 60 : 0;
-    const phaseOffset = isAquatic ? 12 : 0;
+    let unlockOffset = 0;
+    let phaseOffset = 0;
+    
+    if (path === 'aquatic') {
+        unlockOffset = 60;
+        phaseOffset = 12;
+    } else if (path === 'space') {
+        unlockOffset = 120;
+        phaseOffset = 24;
+    }
 
     const plantPhaseNumber = Math.floor((plant.unlocksAt - unlockOffset) / 5) + 1 + phaseOffset;
-    const currentPathCount = isAquatic ? plantCount - unlockOffset : plantCount;
+    const currentPathCount = plantCount - unlockOffset;
     const userPhaseNumber = Math.floor(currentPathCount / 5) + 1 + phaseOffset;
     
     let progressInPhaseToShow = 0;
@@ -164,10 +186,12 @@ export default function CollectionPage() {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
     const { user, plantCount } = useApp();
-    const [viewingPath, setViewingPath] = useState<'terrestrial' | 'aquatic'>('terrestrial');
+    const [viewingPath, setViewingPath] = useState<'terrestrial' | 'aquatic' | 'space'>('terrestrial');
     
     useEffect(() => {
-        if (plantCount >= 60) {
+        if (plantCount >= 120) {
+            setViewingPath('space');
+        } else if (plantCount >= 60) {
             setViewingPath('aquatic');
         } else {
             setViewingPath('terrestrial');
@@ -175,8 +199,8 @@ export default function CollectionPage() {
     }, [plantCount]);
     
     const isAquaticUnlocked = plantCount >= 60;
-    const isAquaticPath = viewingPath === 'aquatic';
-
+    const isSpaceUnlocked = plantCount >= 120;
+    
     const isPersonalUser = user?.center === 'personal' || user?.center === 'default';
 
     const firestore = useFirestore();
@@ -198,12 +222,31 @@ export default function CollectionPage() {
             .filter(c => c.uid !== user?.uid)
             .sort((a, b) => (b.plantCount || 0) - (a.plantCount || 0));
     }, [classmatesData, user]);
+    
+    const handlePathSwitch = () => {
+        setViewingPath(prev => {
+            if (prev === 'terrestrial') return isAquaticUnlocked ? 'aquatic' : 'terrestrial';
+            if (prev === 'aquatic') return isSpaceUnlocked ? 'space' : 'terrestrial';
+            return 'terrestrial';
+        });
+    };
 
     // Dynamic data based on path
-    const activePathData = isAquaticPath ? allFish : allPlants;
-    const currentPathCount = isAquaticPath ? plantCount - 60 : plantCount;
-    const phaseOffset = isAquaticPath ? 12 : 0;
-    const unlockOffset = isAquaticPath ? 60 : 0;
+    const activePathData = viewingPath === 'space' ? allPlanets : viewingPath === 'aquatic' ? allFish : allPlants;
+    let currentPathCount, phaseOffset, unlockOffset;
+    if (viewingPath === 'space') {
+        currentPathCount = plantCount - 120;
+        phaseOffset = 24;
+        unlockOffset = 120;
+    } else if (viewingPath === 'aquatic') {
+        currentPathCount = plantCount - 60;
+        phaseOffset = 12;
+        unlockOffset = 60;
+    } else {
+        currentPathCount = plantCount;
+        phaseOffset = 0;
+        unlockOffset = 0;
+    }
 
     const filteredPlants = activePathData.filter(plant => 
         plant.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -214,19 +257,28 @@ export default function CollectionPage() {
     
     const nextItem = activePathData.find(p => (p.unlocksAt - unlockOffset) > currentPathCount);
     const progressToNext = nextItem ? (plantsInCurrentPhase / 5) * 100 : 100;
+
     const isTerrestrialComplete = plantCount >= 60;
     const isAquaticComplete = plantCount >= 120;
+    const isSpaceComplete = plantCount >= 180;
 
     const lastUnlockedItem = activePathData.slice().reverse().find(p => currentPathCount >= (p.unlocksAt - unlockOffset));
-    const CurrentPhaseIcon = lastUnlockedItem ? lastUnlockedItem.icon : (isAquaticPath ? Fish : Sprout);
+    const CurrentPhaseIcon = lastUnlockedItem ? lastUnlockedItem.icon :
+                             viewingPath === 'space' ? Rocket :
+                             viewingPath === 'aquatic' ? Fish : Sprout;
 
-    const pageTitle = isAquaticPath ? 'Mi Acuario Exótico' : 'Mi Jardín Botánico';
-    const PageIcon = isAquaticPath ? Waves : TreePine;
-    const themeColor = isAquaticPath ? 'blue' : 'green';
+    const pageTitle = viewingPath === 'space' ? 'Mi Universo' : viewingPath === 'aquatic' ? 'Mi Acuario Exótico' : 'Mi Jardín Botánico';
+    const PageIcon = viewingPath === 'space' ? Rocket : viewingPath === 'aquatic' ? Waves : TreePine;
+    const themeColor = viewingPath === 'space' ? 'purple' : viewingPath === 'aquatic' ? 'blue' : 'green';
+    const totalPathIcon = viewingPath === 'space' ? Globe : PageIcon;
 
     return (
-        <div className={cn("flex flex-col min-h-screen", isAquaticPath ? 'bg-blue-500/5' : 'bg-muted/30')}>
-            <header className="p-4 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
+        <div className={cn("flex flex-col min-h-screen", 
+            viewingPath === 'terrestrial' && 'bg-muted/30',
+            viewingPath === 'aquatic' && 'bg-blue-500/5',
+            viewingPath === 'space' && 'bg-space-pattern text-white'
+        )}>
+            <header className={cn("p-4 flex items-center justify-between sticky top-0 z-10 border-b", viewingPath === 'space' ? 'bg-black/80 backdrop-blur-sm' : 'bg-background/80 backdrop-blur-sm')}>
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" onClick={() => router.back()}>
                         <ChevronLeft />
@@ -245,7 +297,7 @@ export default function CollectionPage() {
                         </RankingDialog>
                     )}
                     {isAquaticUnlocked && (
-                         <Button variant="outline" size="icon" onClick={() => setViewingPath(isAquaticPath ? 'terrestrial' : 'aquatic')}>
+                         <Button variant="outline" size="icon" onClick={handlePathSwitch}>
                             <ChevronsRight className="h-4 w-4" />
                         </Button>
                     )}
@@ -310,11 +362,23 @@ export default function CollectionPage() {
 
             <main className="flex-1 p-4 space-y-6">
                 <div className="grid grid-cols-3 gap-4">
-                    <Card className={cn(isAquaticPath ? 'bg-blue-500/10 border-blue-500/30' : 'bg-green-500/10 border-green-500/30')}>
+                    <Card className={cn(
+                        viewingPath === 'terrestrial' && 'bg-green-500/10 border-green-500/30',
+                        viewingPath === 'aquatic' && 'bg-blue-500/10 border-blue-500/30',
+                        viewingPath === 'space' && 'bg-purple-500/10 border-purple-500/30',
+                    )}>
                         <CardContent className="p-3 text-center">
-                            <p className={cn("text-xs font-semibold", isAquaticPath ? 'text-blue-700 dark:text-blue-300' : 'text-green-700 dark:text-green-300')}>Total</p>
+                            <p className={cn("text-xs font-semibold", 
+                                viewingPath === 'terrestrial' && 'text-green-700 dark:text-green-300',
+                                viewingPath === 'aquatic' && 'text-blue-700 dark:text-blue-300',
+                                viewingPath === 'space' && 'text-purple-700 dark:text-purple-300',
+                            )}>Total</p>
                             <div className="flex items-center justify-center gap-1">
-                                <PageIcon className={cn("h-5 w-5", isAquaticPath ? 'text-blue-600' : 'text-green-600')} />
+                                <totalPathIcon className={cn("h-5 w-5", 
+                                    viewingPath === 'terrestrial' && 'text-green-600',
+                                    viewingPath === 'aquatic' && 'text-blue-600',
+                                    viewingPath === 'space' && 'text-purple-600',
+                                )} />
                                 <p className="text-2xl font-bold">{plantCount}</p>
                             </div>
                         </CardContent>
@@ -336,14 +400,14 @@ export default function CollectionPage() {
                     </Card>
                 </div>
                 
-                {plantCount >= 55 && plantCount < 60 ? (
-                    <Card className="bg-gradient-to-tr from-blue-500 to-cyan-400 text-white shadow-lg animate-pulse-slow">
+                 {plantCount >= 115 && plantCount < 120 ? (
+                    <Card className="bg-gradient-to-tr from-purple-500 to-pink-500 text-white shadow-lg animate-pulse-slow">
                         <CardHeader className="p-3">
                              <p className="text-xs text-white/80 text-center">Siguiente Desbloqueo</p>
                         </CardHeader>
                         <CardContent className="p-3 pt-0 space-y-2 text-center">
-                            <Waves className="h-8 w-8 mx-auto" />
-                            <p className="font-bold">¡Camino Submarino!</p>
+                            <Rocket className="h-8 w-8 mx-auto" />
+                            <p className="font-bold">¡A las Estrellas!</p>
                             <Progress value={progressToNext} className="h-2 [&>div]:bg-white/80" />
                         </CardContent>
                     </Card>
@@ -368,9 +432,17 @@ export default function CollectionPage() {
                         </CardContent>
                     </Card>
                 ) : (
-                     <Card className={cn("border-dashed", isAquaticPath ? "bg-blue-500/10 border-blue-500/30" : "bg-green-500/10 border-green-500/30")}>
+                     <Card className={cn("border-dashed", 
+                        viewingPath === 'terrestrial' && "bg-green-500/10 border-green-500/30",
+                        viewingPath === 'aquatic' && "bg-blue-500/10 border-blue-500/30",
+                        viewingPath === 'space' && "bg-purple-500/10 border-purple-500/30"
+                     )}>
                         <CardContent className="p-4 text-center">
-                            <p className={cn("font-bold", isAquaticPath ? "text-blue-700" : "text-green-700")}>
+                            <p className={cn("font-bold", 
+                                viewingPath === 'terrestrial' && "text-green-700",
+                                viewingPath === 'aquatic' && "text-blue-700",
+                                viewingPath === 'space' && "text-purple-700"
+                            )}>
                                 ¡Felicidades! Has completado el {pageTitle}.
                             </p>
                         </CardContent>
@@ -386,7 +458,7 @@ export default function CollectionPage() {
                             </CardTitle>
                             <CardDescription>Explora las diferentes sendas.</CardDescription>
                         </div>
-                        <PathsDialog isTerrestrialComplete={isTerrestrialComplete} isAquaticComplete={isAquaticComplete}>
+                        <PathsDialog isTerrestrialComplete={isTerrestrialComplete} isAquaticComplete={isAquaticComplete} isSpaceComplete={isSpaceComplete}>
                             <Button variant="outline">
                                 Ver Caminos
                             </Button>
@@ -424,7 +496,7 @@ export default function CollectionPage() {
                                             {sortedClassmates.map((classmate) => {
                                                 const classmatePlantCount = classmate.plantCount || 0;
                                                 const classmatePhase = Math.floor(classmatePlantCount / 5) + 1;
-                                                const classmatePath = classmatePlantCount >= 60 ? 'Acuático' : 'Terrestre';
+                                                const classmatePath = classmatePlantCount >= 120 ? 'Espacial' : classmatePlantCount >= 60 ? 'Acuático' : 'Terrestre';
                                                 return (
                                                     <CarouselItem key={classmate.uid} className="pl-2 basis-1/2 md:basis-1/3">
                                                         <div className="p-1">
@@ -442,7 +514,11 @@ export default function CollectionPage() {
                                                                             <span>Fase {classmatePhase}</span>
                                                                         </div>
                                                                     </div>
-                                                                    <Badge variant="outline" className={cn("mt-2 text-xs", classmatePath === 'Acuático' ? 'border-blue-500/50 bg-blue-500/10 text-blue-600' : '')}>{classmatePath}</Badge>
+                                                                    <Badge variant="outline" className={cn(
+                                                                        "mt-2 text-xs", 
+                                                                        classmatePath === 'Acuático' && 'border-blue-500/50 bg-blue-500/10 text-blue-600',
+                                                                        classmatePath === 'Espacial' && 'border-purple-500/50 bg-purple-500/10 text-purple-600'
+                                                                    )}>{classmatePath}</Badge>
                                                                 </CardContent>
                                                             </Card>
                                                         </div>
@@ -480,19 +556,6 @@ export default function CollectionPage() {
                     {filteredPlants.map((plant) => {
                         const isUnlocked = plantCount >= plant.unlocksAt;
                         
-                        const isLegendaryPlant = plant.rarity === 'Legendario';
-                        const isLegendaryPathUnlocked = plantCount >= 30;
-
-                        if (isLegendaryPlant && !isLegendaryPathUnlocked && !isAquaticPath) {
-                            return (
-                                <Card key={plant.id} className="border-dashed bg-muted/50 flex flex-col items-center justify-center text-center aspect-square p-4">
-                                    <Lock className="h-10 w-10 text-muted-foreground/50 mb-3" />
-                                    <p className="text-sm font-semibold text-muted-foreground">Camino Legendario</p>
-                                    <p className="text-xs text-muted-foreground mt-1">Completa hasta la fase 6 para desbloquear.</p>
-                                </Card>
-                            )
-                        }
-                        
                         return (
                              <PlantInfoDialog 
                                 key={plant.id} 
@@ -500,7 +563,7 @@ export default function CollectionPage() {
                                 unlocked={isUnlocked}
                                 plantCount={plantCount} 
                                 studyTime={user?.studyMinutes || 0}
-                                path={isAquaticPath ? 'aquatic' : 'terrestrial'}
+                                path={viewingPath}
                             >
                                 <Card className={cn(
                                     "group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 border-2 cursor-pointer",
@@ -536,7 +599,7 @@ export default function CollectionPage() {
     );
 }
 
-function PathsDialog({ children, isTerrestrialComplete, isAquaticComplete }: { children: React.ReactNode, isTerrestrialComplete: boolean, isAquaticComplete: boolean }) {
+function PathsDialog({ children, isTerrestrialComplete, isAquaticComplete, isSpaceComplete }: { children: React.ReactNode, isTerrestrialComplete: boolean, isAquaticComplete: boolean, isSpaceComplete: boolean }) {
     
     const pathsData = [
       {
@@ -559,7 +622,7 @@ function PathsDialog({ children, isTerrestrialComplete, isAquaticComplete }: { c
             title: "Camino Espacial",
             icon: Rocket,
             description: "Viaja por el cosmos y explora planetas lejanos.",
-            status: 'locked'
+            status: isAquaticComplete ? (isSpaceComplete ? 'completed' : 'active') : 'locked'
           },
         ],
       },
@@ -691,4 +754,235 @@ function PathsDialog({ children, isTerrestrialComplete, isAquaticComplete }: { c
     );
 }
 
+```
+  </change>
+  <change>
+    <file>src/app/globals.css</file>
+    <content><![CDATA[@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 194 100% 97%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 221 100% 59%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 257 100% 65%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221 100% 59%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 221 100% 59%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 257 100% 65%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 221 100% 59%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .glass-effect {
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    background-color: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  }
+
+  .dark .glass-effect {
+    background-color: rgba(23, 23, 31, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .bg-chat-pattern {
+    background-image: radial-gradient(hsl(var(--primary) / 0.1) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+
+  .bg-space-pattern {
+    background-color: #000000;
+    background-image:  radial-gradient(#ffffff 0.5px, transparent 0.5px), radial-gradient(#ffffff 0.5px, #000000 0.5px);
+    background-size: 20px 20px, 30px 30px;
+    background-position: 0 0, 10px 10px;
+  }
     
+  @keyframes slide-out {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-out-reverse {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes slide-in-reverse {
+    from {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes float-icons {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-15px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+  }
+  
+  @keyframes float-logo {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+  }
+
+  @keyframes pulse-slow {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+      }
+  }
+
+  /* Nuevas animaciones para el chatbot */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-out {
+    animation: slide-out 0.3s ease-in-out forwards;
+  }
+  .animate-slide-in {
+    animation: slide-in 0.3s ease-in-out forwards;
+  }
+   .animate-slide-out-reverse {
+    animation: slide-out-reverse 0.3s ease-in-out forwards;
+  }
+  .animate-slide-in-reverse {
+    animation: slide-in-reverse 0.3s ease-in-out forwards;
+  }
+  .animate-float-icons {
+    animation: float-icons 3s ease-in-out infinite;
+  }
+  .animate-pulse-slow {
+      animation: pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  .animate-shimmer {
+    animation: shimmer 2s ease-in-out infinite;
+  }
+  .message-enter {
+    animation: fadeInUp 0.3s ease-out;
+  }
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+}
