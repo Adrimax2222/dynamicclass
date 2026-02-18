@@ -4,33 +4,31 @@
  * @fileOverview Gestor de conversaciones para el chatbot de IA usando el SDK de Google.
  *
  * - aiChatbotAssistance: Función principal que gestiona la lógica de la conversación con Gemini.
- * - AIChatbotAssistanceInput: El tipo de entrada para la función.
- * - AIChatbotAssistanceOutput: El tipo de salida de la función.
  */
 
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, type ChatSession, type EnhancedGenerateContentResponse } from "@google/generative-ai";
 import { z } from 'zod';
 
-// --- Esquemas de Entrada y Salida ---
+// --- Esquemas de Entrada y Salida (locales para este archivo) ---
 
 const ChatHistoryItemSchema = z.object({
   role: z.enum(['user', 'assistant', 'system']),
   content: z.string(),
 });
 
-export const AIChatbotAssistanceInputSchema = z.object({
+const AIChatbotAssistanceInputSchema = z.object({
   history: z.array(ChatHistoryItemSchema).optional().describe("Historial de la conversación para dar contexto al modelo."),
   query: z.string().min(1, { message: "La consulta no puede estar vacía." }).describe("La nueva pregunta del usuario."),
   subject: z.string().optional().describe("El tema principal de la conversación, ej: 'Matemáticas'."),
 });
 
-export type AIChatbotAssistanceInput = z.infer<typeof AIChatbotAssistanceInputSchema>;
+type AIChatbotAssistanceInput = z.infer<typeof AIChatbotAssistanceInputSchema>;
 
-export const AIChatbotAssistanceOutputSchema = z.object({
+const AIChatbotAssistanceOutputSchema = z.object({
   response: z.string().describe("La respuesta generada por el asistente de IA."),
 });
 
-export type AIChatbotAssistanceOutput = z.infer<typeof AIChatbotAssistanceOutputSchema>;
+type AIChatbotAssistanceOutput = z.infer<typeof AIChatbotAssistanceOutputSchema>;
 
 
 /**
