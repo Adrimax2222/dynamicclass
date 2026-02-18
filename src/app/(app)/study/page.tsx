@@ -169,19 +169,105 @@ const Stage3Icon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const Stage4Icon = Stage3Icon;
-
 const Stage5Icon = Stage3Icon;
 
+// --- Aquatic Growth SVG Components ---
+const FishStage1Icon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" {...props}>
+        <motion.circle 
+            cx="250" cy="400" r="20" 
+            stroke="currentColor" strokeWidth="8" fill="none"
+            initial={{ y: 0, opacity: 0 }}
+            animate={{ y: -150, opacity: [0, 1, 1, 0] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        />
+    </svg>
+);
+const FishStage2Icon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" {...props}>
+        <motion.circle cx="250" cy="400" r="25" stroke="currentColor" strokeWidth="8" fill="none" initial={{ y: 0, opacity: 0 }} animate={{ y: -200, opacity: [0, 1, 1, 0] }} transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}/>
+        <motion.circle cx="220" cy="420" r="15" stroke="currentColor" strokeWidth="8" fill="none" initial={{ y: 0, opacity: 0 }} animate={{ y: -250, opacity: [0, 1, 1, 0] }} transition={{ duration: 3, delay: 0.5, repeat: Infinity, ease: "linear" }}/>
+        <motion.circle cx="280" cy="410" r="20" stroke="currentColor" strokeWidth="8" fill="none" initial={{ y: 0, opacity: 0 }} animate={{ y: -220, opacity: [0, 1, 1, 0] }} transition={{ duration: 2.8, delay: 0.8, repeat: Infinity, ease: "linear" }}/>
+    </svg>
+);
+const FishStage3Icon = (props: React.SVGProps<SVGSVGElement>) => (
+     <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" {...props}>
+        <motion.path 
+            d="M 150,250 C 150,200 250,200 350,250 C 350,300 250,300 150,250 Z"
+            fill="none" stroke="currentColor" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round"
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1 }}
+        />
+     </svg>
+);
+const FishStage4Icon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" {...props}>
+        <motion.path d="M 150,250 C 150,200 250,200 350,250 C 350,300 250,300 150,250 Z" fill="none" stroke="currentColor" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1 }} />
+        <motion.path d="M 150,250 L 100,220 L 100,280 Z" fill="currentColor" stroke="currentColor" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" initial={{ scale: 0, originX: 150, originY: 250 }} animate={{ scale: 1 }} transition={{ duration: 0.5, delay: 0.8 }} />
+        <motion.circle cx="320" cy="240" r="8" fill="white" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 1 }} />
+    </svg>
+);
+const FishStage5Icon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" {...props}>
+        <motion.path d="M 150,250 C 150,200 250,200 350,250 C 350,300 250,300 150,250 Z" fill="currentColor" stroke="currentColor" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1 }} />
+        <motion.path d="M 150,250 L 100,220 L 100,280 Z" fill="currentColor" stroke="currentColor" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" initial={{ scale: 0, originX: 150, originY: 250 }} animate={{ scale: 1 }} transition={{ duration: 0.5, delay: 0.8 }} />
+        <motion.circle cx="320" cy="240" r="8" fill="white" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 1 }} />
+        <motion.path d="M 250,205 L 250,230" stroke="white" strokeWidth="8" initial={{ scaleY: 0, originY: 205 }} animate={{ scaleY: 1 }} transition={{ delay: 1.2 }}/>
+        <motion.path d="M 280,210 L 280,240" stroke="white" strokeWidth="8" initial={{ scaleY: 0, originY: 210 }} animate={{ scaleY: 1 }} transition={{ delay: 1.3 }}/>
+    </svg>
+);
 
-const PLANT_STAGES = [
-    null,
-    Stage1Icon,
-    Stage2Icon,
-    Stage3Icon,
-    Stage4Icon,
-    Stage5Icon
-];
+// --- Space Growth SVG Components ---
+const SpaceStage1Icon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" {...props}>
+        <motion.path d="M250 230 L250 270 M230 250 L270 250 M235 235 L265 265 M265 235 L235 265" stroke="currentColor" strokeWidth="8"
+            animate={{ scale: [1, 1.5, 1], rotate: [0, 180, 360] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        />
+    </svg>
+);
+const SpaceStage2Icon = (props: React.SVGProps<SVGSVGElement>) => (
+     <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" {...props}>
+        <motion.path d="M250 150 L280 250 L220 250 Z" fill="currentColor" initial={{ y: 200, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: "spring" }} />
+        <motion.rect x="220" y="250" width="60" height="100" rx="10" fill="currentColor" initial={{ y: 200, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: "spring", delay: 0.2 }} />
+    </svg>
+);
+const SpaceStage3Icon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" {...props}>
+        <motion.path d="M250 150 L280 250 L220 250 Z" fill="currentColor" />
+        <motion.rect x="220" y="250" width="60" height="100" rx="10" fill="currentColor" />
+        <motion.path d="M220 300 L180 360 L210 350 Z" fill="currentColor" initial={{ x: 50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ type: "spring", delay: 0.4 }} />
+        <motion.path d="M280 300 L320 360 L290 350 Z" fill="currentColor" initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ type: "spring", delay: 0.4 }} />
+    </svg>
+);
+const SpaceStage4Icon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" {...props}>
+        <motion.g animate={{ y: [-5, 5, -5] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>
+            <path d="M250 150 L280 250 L220 250 Z" fill="currentColor" />
+            <rect x="220" y="250" width="60" height="100" rx="10" fill="currentColor" />
+            <path d="M220 300 L180 360 L210 350 Z" fill="currentColor" />
+            <path d="M280 300 L320 360 L290 350 Z" fill="currentColor" />
+            <motion.path d="M235 350 Q250 380 265 350" stroke="orange" strokeWidth="10" fill="none"
+                initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5, delay: 0.6 }} />
+        </motion.g>
+    </svg>
+);
+const SpaceStage5Icon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" {...props}>
+        <motion.g animate={{ y: [-5, 5, -5] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>
+            <path d="M250 150 L280 250 L220 250 Z" fill="currentColor" />
+            <rect x="220" y="250" width="60" height="100" rx="10" fill="currentColor" />
+            <path d="M220 300 L180 360 L210 350 Z" fill="currentColor" />
+            <path d="M280 300 L320 360 L290 350 Z" fill="currentColor" />
+            <motion.path d="M235 350 Q250 420 265 350" stroke="orange" strokeWidth="15" fill="none" />
+            <motion.path d="M240 350 Q250 390 260 350" stroke="yellow" strokeWidth="10" fill="none" />
+        </motion.g>
+        <motion.circle cx="150" cy="150" r="30" fill="hsl(var(--primary))" initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.8 }} />
+    </svg>
+);
 
+const PLANT_STAGES = [ null, Stage1Icon, Stage2Icon, Stage3Icon, Stage4Icon, Stage5Icon ];
+const FISH_STAGES = [ null, FishStage1Icon, FishStage2Icon, FishStage3Icon, FishStage4Icon, FishStage5Icon ];
+const SPACE_STAGES = [ null, SpaceStage1Icon, SpaceStage2Icon, SpaceStage3Icon, SpaceStage4Icon, SpaceStage5Icon ];
 
 type Sound = {
     id: string;
@@ -310,35 +396,27 @@ export default function StudyPage() {
         };
         checkSchedule();
     }, [firestore, user]);
-
+    
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
-
+    
         if (selectedSound?.url) {
             if (audio.src !== selectedSound.url) {
                 audio.src = selectedSound.url;
+                audio.load();
             }
-            audio.load(); // Pre-load the audio
             audio.volume = volume / 100;
+            if (isActive) {
+                audio.play().catch(error => console.log("Audio playback failed:", error));
+            } else {
+                audio.pause();
+            }
         } else {
             audio.pause();
             audio.src = '';
         }
-    }, [selectedSound, volume]);
-
-    useEffect(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
-
-        if (isActive && selectedSound) {
-            audio.play().catch(error => {
-                console.log("Audio playback failed, likely needs user interaction.", error);
-            });
-        } else {
-            audio.pause();
-        }
-    }, [isActive, selectedSound]);
+    }, [selectedSound, volume, isActive]);
     
     const handleToggleFocusMode = (checked: boolean) => {
         if (!isActive) return;
@@ -462,7 +540,17 @@ export default function StudyPage() {
         ? modes[timerMode].colors
         : "from-green-400 to-emerald-500";
     
-    const CurrentPlantIcon = PLANT_STAGES[plantStage];
+    const animationSet = useMemo(() => {
+        if (plantCount >= 120) {
+            return SPACE_STAGES;
+        } else if (plantCount >= 60) {
+            return FISH_STAGES;
+        } else {
+            return PLANT_STAGES;
+        }
+    }, [plantCount]);
+
+    const CurrentPlantIcon = animationSet[plantStage];
   
     const isAquaticUnlocked = plantCount >= 60;
     const isSpacePath = plantCount >= 120;
@@ -587,7 +675,7 @@ export default function StudyPage() {
                                                         animate={{ opacity: 1, scale: 1 }}
                                                         exit={{ opacity: 0, scale: 0.5 }}
                                                         transition={{ duration: 0.5 }}
-                                                        className="text-green-500 w-40 h-40 mt-8"
+                                                        className={cn("w-40 h-40 mt-8", plantCount >= 120 ? 'text-purple-400' : plantCount >= 60 ? 'text-blue-500' : 'text-green-500')}
                                                     >
                                                         <CurrentPlantIcon className="w-full h-full" />
                                                     </motion.div>
@@ -1839,5 +1927,3 @@ function UnitConverter() {
         </Tabs>
     );
 }
-
-    
