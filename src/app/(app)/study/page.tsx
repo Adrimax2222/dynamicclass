@@ -875,15 +875,13 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
     const [activePageId, setActivePageId] = useState<number | null>(null);
     const [mode, setMode] = useState<'capture' | 'preview'>('capture');
     
-    const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-    const [isCameraActive, setIsCameraActive] = useState(false);
+    const [stream, setStream] = useState<MediaStream | null>(null);
     const [fileName, setFileName] = useState('apuntes-escaneados.pdf');
     const [isSaving, setIsSaving] = useState(false);
     
     const [isCropping, setIsCropping] = useState(false);
     const [startCropPoint, setStartCropPoint] = useState<{ x: number; y: number } | null>(null);
     
-    const [stream, setStream] = useState<MediaStream | null>(null);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -898,15 +896,15 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
             stream.getTracks().forEach(track => track.stop());
             setStream(null);
         }
-        setIsCameraActive(false);
     }, [stream]);
-
+    
     useEffect(() => {
-        if (videoRef.current && stream) {
-            videoRef.current.srcObject = stream;
+        const video = videoRef.current;
+        if (video && stream) {
+            video.srcObject = stream;
+            video.play();
         }
     }, [stream]);
-
 
     useEffect(() => {
         return () => { // Cleanup on unmount
@@ -916,17 +914,10 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
 
     const getCameraPermission = async () => {
         try {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
             const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-            setHasCameraPermission(true);
-            setIsCameraActive(true);
             setStream(mediaStream);
         } catch (error) {
             console.error('Error accessing camera:', error);
-            setHasCameraPermission(false);
-            setIsCameraActive(false);
             setStream(null);
             toast({
                 variant: 'destructive',
@@ -1205,30 +1196,8 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
         setPages([]);
         setActivePageId(null);
         setMode('capture');
-        setHasCameraPermission(null);
         setIsCropping(false);
         stopCamera();
-    };
-    
-    const renderCaptureUI = () => {
-        return (
-             <div className="flex flex-col items-center justify-center space-y-4 p-4 h-full">
-                <Button onClick={getCameraPermission} className="w-full max-w-xs">
-                    <Camera className="mr-2 h-4 w-4" /> Usar Cámara
-                </Button>
-                <Button onClick={() => fileInputRef.current?.click()} className="w-full max-w-xs">
-                    <Upload className="mr-2 h-4 w-4" /> Subir Archivo
-                </Button>
-                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden"/>
-                {hasCameraPermission === false && (
-                    <Alert variant="destructive" className="max-w-xs">
-                        <AlertDescription>
-                            El acceso a la cámara fue denegado.
-                        </AlertDescription>
-                    </Alert>
-                )}
-            </div>
-        );
     };
 
     return (
@@ -1243,55 +1212,61 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                 </DialogHeader>
                 <div className="relative flex-grow flex flex-col min-h-0 space-y-4">
                     <div className="flex-grow min-h-0 relative border rounded-lg bg-muted/30 flex items-center justify-center">
-                        {mode === 'capture' && !isCameraActive && (
-                            <div className="bg-background p-8 rounded-lg shadow-2xl border">
-                                {renderCaptureUI()}
-                            </div>
-                        )}
-
-                        {isCameraActive && (
-                            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 bg-background">
-                                <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                                <div className="flex items-center gap-4 mt-4">
-                                    <Button onClick={stopCamera} variant="outline">
-                                        Cancelar
-                                    </Button>
-                                    <Button onClick={takePicture} className="h-16 w-16 rounded-full">
-                                        <Camera className="h-8 w-8" />
-                                    </Button>
+                        {mode === 'capture' ? (
+                            stream ? (
+                                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 bg-background">
+                                    <video ref={videoRef} className="w-full max-w-lg aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                                    <div className="flex items-center gap-4 mt-4">
+                                        <Button onClick={stopCamera} variant="outline">
+                                            Cancelar
+                                        </Button>
+                                        <Button onClick={takePicture} className="h-16 w-16 rounded-full">
+                                            <Camera className="h-8 w-8" />
+                                        </Button>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                        
-                        {pages.length > 0 && activePage && mode === 'preview' ? (
-                             <div 
-                                ref={previewContainerRef}
-                                className="w-full h-full flex items-center justify-center p-2"
-                                onDragStart={(e) => e.preventDefault()}
-                                onMouseDown={handleCropMouseDown}
-                                onMouseMove={handleCropMouseMove}
-                                onMouseUp={handleCropMouseUp}
-                                onMouseLeave={handleCropMouseUp}
-                            >
-                                <img src={activePage.processedSrc} alt={`Page ${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
-                                {isCropping && activePage.crop && (
-                                    <div
-                                        className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
-                                        style={{
-                                            left: activePage.crop.x,
-                                            top: activePage.crop.y,
-                                            width: activePage.crop.width,
-                                            height: activePage.crop.height,
-                                        }}
-                                    />
-                                )}
-                            </div>
+                            ) : (
+                                <div className="bg-background p-8 rounded-lg shadow-2xl border">
+                                    <div className="flex flex-col items-center justify-center space-y-4 p-4 h-full">
+                                        <Button onClick={getCameraPermission} className="w-full max-w-xs">
+                                            <Camera className="mr-2 h-4 w-4" /> Usar Cámara
+                                        </Button>
+                                        <Button onClick={() => fileInputRef.current?.click()} className="w-full max-w-xs">
+                                            <Upload className="mr-2 h-4 w-4" /> Subir Archivo
+                                        </Button>
+                                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden"/>
+                                    </div>
+                                </div>
+                            )
                         ) : (
-                           mode === 'preview' && (
-                             <div className="text-center text-muted-foreground p-8">
-                                <p>Añade una página para empezar</p>
-                            </div>
-                           )
+                            pages.length > 0 && activePage ? (
+                                 <div 
+                                    ref={previewContainerRef}
+                                    className="w-full h-full flex items-center justify-center p-2"
+                                    onDragStart={(e) => e.preventDefault()}
+                                    onMouseDown={handleCropMouseDown}
+                                    onMouseMove={handleCropMouseMove}
+                                    onMouseUp={handleCropMouseUp}
+                                    onMouseLeave={handleCropMouseUp}
+                                >
+                                    <img src={activePage.processedSrc} alt={`Page ${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
+                                    {isCropping && activePage.crop && (
+                                        <div
+                                            className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
+                                            style={{
+                                                left: activePage.crop.x,
+                                                top: activePage.crop.y,
+                                                width: activePage.crop.width,
+                                                height: activePage.crop.height,
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            ) : (
+                               <div className="text-center text-muted-foreground p-8">
+                                    <p>Añade una página para empezar</p>
+                                </div>
+                            )
                         )}
                     </div>
                     
@@ -1318,7 +1293,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 </div>
                             ))}
                               <button
-                                onClick={() => { setIsCameraActive(false); setMode('capture'); }}
+                                onClick={() => { setMode('capture'); stopCamera(); }}
                                 className="h-20 w-20 flex flex-col items-center justify-center rounded-md border-2 border-dashed bg-muted/50 hover:bg-muted hover:border-primary transition-colors shrink-0"
                               >
                                 <PlusCircle className="h-6 w-6 text-muted-foreground" />
@@ -1767,8 +1742,8 @@ const unitLabels = {
 
 function UnitConverter() {
     const [type, setType] = useState<'length' | 'mass' | 'temperature'>('length');
-    const [fromUnit, setFromUnit] = useState<string>('m');
-    const [toUnit, setToUnit] = useState<string>('km');
+    const [fromUnit, setToUnit] = useState<string>('m');
+    const [toUnit, setFromUnit] = useState<string>('km');
     const [fromValue, setFromValue] = useState<string>('1');
     const [toValue, setToValue] = useState<string>('');
 
@@ -1864,3 +1839,5 @@ function UnitConverter() {
         </Tabs>
     );
 }
+
+    
