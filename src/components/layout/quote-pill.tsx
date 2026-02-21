@@ -140,7 +140,7 @@ export function RandomQuotePill() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeInOut" }}
-                        className="absolute top-full mt-2 w-full max-w-sm rounded-lg border bg-background p-4 shadow-lg z-10"
+                        className="absolute top-full mt-2 left-1/2 -translate-x-1/2 min-w-[280px] max-w-[350px] rounded-lg border bg-background p-4 shadow-lg z-50"
                     >
                         {error ? (
                             <div className="flex items-center gap-2 text-sm text-destructive">
