@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/forum/community", label: "Comunidad", icon: Users },
-  { href: "/forum/discussions", label: "Discusiones", icon: MessageSquare },
-  { href: "/forum/resources", label: "Recursos", icon: BookCopy },
   { href: "/forum/valoracion", label: "Valoración", icon: Star },
+  { href: "/forum/discussions", label: "Discusiones", icon: MessageSquare },
   { href: "/forum/clase", label: "Clase", icon: GraduationCap },
-  { href: "/forum/recursos-dc", label: "Recursos DC", icon: Zap },
+  { href: "/forum/resources", label: "Recursos", icon: BookCopy },
+  { href: "/forum/recursos-dc", label: "Dynamic Class", icon: Zap },
+  { href: "/forum/ayuda", label: "Ayuda", icon: HelpCircle },
 ];
 
 export default function ForumLayout({
@@ -52,16 +53,6 @@ export default function ForumLayout({
                     </Link>
                 );
             })}
-             <Link
-              href="/forum/ayuda"
-              className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-                  pathname.startsWith("/forum/ayuda") && "bg-primary/10 text-primary font-semibold"
-              )}
-              >
-              <HelpCircle className="h-5 w-5" />
-              <span>Ayuda</span>
-            </Link>
           </div>
            <div className="p-4 border-t">
               <Button variant="outline" className="w-full" onClick={() => router.push('/home')}>
@@ -78,7 +69,7 @@ export default function ForumLayout({
 
             {/* Bottom Nav for Mobile */}
             <nav className="flex-shrink-0 border-t bg-card/95 backdrop-blur-sm sticky bottom-0 z-10 md:hidden">
-            <div className="mx-auto grid h-16 max-w-md grid-cols-6 items-center">
+            <div className="mx-auto grid h-16 max-w-md grid-cols-7 items-center">
                 {navItems.map((item) => {
                 const isActive = pathname.startsWith(item.href);
                 return (

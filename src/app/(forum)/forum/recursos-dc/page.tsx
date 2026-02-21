@@ -10,7 +10,7 @@ export default function RecursosDCPage() {
                      <div className="mx-auto mb-4 w-fit rounded-lg bg-muted p-3">
                         <Zap className="h-8 w-8 text-primary" />
                     </div>
-                    <h2 className="text-2xl font-bold font-headline tracking-tight">Recursos Dynamic Class</h2>
+                    <h2 className="text-2xl font-bold font-headline tracking-tight">Dynamic Class</h2>
                     <p className="text-muted-foreground">Material oficial, tutoriales y guías de la aplicación.</p>
                 </div>
                 <div className="text-center p-12 space-y-4 border-2 border-dashed rounded-lg max-w-lg mx-auto mt-8">
