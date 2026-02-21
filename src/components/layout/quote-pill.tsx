@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -44,7 +45,7 @@ export function QuotePill() {
         <div className="relative">
             <Button
                 variant="outline"
-                className="h-8 rounded-full bg-blue-100/60 border-blue-500/20 text-blue-600 dark:bg-blue-900/40 dark:border-blue-500/30 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-xs px-4"
+                className="h-7 rounded-full bg-blue-100/60 border-blue-500/20 text-blue-600 dark:bg-blue-900/40 dark:border-blue-500/30 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-xs px-3"
                 onClick={toggleOpen}
                 disabled={isLoading}
             >
@@ -88,3 +89,4 @@ export function QuotePill() {
         </div>
     );
 }
+    
