@@ -42,7 +42,7 @@ import { useApp } from "@/lib/hooks/use-app";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useMemo } from "react";
 import { doc, updateDoc, arrayUnion, increment, collection, query, orderBy, getDocs, addDoc, serverTimestamp, where, writeBatch, getDoc } from "firebase/firestore";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { SCHOOL_NAME, SCHOOL_VERIFICATION_CODE } from "@/lib/constants";
@@ -61,6 +61,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { WipDialog } from "@/components/layout/wip-dialog";
 import { RandomQuotePill } from "@/components/layout/quote-pill";
+import { updateProfile } from "firebase/auth";
 
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com', 'info.dynamicclass@gmail.com'];
@@ -584,6 +585,7 @@ const classOptions = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
 function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultOpenItem }: { allCenters: Center[], children?: React.ReactNode, defaultOpenItem?: string }) {
   const { user, updateUser } = useApp();
+  const auth = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [defaultOpenItem, setDefaultOpenItem] = useState(propDefaultOpenItem);
@@ -615,38 +617,46 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
 
   const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
   
+  const [selectedDiceBearAvatar, setSelectedDiceBearAvatar] = useState('');
+  const [diceBearSeed, setDiceBearSeed] = useState(0);
+
   const isUserAdmin = user?.role === 'admin';
   const isCenterAdmin = user?.role === 'center-admin';
 
   const initializeState = () => {
     if (user) {
-        const isPersonal = user.center === 'personal' || user.center === 'default';
-        setMode(isPersonal ? 'personal' : 'join');
-        setName(user.name);
-        setCenter(isPersonal ? '' : user.center || "");
-        setAgeRange(user.ageRange === 'default' ? '' : user.ageRange);
-        setCourse(isPersonal ? '' : user.course || '');
-        setClassName(isPersonal ? '' : user.className || '');
-        
-        const [id, id_extra, color] = user.avatar.split('_');
-        
-        if (id === 'letter') {
-             setEditableAvatar({ id: `letter_${id_extra}`, color: color || '737373' });
-             setAvatarMode('letter');
-        } else if (allShopAvatars.some(a => a.id === id)) {
-             setEditableAvatar({ id: id, color: id_extra || '737373' });
-             setAvatarMode('library');
+        if (user.avatar?.includes('dicebear.com')) {
+            setAvatarMode('avatar');
+            setSelectedDiceBearAvatar(user.avatar);
         } else {
-             const initial = user.name.charAt(0).toUpperCase() || 'A';
-             setEditableAvatar({ id: `letter_${initial}`, color: 'A78BFA' });
-             setAvatarMode('letter');
-        }
-        
-        if (!isPersonal && user.center) {
-            const currentCenter = allCenters.find(c => c.code === user.center);
-            if (currentCenter) {
-                setValidatedCenter(currentCenter);
-                setIsCenterValidated(true);
+            const isPersonal = user.center === 'personal' || user.center === 'default';
+            setMode(isPersonal ? 'personal' : 'join');
+            setName(user.name);
+            setCenter(isPersonal ? '' : user.center || "");
+            setAgeRange(user.ageRange === 'default' ? '' : user.ageRange);
+            setCourse(isPersonal ? '' : user.course || '');
+            setClassName(isPersonal ? '' : user.className || '');
+            
+            const [id, id_extra, color] = user.avatar.split('_');
+            
+            if (id === 'letter') {
+                 setEditableAvatar({ id: `letter_${id_extra}`, color: color || '737373' });
+                 setAvatarMode('letter');
+            } else if (allShopAvatars.some(a => a.id === id)) {
+                 setEditableAvatar({ id: id, color: id_extra || '737373' });
+                 setAvatarMode('library');
+            } else {
+                 const initial = user.name.charAt(0).toUpperCase() || 'A';
+                 setEditableAvatar({ id: `letter_${initial}`, color: 'A78BFA' });
+                 setAvatarMode('letter');
+            }
+            
+            if (!isPersonal && user.center) {
+                const currentCenter = allCenters.find(c => c.code === user.center);
+                if (currentCenter) {
+                    setValidatedCenter(currentCenter);
+                    setIsCenterValidated(true);
+                }
             }
         }
     }
@@ -656,6 +666,10 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
     if (isOpen) {
         setDefaultOpenItem(propDefaultOpenItem || '');
         initializeState();
+        if (user?.avatar?.includes('dicebear.com')) {
+            setAvatarMode('avatar');
+            setSelectedDiceBearAvatar(user.avatar);
+        }
     } else {
         setDefaultOpenItem(''); // Reset when dialog closes
     }
@@ -811,12 +825,21 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
   };
   
 const handleSaveChanges = async () => {
-    if (!firestore || !user) return;
+    if (!firestore || !user || !auth) return;
     setIsLoading(true);
 
-    const finalAvatarString = editableAvatar.id.startsWith('letter')
-        ? `letter_${editableAvatar.id.split('_')[1]}_${editableAvatar.color}`
-        : `${editableAvatar.id}_${editableAvatar.color}`;
+    let finalAvatarString = user.avatar; // Default to current avatar
+
+    if (avatarMode === 'letter' || avatarMode === 'library') {
+      const isLetter = editableAvatar.id.startsWith('letter');
+      finalAvatarString = isLetter
+          ? `letter_${editableAvatar.id.split('_')[1]}_${editableAvatar.color}`
+          : `${editableAvatar.id}_${editableAvatar.color}`;
+    } else if (avatarMode === 'avatar') {
+      if (selectedDiceBearAvatar) {
+        finalAvatarString = selectedDiceBearAvatar;
+      }
+    }
 
     let updatedData: Partial<User> = {
         name,
@@ -906,6 +929,13 @@ const handleSaveChanges = async () => {
         
         const userDocRef = doc(firestore, 'users', user.uid);
         await updateDoc(userDocRef, updatedData);
+
+        if (auth.currentUser) {
+            await updateProfile(auth.currentUser, {
+                displayName: name,
+                photoURL: finalAvatarString
+            });
+        }
       
         updateUser(updatedData);
 
@@ -929,12 +959,10 @@ const handleSaveChanges = async () => {
   const isSaveDisabled = useMemo(() => {
     if (isLoading) return true;
     
-    // Allow saving if avatar is a letter
-    if (avatarMode === 'letter') {
-        return false;
+    if (avatarMode === 'avatar') {
+        return !selectedDiceBearAvatar;
     }
-
-    // If avatar is from library, check ownership
+    
     if (avatarMode === 'library') {
         const shopItem = allShopAvatars.find(item => item.id === editableAvatar.id);
         if (shopItem) {
@@ -945,8 +973,8 @@ const handleSaveChanges = async () => {
         }
     }
     
-    return false; // Default to enabled
-  }, [editableAvatar.id, user.ownedAvatars, isLoading, avatarMode]);
+    return false;
+  }, [isLoading, avatarMode, selectedDiceBearAvatar, editableAvatar, user]);
   
   const registrationModeInfo = {
     join: { title: "Unirse a un Centro", description: "Introduce el código proporcionado por tu centro educativo." },
@@ -971,7 +999,7 @@ const handleSaveChanges = async () => {
                         <div className="space-y-6 pt-2">
                              <div className="flex justify-center py-4">
                                 <AvatarDisplay 
-                                    user={{ avatar: `${editableAvatar.id.startsWith('letter') ? `letter_${editableAvatar.id.split('_')[1]}` : editableAvatar.id}_${editableAvatar.color}`, name: user.name }}
+                                    user={{ avatar: avatarMode === 'avatar' ? selectedDiceBearAvatar : `${editableAvatar.id.startsWith('letter') ? `letter_${editableAvatar.id.split('_')[1]}` : editableAvatar.id}_${editableAvatar.color}`, name: user.name }}
                                     className="h-24 w-24 ring-4 ring-primary ring-offset-2" 
                                 />
                             </div>
@@ -994,24 +1022,26 @@ const handleSaveChanges = async () => {
                                 </Label>
                             </RadioGroup>
 
-                            <div className="space-y-4">
-                                <Label>Color de Fondo</Label>
-                                <div className="flex flex-wrap gap-3">
-                                    {AVATAR_COLORS.map(color => (
-                                        <button
-                                            key={color.value}
-                                            type="button"
-                                            onClick={() => handleColorClick(color.value)}
-                                            className={cn(
-                                                "h-8 w-8 rounded-full border-2 transition-transform hover:scale-110",
-                                                editableAvatar.color === color.value ? 'border-ring' : 'border-transparent'
-                                            )}
-                                            style={{ backgroundColor: `#${color.value}` }}
-                                            aria-label={`Seleccionar color ${color.name}`}
-                                        />
-                                    ))}
+                             {avatarMode !== 'avatar' && (
+                                <div className="space-y-4">
+                                    <Label>Color de Fondo</Label>
+                                    <div className="flex flex-wrap gap-3">
+                                        {AVATAR_COLORS.map(color => (
+                                            <button
+                                                key={color.value}
+                                                type="button"
+                                                onClick={() => handleColorClick(color.value)}
+                                                className={cn(
+                                                    "h-8 w-8 rounded-full border-2 transition-transform hover:scale-110",
+                                                    editableAvatar.color === color.value ? 'border-ring' : 'border-transparent'
+                                                )}
+                                                style={{ backgroundColor: `#${color.value}` }}
+                                                aria-label={`Seleccionar color ${color.name}`}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                             
                             {avatarMode === 'letter' && (
                                 <div className="space-y-4">
@@ -1063,7 +1093,36 @@ const handleSaveChanges = async () => {
 
                             {avatarMode === 'avatar' && (
                                 <div className="space-y-4">
-                                    {/* Contenido para la nueva pestaña Avatar */}
+                                    <Label>Avatar de DiceBear</Label>
+                                    <p className="text-xs text-muted-foreground">Selecciona un estilo. La imagen se generará usando tu ID de usuario como semilla única.</p>
+                                    <div className="grid grid-cols-4 gap-4">
+                                        {['adventurer', 'bottts', 'lorelei', 'pixel-art'].map(style => {
+                                            const url = `https://api.dicebear.com/9.x/${style}/svg?seed=${user.uid}${diceBearSeed}`;
+                                            const isSelected = selectedDiceBearAvatar === url;
+                                            return (
+                                                <button
+                                                    key={style}
+                                                    type="button"
+                                                    onClick={() => setSelectedDiceBearAvatar(url)}
+                                                    className={cn(
+                                                        "w-full aspect-square rounded-lg flex items-center justify-center bg-muted transition-all transform hover:scale-105",
+                                                        isSelected && "ring-4 ring-primary ring-offset-2"
+                                                    )}
+                                                >
+                                                    <img src={url} alt={`${style} avatar`} className="w-16 h-16 rounded-md" />
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        className="w-full"
+                                        onClick={() => setDiceBearSeed(Math.random())}
+                                    >
+                                        <RefreshCw className="mr-2 h-4 w-4" />
+                                        Generar otros
+                                    </Button>
                                 </div>
                             )}
 
@@ -1103,7 +1162,7 @@ const handleSaveChanges = async () => {
                                             {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : isCenterValidated ? <CheckCircle className="h-4 w-4"/> : "Validar"}
                                         </Button>
                                     </div>
-                                    {validatedCenter && <p className="text-sm font-semibold text-green-600 flex items-center gap-2"><CheckCircle className="h-4 w-4"/> {validatedCenter.name}</p>}
+                                    {validatedCenter && isCenterValidated && <p className="text-sm font-semibold text-green-600 flex items-center gap-2"><CheckCircle className="h-4 w-4"/> {validatedCenter.name}</p>}
                                 </div>
                                 <div className={cn(!isCenterValidated && 'opacity-50 pointer-events-none')}>
                                     <div className="grid grid-cols-2 gap-4">
@@ -1456,5 +1515,6 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
 
