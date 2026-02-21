@@ -54,6 +54,7 @@ import { TeacherInfoDialog } from "@/components/layout/teacher-info-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { WhatsNewDialog } from "@/components/layout/whats-new-dialog";
 import { WipDialog } from "@/components/layout/wip-dialog";
+import { QuotePill } from "@/components/layout/quote-pill";
 
 type Category = "Tareas" | "Exámenes" | "Pendientes" | "Anuncios";
 
@@ -538,14 +539,15 @@ export default function HomePage() {
         </div>
       </header>
 
-      <div className="mb-8 space-y-4">
+      <div className="mb-8 space-y-2">
         <div>
             <h2 className="text-xl font-semibold sm:text-2xl">
               ¡Bienvenido de nuevo, {getFirstName(user.name)}!
             </h2>
             <p className="text-muted-foreground">Este es tu Dynamic Panel para hoy.</p>
-            <p className="text-xs text-muted-foreground/80 mt-1">{capitalizedDate}</p>
         </div>
+        <QuotePill />
+        <p className="text-xs text-muted-foreground/80 pt-1">{capitalizedDate}</p>
       </div>
 
 
