@@ -1,15 +1,26 @@
 'use server';
 
-interface Quote {
+interface ZenQuote {
     q: string; // quote
     a: string; // author
     h: string; // html formatted quote
+}
+
+interface MyMemoryResponse {
+    responseData: {
+        translatedText: string;
+    };
 }
 
 interface QuoteResponse {
     quote: string;
     author: string;
 }
+
+const fallbackQuote: QuoteResponse = {
+    quote: "El éxito es la suma de pequeños esfuerzos repetidos día tras día.",
+    author: "Robert Collier",
+};
 
 export async function getQuoteOfTheDay(): Promise<QuoteResponse> {
     try {
@@ -18,21 +29,52 @@ export async function getQuoteOfTheDay(): Promise<QuoteResponse> {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to fetch quote from ZenQuotes API.');
+            console.error('Failed to fetch quote from ZenQuotes API, returning fallback.');
+            return fallbackQuote;
         }
 
-        const data: Quote[] = await response.json();
+        const data: ZenQuote[] = await response.json();
 
         if (!data || data.length === 0) {
-            throw new Error('No quote received from the API.');
+            console.error('No quote received from ZenQuotes API, returning fallback.');
+            return fallbackQuote;
         }
 
         const { q, a } = data[0];
 
-        return { quote: q, author: a };
+        // Now, try to translate the quote
+        try {
+            const encodedQuote = encodeURIComponent(q);
+            const translationUrl = `https://api.mymemory.translated.net/get?q=${encodedQuote}&langpair=en|es`;
+            
+            const translationResponse = await fetch(translationUrl, {
+                next: { revalidate: 3600 } // Cache translation for 1 hour
+            });
+
+            if (!translationResponse.ok) {
+                // If translation fails, return the original English quote
+                console.warn('Translation API failed, returning original quote.');
+                return { quote: q, author: a };
+            }
+
+            const translationData: MyMemoryResponse = await translationResponse.json();
+            const translatedText = translationData.responseData.translatedText;
+
+            if (translatedText) {
+                return { quote: translatedText, author: a };
+            } else {
+                 // If translation response is OK but text is empty, return original
+                return { quote: q, author: a };
+            }
+
+        } catch (translationError) {
+            console.warn('--- TRANSLATION API ERROR ---', translationError);
+            // If translation fails for any reason, return the original English quote
+            return { quote: q, author: a };
+        }
 
     } catch (error) {
         console.error('--- QUOTE API ERROR ---', error);
-        throw new Error('Could not retrieve the quote of the day.');
+        return fallbackQuote;
     }
 }
