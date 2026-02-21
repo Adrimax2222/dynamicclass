@@ -589,7 +589,7 @@ function EditProfileDialog({ allCenters, children, defaultOpenItem: propDefaultO
   const [defaultOpenItem, setDefaultOpenItem] = useState(propDefaultOpenItem);
   
   const [editableAvatar, setEditableAvatar] = useState<EditableAvatar>({ id: 'letter_A', color: 'A78BFA'});
-  const [avatarMode, setAvatarMode] = useState<'letter' | 'library'>('letter');
+  const [avatarMode, setAvatarMode] = useState<'letter' | 'library' | 'avatar'>('letter');
 
   const [name, setName] = useState(user?.name || "");
   const [center, setCenter] = useState(user?.center === 'personal' ? '' : user?.center || "");
@@ -976,14 +976,21 @@ const handleSaveChanges = async () => {
                                 />
                             </div>
                             
-                            <RadioGroup value={avatarMode} onValueChange={(v) => setAvatarMode(v as 'letter' | 'library')} className="grid grid-cols-2 gap-2">
-                                <Label className={cn("rounded-md border p-2 flex items-center justify-center gap-2 cursor-pointer", avatarMode === 'letter' && 'bg-primary/10 border-primary')}>
-                                    <CaseUpper className="h-4 w-4"/> Letras
+                            <RadioGroup value={avatarMode} onValueChange={(v) => setAvatarMode(v as 'letter' | 'library' | 'avatar')} className="grid grid-cols-3 gap-2">
+                                <Label className={cn("rounded-md border p-2 flex flex-col items-center justify-center gap-1.5 cursor-pointer", avatarMode === 'letter' && 'bg-primary/10 border-primary')}>
+                                    <CaseUpper className="h-5 w-5"/>
+                                    <span className="text-xs font-semibold">Letras</span>
                                     <RadioGroupItem value="letter" className="sr-only"/>
                                 </Label>
-                                <Label className={cn("rounded-md border p-2 flex items-center justify-center gap-2 cursor-pointer", avatarMode === 'library' && 'bg-primary/10 border-primary')}>
-                                    <Sparkles className="h-4 w-4 text-yellow-400"/> Biblioteca
+                                <Label className={cn("rounded-md border p-2 flex flex-col items-center justify-center gap-1.5 cursor-pointer", avatarMode === 'library' && 'bg-primary/10 border-primary')}>
+                                    <Sparkles className="h-5 w-5 text-yellow-400"/>
+                                    <span className="text-xs font-semibold">Biblioteca</span>
                                     <RadioGroupItem value="library" className="sr-only"/>
+                                </Label>
+                                <Label className={cn("rounded-md border p-2 flex flex-col items-center justify-center gap-1.5 cursor-pointer", avatarMode === 'avatar' && 'bg-primary/10 border-primary')}>
+                                    <UserIcon className="h-5 w-5"/>
+                                    <span className="text-xs font-semibold">Avatar</span>
+                                    <RadioGroupItem value="avatar" className="sr-only"/>
                                 </Label>
                             </RadioGroup>
 
@@ -1051,6 +1058,12 @@ const handleSaveChanges = async () => {
                                             </div>
                                         </CollapsibleContent>
                                     </Collapsible>
+                                </div>
+                            )}
+
+                            {avatarMode === 'avatar' && (
+                                <div className="space-y-4">
+                                    {/* Contenido para la nueva pestaña Avatar */}
                                 </div>
                             )}
 
@@ -1443,4 +1456,5 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+
 
