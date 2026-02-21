@@ -78,3 +78,60 @@ export async function getQuoteOfTheDay(): Promise<QuoteResponse> {
         return fallbackQuote;
     }
 }
+
+export async function getRandomQuote(): Promise<QuoteResponse> {
+    try {
+        const response = await fetch('https://zenquotes.io/api/random', {
+            cache: 'no-store' // Do not cache
+        });
+
+        if (!response.ok) {
+            console.error('Failed to fetch quote from ZenQuotes API, returning fallback.');
+            return fallbackQuote;
+        }
+
+        const data: ZenQuote[] = await response.json();
+
+        if (!data || data.length === 0) {
+            console.error('No quote received from ZenQuotes API, returning fallback.');
+            return fallbackQuote;
+        }
+
+        const { q, a } = data[0];
+
+        // Now, try to translate the quote
+        try {
+            const encodedQuote = encodeURIComponent(q);
+            const translationUrl = `https://api.mymemory.translated.net/get?q=${encodedQuote}&langpair=en|es`;
+            
+            const translationResponse = await fetch(translationUrl, {
+                cache: 'no-store' // Do not cache translation either
+            });
+
+            if (!translationResponse.ok) {
+                // If translation fails, return the original English quote
+                console.warn('Translation API failed, returning original quote.');
+                return { quote: q, author: a };
+            }
+
+            const translationData: MyMemoryResponse = await translationResponse.json();
+            const translatedText = translationData.responseData.translatedText;
+
+            if (translatedText) {
+                return { quote: translatedText, author: a };
+            } else {
+                 // If translation response is OK but text is empty, return original
+                return { quote: q, author: a };
+            }
+
+        } catch (translationError) {
+            console.warn('--- TRANSLATION API ERROR ---', translationError);
+            // If translation fails for any reason, return the original English quote
+            return { quote: q, author: a };
+        }
+
+    } catch (error) {
+        console.error('--- QUOTE API ERROR ---', error);
+        return fallbackQuote;
+    }
+}

@@ -60,6 +60,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { WipDialog } from "@/components/layout/wip-dialog";
+import { RandomQuotePill } from "@/components/layout/quote-pill";
 
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com', 'info.dynamicclass@gmail.com'];
@@ -143,9 +144,12 @@ export default function ProfilePage() {
   return (
     <div className="container mx-auto max-w-4xl p-4 sm:p-6">
       <header className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl flex items-center gap-2">
-          Mi Perfil
-        </h1>
+        <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold font-headline tracking-tighter sm:text-3xl flex items-center gap-2">
+              Mi Perfil
+            </h1>
+            <RandomQuotePill />
+        </div>
         <div className="flex items-center gap-2">
             <StreakRankingDialog user={user}>
                  <div className={cn("flex items-center gap-1 cursor-pointer hover:bg-muted p-1 rounded-full transition-colors", streakCount > 0 ? "bg-orange-100/50 dark:bg-orange-900/20" : "")}>
@@ -1439,3 +1443,4 @@ function HistoryList({ items, isLoading, type }: { items: CompletedItem[], isLoa
 
 
     
+

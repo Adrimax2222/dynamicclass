@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, AlertTriangle, BookMarked } from 'lucide-react';
-import { getQuoteOfTheDay } from '@/app/(app)/home/actions';
+import { getQuoteOfTheDay, getRandomQuote } from '@/app/(app)/home/actions';
 
 interface QuoteData {
     quote: string;
@@ -83,6 +83,80 @@ export function QuotePill() {
                                 </figcaption>
                             </figure>
                         ) : null}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+export function RandomQuotePill() {
+    const [quoteData, setQuoteData] = useState<QuoteData | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isOpen, setIsOpen] = useState(false);
+
+    const fetchRandomQuote = async () => {
+        try {
+            setIsLoading(true);
+            setIsOpen(true);
+            setError(null);
+            const data = await getRandomQuote();
+            setQuoteData(data);
+        } catch (err: any) {
+            setError(err.message || 'Failed to load quote.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const toggleOpen = () => {
+        if (isOpen) {
+            setIsOpen(false);
+        } else {
+            fetchRandomQuote();
+        }
+    };
+    
+    return (
+        <div className="relative">
+            <Button
+                variant="outline"
+                className="h-7 rounded-full bg-purple-100/60 border-purple-500/20 text-purple-600 dark:bg-purple-900/40 dark:border-purple-500/30 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-xs px-3"
+                onClick={toggleOpen}
+                disabled={isLoading}
+            >
+                {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                    "Random 🎲"
+                )}
+            </Button>
+
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                        className="absolute top-full mt-2 w-full max-w-sm rounded-lg border bg-background p-4 shadow-lg z-10"
+                    >
+                        {error ? (
+                            <div className="flex items-center gap-2 text-sm text-destructive">
+                                <AlertTriangle className="h-4 w-4" />
+                                <span>{error}</span>
+                            </div>
+                        ) : quoteData ? (
+                            <figure>
+                                <blockquote className="italic text-foreground">
+                                    “{quoteData.quote}”
+                                </blockquote>
+                                <figcaption className="mt-2 text-right text-sm font-semibold text-muted-foreground">
+                                    — {quoteData.author}
+                                </figcaption>
+                            </figure>
+                        ) : <Loader2 className="h-4 w-4 animate-spin mx-auto" />}
                     </motion.div>
                 )}
             </AnimatePresence>
