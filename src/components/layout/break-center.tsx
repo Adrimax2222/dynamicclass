@@ -31,7 +31,7 @@ interface BreakCenterProps {
 }
 
 interface EarthImage {
-    url: string;
+    id: number;
     location: string;
 }
 
@@ -441,7 +441,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                     top: `${(segment.y / GRID_SIZE) * 100}%`,
                     width: `${100 / GRID_SIZE}%`,
                     height: `${100 / GRID_SIZE}%`,
-                    backgroundColor: isHead ? '#1e4620' : '#40916c',
+                    backgroundColor: isHead ? '#1e3a20' : '#40916c',
                     zIndex: isHead ? 10 : 0,
                     transition: 'all 150ms linear'
                   }}
@@ -555,29 +555,42 @@ const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
             const emptySquares = board.map((sq, i) => sq === null ? i : null).filter((i): i is number => i !== null);
 
             const getAiMove = (): number => {
+                // Modo Fácil
                 if (difficulty === 'easy') {
-                    if (Math.random() < 0.8) {
-                        return emptySquares[Math.floor(Math.random() * emptySquares.length)];
+                    if (Math.random() < 0.2) { // 20% de jugar bien
+                        for (const i of emptySquares) { // Bloquear al jugador
+                            const nextBoard = board.slice();
+                            nextBoard[i] = 'X';
+                            if (calculateWinner(nextBoard) === 'X') return i;
+                        }
                     }
+                    return emptySquares[Math.floor(Math.random() * emptySquares.length)];
                 }
 
-                if (difficulty === 'medium' || difficulty === 'easy') {
+                // Modo Medio
+                if (difficulty === 'medium') {
+                    // 1. Ganar si es posible
                     for (const i of emptySquares) {
                         const nextBoard = board.slice();
                         nextBoard[i] = 'O';
                         if (calculateWinner(nextBoard) === 'O') return i;
                     }
+                    // 2. Bloquear al jugador
                     for (const i of emptySquares) {
                         const nextBoard = board.slice();
                         nextBoard[i] = 'X';
                         if (calculateWinner(nextBoard) === 'X') return i;
                     }
+                    // 3. Ocupar el centro
                     if (emptySquares.includes(4)) return 4;
+                    // 4. Ocupar una esquina
                     const corners = [0, 2, 6, 8].filter(i => emptySquares.includes(i));
                     if (corners.length > 0) return corners[Math.floor(Math.random() * corners.length)];
+                    // 5. Movimiento aleatorio
                     return emptySquares[Math.floor(Math.random() * emptySquares.length)];
                 }
 
+                // Modo Difícil (Minimax con error)
                 if (difficulty === 'hard') {
                     const moves: { index: number; score: number }[] = [];
                     for (const i of emptySquares) {
@@ -586,17 +599,16 @@ const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
                         const moveScore = minimax(newBoard, false);
                         moves.push({ index: i, score: moveScore });
                     }
-
                     moves.sort((a, b) => b.score - a.score);
                     
+                    // 15% de probabilidad de cometer un error si hay más de una opción
                     if (Math.random() < 0.15 && moves.length > 1) {
-                        return moves[1].index;
+                        return moves[1].index; // Elige la segunda mejor opción
                     }
-
                     return moves[0].index;
                 }
                 
-                return emptySquares[0];
+                return emptySquares[0]; // Fallback
             };
             
             const minimax = (newBoard: (string|null)[], isMaximizing: boolean): number => {
@@ -839,40 +851,57 @@ const Game2048 = ({ onBack }: { onBack: () => void }) => {
 
 const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () => void; }) => {
     const earthImages: EarthImage[] = [
-        { url: "https://www.gstatic.com/prettyearth/assets/full/1003.jpg", location: "Cañón del Antílope, EE.UU." },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/1108.jpg", location: "Campos de Tulipanes, Países Bajos" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/1224.jpg", location: "Glaciar Perito Moreno, Argentina" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/1500.jpg", location: "Salar de Uyuni, Bolivia" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/1820.jpg", location: "Valle de la Luna, Chile" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/2030.jpg", location: "Monte Fuji, Japón" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/2155.jpg", location: "Estructura de Richat, Mauritania" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/2560.jpg", location: "Delta del Río Lena, Rusia" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/3045.jpg", location: "Desierto del Namib, Namibia" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/4500.jpg", location: "Río de Janeiro, Brasil" },
+        { id: 1003, location: "Cañón del Antílope, EE.UU." },
+        { id: 1108, location: "Campos de Tulipanes, Países Bajos" },
+        { id: 1224, location: "Glaciar Perito Moreno, Argentina" },
+        { id: 1500, location: "Salar de Uyuni, Bolivia" },
+        { id: 1820, location: "Valle de la Luna, Chile" },
+        { id: 2030, location: "Monte Fuji, Japón" },
+        { id: 2155, location: "Estructura de Richat, Mauritania" },
+        { id: 2560, location: "Delta del Río Lena, Rusia" },
+        { id: 3045, location: "Desierto del Namib, Namibia" },
+        { id: 4500, location: "Río de Janeiro, Brasil" },
     ];
 
-    const [currentImageIndex, setCurrentImageIndex] = useState(Math.floor(Math.random() * earthImages.length));
-    const [isLoading, setIsLoading] = useState(true);
+    const [currentImageId, setCurrentImageId] = useState(earthImages[Math.floor(Math.random() * earthImages.length)].id);
+    const [isLoadingImage, setIsLoadingImage] = useState(true);
+    const [canClickNext, setCanClickNext] = useState(true);
+    const [cacheBuster, setCacheBuster] = useState(Date.now());
 
-    const currentImage = earthImages[currentImageIndex];
+    const currentImage = earthImages.find(img => img.id === currentImageId)!;
+    const imageUrl = `https://www.gstatic.com/prettyearth/assets/full/${currentImageId}.jpg?t=${cacheBuster}`;
 
     const selectRandomImage = useCallback(() => {
-        setIsLoading(true);
-        let newIndex;
-        do {
-            newIndex = Math.floor(Math.random() * earthImages.length);
-        } while (newIndex === currentImageIndex && earthImages.length > 1);
-        setCurrentImageIndex(newIndex);
-    }, [currentImageIndex, earthImages.length]);
+        if (!canClickNext) return;
 
+        setIsLoadingImage(true);
+        setCanClickNext(false);
+
+        let newId;
+        const availableImages = earthImages.filter(img => img.id !== currentImageId);
+        if (availableImages.length > 0) {
+            newId = availableImages[Math.floor(Math.random() * availableImages.length)].id;
+        } else {
+            // Fallback if there's only one image
+            newId = earthImages[0].id;
+        }
+        
+        setCurrentImageId(newId);
+        setCacheBuster(Date.now());
+
+        setTimeout(() => {
+            setCanClickNext(true);
+        }, 3000);
+    }, [canClickNext, currentImageId, earthImages]);
 
     return (
         <div className="relative h-full w-full overflow-hidden bg-black">
              <AnimatePresence>
-                {isLoading && (
+                {isLoadingImage && (
                     <motion.div
                         key="loader"
                         className="absolute inset-0 z-20 flex items-center justify-center bg-black"
+                        initial={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.5 }}
                     >
@@ -882,14 +911,14 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
             </AnimatePresence>
             
             <motion.img
-                key={currentImage.url}
-                src={currentImage.url}
+                key={imageUrl}
+                src={imageUrl}
                 alt={currentImage.location}
                 className="absolute inset-0 w-full h-full object-cover animate-kenburns"
                 initial={{ opacity: 0 }}
-                animate={{ opacity: isLoading ? 0 : 1 }}
+                animate={{ opacity: isLoadingImage ? 0 : 1 }}
                 transition={{ duration: 1.5 }}
-                onLoad={() => setIsLoading(false)}
+                onLoad={() => setIsLoadingImage(false)}
                 onError={selectRandomImage}
             />
             <div className="absolute inset-0 bg-black/10" />
@@ -904,7 +933,7 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
 
                 <div className="flex items-end justify-between gap-4">
                      <AnimatePresence>
-                        {!isLoading && (
+                        {!isLoadingImage && (
                             <motion.div
                                 key={currentImage.location}
                                 initial={{ y: 20, opacity: 0 }}
@@ -918,15 +947,14 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
                         )}
                     </AnimatePresence>
                     
-                    <Button onClick={selectRandomImage} variant="secondary" className="bg-black/40 text-white backdrop-blur-md border-white/20 hover:bg-white/20" disabled={isLoading}>
-                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Siguiente destino"}
+                    <Button onClick={selectRandomImage} variant="secondary" className="bg-black/40 text-white backdrop-blur-md border-white/20 hover:bg-white/20" disabled={!canClickNext || isLoadingImage}>
+                         {(!canClickNext || isLoadingImage) ? <Loader2 className="h-4 w-4 animate-spin" /> : "Siguiente destino"}
                     </Button>
                 </div>
             </div>
         </div>
     );
 };
-
 
 export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
     const [view, setView] = useState<View>('menu');
@@ -1042,3 +1070,4 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
         </AnimatePresence>
     );
 };
+
