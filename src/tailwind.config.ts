@@ -149,7 +149,7 @@ export default {
             opacity: '0.9',
           },
         },
-        blob: {
+         blob: {
             '0%': {
                 transform: 'translate(0px, 0px) scale(1)',
             },
@@ -168,6 +168,17 @@ export default {
             transform: 'translateX(100%)',
           },
         },
+        kenburns: {
+          '0%': {
+            transform: 'scale(1) translate(0, 0)',
+          },
+          '50%': {
+            transform: 'scale(1.2) translate(10px, -5px)',
+          },
+          '100%': {
+            transform: 'scale(1) translate(0, 0)',
+          },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -180,9 +191,10 @@ export default {
         'float-logo': 'float-logo 2s ease-in-out infinite',
         'pulse-slow': 'pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'blob': 'blob 7s infinite',
+        'shimmer': 'shimmer 2s infinite',
+        'kenburns': 'kenburns 30s ease-in-out infinite',
       },
     },
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;
-

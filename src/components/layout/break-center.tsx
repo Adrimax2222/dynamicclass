@@ -3,15 +3,17 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw } from 'lucide-react';
+import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw, Globe, Waves, Music, Volume2, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useApp } from '@/lib/hooks/use-app';
+import { Slider } from '@/components/ui/slider';
+
 
 // --- Type Definitions ---
-type View = 'menu' | 'trivia' | 'animals' | 'minigames_menu' | 'snake' | '2048' | 'tic-tac-toe';
+type View = 'menu' | 'trivia' | 'animals' | 'minigames_menu' | 'snake' | '2048' | 'tic-tac-toe' | 'zen';
 
 interface TriviaQuestion {
     question: string;
@@ -27,6 +29,11 @@ interface AnimalImage {
 interface BreakCenterProps {
     isOpen: boolean;
     onClose: () => void;
+}
+
+interface EarthImage {
+    url: string;
+    location: string;
 }
 
 // --- Helper Functions ---
@@ -71,6 +78,7 @@ const MainMenu = ({ setView }: { setView: (view: View) => void }) => {
         { view: 'trivia' as View, icon: Brain, label: 'Trivia Rápida' },
         { view: 'animals' as View, icon: Cat, label: 'Animales' },
         { view: 'minigames_menu' as View, icon: Gamepad2, label: 'Minijuegos' },
+        { view: 'zen' as View, icon: Globe, label: 'Vuelo Zen' },
     ];
     return (
         <div className="flex flex-col items-center justify-center h-full p-4 space-y-4">
@@ -435,9 +443,9 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                     top: `${(segment.y / GRID_SIZE) * 100}%`,
                     width: `${100 / GRID_SIZE}%`,
                     height: `${100 / GRID_SIZE}%`,
-                    backgroundColor: isHead ? '#2d6a4f' : '#40916c', // Darker head, lighter body
+                    backgroundColor: isHead ? '#1e4620' : '#40916c',
                     zIndex: isHead ? 10 : 0,
-                    transition: 'all 150ms linear' // Smooth movement
+                    transition: 'all 150ms linear'
                   }}
                 >
                   {isHead && (
@@ -842,6 +850,110 @@ const Game2048 = ({ onBack }: { onBack: () => void }) => {
     );
 };
 
+const earthImages: EarthImage[] = [
+    { url: "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?q=80&w=2070&auto=format&fit=crop", location: "Salar de Uyuni, Bolivia" },
+    { url: "https://images.unsplash.com/photo-1542662565-7e4b66bae529?q=80&w=2070&auto=format&fit=crop", location: "Delta del Río Lena, Rusia" },
+    { url: "https://images.unsplash.com/photo-1588616239971-84c4b5b75a61?q=80&w=2070&auto=format&fit=crop", location: "Desierto del Namib, Namibia" },
+    { url: "https://images.unsplash.com/photo-1562252190-a8a5b29592c0?q=80&w=2070&auto=format&fit=crop", location: "Glaciar Perito Moreno, Argentina" },
+    { url: "https://images.unsplash.com/photo-1614309355938-16d7a4521406?q=80&w=1974&auto=format&fit=crop", location: "Estructura de Richat, Mauritania" },
+    { url: "https://images.unsplash.com/photo-1596140505113-a20a31641098?q=80&w=2070&auto=format&fit=crop", location: "Grand Prismatic Spring, EE.UU." },
+    { url: "https://images.unsplash.com/photo-1589230554101-90a7873c524b?q=80&w=2070&auto=format&fit=crop", location: "Cañón del Antílope, EE.UU." },
+    { url: "https://images.unsplash.com/photo-1506020638528-9c16a8a19280?q=80&w=1974&auto=format&fit=crop", location: "Valle de la Luna, Chile" },
+];
+
+const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () => void; }) => {
+    const [currentImage, setCurrentImage] = useState<EarthImage | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [volume, setVolume] = useState(50);
+    const audioRef = useRef<HTMLAudioElement>(null);
+
+    const selectRandomImage = useCallback(() => {
+        setIsLoading(true);
+        const randomIndex = Math.floor(Math.random() * earthImages.length);
+        setCurrentImage(earthImages[randomIndex]);
+        // Simulate loading time for a better UX
+        setTimeout(() => setIsLoading(false), 500);
+    }, []);
+
+    useEffect(() => {
+        selectRandomImage();
+    }, [selectRandomImage]);
+
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (audio) {
+            audio.volume = volume / 100;
+            audio.play().catch(console.error);
+        }
+        return () => {
+            audio?.pause();
+        };
+    }, [volume]);
+    
+    return (
+        <div className="relative h-full w-full overflow-hidden bg-black">
+            <AnimatePresence>
+                {isLoading || !currentImage ? (
+                    <motion.div
+                        key="loader"
+                        className="absolute inset-0 flex items-center justify-center bg-black"
+                        initial={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <Loader2 className="h-8 w-8 animate-spin text-white" />
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key={currentImage.url}
+                        className="absolute inset-0"
+                        initial={{ opacity: 0, scale: 1.1 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 1.5 }}
+                    >
+                        <img
+                            src={currentImage.url}
+                            alt={currentImage.location}
+                            className="absolute inset-0 w-full h-full object-cover animate-[kenburns_30s_ease-in-out_infinite]"
+                        />
+                         <div className="absolute inset-0 bg-black/10" />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <div className="absolute top-4 right-4 z-10">
+                <Button onClick={onClose} variant="ghost" className="text-white bg-black/30 hover:bg-black/50 hover:text-white">Volver a estudiar</Button>
+            </div>
+            
+            <div className="absolute bottom-4 left-4 right-4 z-10 space-y-4">
+                {currentImage && (
+                    <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                    >
+                        <Badge variant="secondary" className="bg-black/40 text-white backdrop-blur-md">
+                           {currentImage.location}
+                        </Badge>
+                    </motion.div>
+                )}
+                
+                <div className="flex items-center justify-between gap-4 p-2 rounded-full bg-black/40 backdrop-blur-md">
+                    <Button onClick={selectRandomImage} variant="ghost" size="icon" className="text-white hover:bg-white/20" disabled={isLoading}>
+                        <SkipForward />
+                    </Button>
+                    <div className="flex items-center gap-2 w-full">
+                        <Music className="h-4 w-4 text-white" />
+                        <Slider value={[volume]} onValueChange={(val) => setVolume(val[0])} max={100} step={1} className="w-full" />
+                    </div>
+                </div>
+            </div>
+
+            <audio ref={audioRef} src="https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/relaxing-rain-419012.mp3?alt=media&token=aa591a3a-8eed-42d0-9347-f8e0da836dcf" loop autoPlay />
+        </div>
+    );
+};
+
+
 export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
     const [view, setView] = useState<View>('menu');
     const { isActive, setIsActive, phase } = useApp();
@@ -893,6 +1005,7 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
             case 'snake': return <SnakeGame onBack={() => setView('minigames_menu')} />;
             case '2048': return <Game2048 onBack={() => setView('minigames_menu')} />;
             case 'tic-tac-toe': return <TicTacToeGame onBack={() => setView('minigames_menu')} />;
+            case 'zen': return <ZenFlightView onBack={() => setView('menu')} onClose={handleClose} />;
             case 'menu':
             default:
                 return <MainMenu setView={setView} />;
@@ -914,16 +1027,18 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
                         variants={modalVariants}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-3 right-3 h-8 w-8 rounded-full z-20"
-                            onClick={handleClose}
-                            aria-label="Cerrar"
-                        >
-                            <X className="h-5 w-5" />
-                        </Button>
-                        <div className="relative h-full w-full overflow-hidden">
+                        {view !== 'zen' && (
+                             <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-3 right-3 h-8 w-8 rounded-full z-20"
+                                onClick={handleClose}
+                                aria-label="Cerrar"
+                            >
+                                <X className="h-5 w-5" />
+                            </Button>
+                        )}
+                        <div className="relative h-full w-full overflow-hidden rounded-2xl">
                            <AnimatePresence mode="wait">
                              <motion.div
                                 key={view}
