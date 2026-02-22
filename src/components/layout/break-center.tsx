@@ -742,6 +742,240 @@ function DesertRun({ onBack }: { onBack: () => void }) {
     );
 }
 
+function FlappyBirdGame() {
+  const [gameState, setGameState] = useState<{
+    birdY: number;
+    velocity: number;
+    pipes: { id: number; x: number; topHeight: number; passed: boolean; }[];
+    score: number;
+    status: "idle" | "playing" | "gameover";
+    framesUntilNextPipe: number;
+  }>({
+    birdY: GAME_HEIGHT / 2,
+    velocity: 0,
+    pipes: [],
+    score: 0,
+    status: "idle",
+    framesUntilNextPipe: 0,
+  });
+
+  const requestRef = useRef<number>();
+
+  const flap = useCallback(() => {
+    setGameState((prev) => {
+      if (prev.status === "gameover") {
+        return {
+          birdY: GAME_HEIGHT / 2,
+          velocity: FLAP_VELOCITY,
+          pipes: [],
+          score: 0,
+          status: "playing",
+          framesUntilNextPipe: PIPE_SPAWN_RATE,
+        };
+      }
+      if (prev.status === "idle") {
+        return { ...prev, status: "playing", velocity: FLAP_VELOCITY };
+      }
+      return { ...prev, velocity: FLAP_VELOCITY };
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        flap();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [flap]);
+
+  useEffect(() => {
+    const loop = () => {
+      setGameState((prev) => {
+        if (prev.status !== "playing") return prev;
+
+        const newVelocity = prev.velocity + GRAVITY;
+        let newBirdY = prev.birdY + newVelocity;
+
+        let newPipes = prev.pipes
+          .map((pipe) => ({ ...pipe, x: pipe.x - PIPE_SPEED }))
+          .filter((pipe) => pipe.x + PIPE_WIDTH > 0);
+
+        let nextPipeTimer = prev.framesUntilNextPipe - 1;
+        if (nextPipeTimer <= 0) {
+          const minPipeHeight = 50;
+          const maxPipeHeight = GAME_HEIGHT - GAP_SIZE - minPipeHeight;
+          const topHeight =
+            Math.floor(Math.random() * (maxPipeHeight - minPipeHeight + 1)) +
+            minPipeHeight;
+
+          newPipes.push({
+            id: Date.now(),
+            x: GAME_WIDTH,
+            topHeight: topHeight,
+            passed: false,
+          });
+          nextPipeTimer = PIPE_SPAWN_RATE;
+        }
+
+        let newScore = prev.score;
+        newPipes.forEach((pipe) => {
+          if (!pipe.passed && pipe.x + PIPE_WIDTH < BIRD_X) {
+            newScore += 1;
+            pipe.passed = true;
+          }
+        });
+
+        let isGameOver = false;
+        
+        if (newBirdY < 0 || newBirdY + BIRD_SIZE > GAME_HEIGHT) {
+          isGameOver = true;
+          if (newBirdY + BIRD_SIZE > GAME_HEIGHT) newBirdY = GAME_HEIGHT - BIRD_SIZE;
+        }
+
+        const hitboxShrink = 4;
+        const bLeft = BIRD_X + hitboxShrink;
+        const bRight = BIRD_X + BIRD_SIZE - hitboxShrink;
+        const bTop = newBirdY + hitboxShrink;
+        const bBottom = newBirdY + BIRD_SIZE - hitboxShrink;
+
+        for (const pipe of newPipes) {
+          const pLeft = pipe.x;
+          const pRight = pipe.x + PIPE_WIDTH;
+
+          if (bRight > pLeft && bLeft < pRight) {
+            if (bTop < pipe.topHeight || bBottom > pipe.topHeight + GAP_SIZE) {
+              isGameOver = true;
+            }
+          }
+        }
+
+        return {
+          ...prev,
+          birdY: newBirdY,
+          velocity: newVelocity,
+          pipes: newPipes,
+          score: newScore,
+          status: isGameOver ? "gameover" : "playing",
+          framesUntilNextPipe: nextPipeTimer,
+        };
+      });
+
+      requestRef.current = requestAnimationFrame(loop);
+    };
+
+    requestRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center justify-center w-full w-full p-4 font-sans select-none touch-none">
+      
+      <div
+        className="relative overflow-hidden bg-sky-300 shadow-2xl rounded-lg border-4 border-slate-800 cursor-pointer"
+        style={{ width: `${GAME_WIDTH}px`, height: `${GAME_HEIGHT}px` }}
+        onClick={flap}
+        onTouchStart={(e) => {
+          e.preventDefault();
+          flap();
+        }}
+      >
+        
+        <div className="absolute top-6 w-full text-center z-20 pointer-events-none">
+          <span className="text-5xl font-black text-white" style={{ WebkitTextStroke: "2px #1e293b" }}>
+            {gameState.score}
+          </span>
+        </div>
+
+        <div
+          className="absolute bg-yellow-400 rounded-full border-2 border-slate-800 z-10 transition-transform duration-75"
+          style={{
+            width: `${BIRD_SIZE}px`,
+            height: `${BIRD_SIZE}px`,
+            left: `${BIRD_X}px`,
+            top: `${gameState.birdY}px`,
+            transform: `rotate(${Math.min(Math.max(gameState.velocity * 4, -25), 90)}deg)`,
+          }}
+        >
+          <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full">
+            <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-black rounded-full" />
+          </div>
+          <div className="absolute top-2.5 -right-2 w-3 h-2 bg-orange-500 rounded-r-full border border-slate-800" />
+        </div>
+
+        {gameState.pipes.map((pipe) => (
+          <React.Fragment key={pipe.id}>
+            <div
+              className="absolute bg-green-500 border-2 border-green-800 rounded-b-sm"
+              style={{
+                width: `${PIPE_WIDTH}px`,
+                height: `${pipe.topHeight}px`,
+                left: `${pipe.x}px`,
+                top: 0,
+              }}
+            >
+              <div className="absolute bottom-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
+            </div>
+
+            <div
+              className="absolute bg-green-500 border-2 border-green-800 rounded-t-sm"
+              style={{
+                width: `${PIPE_WIDTH}px`,
+                height: `${GAME_HEIGHT - pipe.topHeight - GAP_SIZE}px`,
+                left: `${pipe.x}px`,
+                top: `${pipe.topHeight + GAP_SIZE}px`,
+              }}
+            >
+              <div className="absolute top-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
+            </div>
+          </React.Fragment>
+        ))}
+
+        <div className="absolute bottom-0 w-full h-4 bg-amber-200 border-t-4 border-amber-800 z-10" />
+
+        {gameState.status === "idle" && (
+          <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-center z-30 pointer-events-none">
+            <div className="bg-white px-6 py-3 rounded shadow-lg text-slate-800 font-bold text-lg animate-bounce">
+              Toca para volar
+            </div>
+          </div>
+        )}
+
+        {gameState.status === "gameover" && (
+          <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-30 backdrop-blur-sm">
+            <div className="bg-[#ded895] border-4 border-[#543847] p-6 rounded-lg shadow-2xl text-center transform scale-100 transition-transform">
+              <h2 className="text-4xl font-black text-white mb-2" style={{ WebkitTextStroke: "1px #543847" }}>
+                GAME OVER
+              </h2>
+              <div className="bg-[#bdae58] border-2 border-[#543847] rounded p-4 mb-4 text-center">
+                <p className="text-[#543847] font-bold uppercase text-sm mb-1">Score</p>
+                <p className="text-3xl font-black text-white" style={{ WebkitTextStroke: "1px #543847" }}>
+                  {gameState.score}
+                </p>
+              </div>
+              <button
+                onClick={flap}
+                className="bg-orange-500 border-2 border-white hover:bg-orange-600 text-white font-black uppercase tracking-wider py-2 px-6 rounded-full shadow-lg active:scale-95 transition-all"
+              >
+                Reintentar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <p className="mt-4 text-xs text-slate-500 font-mono">
+        Pulsa Espacio o toca la pantalla
+      </p>
+    </div>
+  );
+}
+
+
 const SnakeGame = ({ onBack }: { onBack: () => void }) => {
     const GRID_SIZE = 20;
     const SPEED = 150;
@@ -757,11 +991,8 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
     const [score, setScore] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
   
-    // Referencia para evitar el "suicidio por doble pulsación rápida"
-    // Guarda la última dirección que realmente se ejecutó en el bucle
     const lastProcessedDirection = useRef(getInitialDirection());
   
-    // Genera comida en una posición que no esté ocupada por la serpiente
     const generateFood = useCallback((currentSnake: {x: number; y: number}[]) => {
       let newX, newY;
       let isOccupied = true;
@@ -784,7 +1015,6 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
       generateFood(getInitialSnake());
     }, [generateFood]);
   
-    // Bucle principal del juego
     useEffect(() => {
       if (gameOver || isPaused) return;
   
@@ -796,7 +1026,6 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
             y: head.y + direction.y,
           };
   
-          // 1. Comprobar colisiones con paredes
           if (
             newHead.x < 0 ||
             newHead.x >= GRID_SIZE ||
@@ -807,7 +1036,6 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
             return prevSnake;
           }
   
-          // 2. Comprobar colisiones con el propio cuerpo
           if (prevSnake.some((segment) => segment.x === newHead.x && segment.y === newHead.y)) {
             setGameOver(true);
             return prevSnake;
@@ -815,25 +1043,22 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
   
           const newSnake = [newHead, ...prevSnake];
   
-          // 3. Comprobar si come
           if (newHead.x === food.x && newHead.y === food.y) {
             setScore((s) => s + 10);
             generateFood(newSnake);
           } else {
-            newSnake.pop(); // Si no come, eliminamos la cola para simular movimiento
+            newSnake.pop();
           }
   
-          // Actualizamos la dirección procesada
           lastProcessedDirection.current = direction;
           return newSnake;
         });
       };
   
       const gameInterval = setInterval(moveSnake, SPEED);
-      return () => clearInterval(gameInterval); // Clean-up estricto
+      return () => clearInterval(gameInterval);
     }, [direction, gameOver, isPaused, food, generateFood]);
   
-    // Controladores de teclado
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
         if (gameOver) return;
@@ -849,11 +1074,10 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
         if (key === "ArrowRight" || key.toLowerCase() === "d") newDir = { x: 1, y: 0 };
   
         if (newDir) {
-          // Prevenir giros de 180 grados
           if (newDir.x !== 0 && currentDir.x === -newDir.x) return;
           if (newDir.y !== 0 && currentDir.y === -newDir.y) return;
           
-          e.preventDefault(); // Evitar scroll de la página
+          e.preventDefault();
           setDirection(newDir);
         }
       };
@@ -862,7 +1086,6 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, [gameOver]);
   
-    // Botones táctiles
     const handleTouchControl = (newDir: {x: number, y: number}) => {
       const currentDir = lastProcessedDirection.current;
       if (newDir.x !== 0 && currentDir.x === -newDir.x) return;
@@ -890,7 +1113,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                  }}>
               
               <div
-                className="absolute flex items-center justify-center text-xl"
+                className="absolute flex items-center justify-center text-xl transition-all duration-100"
                 style={{
                   left: `${(food.x / GRID_SIZE) * 100}%`,
                   top: `${(food.y / GRID_SIZE) * 100}%`,
@@ -912,7 +1135,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                       top: `${(segment.y / GRID_SIZE) * 100}%`,
                       width: `${100 / GRID_SIZE}%`,
                       height: `${100 / GRID_SIZE}%`,
-                      backgroundColor: isHead ? '#047857' : '#10b981',
+                      backgroundColor: isHead ? '#1e40af' : '#2563eb',
                       zIndex: isHead ? 10 : 0,
                       transition: `all ${SPEED}ms linear`
                     }}
@@ -943,7 +1166,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                   <p className="text-slate-200 mb-6">Puntuación final: {score}</p>
                   <button
                     onClick={resetGame}
-                    className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-6 rounded-full shadow-lg transform transition active:scale-95"
+                    className="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-6 rounded-full shadow-lg transform transition active:scale-95"
                   >
                     Jugar de nuevo
                   </button>
@@ -952,14 +1175,14 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
             </div>
   
             <div className="mt-8 grid grid-cols-3 gap-2 w-48 opacity-80 hover:opacity-100 transition-opacity">
-              <div /> {/* Celda vacía */}
+              <div />
               <button
                 onClick={() => handleTouchControl({ x: 0, y: -1 })}
                 className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
               >
                 ⬆️
               </button>
-              <div /> {/* Celda vacía */}
+              <div />
               <button
                 onClick={() => handleTouchControl({ x: -1, y: 0 })}
                 className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
@@ -1351,18 +1574,14 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
         setIsLoadingImage(true);
         setSecondsLeft(13);
         setCurrentIndex(prevIndex => {
-            let nextIndex;
-            // Evitar mostrar la misma imagen de nuevo
-            do {
-                nextIndex = Math.floor(Math.random() * playlist.length);
-            } while (playlist.length > 1 && nextIndex === prevIndex);
-            
-            // Si la lista se ha visto entera, barajar de nuevo
-            if (prevIndex === playlist.length - 1) {
-                setPlaylist(shuffleArray(earthImages));
-                return 0;
+            // Crear una lista de posibles próximos índices excluyendo el actual
+            const possibleNextIndexes = playlist.map((_, i) => i).filter(i => i !== prevIndex);
+            if (possibleNextIndexes.length === 0) {
+                // Si solo hay una imagen, o algo sale mal, volvemos a la misma
+                return prevIndex;
             }
-            return nextIndex;
+            // Elegir uno aleatorio de los posibles
+            return possibleNextIndexes[Math.floor(Math.random() * possibleNextIndexes.length)];
         });
     }, [playlist]);
     
@@ -1577,3 +1796,5 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
         </AnimatePresence>
     );
 };
+
+    
