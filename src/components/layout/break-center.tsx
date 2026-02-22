@@ -839,20 +839,16 @@ const Game2048 = ({ onBack }: { onBack: () => void }) => {
 
 const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () => void; }) => {
     const earthImages: EarthImage[] = [
-        { url: "https://www.gstatic.com/prettyearth/assets/full/1007.jpg", location: "Salar de Uyuni, Bolivia" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/1152.jpg", location: "Delta del Río Lena, Rusia" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/2210.jpg", location: "Desierto del Namib, Namibia" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/2395.jpg", location: "Glaciar Perito Moreno, Argentina" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/2678.jpg", location: "Estructura de Richat, Mauritania" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/1530.jpg", location: "Grand Prismatic Spring, EE.UU." },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/1253.jpg", location: "Cañón del Antílope, EE.UU." },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/1131.jpg", location: "Valle de la Luna, Chile" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/3906.jpg", location: "Río de Janeiro, Brasil" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/4991.jpg", location: "Monte Fuji, Japón" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/6081.jpg", location: "Venecia, Italia" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/1205.jpg", location: "Everest, Nepal" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/1043.jpg", location: "Campos de Tulipanes, Países Bajos" },
-        { url: "https://www.gstatic.com/prettyearth/assets/full/1083.jpg", location: "Parque Nacional de los Arcos, EE.UU." },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/1003.jpg", location: "Cañón del Antílope, EE.UU." },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/1108.jpg", location: "Campos de Tulipanes, Países Bajos" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/1224.jpg", location: "Glaciar Perito Moreno, Argentina" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/1500.jpg", location: "Salar de Uyuni, Bolivia" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/1820.jpg", location: "Valle de la Luna, Chile" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/2030.jpg", location: "Monte Fuji, Japón" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/2155.jpg", location: "Estructura de Richat, Mauritania" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/2560.jpg", location: "Delta del Río Lena, Rusia" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/3045.jpg", location: "Desierto del Namib, Namibia" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/4500.jpg", location: "Río de Janeiro, Brasil" },
     ];
 
     const [currentImageIndex, setCurrentImageIndex] = useState(Math.floor(Math.random() * earthImages.length));
@@ -866,37 +862,38 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
         do {
             newIndex = Math.floor(Math.random() * earthImages.length);
         } while (newIndex === currentImageIndex && earthImages.length > 1);
-        
-        setTimeout(() => {
-            setCurrentImageIndex(newIndex);
-        }, 300);
+        setCurrentImageIndex(newIndex);
     }, [currentImageIndex, earthImages.length]);
-
-    useEffect(() => {
-        const img = new Image();
-        img.src = currentImage.url;
-        img.onload = () => setIsLoading(false);
-    }, [currentImage]);
 
 
     return (
         <div className="relative h-full w-full overflow-hidden bg-black">
-            <AnimatePresence>
-                <motion.div
-                    key={currentImage.url}
-                    className="absolute inset-0"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1, transition: { duration: 1 } }}
-                    exit={{ opacity: 0, transition: { duration: 0.5 } }}
-                >
-                    <img
-                        src={currentImage.url}
-                        alt={currentImage.location}
-                        className="absolute inset-0 w-full h-full object-cover animate-kenburns"
-                    />
-                     <div className="absolute inset-0 bg-black/10" />
-                </motion.div>
+             <AnimatePresence>
+                {isLoading && (
+                    <motion.div
+                        key="loader"
+                        className="absolute inset-0 z-20 flex items-center justify-center bg-black"
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        <Loader2 className="h-8 w-8 animate-spin text-white" />
+                    </motion.div>
+                )}
             </AnimatePresence>
+            
+            <motion.img
+                key={currentImage.url}
+                src={currentImage.url}
+                alt={currentImage.location}
+                className="absolute inset-0 w-full h-full object-cover animate-kenburns"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: isLoading ? 0 : 1 }}
+                transition={{ duration: 1.5 }}
+                onLoad={() => setIsLoading(false)}
+                onError={selectRandomImage}
+            />
+            <div className="absolute inset-0 bg-black/10" />
+            
 
             <div className="absolute inset-0 z-10 flex flex-col justify-between p-4">
                 <div className="flex justify-end">
@@ -906,16 +903,20 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
                 </div>
 
                 <div className="flex items-end justify-between gap-4">
-                    <motion.div
-                        key={currentImage.location}
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.5 }}
-                    >
-                        <Badge variant="secondary" className="bg-black/40 text-white backdrop-blur-md border-white/20">
-                           {currentImage.location}
-                        </Badge>
-                    </motion.div>
+                     <AnimatePresence>
+                        {!isLoading && (
+                            <motion.div
+                                key={currentImage.location}
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.5 }}
+                            >
+                                <Badge variant="secondary" className="bg-black/40 text-white backdrop-blur-md border-white/20">
+                                   {currentImage.location}
+                                </Badge>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                     
                     <Button onClick={selectRandomImage} variant="secondary" className="bg-black/40 text-white backdrop-blur-md border-white/20 hover:bg-white/20" disabled={isLoading}>
                          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Siguiente destino"}
@@ -950,7 +951,8 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
         }
         setWasActiveBeforeBreak(false);
       }
-    }, [isOpen, phase, isActive, wasActiveBeforeBreak, setIsActive]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, phase]);
 
     const prevPhaseRef = useRef(phase);
     useEffect(() => {
