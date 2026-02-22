@@ -90,6 +90,7 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
     const [error, setError] = useState<string | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+    const [isTransitioning, setIsTransitioning] = useState(false);
     
     const hasFetched = useRef(false);
     const retryAttempted = useRef(false);
@@ -110,7 +111,6 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
             
             if (data.response_code === 0) {
                 const result = data.results[0];
-                
                 const correctAnswer = decodeURIComponent(result.correct_answer);
                 const incorrectAnswers = result.incorrect_answers.map(decodeURIComponent);
                 const allAnswers = shuffleArray([correctAnswer, ...incorrectAnswers]);
@@ -121,13 +121,12 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
                     incorrect_answers: incorrectAnswers,
                     shuffled_answers: allAnswers,
                 });
-                retryAttempted.current = false; // Reset on success
+                retryAttempted.current = false;
             } else if (data.response_code === 5 && !retryAttempted.current) {
+                console.warn("Trivia API rate limit hit. Retrying...");
                 retryAttempted.current = true;
-                setTimeout(() => {
-                    fetchTrivia(); // Retry
-                }, 2000);
-                return; // Prevent setting isLoading to false yet
+                setTimeout(fetchTrivia, 3000); // Wait 3 seconds and retry
+                return; // Keep loading state
             } else {
                  console.error('Error detallado Trivia:', data);
                  throw new Error(`La API de trivia devolvió un error (código: ${data.response_code}).`);
@@ -136,16 +135,17 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
             console.error('Error detallado Trivia:', e);
             setError(e.message || 'Error de red.');
         } finally {
-            if (!retryAttempted.current || (retryAttempted.current && error !== null)) {
-               setIsLoading(false);
+            if (!retryAttempted.current || error) {
+                setIsLoading(false);
             }
         }
     }, [error]);
 
     useEffect(() => {
-        if (hasFetched.current) return;
-        hasFetched.current = true;
-        fetchTrivia();
+        if (!hasFetched.current) {
+            hasFetched.current = true;
+            fetchTrivia();
+        }
     }, [fetchTrivia]);
 
 
@@ -153,9 +153,15 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
         if (selectedAnswer) return;
         setSelectedAnswer(answer);
         setIsCorrect(answer === question?.correct_answer);
+        setIsTransitioning(true);
+        setTimeout(() => {
+            setIsTransitioning(false);
+            fetchTrivia();
+        }, 2000); // 2 second cooldown before fetching next question
     };
-
+    
     if (isLoading) return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    
     if (error) return (
         <ViewContainer title="Trivia Rápida" onBack={onBack}>
             <div className="flex flex-col items-center justify-center h-full text-center">
@@ -165,6 +171,16 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
             </div>
         </ViewContainer>
     );
+    
+    if (isTransitioning) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+                <Loader2 className="h-8 w-8 animate-spin mb-4" />
+                <p className="font-semibold text-muted-foreground">Preparando siguiente pregunta...</p>
+            </div>
+        )
+    }
+
     if (!question) return null;
 
     return (
@@ -194,12 +210,17 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
                         )
                     })}
                 </div>
-                {selectedAnswer && (
-                    <div className="text-center space-y-3">
-                        <p className={`font-bold ${isCorrect ? 'text-green-500' : 'text-destructive'}`}>
-                            {isCorrect ? '¡Correcto!' : 'Incorrecto'}
-                        </p>
-                        <Button onClick={fetchTrivia}><RotateCcw className="mr-2 h-4 w-4"/>Siguiente Pregunta</Button>
+                {selectedAnswer !== null && (
+                    <div className="text-center space-y-3 pt-2">
+                        <AnimatePresence>
+                            <motion.p 
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                className={`font-bold text-lg ${isCorrect ? 'text-green-500' : 'text-destructive'}`}
+                            >
+                                {isCorrect ? '¡Correcto!' : 'Incorrecto'}
+                            </motion.p>
+                        </AnimatePresence>
                     </div>
                 )}
             </div>
@@ -267,23 +288,28 @@ const MinigamesMenu = ({ setView, onBack }: { setView: (view: View) => void, onB
 const useSnakeGame = () => {
     const GRID_SIZE = 20;
     const initialSnake = [{ x: 10, y: 10 }];
-    const initialFood = { x: 15, y: 15 };
+    
+    const createInitialFood = () => ({
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: Math.floor(Math.random() * GRID_SIZE),
+    });
 
     const [snake, setSnake] = useState(initialSnake);
-    const [food, setFood] = useState(initialFood);
+    const [food, setFood] = useState(createInitialFood);
     const [direction, setDirection] = useState({ x: 0, y: -1 });
     const [speed, setSpeed] = useState<number | null>(null);
     const [gameOver, setGameOver] = useState(false);
     
     const startGame = () => {
         setSnake(initialSnake);
-        setFood(initialFood);
+        setFood(createInitialFood());
         setDirection({ x: 0, y: -1 });
         setSpeed(150);
         setGameOver(false);
     };
 
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
+        e.preventDefault();
         switch (e.key) {
             case 'ArrowUp': if(direction.y === 0) setDirection({ x: 0, y: -1 }); break;
             case 'ArrowDown': if(direction.y === 0) setDirection({ x: 0, y: 1 }); break;
@@ -293,45 +319,47 @@ const useSnakeGame = () => {
     }, [direction]);
     
     useEffect(() => {
-        document.addEventListener("keydown", handleKeyDown);
-        return () => document.removeEventListener("keydown", handleKeyDown);
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
     }, [handleKeyDown]);
-
-    const createFood = () => {
+    
+    const createFood = (currentSnake: {x:number, y:number}[]) => {
         let newFood;
         do {
             newFood = {
                 x: Math.floor(Math.random() * GRID_SIZE),
                 y: Math.floor(Math.random() * GRID_SIZE)
             };
-        } while (snake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
+        } while (currentSnake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
         setFood(newFood);
     };
 
     const moveSnake = useCallback(() => {
-        const newSnake = [...snake];
-        const head = { x: newSnake[0].x + direction.x, y: newSnake[0].y + direction.y };
+        setSnake(prevSnake => {
+            const newSnake = [...prevSnake];
+            const head = { x: newSnake[0].x + direction.x, y: newSnake[0].y + direction.y };
 
-        if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE || newSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
-            setGameOver(true);
-            setSpeed(null);
-            return;
-        }
+            if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE || newSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
+                setGameOver(true);
+                setSpeed(null);
+                return prevSnake;
+            }
 
-        newSnake.unshift(head);
-        if (head.x === food.x && head.y === food.y) {
-            createFood();
-        } else {
-            newSnake.pop();
-        }
-        setSnake(newSnake);
-    }, [snake, direction, food.x, food.y]);
+            newSnake.unshift(head);
+            if (head.x === food.x && head.y === food.y) {
+                createFood(newSnake);
+            } else {
+                newSnake.pop();
+            }
+            return newSnake;
+        });
+    }, [direction, food.x, food.y]);
     
     useEffect(() => {
-        if (speed === null) return;
+        if (speed === null || gameOver) return;
         const gameInterval = setInterval(moveSnake, speed);
         return () => clearInterval(gameInterval);
-    }, [snake, moveSnake, speed]);
+    }, [speed, gameOver, moveSnake]);
 
     return { snake, food, gameOver, GRID_SIZE, startGame };
 };
@@ -343,17 +371,20 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
         <ViewContainer title="Snake" onBack={onBack}>
             <div className="flex flex-col items-center gap-4">
                 <div
-                    className="grid bg-muted/50 border rounded-md"
+                    className="grid bg-muted/50 border rounded-md relative w-full max-w-sm"
                     style={{
                         gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
-                        width: '100%',
                         aspectRatio: '1/1'
                     }}
                 >
-                    {gameOver && <div className="col-span-full row-span-full flex items-center justify-center bg-black/50 text-white font-bold text-2xl z-10">GAME OVER</div>}
+                    {gameOver && (
+                        <div className="absolute inset-0 col-span-full row-span-full flex items-center justify-center bg-black/50 text-white font-bold text-2xl z-10 rounded-md">
+                            GAME OVER
+                        </div>
+                    )}
                     {snake.map((segment, index) => (
-                         <div key={index} className={cn("flex items-center justify-center", index === 0 ? "text-lg" : "bg-green-500 rounded-sm")} style={{ gridColumn: segment.x + 1, gridRow: segment.y + 1 }}>
-                            {index === 0 && '🐍'}
+                         <div key={index} className="flex items-center justify-center" style={{ gridColumn: segment.x + 1, gridRow: segment.y + 1 }}>
+                            {index === 0 ? '🐍' : <div className="w-full h-full bg-green-500 rounded-sm"></div>}
                         </div>
                     ))}
                     <div className="flex items-center justify-center text-lg" style={{ gridColumn: food.x + 1, gridRow: food.y + 1 }}>🍎</div>
@@ -473,16 +504,7 @@ const Game2048 = ({ onBack }: { onBack: () => void }) => {
     const [score, setScore] = useState(0);
     const [gameOver, setGameOver] = useState(false);
 
-    const initializeBoard = useCallback(() => {
-        let newBoard = Array(4).fill(0).map(() => Array(4).fill(0));
-        addRandomTile(newBoard);
-        addRandomTile(newBoard);
-        setBoard(newBoard);
-        setScore(0);
-        setGameOver(false);
-    }, []);
-    
-    const addRandomTile = (currentBoard: number[][]) => {
+    const addRandomTile = useCallback((currentBoard: number[][]) => {
         let emptyTiles: {x: number, y: number}[] = [];
         currentBoard.forEach((row, y) => {
             row.forEach((tile, x) => { if (tile === 0) emptyTiles.push({x, y}); });
@@ -492,8 +514,17 @@ const Game2048 = ({ onBack }: { onBack: () => void }) => {
             currentBoard[y][x] = Math.random() < 0.9 ? 2 : 4;
         }
         return currentBoard;
-    };
+    }, []);
 
+    const initializeBoard = useCallback(() => {
+        let newBoard = Array(4).fill(0).map(() => Array(4).fill(0));
+        addRandomTile(newBoard);
+        addRandomTile(newBoard);
+        setBoard(newBoard);
+        setScore(0);
+        setGameOver(false);
+    }, [addRandomTile]);
+    
     useEffect(() => {
         initializeBoard();
     }, [initializeBoard]);
@@ -521,6 +552,17 @@ const Game2048 = ({ onBack }: { onBack: () => void }) => {
         }
         return newBoard;
     };
+    
+    const checkGameOver = (currentBoard: number[][]) => {
+        for (let y = 0; y < 4; y++) {
+            for (let x = 0; x < 4; x++) {
+                if (currentBoard[y][x] === 0) return;
+                if (x < 3 && currentBoard[y][x] === currentBoard[y][x+1]) return;
+                if (y < 3 && currentBoard[y][x] === currentBoard[y+1][x]) return;
+            }
+        }
+        setGameOver(true);
+    };
 
     const move = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
         if (gameOver) return;
@@ -542,22 +584,11 @@ const Game2048 = ({ onBack }: { onBack: () => void }) => {
         
         if (boardChanged) {
             setScore(prev => prev + totalPoints);
-            addRandomTile(tempBoard);
-            setBoard(tempBoard);
-            checkGameOver(tempBoard);
+            const newBoardWithTile = addRandomTile(tempBoard);
+            setBoard(newBoardWithTile);
+            checkGameOver(newBoardWithTile);
         }
-    }, [board, gameOver]);
-    
-    const checkGameOver = (currentBoard: number[][]) => {
-        for (let y = 0; y < 4; y++) {
-            for (let x = 0; x < 4; x++) {
-                if (currentBoard[y][x] === 0) return;
-                if (x < 3 && currentBoard[y][x] === currentBoard[y][x+1]) return;
-                if (y < 3 && currentBoard[y][x] === currentBoard[y+1][x]) return;
-            }
-        }
-        setGameOver(true);
-    };
+    }, [board, gameOver, addRandomTile]);
 
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
         e.preventDefault();
