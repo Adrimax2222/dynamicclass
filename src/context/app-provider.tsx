@@ -396,16 +396,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   // ----- GLOBAL TIMER LOGIC -----
+  const prevTimerModeRef = useRef(timerMode);
+  const prevPhaseRef = useRef(phase);
 
   useEffect(() => {
-    // This effect resets the timer display ONLY when the user
-    // changes the mode or the phase is manually skipped. It is designed
-    // NOT to run when the timer is simply paused.
-    if (!isActive) {
+    const modeChanged = prevTimerModeRef.current !== timerMode;
+    const phaseChanged = prevPhaseRef.current !== phase;
+    
+    // Reset timer only when mode or phase changes, not on simple pause.
+    if (modeChanged || phaseChanged) {
       setTimeLeft(getInitialTime());
     }
-  }, [timerMode, phase, getInitialTime, isActive]);
 
+    // Update refs for the next render.
+    prevTimerModeRef.current = timerMode;
+    prevPhaseRef.current = phase;
+  }, [timerMode, phase, getInitialTime]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
