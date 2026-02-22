@@ -207,6 +207,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 userData.streak = userData.streak || 0;
                 userData.studyMinutes = userData.studyMinutes || 0;
                 userData.plantCount = userData.plantCount || 0;
+                userData.desertRunHighScore = userData.desertRunHighScore || 0;
 
                 setUser(userData);
                 

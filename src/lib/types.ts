@@ -41,6 +41,7 @@ export type User = {
   weeklySummary?: boolean;
   emailNotifications?: boolean;
   plantCount?: number;
+  desertRunHighScore?: number;
   createdAt?: Timestamp;
 };
 

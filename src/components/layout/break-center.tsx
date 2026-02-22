@@ -1,14 +1,32 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw, Globe, Waves, SkipForward, Ghost } from 'lucide-react';
+import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw, Globe, Waves, SkipForward, Ghost, Users, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useApp } from '@/lib/hooks/use-app';
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, orderBy } from 'firebase/firestore';
+import type { User as AppUser } from "@/lib/types";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { Card, CardContent } from "@/components/ui/card";
+import { AvatarDisplay } from "@/components/profile/avatar-creator";
 
 
 // --- Type Definitions ---
@@ -298,6 +316,10 @@ const MinigamesMenu = ({ setView, onBack }: { setView: (view: View) => void, onB
 };
 
 function DesertRun({ onBack }: { onBack: () => void }) {
+    const { user, updateUser } = useApp();
+    const firestore = useFirestore();
+    const { toast } = useToast();
+
     // Constantes físicas del motor
     const PLAYER_SIZE = 40;
     const PLAYER_X = 50;
@@ -379,6 +401,22 @@ function DesertRun({ onBack }: { onBack: () => void }) {
         return prev;
       });
     }, []);
+
+    // Game Over Logic
+    useEffect(() => {
+        if (gameState.gameOver && user && firestore) {
+            const finalScore = Math.floor(gameState.score);
+            if (finalScore > (user.desertRunHighScore || 0)) {
+                const userDocRef = doc(firestore, 'users', user.uid);
+                updateDoc(userDocRef, { desertRunHighScore: finalScore });
+                updateUser({ desertRunHighScore: finalScore });
+                toast({
+                    title: "¡Nuevo Récord!",
+                    description: `Has conseguido una nueva puntuación máxima de ${finalScore} puntos.`,
+                });
+            }
+        }
+    }, [gameState.gameOver, gameState.score, user, firestore, updateUser, toast]);
   
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -492,6 +530,29 @@ function DesertRun({ onBack }: { onBack: () => void }) {
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
       };
     }, []);
+
+    // Classmates ranking logic
+    const isPersonalUser = user?.center === 'personal' || user?.center === 'default';
+
+    const classmatesQuery = useMemoFirebase(() => {
+        if (!firestore || !user || isPersonalUser) return null;
+        return query(
+            collection(firestore, "users"),
+            where("organizationId", "==", user.organizationId),
+            where("course", "==", user.course),
+            where("className", "==", user.className),
+            orderBy("desertRunHighScore", "desc")
+        );
+    }, [firestore, user, isPersonalUser]);
+    
+    const { data: classmatesData, isLoading: isLoadingClassmates } = useCollection<AppUser>(classmatesQuery);
+
+    const sortedClassmates = useMemo(() => {
+        if (!classmatesData) return [];
+        return classmatesData
+            .filter(c => c.uid !== user?.uid)
+            .sort((a, b) => (b.desertRunHighScore || 0) - (a.desertRunHighScore || 0));
+    }, [classmatesData, user]);
   
     return (
         <ViewContainer title="Desert Run" onBack={onBack}>
@@ -499,7 +560,7 @@ function DesertRun({ onBack }: { onBack: () => void }) {
             
             {/* Marcador Superior estilo Arcade */}
             <div className="w-full flex justify-between px-6 py-2 bg-slate-800 text-white rounded-t-lg font-mono text-xl shadow-md z-10">
-                <div className="text-amber-400">HI: 00999</div> {/* Aquí podrías meter tu highscore de Firebase */}
+                <div className="text-amber-400">HI: {String(user?.desertRunHighScore || 0).padStart(5, '0')}</div>
                 <div className="tracking-widest flex items-center gap-2">
                 <span className="text-slate-400 text-sm">SCORE</span>
                 {Math.floor(gameState.score).toString().padStart(5, "0")}
@@ -619,6 +680,62 @@ function DesertRun({ onBack }: { onBack: () => void }) {
             <p className="mt-4 text-xs font-mono text-slate-400">
                 Engine: React Frame Loop | Render: DOM CSS | FPS: VSync
             </p>
+            
+            {!isPersonalUser && (
+                <Collapsible className="w-full max-w-4xl mx-auto mt-6">
+                <CollapsibleTrigger asChild>
+                    <div className="group flex w-full cursor-pointer items-center justify-between rounded-lg border p-4 transition-all bg-muted/50 hover:bg-muted">
+                    <div className="flex items-center gap-3">
+                        <Users className="h-5 w-5 text-primary" />
+                        <h3 className="font-semibold">Ranking de la Clase</h3>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-90" />
+                    </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                    <div className="py-4">
+                    {isLoadingClassmates ? (
+                        <div className="p-4 text-center">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                        <p className="text-sm text-muted-foreground mt-2">Cargando ranking...</p>
+                        </div>
+                    ) : sortedClassmates.length > 0 ? (
+                        <Carousel
+                        opts={{ align: "start", loop: false }}
+                        className="w-full"
+                        >
+                        <CarouselContent className="-ml-2">
+                            {sortedClassmates.map((classmate) => (
+                            <CarouselItem key={classmate.uid} className="pl-2 basis-1/2 md:basis-1/3">
+                                <div className="p-1">
+                                <Card>
+                                    <CardContent className="flex flex-col items-center justify-center p-3 sm:p-4 aspect-[4/5]">
+                                    <AvatarDisplay user={classmate} className="h-12 w-12 sm:h-16 sm:w-16 mb-2" />
+                                    <p className="font-bold text-sm text-center truncate w-full">{classmate.name}</p>
+                                    <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-2">
+                                        <Ghost className="h-3 w-3 text-orange-500" />
+                                        <span className="font-bold text-base text-foreground">{classmate.desertRunHighScore || 0}</span>
+                                    </div>
+                                    </CardContent>
+                                </Card>
+                                </div>
+                            </CarouselItem>
+                            ))}
+                        </CarouselContent>
+                        <div className="flex justify-center gap-4 pt-4">
+                            <CarouselPrevious className="static translate-y-0" />
+                            <CarouselNext className="static translate-y-0" />
+                        </div>
+                        </Carousel>
+                    ) : (
+                        <div className="text-center text-sm text-muted-foreground p-4 border-dashed border-2 rounded-lg">
+                        Nadie en tu clase ha jugado todavía.
+                        </div>
+                    )}
+                    </div>
+                </CollapsibleContent>
+                </Collapsible>
+            )}
             </div>
         </ViewContainer>
     );
@@ -772,7 +889,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                  }}>
               
               <div
-                className="absolute flex items-center justify-center text-xl transition-all duration-100"
+                className="absolute flex items-center justify-center text-xl"
                 style={{
                   left: `${(food.x / GRID_SIZE) * 100}%`,
                   top: `${(food.y / GRID_SIZE) * 100}%`,
@@ -834,14 +951,14 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
             </div>
   
             <div className="mt-8 grid grid-cols-3 gap-2 w-48 opacity-80 hover:opacity-100 transition-opacity">
-              <div />
+              <div /> {/* Celda vacía */}
               <button
                 onClick={() => handleTouchControl({ x: 0, y: -1 })}
                 className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
               >
                 ⬆️
               </button>
-              <div />
+              <div /> {/* Celda vacía */}
               <button
                 onClick={() => handleTouchControl({ x: -1, y: 0 })}
                 className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
