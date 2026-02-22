@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
@@ -105,13 +106,6 @@ const FLAPPY_GAME_HEIGHT = 500; // Resolución lógica interna (alto)
 const FLAPPY_PIPE_SPAWN_RATE = 90; // Frames entre cada nueva tubería
 
 // Types for FlappyBird
-type Pipe = {
-  id: number;
-  x: number;
-  topHeight: number;
-  passed: boolean;
-};
-
 type FlappyBirdGameState = {
   birdY: number;
   velocity: number;
@@ -119,6 +113,13 @@ type FlappyBirdGameState = {
   score: number;
   status: 'idle' | 'playing' | 'gameover';
   framesUntilNextPipe: number;
+};
+
+type Pipe = {
+  id: number;
+  x: number;
+  topHeight: number;
+  passed: boolean;
 };
 
 
@@ -185,7 +186,6 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
     const [error, setError] = useState<string | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-    const [isTransitioning, setIsTransitioning] = useState(false);
     
     const hasFetched = useRef(false);
     const retryAttempted = useRef(false);
@@ -251,9 +251,7 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
         if (selectedAnswer) return;
         setSelectedAnswer(answer);
         setIsCorrect(answer === question?.correct_answer);
-        setIsTransitioning(true);
         setTimeout(() => {
-            setIsTransitioning(false);
             fetchTrivia();
         }, 2000);
     };
@@ -270,15 +268,6 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
         </ViewContainer>
     );
     
-    if (isTransitioning) {
-        return (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-                <Loader2 className="h-8 w-8 animate-spin mb-4" />
-                <p className="font-semibold text-muted-foreground">Preparando siguiente pregunta...</p>
-            </div>
-        )
-    }
-
     if (!question) return null;
 
     return (
@@ -1235,12 +1224,13 @@ const ZenFlightView = ({ onClose }: { onClose: () => void; }) => {
         setSecondsLeft(13);
         setCurrentIndex(prevIndex => {
             if (prevIndex === playlist.length - 1) {
-                setPlaylist(shuffleArray(earthImages));
+                // If we are at the end, reshuffle and start over
+                setPlaylist(shuffleArray(earthImages.filter(img => img.id !== playlist[prevIndex]?.id)));
                 return 0;
             }
             return prevIndex + 1;
         });
-    }, [playlist.length]);
+    }, [playlist]);
     
     useEffect(() => {
         setIsMounted(true);
@@ -1454,3 +1444,4 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
         </AnimatePresence>
     );
 };
+
