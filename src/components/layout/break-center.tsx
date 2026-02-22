@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw, Globe, Waves, SkipForward, Ghost, Users, ChevronRight, Rocket, BrainCircuit, Dna, Code } from 'lucide-react';
+import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw, Globe, Waves, SkipForward, Ghost, Users, ChevronRight, Rocket, BrainCircuit, Dna, Code, Briefcase, SmilePlus, Activity, Banknote, DollarSign, Lightbulb, ShoppingCart, Building, Mountain, Zap, User as UserIcon, Heart, Vote, TrendingUp, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -52,6 +52,75 @@ interface EarthImage {
     id: number;
     location: string;
 }
+
+// Constantes del motor del juego Desert Run
+const DESERT_PLAYER_SIZE = 40;
+const DESERT_PLAYER_X = 50;
+const DESERT_GRAVITY = 0.6;
+const DESERT_JUMP_VELOCITY = 12;
+const DESERT_SPAWN_X = 1000;
+const DESERT_BASE_SPEED = 6;
+
+// Types for DesertRun
+type Obstacle = {
+  id: number;
+  x: number;
+  width: number;
+  height: number;
+  type: "single" | "double";
+};
+
+type Cloud = {
+  id: number;
+  x: number;
+  y: number;
+  scale: number;
+  opacity: number;
+};
+
+type DesertRunGameState = {
+  y: number;
+  vy: number;
+  obstacles: Obstacle[];
+  clouds: Cloud[];
+  score: number;
+  speed: number;
+  nextObstacleIn: number;
+  nextCloudIn: number;
+  gameOver: boolean;
+  isPlaying: boolean;
+  hasStarted: boolean;
+};
+
+// Constantes del motor del juego Flappy BOT
+const FLAPPY_GRAVITY = 0.5;
+const FLAP_VELOCITY = -8;
+const FLAPPY_PIPE_SPEED = 3;
+const FLAPPY_PIPE_WIDTH = 60;
+const FLAPPY_GAP_SIZE = 140; // Hueco entre tuberías
+const FLAPPY_BIRD_SIZE = 24;
+const FLAPPY_BIRD_X = 50; // Posición horizontal estática del pájaro
+const FLAPPY_GAME_WIDTH = 350; // Resolución lógica interna (ancho)
+const FLAPPY_GAME_HEIGHT = 500; // Resolución lógica interna (alto)
+const FLAPPY_PIPE_SPAWN_RATE = 90; // Frames entre cada nueva tubería
+
+// Types for FlappyBird
+type Pipe = {
+  id: number;
+  x: number;
+  topHeight: number;
+  passed: boolean;
+};
+
+type FlappyBirdGameState = {
+  birdY: number;
+  velocity: number;
+  pipes: Pipe[];
+  score: number;
+  status: 'idle' | 'playing' | 'gameover';
+  framesUntilNextPipe: number;
+};
+
 
 // --- Helper Functions ---
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -498,30 +567,11 @@ function MemoryGame({ onBack }: { onBack: () => void }) {
 }
 
 
-// Constantes del motor del juego Flappy Bird
-const FLAPPY_GRAVITY = 0.5;
-const FLAP_VELOCITY = -8;
-const FLAPPY_PIPE_SPEED = 3;
-const FLAPPY_PIPE_WIDTH = 60;
-const FLAPPY_GAP_SIZE = 140; // Hueco entre tuberías
-const FLAPPY_BIRD_SIZE = 24;
-const FLAPPY_BIRD_X = 50; // Posición horizontal estática del pájaro
-const FLAPPY_GAME_WIDTH = 350; // Resolución lógica interna (ancho)
-const FLAPPY_GAME_HEIGHT = 500; // Resolución lógica interna (alto)
-const FLAPPY_PIPE_SPAWN_RATE = 90; // Frames entre cada nueva tubería
-
 function FlappyBirdGame({ onBack }: { onBack: () => void }) {
   const { user, updateUser, firestore } = useApp();
   const { toast } = useToast();
 
-  const [gameState, setGameState<{
-    birdY: number;
-    velocity: number;
-    pipes: { id: number; x: number; topHeight: number; passed: boolean }[];
-    score: number;
-    status: 'idle' | 'playing' | 'gameover';
-    framesUntilNextPipe: number;
-  }>({
+  const [gameState, setGameState] = useState<FlappyBirdGameState>({
     birdY: FLAPPY_GAME_HEIGHT / 2,
     velocity: 0,
     pipes: [],
@@ -780,7 +830,7 @@ function FlappyBirdGame({ onBack }: { onBack: () => void }) {
 
           {gameState.status === 'gameover' && (
             <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-30 backdrop-blur-sm">
-              <div className="bg-[#ded895] border-4 border-[#543847] p-6 rounded-lg shadow-2xl text-center transform scale-100 transition-transform">
+              <div className="bg-[#ded895] border-4 border-[#543847] p-6 rounded-lg shadow-2xl text-center transform scale-100 transition-all">
                 <h2
                   className="text-4xl font-black text-white mb-2"
                   style={{ WebkitTextStroke: '1px #543847' }}
@@ -885,20 +935,29 @@ function FlappyBirdGame({ onBack }: { onBack: () => void }) {
   );
 }
 
-const DesertRun = ({ onBack }: { onBack: () => void }) => {
+function DesertRun({ onBack }: { onBack: () => void }) {
     const { user, updateUser, firestore } = useApp();
     const { toast } = useToast();
-    const [gameState, setGameState<any>({
-        y: 0, vy: 0, obstacles: [], clouds: [], score: 0, speed: BASE_SPEED,
-        nextObstacleIn: 60, nextCloudIn: 10, gameOver: false, isPlaying: false, hasStarted: false,
+    const [gameState, setGameState] = useState<DesertRunGameState>({
+        y: 0,
+        vy: 0,
+        obstacles: [],
+        clouds: [],
+        score: 0,
+        speed: DESERT_BASE_SPEED,
+        nextObstacleIn: 60,
+        nextCloudIn: 10,
+        gameOver: false,
+        isPlaying: false,
+        hasStarted: false,
     });
     const requestRef = useRef<number>();
 
     const jump = useCallback(() => {
-        setGameState((prev: any) => {
+        setGameState((prev) => {
             if (prev.gameOver) {
                 return {
-                    y: 0, vy: 0, obstacles: [], clouds: [], score: 0, speed: BASE_SPEED,
+                    y: 0, vy: 0, obstacles: [], clouds: [], score: 0, speed: DESERT_BASE_SPEED,
                     nextObstacleIn: 60, nextCloudIn: 10, gameOver: false, isPlaying: true, hasStarted: true,
                 };
             }
@@ -906,7 +965,7 @@ const DesertRun = ({ onBack }: { onBack: () => void }) => {
                 return { ...prev, isPlaying: true, hasStarted: true };
             }
             if (prev.y === 0) {
-                return { ...prev, vy: JUMP_VELOCITY };
+                return { ...prev, vy: DESERT_JUMP_VELOCITY };
             }
             return prev;
         });
@@ -940,28 +999,28 @@ const DesertRun = ({ onBack }: { onBack: () => void }) => {
 
     useEffect(() => {
         const loop = () => {
-            setGameState((prev: any) => {
+            setGameState((prev) => {
                 if (!prev.isPlaying || prev.gameOver) return prev;
-                let newVY = prev.vy - GRAVITY;
+                let newVY = prev.vy - DESERT_GRAVITY;
                 let newY = prev.y + newVY;
                 if (newY <= 0) { newY = 0; newVY = 0; }
                 const newScore = prev.score + 0.1;
-                const newSpeed = Math.min(12, BASE_SPEED + Math.floor(newScore / 100) * 0.5);
+                const newSpeed = Math.min(12, DESERT_BASE_SPEED + Math.floor(newScore / 100) * 0.5);
                 const cloudSpeed = newSpeed * 0.3;
-                const newClouds = prev.clouds.map((c: any) => ({ ...c, x: c.x - cloudSpeed })).filter((c: any) => c.x > -100);
+                const newClouds = prev.clouds.map((c) => ({ ...c, x: c.x - cloudSpeed })).filter((c) => c.x > -100);
                 let nextCloud = prev.nextCloudIn - 1;
                 if (nextCloud <= 0) {
-                    newClouds.push({ id: Date.now() + Math.random(), x: SPAWN_X, y: Math.floor(Math.random() * 100) + 20, scale: 0.5 + Math.random() * 0.8, opacity: 0.4 + Math.random() * 0.5 });
+                    newClouds.push({ id: Date.now() + Math.random(), x: DESERT_SPAWN_X, y: Math.floor(Math.random() * 100) + 20, scale: 0.5 + Math.random() * 0.8, opacity: 0.4 + Math.random() * 0.5 });
                     nextCloud = Math.floor(Math.random() * 80) + 40;
                 }
-                const newObstacles = prev.obstacles.map((obs: any) => ({ ...obs, x: obs.x - newSpeed })).filter((obs: any) => obs.x + obs.width > -50);
+                const newObstacles = prev.obstacles.map((obs) => ({ ...obs, x: obs.x - newSpeed })).filter((obs) => obs.x + obs.width > -50);
                 let nextObs = prev.nextObstacleIn - 1;
                 if (nextObs <= 0) {
                     const isDouble = Math.random() > 0.7 && newSpeed > 7;
                     const type = isDouble ? "double" : "single";
                     const width = isDouble ? 50 : 24;
                     const height = Math.floor(Math.random() * 20) + 40;
-                    newObstacles.push({ id: Date.now(), x: SPAWN_X, width, height, type });
+                    newObstacles.push({ id: Date.now(), x: DESERT_SPAWN_X, width, height, type });
                     const minSafeFrames = 60;
                     const maxRandomGap = Math.max(80, 160 - newSpeed * 5);
                     nextObs = Math.floor(Math.random() * (maxRandomGap - minSafeFrames)) + minSafeFrames;
@@ -969,7 +1028,7 @@ const DesertRun = ({ onBack }: { onBack: () => void }) => {
                 let isGameOver = false;
                 const hitboxShrink = 6;
                 for (const obs of newObstacles) {
-                    if (PLAYER_X + hitboxShrink < obs.x + obs.width && PLAYER_X + PLAYER_SIZE - hitboxShrink > obs.x && newY + hitboxShrink < obs.height && newY + PLAYER_SIZE - hitboxShrink > 0) {
+                    if (DESERT_PLAYER_X + hitboxShrink < obs.x + obs.width && DESERT_PLAYER_X + DESERT_PLAYER_SIZE - hitboxShrink > obs.x && newY + hitboxShrink < obs.height && newY + DESERT_PLAYER_SIZE - hitboxShrink > 0) {
                         isGameOver = true;
                     }
                 }
@@ -1018,13 +1077,13 @@ const DesertRun = ({ onBack }: { onBack: () => void }) => {
                     </div>
                 </div>
                 <div className="relative w-full h-72 bg-gradient-to-b from-sky-200 to-sky-50 overflow-hidden border-b-[8px] border-[#c2b280] shadow-xl rounded-b-lg select-none touch-none cursor-pointer" onTouchStart={(e) => { e.preventDefault(); jump(); }} onClick={jump}>
-                    {gameState.clouds.map((cloud: any) => (
+                    {gameState.clouds.map((cloud) => (
                         <div key={cloud.id} className="absolute bg-white rounded-full transition-transform" style={{ width: "60px", height: "20px", left: `${cloud.x}px`, top: `${cloud.y}px`, transform: `scale(${cloud.scale})`, opacity: cloud.opacity, }}>
                             <div className="absolute -top-3 left-3 w-8 h-8 bg-white rounded-full" />
                             <div className="absolute -top-2 left-8 w-6 h-6 bg-white rounded-full" />
                         </div>
                     ))}
-                    <div className="absolute z-20 transition-transform" style={{ width: `${PLAYER_SIZE}px`, height: `${PLAYER_SIZE}px`, left: `${PLAYER_X}px`, bottom: `${gameState.y}px`, }}>
+                    <div className="absolute z-20 transition-transform" style={{ width: `${DESERT_PLAYER_SIZE}px`, height: `${DESERT_PLAYER_SIZE}px`, left: `${DESERT_PLAYER_X}px`, bottom: `${gameState.y}px`, }}>
                         <div className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm">
                             <div className="absolute top-2 right-1 w-5 h-4 bg-slate-900 rounded-sm flex items-center justify-end p-0.5">
                                 <div className={`w-2 h-2 rounded-full ${gameState.gameOver ? 'bg-red-500' : 'bg-cyan-400 animate-pulse'}`} />
@@ -1035,7 +1094,7 @@ const DesertRun = ({ onBack }: { onBack: () => void }) => {
                             </div>
                         </div>
                     </div>
-                    {gameState.obstacles.map((obs: any) => (
+                    {gameState.obstacles.map((obs) => (
                         <div key={obs.id} className="absolute z-10 flex items-end justify-center gap-2" style={{ width: `${obs.width}px`, height: `${obs.height}px`, left: `${obs.x}px`, bottom: "0px", }}>
                             {obs.type === "single" && (
                                 <div className="relative w-6 h-full bg-emerald-600 border-2 border-emerald-800 rounded-t-lg">
@@ -1165,7 +1224,7 @@ const earthImages: EarthImage[] = [
 
 
 const ZenFlightView = ({ onClose }: { onClose: () => void; }) => {
-    const [playlist, setPlaylist<EarthImage[]>([])];
+    const [playlist, setPlaylist] = useState<EarthImage[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isLoadingImage, setIsLoadingImage] = useState(true);
     const [secondsLeft, setSecondsLeft] = useState(13);
@@ -1175,14 +1234,13 @@ const ZenFlightView = ({ onClose }: { onClose: () => void; }) => {
         setIsLoadingImage(true);
         setSecondsLeft(13);
         setCurrentIndex(prevIndex => {
-            const possibleNextIndexes = playlist.map((_, i) => i).filter(i => i !== prevIndex);
-            if (possibleNextIndexes.length === 0) {
-                 setPlaylist(shuffleArray(earthImages));
-                 return 0;
+            if (prevIndex === playlist.length - 1) {
+                setPlaylist(shuffleArray(earthImages));
+                return 0;
             }
-            return possibleNextIndexes[Math.floor(Math.random() * possibleNextIndexes.length)];
+            return prevIndex + 1;
         });
-    }, [playlist]);
+    }, [playlist.length]);
     
     useEffect(() => {
         setIsMounted(true);
@@ -1336,7 +1394,7 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
             case 'trivia': return <TriviaView onBack={() => setView('menu')} />;
             case 'animals': return <AnimalsView onBack={() => setView('menu')} />;
             case 'minigames_menu': return <MinigamesMenu setView={setView} onBack={() => setView('menu')} />;
-            case 'desert-run': return <DesertRun />;
+            case 'desert-run': return <DesertRun onBack={() => setView('minigames_menu')} />;
             case 'flappy-bird': return <FlappyBirdGame onBack={() => setView('minigames_menu')} />;
             case 'snake': return <SnakeGame onBack={() => setView('minigames_menu')} />;
             case '2048': return <Game2048 onBack={() => setView('minigames_menu')} />;
@@ -1396,5 +1454,3 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
         </AnimatePresence>
     );
 };
-
-    
