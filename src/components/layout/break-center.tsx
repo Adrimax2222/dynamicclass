@@ -742,22 +742,34 @@ function DesertRun({ onBack }: { onBack: () => void }) {
     );
 }
 
+// --- Flappy Bird Game Component ---
+const GRAVITY = 0.5;
+const FLAP_VELOCITY = -8;
+const PIPE_SPEED = 3;
+const PIPE_WIDTH = 60;
+const GAP_SIZE = 140; 
+const BIRD_SIZE = 24;
+const BIRD_X = 50; 
+const GAME_WIDTH = 350; 
+const GAME_HEIGHT = 500; 
+const PIPE_SPAWN_RATE = 90;
+
 function FlappyBirdGame() {
-  const [gameState, setGameState] = useState<{
-    birdY: number;
-    velocity: number;
-    pipes: { id: number; x: number; topHeight: number; passed: boolean; }[];
-    score: number;
-    status: "idle" | "playing" | "gameover";
-    framesUntilNextPipe: number;
-  }>({
-    birdY: GAME_HEIGHT / 2,
-    velocity: 0,
-    pipes: [],
-    score: 0,
-    status: "idle",
-    framesUntilNextPipe: 0,
-  });
+    const [gameState, setGameState] = useState<{
+        birdY: number;
+        velocity: number;
+        pipes: { id: number; x: number; topHeight: number; passed: boolean; }[];
+        score: number;
+        status: "idle" | "playing" | "gameover";
+        framesUntilNextPipe: number;
+      }>({
+        birdY: GAME_HEIGHT / 2,
+        velocity: 0,
+        pipes: [],
+        score: 0,
+        status: "idle",
+        framesUntilNextPipe: 0,
+      });
 
   const requestRef = useRef<number>();
 
@@ -974,7 +986,6 @@ function FlappyBirdGame() {
     </div>
   );
 }
-
 
 const SnakeGame = ({ onBack }: { onBack: () => void }) => {
     const GRID_SIZE = 20;
@@ -1563,7 +1574,7 @@ const earthImages: EarthImage[] = [
 ];
 
 
-const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () => void; }) => {
+const ZenFlightView = ({ onClose }: { onClose: () => void; }) => {
     const [playlist, setPlaylist] = useState<EarthImage[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isLoadingImage, setIsLoadingImage] = useState(true);
@@ -1574,13 +1585,10 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
         setIsLoadingImage(true);
         setSecondsLeft(13);
         setCurrentIndex(prevIndex => {
-            // Crear una lista de posibles próximos índices excluyendo el actual
             const possibleNextIndexes = playlist.map((_, i) => i).filter(i => i !== prevIndex);
             if (possibleNextIndexes.length === 0) {
-                // Si solo hay una imagen, o algo sale mal, volvemos a la misma
                 return prevIndex;
             }
-            // Elegir uno aleatorio de los posibles
             return possibleNextIndexes[Math.floor(Math.random() * possibleNextIndexes.length)];
         });
     }, [playlist]);
@@ -1742,7 +1750,7 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
             case 'snake': return <SnakeGame onBack={() => setView('minigames_menu')} />;
             case '2048': return <Game2048 onBack={() => setView('minigames_menu')} />;
             case 'tic-tac-toe': return <TicTacToeGame onBack={() => setView('minigames_menu')} />;
-            case 'zen': return <ZenFlightView onBack={() => setView('menu')} onClose={handleClose} />;
+            case 'zen': return <ZenFlightView onClose={handleClose} />;
             case 'menu':
             default:
                 return <MainMenu setView={setView} />;
@@ -1796,5 +1804,3 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
         </AnimatePresence>
     );
 };
-
-    
