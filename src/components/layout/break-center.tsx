@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw, Globe, Waves, SkipForward, Ghost, Users, ChevronRight, Rocket } from 'lucide-react';
+import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw, Globe, Waves, SkipForward, Ghost, Users, ChevronRight, Rocket, BrainCircuit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -30,7 +30,7 @@ import { AvatarDisplay } from "@/components/profile/avatar-creator";
 
 
 // --- Type Definitions ---
-type View = 'menu' | 'trivia' | 'animals' | 'minigames_menu' | 'snake' | '2048' | 'tic-tac-toe' | 'zen' | 'desert-run' | 'flappy-bird';
+type View = 'menu' | 'trivia' | 'animals' | 'minigames_menu' | 'snake' | '2048' | 'tic-tac-toe' | 'zen' | 'desert-run' | 'flappy-bird' | 'memory-game';
 
 interface TriviaQuestion {
     question: string;
@@ -309,6 +309,7 @@ const MinigamesMenu = ({ setView, onBack }: { setView: (view: View) => void, onB
         { view: 'snake' as View, icon: '🐍', label: 'Snake', colors: 'bg-emerald-100 dark:bg-emerald-900/40 hover:bg-emerald-200 dark:hover:bg-emerald-900/60 border-emerald-200 dark:border-emerald-800/60' },
         { view: 'tic-tac-toe' as View, icon: '🤔', label: 'Tres en Raya', colors: 'bg-rose-100 dark:bg-rose-900/40 hover:bg-rose-200 dark:hover:bg-rose-900/60 border-rose-200 dark:border-rose-800/60' },
         { view: '2048' as View, icon: '🔢', label: '2048', colors: 'bg-indigo-100 dark:bg-indigo-900/40 hover:bg-indigo-200 dark:hover:bg-indigo-900/60 border-indigo-200 dark:border-indigo-800/60' },
+        { view: 'memory-game' as View, icon: '🧠', label: 'Memory', colors: 'bg-violet-100 dark:bg-violet-900/40 hover:bg-violet-200 dark:hover:bg-violet-900/60 border-violet-200 dark:border-violet-800/60' },
     ];
 
     return (
@@ -338,76 +339,76 @@ const FLAPPY_GAME_HEIGHT = 500; // Resolución lógica interna (alto)
 const FLAPPY_PIPE_SPAWN_RATE = 90; // Frames entre cada nueva tubería
 
 function FlappyBirdGame({ onBack }: { onBack: () => void }) {
-    const { user, updateUser, firestore } = useApp();
-    const { toast } = useToast();
+  const { user, updateUser, firestore } = useApp();
+  const { toast } = useToast();
 
-    const [gameState, setGameState] = useState<{
-        birdY: number;
-        velocity: number;
-        pipes: { id: number; x: number; topHeight: number; passed: boolean; }[];
-        score: number;
-        status: "idle" | "playing" | "gameover";
-        framesUntilNextPipe: number;
-      }>({
-        birdY: FLAPPY_GAME_HEIGHT / 2,
-        velocity: 0,
-        pipes: [],
-        score: 0,
-        status: "idle",
-        framesUntilNextPipe: 0,
-      });
+  const [gameState, setGameState] = useState<{
+    birdY: number;
+    velocity: number;
+    pipes: { id: number; x: number; topHeight: number; passed: boolean }[];
+    score: number;
+    status: 'idle' | 'playing' | 'gameover';
+    framesUntilNextPipe: number;
+  }>({
+    birdY: FLAPPY_GAME_HEIGHT / 2,
+    velocity: 0,
+    pipes: [],
+    score: 0,
+    status: 'idle',
+    framesUntilNextPipe: 0,
+  });
 
   const requestRef = useRef<number>();
 
   const flap = useCallback(() => {
     setGameState((prev) => {
-      if (prev.status === "gameover") {
+      if (prev.status === 'gameover') {
         return {
           birdY: FLAPPY_GAME_HEIGHT / 2,
           velocity: FLAP_VELOCITY,
           pipes: [],
           score: 0,
-          status: "playing",
+          status: 'playing',
           framesUntilNextPipe: FLAPPY_PIPE_SPAWN_RATE,
         };
       }
-      if (prev.status === "idle") {
-        return { ...prev, status: "playing", velocity: FLAP_VELOCITY };
+      if (prev.status === 'idle') {
+        return { ...prev, status: 'playing', velocity: FLAP_VELOCITY };
       }
       return { ...prev, velocity: FLAP_VELOCITY };
     });
   }, []);
 
   useEffect(() => {
-    if (gameState.gameOver && user && firestore) {
-        const finalScore = gameState.score;
-        if (finalScore > (user.flappyBotHighScore || 0)) {
-            const userDocRef = doc(firestore, 'users', user.uid);
-            updateDoc(userDocRef, { flappyBotHighScore: finalScore });
-            updateUser({ flappyBotHighScore: finalScore });
-            toast({
-                title: "¡Nuevo Récord en Flappy BOT!",
-                description: `Has conseguido una nueva puntuación máxima de ${finalScore} puntos.`,
-            });
-        }
+    if (gameState.status === 'gameover' && user && firestore) {
+      const finalScore = gameState.score;
+      if (finalScore > (user.flappyBotHighScore || 0)) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        updateDoc(userDocRef, { flappyBotHighScore: finalScore });
+        updateUser({ flappyBotHighScore: finalScore });
+        toast({
+          title: '¡Nuevo Récord en Flappy BOT!',
+          description: `Has conseguido una nueva puntuación máxima de ${finalScore} puntos.`,
+        });
+      }
     }
-  }, [gameState.gameOver, gameState.score, user, firestore, updateUser, toast]);
+  }, [gameState.status, gameState.score, user, firestore, updateUser, toast]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space") {
+      if (e.code === 'Space') {
         e.preventDefault();
         flap();
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [flap]);
 
   useEffect(() => {
     const loop = () => {
       setGameState((prev) => {
-        if (prev.status !== "playing") return prev;
+        if (prev.status !== 'playing') return prev;
 
         const newVelocity = prev.velocity + FLAPPY_GRAVITY;
         let newBirdY = prev.birdY + newVelocity;
@@ -419,7 +420,8 @@ function FlappyBirdGame({ onBack }: { onBack: () => void }) {
         let nextPipeTimer = prev.framesUntilNextPipe - 1;
         if (nextPipeTimer <= 0) {
           const minPipeHeight = 50;
-          const maxPipeHeight = FLAPPY_GAME_HEIGHT - FLAPPY_GAP_SIZE - minPipeHeight;
+          const maxPipeHeight =
+            FLAPPY_GAME_HEIGHT - FLAPPY_GAP_SIZE - minPipeHeight;
           const topHeight =
             Math.floor(Math.random() * (maxPipeHeight - minPipeHeight + 1)) +
             minPipeHeight;
@@ -442,10 +444,11 @@ function FlappyBirdGame({ onBack }: { onBack: () => void }) {
         });
 
         let isGameOver = false;
-        
+
         if (newBirdY < 0 || newBirdY + FLAPPY_BIRD_SIZE > FLAPPY_GAME_HEIGHT) {
           isGameOver = true;
-          if (newBirdY + FLAPPY_BIRD_SIZE > FLAPPY_GAME_HEIGHT) newBirdY = FLAPPY_GAME_HEIGHT - FLAPPY_BIRD_SIZE;
+          if (newBirdY + FLAPPY_BIRD_SIZE > FLAPPY_GAME_HEIGHT)
+            newBirdY = FLAPPY_GAME_HEIGHT - FLAPPY_BIRD_SIZE;
         }
 
         const hitboxShrink = 4;
@@ -459,7 +462,10 @@ function FlappyBirdGame({ onBack }: { onBack: () => void }) {
           const pRight = pipe.x + FLAPPY_PIPE_WIDTH;
 
           if (bRight > pLeft && bLeft < pRight) {
-            if (bTop < pipe.topHeight || bBottom > pipe.topHeight + FLAPPY_GAP_SIZE) {
+            if (
+              bTop < pipe.topHeight ||
+              bBottom > pipe.topHeight + FLAPPY_GAP_SIZE
+            ) {
               isGameOver = true;
             }
           }
@@ -471,7 +477,7 @@ function FlappyBirdGame({ onBack }: { onBack: () => void }) {
           velocity: newVelocity,
           pipes: newPipes,
           score: newScore,
-          status: isGameOver ? "gameover" : "playing",
+          status: isGameOver ? 'gameover' : 'playing',
           framesUntilNextPipe: nextPipeTimer,
         };
       });
@@ -484,193 +490,225 @@ function FlappyBirdGame({ onBack }: { onBack: () => void }) {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
   }, []);
-  
-    const isPersonalUser = user?.center === 'personal' || user?.center === 'default';
 
-    const classmatesQuery = useMemoFirebase(() => {
-        if (!firestore || !user || isPersonalUser) return null;
-        return query(
-            collection(firestore, "users"),
-            where("organizationId", "==", user.organizationId),
-            where("course", "==", user.course),
-            where("className", "==", user.className),
-            orderBy("flappyBotHighScore", "desc")
-        );
-    }, [firestore, user, isPersonalUser]);
-    
-    const { data: classmatesData, isLoading: isLoadingClassmates } = useCollection<AppUser>(classmatesQuery);
+  const isPersonalUser = user?.center === 'personal' || user?.center === 'default';
 
-    const sortedClassmates = useMemo(() => {
-        if (!classmatesData) return [];
-        return classmatesData
-            .filter(c => c.uid !== user?.uid)
-            .sort((a, b) => (b.flappyBotHighScore || 0) - (a.flappyBotHighScore || 0));
-    }, [classmatesData, user]);
+  const classmatesQuery = useMemoFirebase(() => {
+    if (!firestore || !user || isPersonalUser) return null;
+    return query(
+      collection(firestore, 'users'),
+      where('organizationId', '==', user.organizationId),
+      where('course', '==', user.course),
+      where('className', '==', user.className),
+      orderBy('flappyBotHighScore', 'desc')
+    );
+  }, [firestore, user, isPersonalUser]);
+
+  const { data: classmatesData, isLoading: isLoadingClassmates } = useCollection<AppUser>(classmatesQuery);
+
+  const sortedClassmates = useMemo(() => {
+    if (!classmatesData) return [];
+    return classmatesData
+      .filter((c) => c.uid !== user?.uid)
+      .sort((a, b) => (b.flappyBotHighScore || 0) - (a.flappyBotHighScore || 0));
+  }, [classmatesData, user]);
 
   return (
     <ViewContainer title="Flappy BOT" onBack={onBack}>
-        <div className="flex flex-col items-center justify-center w-full p-4 font-sans select-none touch-none">
-            <div className="w-full flex justify-between px-6 py-2 bg-slate-800 text-white rounded-t-lg font-mono text-xl shadow-md z-10">
-                <div className="text-amber-400">HI: {String(user?.flappyBotHighScore || 0).padStart(5, '0')}</div>
-                <div className="tracking-widest flex items-center gap-2">
-                    <span className="text-slate-400 text-sm">SCORE</span>
-                    {gameState.score.toString().padStart(5, "0")}
-                </div>
-            </div>
-      
+      <div className="flex flex-col items-center justify-center w-full p-4 font-sans select-none touch-none">
+        <div className="w-full flex justify-between px-6 py-2 bg-slate-800 text-white rounded-t-lg font-mono text-xl shadow-md z-10">
+          <div className="text-amber-400">
+            HI: {String(user?.flappyBotHighScore || 0).padStart(5, '0')}
+          </div>
+          <div className="tracking-widest flex items-center gap-2">
+            <span className="text-slate-400 text-sm">SCORE</span>
+            {gameState.score.toString().padStart(5, '0')}
+          </div>
+        </div>
+
+        <div
+          className="relative overflow-hidden bg-sky-300 shadow-2xl rounded-b-lg border-x-4 border-b-4 border-slate-800 cursor-pointer"
+          style={{
+            width: `${FLAPPY_GAME_WIDTH}px`,
+            height: `${FLAPPY_GAME_HEIGHT}px`,
+          }}
+          onClick={flap}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            flap();
+          }}
+        >
+          <div className="absolute top-6 w-full text-center z-20 pointer-events-none">
+            <span
+              className="text-5xl font-black text-white"
+              style={{ WebkitTextStroke: '2px #1e293b' }}
+            >
+              {gameState.score}
+            </span>
+          </div>
+
           <div
-            className="relative overflow-hidden bg-sky-300 shadow-2xl rounded-b-lg border-x-4 border-b-4 border-slate-800 cursor-pointer"
-            style={{ width: `${FLAPPY_GAME_WIDTH}px`, height: `${FLAPPY_GAME_HEIGHT}px` }}
-            onClick={flap}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              flap();
+            className="absolute bg-orange-400 rounded-full border-2 border-slate-800 z-10 transition-transform duration-75"
+            style={{
+              width: `${FLAPPY_BIRD_SIZE}px`,
+              height: `${FLAPPY_BIRD_SIZE}px`,
+              left: `${FLAPPY_BIRD_X}px`,
+              top: `${gameState.birdY}px`,
+              transform: `rotate(${Math.min(
+                Math.max(gameState.velocity * 4, -25),
+                90
+              )}deg)`,
             }}
           >
-            
-            <div className="absolute top-6 w-full text-center z-20 pointer-events-none">
-              <span className="text-5xl font-black text-white" style={{ WebkitTextStroke: "2px #1e293b" }}>
-                {gameState.score}
-              </span>
+            <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full">
+              <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-black rounded-full" />
             </div>
+            <div className="absolute top-2.5 -right-2 w-3 h-2 bg-red-500 rounded-r-full border border-slate-800" />
+          </div>
 
-            <div
-              className="absolute bg-orange-400 rounded-full border-2 border-slate-800 z-10 transition-transform duration-75"
-              style={{
-                width: `${FLAPPY_BIRD_SIZE}px`,
-                height: `${FLAPPY_BIRD_SIZE}px`,
-                left: `${FLAPPY_BIRD_X}px`,
-                top: `${gameState.birdY}px`,
-                transform: `rotate(${Math.min(Math.max(gameState.velocity * 4, -25), 90)}deg)`,
-              }}
-            >
-              <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full">
-                <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-black rounded-full" />
+          {gameState.pipes.map((pipe) => (
+            <React.Fragment key={pipe.id}>
+              <div
+                className="absolute bg-green-500 border-2 border-green-800 rounded-b-sm"
+                style={{
+                  width: `${FLAPPY_PIPE_WIDTH}px`,
+                  height: `${pipe.topHeight}px`,
+                  left: `${pipe.x}px`,
+                  top: 0,
+                }}
+              >
+                <div className="absolute bottom-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
               </div>
-              <div className="absolute top-2.5 -right-2 w-3 h-2 bg-red-500 rounded-r-full border border-slate-800" />
+
+              <div
+                className="absolute bg-green-500 border-2 border-green-800 rounded-t-sm"
+                style={{
+                  width: `${FLAPPY_PIPE_WIDTH}px`,
+                  height: `${
+                    FLAPPY_GAME_HEIGHT - pipe.topHeight - FLAPPY_GAP_SIZE
+                  }px`,
+                  left: `${pipe.x}px`,
+                  top: `${pipe.topHeight + FLAPPY_GAP_SIZE}px`,
+                }}
+              >
+                <div className="absolute top-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
+              </div>
+            </React.Fragment>
+          ))}
+
+          <div className="absolute bottom-0 w-full h-4 bg-amber-200 border-t-4 border-amber-800 z-10" />
+
+          {gameState.status === 'idle' && (
+            <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-center z-30 pointer-events-none">
+              <div className="bg-white px-6 py-3 rounded shadow-lg text-slate-800 font-bold text-lg animate-bounce">
+                Toca para volar
+              </div>
             </div>
+          )}
 
-            {gameState.pipes.map((pipe) => (
-              <React.Fragment key={pipe.id}>
-                <div
-                  className="absolute bg-green-500 border-2 border-green-800 rounded-b-sm"
-                  style={{
-                    width: `${FLAPPY_PIPE_WIDTH}px`,
-                    height: `${pipe.topHeight}px`,
-                    left: `${pipe.x}px`,
-                    top: 0,
-                  }}
+          {gameState.status === 'gameover' && (
+            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-30 backdrop-blur-sm">
+              <div className="bg-[#ded895] border-4 border-[#543847] p-6 rounded-lg shadow-2xl text-center transform scale-100 transition-transform">
+                <h2
+                  className="text-4xl font-black text-white mb-2"
+                  style={{ WebkitTextStroke: '1px #543847' }}
                 >
-                  <div className="absolute bottom-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
+                  GAME OVER
+                </h2>
+                <div className="bg-[#bdae58] border-2 border-[#543847] rounded p-4 mb-4 text-center">
+                  <p className="text-[#543847] font-bold uppercase text-sm mb-1">
+                    Score
+                  </p>
+                  <p
+                    className="text-3xl font-black text-white"
+                    style={{ WebkitTextStroke: '1px #543847' }}
+                  >
+                    {gameState.score}
+                  </p>
                 </div>
-
-                <div
-                  className="absolute bg-green-500 border-2 border-green-800 rounded-t-sm"
-                  style={{
-                    width: `${FLAPPY_PIPE_WIDTH}px`,
-                    height: `${FLAPPY_GAME_HEIGHT - pipe.topHeight - FLAPPY_GAP_SIZE}px`,
-                    left: `${pipe.x}px`,
-                    top: `${pipe.topHeight + FLAPPY_GAP_SIZE}px`,
-                  }}
+                <button
+                  onClick={flap}
+                  className="bg-orange-500 border-2 border-white hover:bg-orange-600 text-white font-black uppercase tracking-wider py-2 px-6 rounded-full shadow-lg active:scale-95 transition-all"
                 >
-                  <div className="absolute top-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
-                </div>
-              </React.Fragment>
-            ))}
-
-            <div className="absolute bottom-0 w-full h-4 bg-amber-200 border-t-4 border-amber-800 z-10" />
-
-            {gameState.status === "idle" && (
-              <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-center z-30 pointer-events-none">
-                <div className="bg-white px-6 py-3 rounded shadow-lg text-slate-800 font-bold text-lg animate-bounce">
-                  Toca para volar
-                </div>
+                  Reintentar
+                </button>
               </div>
-            )}
+            </div>
+          )}
+        </div>
 
-            {gameState.status === "gameover" && (
-              <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-30 backdrop-blur-sm">
-                <div className="bg-[#ded895] border-4 border-[#543847] p-6 rounded-lg shadow-2xl text-center transform scale-100 transition-transform">
-                  <h2 className="text-4xl font-black text-white mb-2" style={{ WebkitTextStroke: "1px #543847" }}>
-                    GAME OVER
-                  </h2>
-                  <div className="bg-[#bdae58] border-2 border-[#543847] rounded p-4 mb-4 text-center">
-                    <p className="text-[#543847] font-bold uppercase text-sm mb-1">Score</p>
-                    <p className="text-3xl font-black text-white" style={{ WebkitTextStroke: "1px #543847" }}>
-                      {gameState.score}
+        <p className="mt-4 text-xs text-slate-500 font-mono">
+          Pulsa Espacio o toca la pantalla
+        </p>
+
+        {!isPersonalUser && (
+          <Collapsible className="w-full max-w-4xl mx-auto mt-6">
+            <CollapsibleTrigger asChild>
+              <div className="group flex w-full cursor-pointer items-center justify-between rounded-lg border p-4 transition-all bg-muted/50 hover:bg-muted">
+                <div className="flex items-center gap-3">
+                  <Users className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold">Ranking de la Clase</h3>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-90" />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+              <div className="py-4">
+                {isLoadingClassmates ? (
+                  <div className="p-4 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Cargando ranking...
                     </p>
                   </div>
-                  <button
-                    onClick={flap}
-                    className="bg-orange-500 border-2 border-white hover:bg-orange-600 text-white font-black uppercase tracking-wider py-2 px-6 rounded-full shadow-lg active:scale-95 transition-all"
+                ) : sortedClassmates.length > 0 ? (
+                  <Carousel
+                    opts={{ align: 'start', loop: false }}
+                    className="w-full"
                   >
-                    Reintentar
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <p className="mt-4 text-xs text-slate-500 font-mono">
-            Pulsa Espacio o toca la pantalla
-          </p>
-
-            {!isPersonalUser && (
-                <Collapsible className="w-full max-w-4xl mx-auto mt-6">
-                <CollapsibleTrigger asChild>
-                    <div className="group flex w-full cursor-pointer items-center justify-between rounded-lg border p-4 transition-all bg-muted/50 hover:bg-muted">
-                    <div className="flex items-center gap-3">
-                        <Users className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold">Ranking de la Clase</h3>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-90" />
-                    </div>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                    <div className="py-4">
-                    {isLoadingClassmates ? (
-                        <div className="p-4 text-center">
-                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                        <p className="text-sm text-muted-foreground mt-2">Cargando ranking...</p>
-                        </div>
-                    ) : sortedClassmates.length > 0 ? (
-                        <Carousel
-                        opts={{ align: "start", loop: false }}
-                        className="w-full"
+                    <CarouselContent className="-ml-2">
+                      {sortedClassmates.map((classmate) => (
+                        <CarouselItem
+                          key={classmate.uid}
+                          className="pl-2 basis-1/2 md:basis-1/3"
                         >
-                        <CarouselContent className="-ml-2">
-                            {sortedClassmates.map((classmate) => (
-                            <CarouselItem key={classmate.uid} className="pl-2 basis-1/2 md:basis-1/3">
-                                <div className="p-1">
-                                <Card>
-                                    <CardContent className="flex flex-col items-center justify-center p-3 sm:p-4 aspect-[4/5]">
-                                    <AvatarDisplay user={classmate} className="h-12 w-12 sm:h-16 sm:w-16 mb-2" />
-                                    <p className="font-bold text-sm text-center truncate w-full">{classmate.name}</p>
-                                    <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-2">
-                                        <Rocket className="h-3 w-3 text-sky-500" />
-                                        <span className="font-bold text-base text-foreground">{classmate.flappyBotHighScore || 0}</span>
-                                    </div>
-                                    </CardContent>
-                                </Card>
+                          <div className="p-1">
+                            <Card>
+                              <CardContent className="flex flex-col items-center justify-center p-3 sm:p-4 aspect-[4/5]">
+                                <AvatarDisplay
+                                  user={classmate}
+                                  className="h-12 w-12 sm:h-16 sm:w-16 mb-2"
+                                />
+                                <p className="font-bold text-sm text-center truncate w-full">
+                                  {classmate.name}
+                                </p>
+                                <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-2">
+                                  <Rocket className="h-3 w-3 text-sky-500" />
+                                  <span className="font-bold text-base text-foreground">
+                                    {classmate.flappyBotHighScore || 0}
+                                  </span>
                                 </div>
-                            </CarouselItem>
-                            ))}
-                        </CarouselContent>
-                        <div className="flex justify-center gap-4 pt-4">
-                            <CarouselPrevious className="static translate-y-0" />
-                            <CarouselNext className="static translate-y-0" />
-                        </div>
-                        </Carousel>
-                    ) : (
-                        <div className="text-center text-sm text-muted-foreground p-4 border-dashed border-2 rounded-lg">
-                        Nadie en tu clase ha jugado todavía.
-                        </div>
-                    )}
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <div className="flex justify-center gap-4 pt-4">
+                      <CarouselPrevious className="static translate-y-0" />
+                      <CarouselNext className="static translate-y-0" />
                     </div>
-                </CollapsibleContent>
-                </Collapsible>
-            )}
-        </div>
+                  </Carousel>
+                ) : (
+                  <div className="text-center text-sm text-muted-foreground p-4 border-dashed border-2 rounded-lg">
+                    Nadie en tu clase ha jugado todavía.
+                  </div>
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+      </div>
     </ViewContainer>
   );
 }
@@ -948,34 +986,41 @@ const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
             const emptySquares = board.map((sq, i) => sq === null ? i : null).filter((i): i is number => i !== null);
 
             const getAiMove = (): number => {
+                // Easy: 80% random, 20% block
                 if (difficulty === 'easy') {
                     if (Math.random() < 0.2) { 
+                        // Check if player is about to win and block
                         for (const i of emptySquares) {
                             const nextBoard = board.slice();
                             nextBoard[i] = 'X';
                             if (calculateWinner(nextBoard) === 'X') return i;
                         }
                     }
+                    // Otherwise, random move
                     return emptySquares[Math.floor(Math.random() * emptySquares.length)];
                 }
 
+                // Medium: Rule-based
                 if (difficulty === 'medium') {
+                    // 1. Win if possible
                     for (const i of emptySquares) {
                         const nextBoard = board.slice();
                         nextBoard[i] = 'O';
                         if (calculateWinner(nextBoard) === 'O') return i;
                     }
+                    // 2. Block if player is about to win
                     for (const i of emptySquares) {
                         const nextBoard = board.slice();
                         nextBoard[i] = 'X';
                         if (calculateWinner(nextBoard) === 'X') return i;
                     }
+                    // 3. Take center
                     if (emptySquares.includes(4)) return 4;
-                    const corners = [0, 2, 6, 8].filter(i => emptySquares.includes(i));
-                    if (corners.length > 0) return corners[Math.floor(Math.random() * corners.length)];
+                    // 4. Random move (could be improved to take corners)
                     return emptySquares[Math.floor(Math.random() * emptySquares.length)];
                 }
 
+                // Hard: Minimax with 15% error rate
                 if (difficulty === 'hard') {
                     const moves: { index: number; score: number }[] = [];
                     for (const i of emptySquares) {
@@ -986,13 +1031,16 @@ const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
                     }
                     moves.sort((a, b) => b.score - a.score);
                     
+                    // 15% chance to make a mistake
                     if (Math.random() < 0.15 && moves.length > 1) {
-                        return moves[1].index;
+                         // Choose second or third best move if available
+                        const mistakeIndex = Math.min(Math.floor(Math.random() * 2) + 1, moves.length - 1);
+                        return moves[mistakeIndex].index;
                     }
                     return moves[0].index;
                 }
                 
-                return emptySquares[0];
+                return emptySquares[0]; // Fallback
             };
             
             const minimax = (newBoard: (string|null)[], isMaximizing: boolean): number => {
@@ -1379,6 +1427,171 @@ const ZenFlightView = ({ onClose }: { onClose: () => void; }) => {
     );
 };
 
+// ===================================
+// ===== NEW MEMORY GAME COMPONENT =====
+// ===================================
+type MemoryCard = {
+  id: number;
+  seed: string;
+  isFlipped: boolean;
+  isMatched: boolean;
+};
+
+function MemoryGame({ onBack }: { onBack: () => void }) {
+  const [cards, setCards] = useState<MemoryCard[]>([]);
+  const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
+  const [isBoardLocked, setIsBoardLocked] = useState(false);
+  const [gamesWon, setGamesWon] = useState(0);
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  // Function to initialize or reset the game
+  const initializeGame = useCallback(() => {
+    const uniqueSeeds = Array.from({ length: 8 }, () => Math.random().toString(36).substring(7));
+    const gameSeeds = shuffleArray([...uniqueSeeds, ...uniqueSeeds]);
+
+    setCards(
+      gameSeeds.map((seed, index) => ({
+        id: index,
+        seed: seed,
+        isFlipped: false,
+        isMatched: false,
+      }))
+    );
+
+    setFlippedIndices([]);
+    setIsBoardLocked(false);
+    setIsCompleted(false);
+  }, []);
+
+  // Initial game setup
+  useEffect(() => {
+    initializeGame();
+  }, [initializeGame]);
+
+  // Game logic for checking matches
+  useEffect(() => {
+    if (flippedIndices.length !== 2) return;
+
+    const [firstIndex, secondIndex] = flippedIndices;
+    const firstCard = cards[firstIndex];
+    const secondCard = cards[secondIndex];
+
+    setIsBoardLocked(true);
+
+    if (firstCard.seed === secondCard.seed) {
+      setCards((prev) =>
+        prev.map((card) => (card.seed === firstCard.seed ? { ...card, isMatched: true } : card))
+      );
+      setFlippedIndices([]);
+      setIsBoardLocked(false);
+    } else {
+      const timeoutId = setTimeout(() => {
+        setCards((prev) =>
+          prev.map((card, index) =>
+            index === firstIndex || index === secondIndex ? { ...card, isFlipped: false } : card
+          )
+        );
+        setFlippedIndices([]);
+        setIsBoardLocked(false);
+      }, 1000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [flippedIndices, cards]);
+
+  // Check for game completion
+  useEffect(() => {
+    if (cards.length > 0 && cards.every((card) => card.isMatched)) {
+      setIsCompleted(true);
+      setGamesWon((prev) => prev + 1);
+    }
+  }, [cards]);
+
+  const handleCardClick = (index: number) => {
+    if (isBoardLocked || flippedIndices.length >= 2 || cards[index].isFlipped) {
+      return;
+    }
+
+    setCards((prev) =>
+      prev.map((card, i) => (i === index ? { ...card, isFlipped: true } : card))
+    );
+    setFlippedIndices((prev) => [...prev, index]);
+  };
+  
+  return (
+    <ViewContainer title="Memory Cards" onBack={onBack}>
+      <div className="flex flex-col items-center gap-4">
+        <div className="flex items-center gap-2 font-bold text-lg text-amber-500 bg-amber-500/10 px-4 py-2 rounded-full">
+          <Trophy className="h-5 w-5" />
+          <span>Partidas ganadas: {gamesWon}</span>
+        </div>
+
+        <div className="relative w-full max-w-sm aspect-square">
+           <AnimatePresence>
+            {isCompleted && (
+              <motion.div
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm rounded-lg"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <div className="bg-white text-slate-800 p-8 rounded-xl shadow-2xl text-center">
+                  <h2 className="text-3xl font-bold mb-2">¡Completado!</h2>
+                  <p className="text-muted-foreground mb-4">Has ganado {gamesWon} partida{gamesWon !== 1 && 's'}.</p>
+                  <Button onClick={initializeGame}>Jugar de nuevo</Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="grid grid-cols-4 gap-2 h-full">
+            {cards.map((card, index) => (
+              <div
+                key={card.id}
+                className="w-full h-full cursor-pointer"
+                style={{ perspective: '1000px' }}
+                onClick={() => handleCardClick(index)}
+              >
+                <motion.div
+                  className="relative w-full h-full"
+                  style={{ transformStyle: 'preserve-3d' }}
+                  animate={{ rotateY: card.isFlipped || card.isMatched ? 180 : 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div
+                    className="absolute w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-md"
+                    style={{ backfaceVisibility: 'hidden' }}
+                  >
+                    <span className="text-4xl font-bold text-white/50">?</span>
+                  </div>
+
+                  <div
+                    className={cn(
+                      "absolute w-full h-full flex items-center justify-center bg-muted rounded-lg shadow-inner",
+                       card.isMatched && 'ring-4 ring-green-500 ring-inset'
+                    )}
+                    style={{
+                      transform: 'rotateY(180deg)',
+                      backfaceVisibility: 'hidden',
+                    }}
+                  >
+                    <img
+                      src={`https://api.dicebear.com/7.x/bottts/svg?seed=${card.seed}`}
+                      alt={`Card ${card.seed}`}
+                      className="w-10 h-10 sm:w-12 sm:h-12 p-1"
+                    />
+                  </div>
+                </motion.div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </ViewContainer>
+  );
+}
+
+
+
 export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
     const { isActive, setIsActive, phase } = useApp();
     const [view, setView] = useState<View>('menu');
@@ -1430,6 +1643,7 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
             case 'snake': return <SnakeGame onBack={() => setView('minigames_menu')} />;
             case '2048': return <Game2048 onBack={() => setView('minigames_menu')} />;
             case 'tic-tac-toe': return <TicTacToeGame onBack={() => setView('minigames_menu')} />;
+            case 'memory-game': return <MemoryGame onBack={() => setView('minigames_menu')} />;
             case 'zen': return <ZenFlightView onClose={handleClose} />;
             case 'menu':
             default:
