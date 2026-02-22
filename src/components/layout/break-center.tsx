@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -89,6 +89,9 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
     const [error, setError] = useState<string | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+    
+    const hasFetched = useRef(false);
+    const retryAttempted = useRef(false);
 
     const fetchTrivia = useCallback(async () => {
         setIsLoading(true);
@@ -96,23 +99,53 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
         setQuestion(null);
         setSelectedAnswer(null);
         setIsCorrect(null);
+        
         try {
             const response = await fetch('https://opentdb.com/api.php?amount=1&type=multiple&encode=url3986');
-            if (!response.ok) throw new Error('No se pudo cargar la trivia.');
+            if (!response.ok) {
+                throw new Error('No se pudo conectar con el servidor de trivia.');
+            }
             const data = await response.json();
-            const result = data.results[0];
-            const allAnswers = shuffleArray([...result.incorrect_answers, result.correct_answer]);
-            setQuestion({ ...result, shuffled_answers: allAnswers });
+            
+            if (data.response_code === 0) {
+                const result = data.results[0];
+                
+                const correctAnswer = decodeURIComponent(result.correct_answer);
+                const incorrectAnswers = result.incorrect_answers.map(decodeURIComponent);
+                const allAnswers = shuffleArray([correctAnswer, ...incorrectAnswers]);
+                
+                setQuestion({
+                    question: decodeURIComponent(result.question),
+                    correct_answer: correctAnswer,
+                    incorrect_answers: incorrectAnswers,
+                    shuffled_answers: allAnswers,
+                });
+                retryAttempted.current = false; // Reset on success
+            } else if (data.response_code === 5 && !retryAttempted.current) {
+                retryAttempted.current = true;
+                setTimeout(() => {
+                    fetchTrivia(); // Retry
+                }, 2000);
+                return; // Prevent setting isLoading to false yet
+            } else {
+                 throw new Error(`La API de trivia devolvió un error (código: ${data.response_code}).`);
+            }
         } catch (e: any) {
+            console.error('Error detallado Trivia:', e);
             setError(e.message || 'Error de red.');
         } finally {
-            setIsLoading(false);
+            if (!retryAttempted.current || (retryAttempted.current && error !== null)) {
+               setIsLoading(false);
+            }
         }
     }, []);
 
     useEffect(() => {
+        if (hasFetched.current) return;
+        hasFetched.current = true;
         fetchTrivia();
     }, [fetchTrivia]);
+
 
     const handleAnswer = (answer: string) => {
         if (selectedAnswer) return;
@@ -122,18 +155,20 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
 
     if (isLoading) return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     if (error) return (
-        <div className="flex flex-col items-center justify-center h-full text-center">
-            <AlertTriangle className="h-8 w-8 text-destructive mb-2"/>
-            <p className="font-semibold text-destructive">{error}</p>
-            <Button onClick={fetchTrivia} className="mt-4">Reintentar</Button>
-        </div>
+        <ViewContainer title="Trivia Rápida" onBack={onBack}>
+            <div className="flex flex-col items-center justify-center h-full text-center">
+                <AlertTriangle className="h-8 w-8 text-destructive mb-2"/>
+                <p className="font-semibold text-destructive">{error}</p>
+                <Button onClick={fetchTrivia} className="mt-4">Reintentar</Button>
+            </div>
+        </ViewContainer>
     );
     if (!question) return null;
 
     return (
         <ViewContainer title="Trivia Rápida" onBack={onBack}>
             <div className="space-y-6">
-                <p className="text-center font-semibold text-lg">{decodeURIComponent(question.question)}</p>
+                <p className="text-center font-semibold text-lg">{question.question}</p>
                 <div className="grid grid-cols-1 gap-3">
                     {question.shuffled_answers.map(answer => {
                         const isSelected = selectedAnswer === answer;
@@ -149,7 +184,7 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
                                     selectedAnswer && !isSelected && !isTheCorrectAnswer && 'opacity-50'
                                 )}
                             >
-                                {decodeURIComponent(answer)}
+                                {answer}
                             </Button>
                         )
                     })}
