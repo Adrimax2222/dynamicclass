@@ -94,6 +94,8 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
+import { BreakCenter } from "@/components/layout/break-center";
+
 
 // --- Plant Growth SVG Components ---
 
@@ -354,6 +356,9 @@ export default function StudyPage() {
     const [isScheduleAvailable, setIsScheduleAvailable] = useState(false);
     const [plantStage, setPlantStage] = useState(0); 
 
+    const [isBreakCenterOpen, setIsBreakCenterOpen] = useState(false);
+    const [wasActiveBeforeBreak, setWasActiveBeforeBreak] = useState(false);
+
     const isPersonalUser = user?.center === 'personal' || user?.center === 'default';
 
     const classmatesQuery = useMemoFirebase(() => {
@@ -568,7 +573,33 @@ export default function StudyPage() {
         }
     
     }, [isActive, phase, timeLeft, timerMode, modes, plantStage]);
-  
+
+    // Break Center Logic
+    const handleOpenBreakCenter = useCallback(() => {
+        setWasActiveBeforeBreak(isActive);
+        if (isActive && phase === 'focus') {
+            setIsActive(false);
+        }
+        setIsBreakCenterOpen(true);
+    }, [isActive, phase, setIsActive]);
+
+    const handleCloseBreakCenter = useCallback(() => {
+        setIsBreakCenterOpen(false);
+        if (wasActiveBeforeBreak && phase === 'focus') {
+            setIsActive(true);
+        }
+    }, [wasActiveBeforeBreak, phase, setIsActive]);
+
+    const prevPhaseRef = useRef(phase);
+    useEffect(() => {
+        const prevPhase = prevPhaseRef.current;
+        if (isBreakCenterOpen && prevPhase === 'break' && phase === 'focus') {
+            handleCloseBreakCenter();
+        }
+        prevPhaseRef.current = phase;
+    }, [phase, isBreakCenterOpen, handleCloseBreakCenter]);
+
+    
     if (!user) return null;
 
     const streakCount = user.streak || 0;
@@ -742,7 +773,7 @@ export default function StudyPage() {
 
                     {isActive && (
                         <div className="text-center mb-4 -mt-2">
-                            <Button variant="outline" className="rounded-full h-8 px-4 text-xs font-semibold">
+                            <Button onClick={handleOpenBreakCenter} variant="outline" className="rounded-full h-8 px-4 text-xs font-semibold">
                                 Hacer un Break
                             </Button>
                         </div>
@@ -1043,10 +1074,12 @@ export default function StudyPage() {
 
         </main>
       </ScrollArea>
+      <BreakCenter isOpen={isBreakCenterOpen} onClose={handleCloseBreakCenter} />
     </div>
   );
 }
 
+// ... Rest of the file (sub-components) remains the same
 interface CropData {
     x: number;
     y: number;
