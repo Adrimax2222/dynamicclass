@@ -3,13 +3,12 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw, Globe, Waves, Music, Volume2, SkipForward } from 'lucide-react';
+import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw, Globe, Waves, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useApp } from '@/lib/hooks/use-app';
-import { Slider } from '@/components/ui/slider';
 
 
 // --- Type Definitions ---
@@ -134,8 +133,8 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
             } else if (data.response_code === 5 && !retryAttempted.current) {
                 console.warn("Trivia API rate limit hit. Retrying...");
                 retryAttempted.current = true;
-                setTimeout(fetchTrivia, 2000); // Wait 2 seconds and retry
-                return; // Keep loading state
+                setTimeout(fetchTrivia, 2000);
+                return;
             } else {
                  console.error('Error detallado Trivia:', data);
                  throw new Error(`La API de trivia devolvió un error (código: ${data.response_code}).`);
@@ -143,7 +142,6 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
         } catch (e: any) {
             console.error('Error detallado Trivia:', e);
             setError(e.message || 'Error de red.');
-            // Wait 3 seconds before allowing a manual retry to avoid spamming the API
             setTimeout(() => {
                 retryAttempted.current = false;
             }, 3000);
@@ -170,7 +168,7 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
         setTimeout(() => {
             setIsTransitioning(false);
             fetchTrivia();
-        }, 2000); // 2 second cooldown before fetching next question
+        }, 2000);
     };
     
     if (isLoading) return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -421,7 +419,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                }}>
             
             <div
-              className="absolute flex items-center justify-center text-xl transition-all duration-150"
+              className="absolute flex items-center justify-center text-xl"
               style={{
                 left: `${(food.x / GRID_SIZE) * 100}%`,
                 top: `${(food.y / GRID_SIZE) * 100}%`,
@@ -437,7 +435,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
               return (
                 <div
                   key={`${segment.x}-${segment.y}-${index}`}
-                  className="absolute rounded-sm border-black/20"
+                  className="absolute rounded-sm border border-black/20"
                   style={{
                     left: `${(segment.x / GRID_SIZE) * 100}%`,
                     top: `${(segment.y / GRID_SIZE) * 100}%`,
@@ -552,44 +550,34 @@ const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
         setDifficulty(null);
     };
 
-    // AI Logic
     useEffect(() => {
         if (!isXNext && !winner && !isBoardFull && difficulty) {
             const emptySquares = board.map((sq, i) => sq === null ? i : null).filter((i): i is number => i !== null);
 
             const getAiMove = (): number => {
-                // Easy: 80% random, 20% block
                 if (difficulty === 'easy') {
                     if (Math.random() < 0.8) {
                         return emptySquares[Math.floor(Math.random() * emptySquares.length)];
                     }
-                    // Fallthrough to blocking logic (20% chance)
                 }
 
-                // Medium and Easy (blocking part)
                 if (difficulty === 'medium' || difficulty === 'easy') {
-                    // 1. Can AI win?
                     for (const i of emptySquares) {
                         const nextBoard = board.slice();
                         nextBoard[i] = 'O';
                         if (calculateWinner(nextBoard) === 'O') return i;
                     }
-                    // 2. Can player win? Block.
                     for (const i of emptySquares) {
                         const nextBoard = board.slice();
                         nextBoard[i] = 'X';
                         if (calculateWinner(nextBoard) === 'X') return i;
                     }
-                    // 3. Take center
                     if (emptySquares.includes(4)) return 4;
-                    // 4. Take random corner
                     const corners = [0, 2, 6, 8].filter(i => emptySquares.includes(i));
                     if (corners.length > 0) return corners[Math.floor(Math.random() * corners.length)];
-                    // 5. Random move
                     return emptySquares[Math.floor(Math.random() * emptySquares.length)];
                 }
 
-                // Hard (Minimax with error)
                 if (difficulty === 'hard') {
                     const moves: { index: number; score: number }[] = [];
                     for (const i of emptySquares) {
@@ -706,7 +694,6 @@ const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
         </ViewContainer>
     );
 };
-
 
 const TILE_COLORS: { [key: number]: string } = {
     2: "bg-yellow-100 text-yellow-900", 4: "bg-yellow-200 text-yellow-900",
@@ -850,105 +837,91 @@ const Game2048 = ({ onBack }: { onBack: () => void }) => {
     );
 };
 
-const earthImages: EarthImage[] = [
-    { url: "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?q=80&w=2070&auto=format&fit=crop", location: "Salar de Uyuni, Bolivia" },
-    { url: "https://images.unsplash.com/photo-1542662565-7e4b66bae529?q=80&w=2070&auto=format&fit=crop", location: "Delta del Río Lena, Rusia" },
-    { url: "https://images.unsplash.com/photo-1588616239971-84c4b5b75a61?q=80&w=2070&auto=format&fit=crop", location: "Desierto del Namib, Namibia" },
-    { url: "https://images.unsplash.com/photo-1562252190-a8a5b29592c0?q=80&w=2070&auto=format&fit=crop", location: "Glaciar Perito Moreno, Argentina" },
-    { url: "https://images.unsplash.com/photo-1614309355938-16d7a4521406?q=80&w=1974&auto=format&fit=crop", location: "Estructura de Richat, Mauritania" },
-    { url: "https://images.unsplash.com/photo-1596140505113-a20a31641098?q=80&w=2070&auto=format&fit=crop", location: "Grand Prismatic Spring, EE.UU." },
-    { url: "https://images.unsplash.com/photo-1589230554101-90a7873c524b?q=80&w=2070&auto=format&fit=crop", location: "Cañón del Antílope, EE.UU." },
-    { url: "https://images.unsplash.com/photo-1506020638528-9c16a8a19280?q=80&w=1974&auto=format&fit=crop", location: "Valle de la Luna, Chile" },
-];
-
 const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () => void; }) => {
-    const [currentImage, setCurrentImage] = useState<EarthImage | null>(null);
+    const earthImages: EarthImage[] = [
+        { url: "https://www.gstatic.com/prettyearth/assets/full/1007.jpg", location: "Salar de Uyuni, Bolivia" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/1152.jpg", location: "Delta del Río Lena, Rusia" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/2210.jpg", location: "Desierto del Namib, Namibia" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/2395.jpg", location: "Glaciar Perito Moreno, Argentina" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/2678.jpg", location: "Estructura de Richat, Mauritania" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/1530.jpg", location: "Grand Prismatic Spring, EE.UU." },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/1253.jpg", location: "Cañón del Antílope, EE.UU." },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/1131.jpg", location: "Valle de la Luna, Chile" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/3906.jpg", location: "Río de Janeiro, Brasil" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/4991.jpg", location: "Monte Fuji, Japón" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/6081.jpg", location: "Venecia, Italia" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/1205.jpg", location: "Everest, Nepal" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/1043.jpg", location: "Campos de Tulipanes, Países Bajos" },
+        { url: "https://www.gstatic.com/prettyearth/assets/full/1083.jpg", location: "Parque Nacional de los Arcos, EE.UU." },
+    ];
+
+    const [currentImageIndex, setCurrentImageIndex] = useState(Math.floor(Math.random() * earthImages.length));
     const [isLoading, setIsLoading] = useState(true);
-    const [volume, setVolume] = useState(50);
-    const audioRef = useRef<HTMLAudioElement>(null);
+
+    const currentImage = earthImages[currentImageIndex];
 
     const selectRandomImage = useCallback(() => {
         setIsLoading(true);
-        const randomIndex = Math.floor(Math.random() * earthImages.length);
-        setCurrentImage(earthImages[randomIndex]);
-        // Simulate loading time for a better UX
-        setTimeout(() => setIsLoading(false), 500);
-    }, []);
+        let newIndex;
+        do {
+            newIndex = Math.floor(Math.random() * earthImages.length);
+        } while (newIndex === currentImageIndex && earthImages.length > 1);
+        
+        setTimeout(() => {
+            setCurrentImageIndex(newIndex);
+        }, 300);
+    }, [currentImageIndex, earthImages.length]);
 
     useEffect(() => {
-        selectRandomImage();
-    }, [selectRandomImage]);
+        const img = new Image();
+        img.src = currentImage.url;
+        img.onload = () => setIsLoading(false);
+    }, [currentImage]);
 
-    useEffect(() => {
-        const audio = audioRef.current;
-        if (audio) {
-            audio.volume = volume / 100;
-            audio.play().catch(console.error);
-        }
-        return () => {
-            audio?.pause();
-        };
-    }, [volume]);
-    
+
     return (
         <div className="relative h-full w-full overflow-hidden bg-black">
             <AnimatePresence>
-                {isLoading || !currentImage ? (
-                    <motion.div
-                        key="loader"
-                        className="absolute inset-0 flex items-center justify-center bg-black"
-                        initial={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                    >
-                        <Loader2 className="h-8 w-8 animate-spin text-white" />
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        key={currentImage.url}
-                        className="absolute inset-0"
-                        initial={{ opacity: 0, scale: 1.1 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 1.5 }}
-                    >
-                        <img
-                            src={currentImage.url}
-                            alt={currentImage.location}
-                            className="absolute inset-0 w-full h-full object-cover animate-[kenburns_30s_ease-in-out_infinite]"
-                        />
-                         <div className="absolute inset-0 bg-black/10" />
-                    </motion.div>
-                )}
+                <motion.div
+                    key={currentImage.url}
+                    className="absolute inset-0"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1, transition: { duration: 1 } }}
+                    exit={{ opacity: 0, transition: { duration: 0.5 } }}
+                >
+                    <img
+                        src={currentImage.url}
+                        alt={currentImage.location}
+                        className="absolute inset-0 w-full h-full object-cover animate-kenburns"
+                    />
+                     <div className="absolute inset-0 bg-black/10" />
+                </motion.div>
             </AnimatePresence>
 
-            <div className="absolute top-4 right-4 z-10">
-                <Button onClick={onClose} variant="ghost" className="text-white bg-black/30 hover:bg-black/50 hover:text-white">Volver a estudiar</Button>
-            </div>
-            
-            <div className="absolute bottom-4 left-4 right-4 z-10 space-y-4">
-                {currentImage && (
+            <div className="absolute inset-0 z-10 flex flex-col justify-between p-4">
+                <div className="flex justify-end">
+                    <Button onClick={onClose} variant="ghost" className="text-white bg-black/30 backdrop-blur-sm hover:bg-black/50 hover:text-white rounded-full h-9 w-9 p-0">
+                        <X className="h-5 w-5" />
+                    </Button>
+                </div>
+
+                <div className="flex items-end justify-between gap-4">
                     <motion.div
+                        key={currentImage.location}
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.5 }}
                     >
-                        <Badge variant="secondary" className="bg-black/40 text-white backdrop-blur-md">
+                        <Badge variant="secondary" className="bg-black/40 text-white backdrop-blur-md border-white/20">
                            {currentImage.location}
                         </Badge>
                     </motion.div>
-                )}
-                
-                <div className="flex items-center justify-between gap-4 p-2 rounded-full bg-black/40 backdrop-blur-md">
-                    <Button onClick={selectRandomImage} variant="ghost" size="icon" className="text-white hover:bg-white/20" disabled={isLoading}>
-                        <SkipForward />
+                    
+                    <Button onClick={selectRandomImage} variant="secondary" className="bg-black/40 text-white backdrop-blur-md border-white/20 hover:bg-white/20" disabled={isLoading}>
+                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Siguiente destino"}
                     </Button>
-                    <div className="flex items-center gap-2 w-full">
-                        <Music className="h-4 w-4 text-white" />
-                        <Slider value={[volume]} onValueChange={(val) => setVolume(val[0])} max={100} step={1} className="w-full" />
-                    </div>
                 </div>
             </div>
-
-            <audio ref={audioRef} src="https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/relaxing-rain-419012.mp3?alt=media&token=aa591a3a-8eed-42d0-9347-f8e0da836dcf" loop autoPlay />
         </div>
     );
 };
@@ -965,7 +938,6 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
         }
     }, [isOpen]);
     
-    // Parent component logic for timer interaction
     useEffect(() => {
       if (isOpen) {
         setWasActiveBeforeBreak(isActive);
@@ -978,10 +950,8 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
         }
         setWasActiveBeforeBreak(false);
       }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, phase]); // Only run on isOpen change and phase change
+    }, [isOpen, phase, isActive, wasActiveBeforeBreak, setIsActive]);
 
-    // Auto-close logic
     const prevPhaseRef = useRef(phase);
     useEffect(() => {
         const prevPhase = prevPhaseRef.current;
@@ -1021,12 +991,24 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
                     initial="hidden"
                     animate="visible"
                     exit="hidden"
+                    onClick={handleClose}
                 >
                     <motion.div
                         className="relative w-full max-w-md h-[80vh] rounded-2xl bg-card border shadow-2xl flex flex-col"
                         variants={modalVariants}
                         onClick={(e) => e.stopPropagation()}
                     >
+                        {view !== 'zen' && view !== 'menu' && (
+                             <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-3 left-3 h-8 w-8 rounded-full z-20"
+                                onClick={() => setView(view.includes('menu') ? 'menu' : 'minigames_menu')}
+                                aria-label="Volver"
+                            >
+                                <ArrowLeft className="h-5 w-5" />
+                            </Button>
+                        )}
                         {view !== 'zen' && (
                              <Button
                                 variant="ghost"

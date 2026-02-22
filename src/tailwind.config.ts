@@ -171,12 +171,15 @@ export default {
         kenburns: {
           '0%': {
             transform: 'scale(1) translate(0, 0)',
+            transformOrigin: 'center center',
           },
           '50%': {
             transform: 'scale(1.2) translate(10px, -5px)',
+            transformOrigin: 'center center',
           },
           '100%': {
             transform: 'scale(1) translate(0, 0)',
+            transformOrigin: 'center center',
           },
         }
       },
