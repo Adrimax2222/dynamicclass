@@ -412,7 +412,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                }}>
             
             <div
-              className="absolute flex items-center justify-center text-xl transition-all duration-100"
+              className="absolute flex items-center justify-center text-xl transition-all duration-150 ease-linear"
               style={{
                 left: `${(food.x / GRID_SIZE) * 100}%`,
                 top: `${(food.y / GRID_SIZE) * 100}%`,
@@ -428,9 +428,10 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
               return (
                 <div
                   key={`${segment.x}-${segment.y}-${index}`}
-                  className={`absolute rounded-sm border border-black/20 ${
+                  className={cn(
+                    "absolute rounded-sm border border-black/20 transition-all duration-150 ease-linear",
                     isHead ? "bg-emerald-800 z-10" : "bg-emerald-500 z-0"
-                  }`}
+                  )}
                   style={{
                     left: `${(segment.x / GRID_SIZE) * 100}%`,
                     top: `${(segment.y / GRID_SIZE) * 100}%`,
@@ -440,11 +441,13 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                 >
                   {isHead && (
                     <div className="relative w-full h-full">
-                      <div className="absolute w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2">
-                        <div className="w-0.5 h-0.5 bg-black rounded-full" />
-                      </div>
-                      <div className="absolute w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center top-1/2 right-1/4 translate-x-1/2 -translate-y-1/2">
-                        <div className="w-0.5 h-0.5 bg-black rounded-full" />
+                      <div className={cn("absolute inset-0 flex items-center justify-around", direction.x !== 0 && "rotate-90")}>
+                        <div className="w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center">
+                          <div className="w-0.5 h-0.5 bg-black rounded-full" />
+                        </div>
+                        <div className="w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center">
+                          <div className="w-0.5 h-0.5 bg-black rounded-full" />
+                        </div>
                       </div>
                       {direction.y === -1 && <div className="absolute w-1 h-2 bg-red-500 top-0 left-1/2 -translate-x-1/2 rounded-b-full"></div>}
                       {direction.y === 1 && <div className="absolute w-1 h-2 bg-red-500 bottom-0 left-1/2 -translate-x-1/2 rounded-t-full"></div>}
@@ -736,12 +739,41 @@ const Game2048 = ({ onBack }: { onBack: () => void }) => {
 
 export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
     const [view, setView] = useState<View>('menu');
+    const { isActive, setIsActive, phase } = useApp();
+    const [wasActiveBeforeBreak, setWasActiveBeforeBreak] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setView('menu');
         }
     }, [isOpen]);
+    
+    // Parent component logic for timer interaction
+    useEffect(() => {
+      if (isOpen) {
+        setWasActiveBeforeBreak(isActive);
+        if (isActive && phase === 'focus') {
+          setIsActive(false);
+        }
+      } else {
+        if (wasActiveBeforeBreak && phase === 'focus') {
+          setIsActive(true);
+        }
+        setWasActiveBeforeBreak(false);
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, phase]); // Only run on isOpen change and phase change
+
+    // Auto-close logic
+    const prevPhaseRef = useRef(phase);
+    useEffect(() => {
+        const prevPhase = prevPhaseRef.current;
+        if (isOpen && prevPhase === 'break' && phase === 'focus') {
+            onClose();
+        }
+        prevPhaseRef.current = phase;
+    }, [phase, isOpen, onClose]);
+
 
     const handleClose = () => {
         setView('menu');
