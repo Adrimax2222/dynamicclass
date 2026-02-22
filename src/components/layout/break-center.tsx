@@ -419,7 +419,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                }}>
             
             <div
-              className="absolute flex items-center justify-center text-xl"
+              className="absolute flex items-center justify-center text-xl transition-all duration-150"
               style={{
                 left: `${(food.x / GRID_SIZE) * 100}%`,
                 top: `${(food.y / GRID_SIZE) * 100}%`,
@@ -441,7 +441,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                     top: `${(segment.y / GRID_SIZE) * 100}%`,
                     width: `${100 / GRID_SIZE}%`,
                     height: `${100 / GRID_SIZE}%`,
-                    backgroundColor: isHead ? '#1e4620' : '#40916c',
+                    backgroundColor: isHead ? '#065f46' : '#10b981',
                     zIndex: isHead ? 10 : 0,
                     transition: 'all 150ms linear'
                   }}
@@ -866,31 +866,32 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
     const [currentImageId, setCurrentImageId] = useState(earthImages[0].id);
     const [isLoadingImage, setIsLoadingImage] = useState(true);
     const [cacheBuster, setCacheBuster] = useState(Date.now());
-    const [secondsLeft, setSecondsLeft] = useState(10);
+    const [secondsLeft, setSecondsLeft] = useState(13);
 
     const currentImage = earthImages.find(img => img.id === currentImageId)!;
     const imageUrl = `https://www.gstatic.com/prettyearth/assets/full/${currentImageId}.jpg?t=${cacheBuster}`;
 
     const handleNextImage = useCallback(() => {
         setIsLoadingImage(true);
+        setSecondsLeft(13);
         setCurrentImageId(prevId => {
             const availableImages = earthImages.filter(img => img.id !== prevId);
             if (availableImages.length > 0) {
                 return availableImages[Math.floor(Math.random() * availableImages.length)].id;
             }
-            return earthImages[0].id;
+            return earthImages[0].id; // Fallback
         });
         setCacheBuster(Date.now());
     }, [earthImages]);
 
     useEffect(() => {
-        if (isLoadingImage) return; // Pause timer while loading
+        if (isLoadingImage) return;
 
         const countdownInterval = setInterval(() => {
             setSecondsLeft(prev => {
                 if (prev <= 1) {
                     handleNextImage();
-                    return 10;
+                    return 13;
                 }
                 return prev - 1;
             });
@@ -917,7 +918,7 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
             </AnimatePresence>
             
             <motion.img
-                key={imageUrl} // Important for re-triggering animation
+                key={imageUrl}
                 src={imageUrl}
                 alt={currentImage.location}
                 className="absolute inset-0 w-full h-full object-cover animate-kenburns"

@@ -170,16 +170,10 @@ export default {
         },
         kenburns: {
           '0%': {
-            transform: 'scale(1) translate(0, 0)',
-            transformOrigin: 'center center',
-          },
-          '50%': {
-            transform: 'scale(1.2) translate(10px, -5px)',
-            transformOrigin: 'center center',
+            transform: 'scale(1)',
           },
           '100%': {
-            transform: 'scale(1) translate(0, 0)',
-            transformOrigin: 'center center',
+            transform: 'scale(1.08)',
           },
         }
       },
@@ -195,7 +189,7 @@ export default {
         'pulse-slow': 'pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'blob': 'blob 7s infinite',
         'shimmer': 'shimmer 2s infinite',
-        'kenburns': 'kenburns 30s ease-in-out infinite',
+        'kenburns': 'kenburns 13s ease-out forwards',
       },
     },
   },

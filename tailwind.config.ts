@@ -168,6 +168,14 @@ export default {
             transform: 'translateX(100%)',
           },
         },
+        kenburns: {
+          '0%': {
+            transform: 'scale(1)',
+          },
+          '100%': {
+            transform: 'scale(1.08)',
+          },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -181,6 +189,7 @@ export default {
         'pulse-slow': 'pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'blob': 'blob 7s infinite',
         'shimmer': 'shimmer 2s infinite',
+        'kenburns': 'kenburns 13s ease-out forwards',
       },
     },
   },
