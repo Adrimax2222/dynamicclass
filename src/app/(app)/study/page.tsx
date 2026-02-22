@@ -740,6 +740,14 @@ export default function StudyPage() {
                         </Label>
                     </div>
 
+                    {isActive && (
+                        <div className="text-center mb-4 -mt-2">
+                            <Button variant="outline" className="rounded-full h-8 px-4 text-xs font-semibold">
+                                Hacer un Break
+                            </Button>
+                        </div>
+                    )}
+
                     <Progress value={100 - progress} className={cn("h-2", `[&>div]:bg-gradient-to-r ${phaseColors}`)} />
 
                     <div className="flex justify-between items-center gap-2 mt-6">
