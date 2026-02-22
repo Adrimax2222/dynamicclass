@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw, Globe, Waves, SkipForward, Ghost, Users, ChevronRight } from 'lucide-react';
+import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw, Globe, Waves, SkipForward, Ghost, Users, ChevronRight, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -30,7 +30,7 @@ import { AvatarDisplay } from "@/components/profile/avatar-creator";
 
 
 // --- Type Definitions ---
-type View = 'menu' | 'trivia' | 'animals' | 'minigames_menu' | 'snake' | '2048' | 'tic-tac-toe' | 'zen' | 'desert-run';
+type View = 'menu' | 'trivia' | 'animals' | 'minigames_menu' | 'snake' | '2048' | 'tic-tac-toe' | 'zen' | 'desert-run' | 'flappy-bird';
 
 interface TriviaQuestion {
     question: string;
@@ -307,6 +307,7 @@ const MinigamesMenu = ({ setView, onBack }: { setView: (view: View) => void, onB
         <ViewContainer title="Minijuegos" onBack={onBack}>
             <div className="space-y-3">
                 <Button onClick={() => setView('desert-run')} className="w-full h-14" variant="outline"><Ghost className="mr-2 h-5 w-5"/>Desert Run</Button>
+                <Button onClick={() => setView('flappy-bird')} className="w-full h-14" variant="outline"><Rocket className="mr-2 h-5 w-5"/>Flappy BOT</Button>
                 <Button onClick={() => setView('snake')} className="w-full h-14" variant="outline">Snake</Button>
                 <Button onClick={() => setView('tic-tac-toe')} className="w-full h-14" variant="outline">Tres en Raya</Button>
                 <Button onClick={() => setView('2048')} className="w-full h-14" variant="outline">2048</Button>
@@ -911,7 +912,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                       top: `${(segment.y / GRID_SIZE) * 100}%`,
                       width: `${100 / GRID_SIZE}%`,
                       height: `${100 / GRID_SIZE}%`,
-                      backgroundColor: isHead ? '#065f46' : '#10b981',
+                      backgroundColor: isHead ? '#047857' : '#10b981',
                       zIndex: isHead ? 10 : 0,
                       transition: `all ${SPEED}ms linear`
                     }}
@@ -981,7 +982,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
           </div>
       </ViewContainer>
     );
-}
+};
 
 const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
     const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null);
@@ -1343,10 +1344,28 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
     const [playlist, setPlaylist] = useState<EarthImage[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isLoadingImage, setIsLoadingImage] = useState(true);
-    const [cacheBuster, setCacheBuster] = useState(Date.now());
     const [secondsLeft, setSecondsLeft] = useState(13);
     const [isMounted, setIsMounted] = useState(false);
-
+    
+    const handleNextImage = useCallback(() => {
+        setIsLoadingImage(true);
+        setSecondsLeft(13);
+        setCurrentIndex(prevIndex => {
+            let nextIndex;
+            // Evitar mostrar la misma imagen de nuevo
+            do {
+                nextIndex = Math.floor(Math.random() * playlist.length);
+            } while (playlist.length > 1 && nextIndex === prevIndex);
+            
+            // Si la lista se ha visto entera, barajar de nuevo
+            if (prevIndex === playlist.length - 1) {
+                setPlaylist(shuffleArray(earthImages));
+                return 0;
+            }
+            return nextIndex;
+        });
+    }, [playlist]);
+    
     useEffect(() => {
         setIsMounted(true);
         setPlaylist(shuffleArray(earthImages));
@@ -1354,26 +1373,9 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
         setIsLoadingImage(true);
         setSecondsLeft(13);
     }, []);
-    
-    const currentImage = playlist[currentIndex];
-    const imageUrl = currentImage ? `https://www.gstatic.com/prettyearth/assets/full/${currentImage.id}.jpg?t=${cacheBuster}` : '';
 
-    const handleNextImage = useCallback(() => {
-        setIsLoadingImage(true);
-        setSecondsLeft(13);
-        setCacheBuster(Date.now());
-        setCurrentIndex(prevIndex => {
-            let newShuffledPlaylist = playlist;
-            let nextIndex = prevIndex + 1;
-            
-            if (nextIndex >= newShuffledPlaylist.length) {
-                newShuffledPlaylist = shuffleArray(earthImages.filter(img => img.id !== playlist[playlist.length-1]?.id));
-                setPlaylist(newShuffledPlaylist);
-                nextIndex = 0;
-            }
-            return nextIndex;
-        });
-    }, [playlist]);
+    const currentImage = playlist[currentIndex];
+    const imageUrl = currentImage ? `https://www.gstatic.com/prettyearth/assets/full/${currentImage.id}.jpg?t=${Date.now()}` : '';
 
     useEffect(() => {
         if (!isMounted || isLoadingImage) return;
@@ -1390,7 +1392,6 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
 
         return () => clearInterval(countdownInterval);
     }, [isMounted, isLoadingImage, handleNextImage]);
-
 
     if (!isMounted || !currentImage) {
         return (
@@ -1424,11 +1425,11 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
                 initial={{ opacity: 0, scale: 1 }}
                 animate={{ 
                     opacity: isLoadingImage ? 0 : 1, 
-                    scale: isLoadingImage ? 1 : 1.08,
-                    transition: {
-                        opacity: { duration: 1.5 },
-                        scale: { duration: 13, ease: 'linear' }
-                    }
+                    scale: 1.08,
+                }}
+                transition={{
+                    opacity: { duration: 1.5 },
+                    scale: { duration: 13, ease: 'linear' }
                 }}
                 onLoad={() => setIsLoadingImage(false)}
                 onError={handleNextImage}
@@ -1472,8 +1473,8 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
 };
 
 export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
-    const [view, setView] = useState<View>('menu');
     const { isActive, setIsActive, phase } = useApp();
+    const [view, setView] = useState<View>('menu');
     const [wasActiveBeforeBreak, setWasActiveBeforeBreak] = useState(false);
 
     useEffect(() => {
@@ -1518,6 +1519,7 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
             case 'animals': return <AnimalsView onBack={() => setView('menu')} />;
             case 'minigames_menu': return <MinigamesMenu setView={setView} onBack={() => setView('menu')} />;
             case 'desert-run': return <DesertRun onBack={() => setView('minigames_menu')} />;
+            case 'flappy-bird': return <ViewContainer title="Flappy BOT" onBack={() => setView('minigames_menu')}><FlappyBirdGame /></ViewContainer>;
             case 'snake': return <SnakeGame onBack={() => setView('minigames_menu')} />;
             case '2048': return <Game2048 onBack={() => setView('minigames_menu')} />;
             case 'tic-tac-toe': return <TicTacToeGame onBack={() => setView('minigames_menu')} />;
