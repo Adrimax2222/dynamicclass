@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -428,27 +429,27 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
               return (
                 <div
                   key={`${segment.x}-${segment.y}-${index}`}
-                  className={cn(
-                    "absolute rounded-sm border border-black/20 transition-all duration-150 ease-linear",
-                    isHead ? "bg-emerald-800 z-10" : "bg-emerald-500 z-0"
-                  )}
+                  className="absolute rounded-sm border-black/20"
                   style={{
                     left: `${(segment.x / GRID_SIZE) * 100}%`,
                     top: `${(segment.y / GRID_SIZE) * 100}%`,
                     width: `${100 / GRID_SIZE}%`,
                     height: `${100 / GRID_SIZE}%`,
+                    backgroundColor: isHead ? '#2d6a4f' : '#40916c', // Darker head, lighter body
+                    zIndex: isHead ? 10 : 0,
+                    transition: 'all 150ms linear' // Smooth movement
                   }}
                 >
                   {isHead && (
                     <div className="relative w-full h-full">
-                      <div className={cn("absolute inset-0 flex items-center justify-around", direction.x !== 0 && "rotate-90")}>
-                        <div className="w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center">
-                          <div className="w-0.5 h-0.5 bg-black rounded-full" />
+                       <div className={cn("absolute inset-0 flex items-center justify-around", direction.x !== 0 && "flex-col")}>
+                            <div className="w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center">
+                                <div className="w-0.5 h-0.5 bg-black rounded-full" />
+                            </div>
+                            <div className="w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center">
+                                <div className="w-0.5 h-0.5 bg-black rounded-full" />
+                            </div>
                         </div>
-                        <div className="w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center">
-                          <div className="w-0.5 h-0.5 bg-black rounded-full" />
-                        </div>
-                      </div>
                       {direction.y === -1 && <div className="absolute w-1 h-2 bg-red-500 top-0 left-1/2 -translate-x-1/2 rounded-b-full"></div>}
                       {direction.y === 1 && <div className="absolute w-1 h-2 bg-red-500 bottom-0 left-1/2 -translate-x-1/2 rounded-t-full"></div>}
                       {direction.x === -1 && <div className="absolute w-2 h-1 bg-red-500 left-0 top-1/2 -translate-y-1/2 rounded-r-full"></div>}
@@ -507,6 +508,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
 }
 
 const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
+    const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null);
     const [board, setBoard] = useState<(string | null)[]>(Array(9).fill(null));
     const [isXNext, setIsXNext] = useState(true);
 
@@ -520,7 +522,7 @@ const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
         }
         return null;
     };
-    
+
     const winner = calculateWinner(board);
     const isBoardFull = board.every(square => square !== null);
 
@@ -531,69 +533,172 @@ const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
         setBoard(newBoard);
         setIsXNext(false);
     };
-    
+
+    const resetGame = () => {
+        setBoard(Array(9).fill(null));
+        setIsXNext(true);
+    };
+
+    const changeDifficulty = () => {
+        resetGame();
+        setDifficulty(null);
+    };
+
+    // AI Logic
     useEffect(() => {
-        const gameInterval = setInterval(() => {
-            if (!isXNext && !winner && !isBoardFull) {
-                const emptySquares = board.map((sq, i) => sq === null ? i : null).filter((i): i is number => i !== null);
-                
-                const findBestMove = () => {
+        if (!isXNext && !winner && !isBoardFull && difficulty) {
+            const emptySquares = board.map((sq, i) => sq === null ? i : null).filter((i): i is number => i !== null);
+
+            const getAiMove = (): number => {
+                // Easy: 80% random, 20% block
+                if (difficulty === 'easy') {
+                    if (Math.random() < 0.8) {
+                        return emptySquares[Math.floor(Math.random() * emptySquares.length)];
+                    }
+                    // Fallthrough to blocking logic (20% chance)
+                }
+
+                // Medium and Easy (blocking part)
+                if (difficulty === 'medium' || difficulty === 'easy') {
+                    // 1. Can AI win?
                     for (const i of emptySquares) {
                         const nextBoard = board.slice();
                         nextBoard[i] = 'O';
                         if (calculateWinner(nextBoard) === 'O') return i;
                     }
+                    // 2. Can player win? Block.
                     for (const i of emptySquares) {
                         const nextBoard = board.slice();
                         nextBoard[i] = 'X';
                         if (calculateWinner(nextBoard) === 'X') return i;
                     }
+                    // 3. Take center
                     if (emptySquares.includes(4)) return 4;
+                    // 4. Take random corner
                     const corners = [0, 2, 6, 8].filter(i => emptySquares.includes(i));
                     if (corners.length > 0) return corners[Math.floor(Math.random() * corners.length)];
+                    // 5. Random move
                     return emptySquares[Math.floor(Math.random() * emptySquares.length)];
-                };
+                }
 
-                const aiMove = findBestMove();
+                // Hard (Minimax with error)
+                if (difficulty === 'hard') {
+                    const moves: { index: number; score: number }[] = [];
+                    for (const i of emptySquares) {
+                        const newBoard = board.slice();
+                        newBoard[i] = 'O';
+                        const moveScore = minimax(newBoard, false);
+                        moves.push({ index: i, score: moveScore });
+                    }
+
+                    moves.sort((a, b) => b.score - a.score);
+                    
+                    if (Math.random() < 0.15 && moves.length > 1) {
+                        return moves[1].index;
+                    }
+
+                    return moves[0].index;
+                }
                 
+                return emptySquares[0];
+            };
+            
+            const minimax = (newBoard: (string|null)[], isMaximizing: boolean): number => {
+                const winner = calculateWinner(newBoard);
+                if (winner === 'O') return 10;
+                if (winner === 'X') return -10;
+                if (newBoard.every(sq => sq !== null)) return 0;
+
+                const emptySpots = newBoard.map((sq, i) => sq === null ? i : null).filter(i => i !== null) as number[];
+
+                if (isMaximizing) {
+                    let bestScore = -Infinity;
+                    for (const index of emptySpots) {
+                        newBoard[index] = 'O';
+                        let score = minimax(newBoard, false);
+                        newBoard[index] = null;
+                        bestScore = Math.max(score, bestScore);
+                    }
+                    return bestScore;
+                } else {
+                    let bestScore = Infinity;
+                    for (const index of emptySpots) {
+                        newBoard[index] = 'X';
+                        let score = minimax(newBoard, true);
+                        newBoard[index] = null;
+                        bestScore = Math.min(score, bestScore);
+                    }
+                    return bestScore;
+                }
+            };
+
+
+            const aiMove = getAiMove();
+            const gameTimeout = setTimeout(() => {
                 if(aiMove !== undefined) {
                     const newBoard = board.slice();
                     newBoard[aiMove] = 'O';
                     setBoard(newBoard);
                     setIsXNext(true);
                 }
-            }
-        }, 500);
-        return () => clearInterval(gameInterval);
-    }, [isXNext, board, winner, isBoardFull]);
-
-    const resetGame = () => {
-        setBoard(Array(9).fill(null));
-        setIsXNext(true);
-    };
+            }, 500);
+            return () => clearTimeout(gameTimeout);
+        }
+    }, [isXNext, board, winner, isBoardFull, difficulty]);
     
     const getStatus = () => {
         if (winner) return `Ganador: ${winner}`;
         if (isBoardFull) return "¡Empate!";
-        return `Turno de: ${isXNext ? 'X' : 'O'}`;
+        return `Turno de: ${isXNext ? 'X (Tú)' : 'O (IA)'}`;
+    };
+
+    if (!difficulty) {
+        return (
+            <ViewContainer title="Tres en Raya" onBack={onBack}>
+                <div className="flex flex-col items-center justify-center h-full gap-4">
+                    <h3 className="text-xl font-semibold mb-4">Elige la dificultad</h3>
+                    <Button onClick={() => setDifficulty('easy')} className="w-full max-w-xs h-14 text-lg bg-green-500 hover:bg-green-600">Fácil</Button>
+                    <Button onClick={() => setDifficulty('medium')} className="w-full max-w-xs h-14 text-lg bg-yellow-500 hover:bg-yellow-600">Medio</Button>
+                    <Button onClick={() => setDifficulty('hard')} className="w-full max-w-xs h-14 text-lg bg-red-500 hover:bg-red-600">Difícil</Button>
+                </div>
+            </ViewContainer>
+        );
+    }
+    
+    const difficultyText = {
+        easy: 'Fácil',
+        medium: 'Medio',
+        hard: 'Difícil'
+    };
+    const difficultyColor = {
+        easy: 'text-green-500',
+        medium: 'text-yellow-500',
+        hard: 'text-red-500'
     };
 
     return (
         <ViewContainer title="Tres en Raya" onBack={onBack}>
             <div className="flex flex-col items-center gap-4">
-                <p className="font-bold">{getStatus()}</p>
+                <div className="text-center">
+                    <p className="font-bold">{getStatus()}</p>
+                    <p className={cn("text-sm font-semibold", difficultyColor[difficulty])}>Modo: {difficultyText[difficulty]}</p>
+                </div>
                 <div className="grid grid-cols-3 gap-2 w-64 h-64 bg-muted/50 p-2 rounded-lg">
                     {board.map((value, i) => (
-                        <button key={i} onClick={() => handleClick(i)} className="bg-background rounded-md text-4xl font-bold flex items-center justify-center">
-                            {value}
+                        <button key={i} onClick={() => handleClick(i)} className="bg-background rounded-md text-4xl font-bold flex items-center justify-center transition-colors hover:bg-slate-200 disabled:cursor-not-allowed" disabled={!isXNext || !!value || !!winner}>
+                            <span className={cn(value === 'X' ? 'text-blue-500' : 'text-pink-500')}>{value}</span>
                         </button>
                     ))}
                 </div>
-                <Button onClick={resetGame}>Reiniciar</Button>
+                 <div className="flex gap-4 mt-4">
+                    <Button onClick={resetGame}>Reiniciar Partida</Button>
+                    <Button onClick={changeDifficulty} variant="outline">Cambiar Dificultad</Button>
+                </div>
             </div>
         </ViewContainer>
     );
 };
+
 
 const TILE_COLORS: { [key: number]: string } = {
     2: "bg-yellow-100 text-yellow-900", 4: "bg-yellow-200 text-yellow-900",
