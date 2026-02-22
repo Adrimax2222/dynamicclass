@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -125,7 +125,7 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
             } else if (data.response_code === 5 && !retryAttempted.current) {
                 console.warn("Trivia API rate limit hit. Retrying...");
                 retryAttempted.current = true;
-                setTimeout(fetchTrivia, 3000); // Wait 3 seconds and retry
+                setTimeout(fetchTrivia, 2000); // Wait 2 seconds and retry
                 return; // Keep loading state
             } else {
                  console.error('Error detallado Trivia:', data);
@@ -134,6 +134,10 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
         } catch (e: any) {
             console.error('Error detallado Trivia:', e);
             setError(e.message || 'Error de red.');
+            // Wait 3 seconds before allowing a manual retry to avoid spamming the API
+            setTimeout(() => {
+                retryAttempted.current = false;
+            }, 3000);
         } finally {
             if (!retryAttempted.current || error) {
                 setIsLoading(false);
@@ -285,117 +289,208 @@ const MinigamesMenu = ({ setView, onBack }: { setView: (view: View) => void, onB
     );
 };
 
-const useSnakeGame = () => {
-    const GRID_SIZE = 20;
-    const initialSnake = [{ x: 10, y: 10 }];
-    
-    const createInitialFood = () => ({
-        x: Math.floor(Math.random() * GRID_SIZE),
-        y: Math.floor(Math.random() * GRID_SIZE),
-    });
-
-    const [snake, setSnake] = useState(initialSnake);
-    const [food, setFood] = useState(createInitialFood);
-    const [direction, setDirection] = useState({ x: 0, y: -1 });
-    const [speed, setSpeed] = useState<number | null>(null);
-    const [gameOver, setGameOver] = useState(false);
-    
-    const startGame = () => {
-        setSnake(initialSnake);
-        setFood(createInitialFood());
-        setDirection({ x: 0, y: -1 });
-        setSpeed(150);
-        setGameOver(false);
-    };
-
-    const handleKeyDown = useCallback((e: KeyboardEvent) => {
-        e.preventDefault();
-        switch (e.key) {
-            case 'ArrowUp': if(direction.y === 0) setDirection({ x: 0, y: -1 }); break;
-            case 'ArrowDown': if(direction.y === 0) setDirection({ x: 0, y: 1 }); break;
-            case 'ArrowLeft': if(direction.x === 0) setDirection({ x: -1, y: 0 }); break;
-            case 'ArrowRight': if(direction.x === 0) setDirection({ x: 1, y: 0 }); break;
-        }
-    }, [direction]);
-    
-    useEffect(() => {
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [handleKeyDown]);
-    
-    const createFood = (currentSnake: {x:number, y:number}[]) => {
-        let newFood;
-        do {
-            newFood = {
-                x: Math.floor(Math.random() * GRID_SIZE),
-                y: Math.floor(Math.random() * GRID_SIZE)
-            };
-        } while (currentSnake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
-        setFood(newFood);
-    };
-
-    const moveSnake = useCallback(() => {
-        setSnake(prevSnake => {
-            const newSnake = [...prevSnake];
-            const head = { x: newSnake[0].x + direction.x, y: newSnake[0].y + direction.y };
-
-            if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE || newSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
-                setGameOver(true);
-                setSpeed(null);
-                return prevSnake;
-            }
-
-            newSnake.unshift(head);
-            if (head.x === food.x && head.y === food.y) {
-                createFood(newSnake);
-            } else {
-                newSnake.pop();
-            }
-            return newSnake;
-        });
-    }, [direction, food.x, food.y]);
-    
-    useEffect(() => {
-        if (speed === null || gameOver) return;
-        const gameInterval = setInterval(moveSnake, speed);
-        return () => clearInterval(gameInterval);
-    }, [speed, gameOver, moveSnake]);
-
-    return { snake, food, gameOver, GRID_SIZE, startGame };
-};
-
 const SnakeGame = ({ onBack }: { onBack: () => void }) => {
-    const { snake, food, gameOver, GRID_SIZE, startGame } = useSnakeGame();
+    const GRID_SIZE = 20;
+    const SPEED = 150;
+    const FRUITS = ["🍎", "🍌", "🍇", "🍓", "🍒", "🍍", "🥭", "🍉"];
+
+    // Estado inicial
+    const getInitialSnake = () => [{ x: 10, y: 10 }];
+    const getInitialDirection = () => ({ x: 0, y: -1 }); // Empieza subiendo
+
+    const [snake, setSnake] = useState(getInitialSnake());
+    const [direction, setDirection] = useState(getInitialDirection());
+    const [food, setFood] = useState({ x: 5, y: 5, emoji: "🍎" });
+    const [gameOver, setGameOver] = useState(false);
+    const [score, setScore] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+
+    const lastProcessedDirection = useRef(getInitialDirection());
+
+    const generateFood = useCallback((currentSnake: {x: number; y: number}[]) => {
+      let newX, newY;
+      let isOccupied = true;
+      while (isOccupied) {
+        newX = Math.floor(Math.random() * GRID_SIZE);
+        newY = Math.floor(Math.random() * GRID_SIZE);
+        isOccupied = currentSnake.some((segment) => segment.x === newX && segment.y === newY);
+      }
+      const randomFruit = FRUITS[Math.floor(Math.random() * FRUITS.length)];
+      setFood({ x: newX, y: newY, emoji: randomFruit });
+    }, []);
+
+    const resetGame = () => {
+      setSnake(getInitialSnake());
+      setDirection(getInitialDirection());
+      lastProcessedDirection.current = getInitialDirection();
+      setScore(0);
+      setGameOver(false);
+      setIsPaused(false);
+      generateFood(getInitialSnake());
+    };
+
+    useEffect(() => {
+      if (gameOver || isPaused) return;
+
+      const moveSnake = () => {
+        setSnake((prevSnake) => {
+          const head = prevSnake[0];
+          const newHead = { x: head.x + direction.x, y: head.y + direction.y };
+
+          if (newHead.x < 0 || newHead.x >= GRID_SIZE || newHead.y < 0 || newHead.y >= GRID_SIZE || prevSnake.some((segment) => segment.x === newHead.x && segment.y === newHead.y)) {
+            setGameOver(true);
+            return prevSnake;
+          }
+
+          const newSnake = [newHead, ...prevSnake];
+
+          if (newHead.x === food.x && newHead.y === food.y) {
+            setScore((s) => s + 10);
+            generateFood(newSnake);
+          } else {
+            newSnake.pop();
+          }
+
+          lastProcessedDirection.current = direction;
+          return newSnake;
+        });
+      };
+
+      const gameInterval = setInterval(moveSnake, SPEED);
+      return () => clearInterval(gameInterval);
+    }, [direction, gameOver, isPaused, food, generateFood]);
+
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (gameOver) return;
+        
+        const { key } = e;
+        const currentDir = lastProcessedDirection.current;
+
+        let newDir: {x: number, y: number} | null = null;
+
+        if (key === "ArrowUp" || key.toLowerCase() === "w") newDir = { x: 0, y: -1 };
+        if (key === "ArrowDown" || key.toLowerCase() === "s") newDir = { x: 0, y: 1 };
+        if (key === "ArrowLeft" || key.toLowerCase() === "a") newDir = { x: -1, y: 0 };
+        if (key === "ArrowRight" || key.toLowerCase() === "d") newDir = { x: 1, y: 0 };
+
+        if (newDir) {
+          if (newDir.x !== 0 && currentDir.x === -newDir.x) return;
+          if (newDir.y !== 0 && currentDir.y === -newDir.y) return;
+          
+          e.preventDefault();
+          setDirection(newDir);
+        }
+      };
+
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [gameOver]);
+
+    const handleTouchControl = (newDir: {x: number, y: number}) => {
+      const currentDir = lastProcessedDirection.current;
+      if (newDir.x !== 0 && currentDir.x === -newDir.x) return;
+      if (newDir.y !== 0 && currentDir.y === -newDir.y) return;
+      setDirection(newDir);
+    };
 
     return (
         <ViewContainer title="Snake" onBack={onBack}>
-            <div className="flex flex-col items-center gap-4">
-                <div
-                    className="grid bg-muted/50 border rounded-md relative w-full max-w-sm"
-                    style={{
-                        gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
-                        aspectRatio: '1/1'
-                    }}
+            <div className="flex flex-col items-center w-full max-w-md mx-auto select-none">
+              <div className="flex justify-between items-center w-full mb-4 bg-slate-800 text-white p-3 rounded-lg shadow-md font-mono">
+                <div className="text-xl font-bold">PUNTOS: {score}</div>
+                <button
+                  onClick={() => setIsPaused(!isPaused)}
+                  className="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-sm transition-colors"
                 >
-                    {gameOver && (
-                        <div className="absolute inset-0 col-span-full row-span-full flex items-center justify-center bg-black/50 text-white font-bold text-2xl z-10 rounded-md">
-                            GAME OVER
-                        </div>
-                    )}
-                    {snake.map((segment, index) => (
-                         <div key={index} className="flex items-center justify-center" style={{ gridColumn: segment.x + 1, gridRow: segment.y + 1 }}>
-                            {index === 0 ? '🐍' : <div className="w-full h-full bg-green-500 rounded-sm"></div>}
-                        </div>
-                    ))}
-                    <div className="flex items-center justify-center text-lg" style={{ gridColumn: food.x + 1, gridRow: food.y + 1 }}>🍎</div>
+                  {isPaused ? "REANUDAR" : "PAUSAR"}
+                </button>
+              </div>
+
+              <div className="relative w-full aspect-square bg-slate-50 border-4 border-slate-800 shadow-xl overflow-hidden rounded-md"
+                   style={{
+                     backgroundImage: "linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)",
+                     backgroundSize: `${100 / GRID_SIZE}% ${100 / GRID_SIZE}%`
+                   }}>
+                
+                <div
+                  className="absolute flex items-center justify-center text-2xl"
+                  style={{
+                    left: `${(food.x / GRID_SIZE) * 100}%`,
+                    top: `${(food.y / GRID_SIZE) * 100}%`,
+                    width: `${100 / GRID_SIZE}%`,
+                    height: `${100 / GRID_SIZE}%`,
+                  }}
+                >
+                  {food.emoji}
                 </div>
-                <Button onClick={startGame}>
-                    {gameOver ? 'Jugar de Nuevo' : 'Iniciar Juego'}
-                </Button>
+
+                {snake.map((segment, index) => {
+                  const isHead = index === 0;
+                  return (
+                    <div
+                      key={`${segment.x}-${segment.y}-${index}`}
+                      className={`absolute rounded-sm ${
+                        isHead ? "z-10" : "bg-emerald-500 z-0 border border-black/20"
+                      }`}
+                      style={{
+                        left: `${(segment.x / GRID_SIZE) * 100}%`,
+                        top: `${(segment.y / GRID_SIZE) * 100}%`,
+                        width: `${100 / GRID_SIZE}%`,
+                        height: `${100 / GRID_SIZE}%`,
+                      }}
+                    >
+                      {isHead && "🐍"}
+                    </div>
+                  );
+                })}
+
+                {gameOver && (
+                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-20">
+                    <h2 className="text-3xl font-bold text-white mb-2">¡Juego Terminado!</h2>
+                    <p className="text-slate-200 mb-6">Puntuación final: {score}</p>
+                    <button
+                      onClick={resetGame}
+                      className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-6 rounded-full shadow-lg transform transition active:scale-95"
+                    >
+                      Jugar de nuevo
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-8 grid grid-cols-3 gap-2 w-48 opacity-80 hover:opacity-100 transition-opacity">
+                <div />
+                <button
+                  onClick={() => handleTouchControl({ x: 0, y: -1 })}
+                  className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
+                >
+                  ⬆️
+                </button>
+                <div />
+                <button
+                  onClick={() => handleTouchControl({ x: -1, y: 0 })}
+                  className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
+                >
+                  ⬅️
+                </button>
+                <button
+                  onClick={() => handleTouchControl({ x: 0, y: 1 })}
+                  className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
+                >
+                  ⬇️
+                </button>
+                <button
+                  onClick={() => handleTouchControl({ x: 1, y: 0 })}
+                  className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
+                >
+                  ➡️
+                </button>
+              </div>
             </div>
         </ViewContainer>
     );
-};
+}
 
 const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
     const [board, setBoard] = useState<(string | null)[]>(Array(9).fill(null));
@@ -424,42 +519,38 @@ const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
     };
     
     useEffect(() => {
-        if (!isXNext && !winner && !isBoardFull) {
-            const emptySquares = board.map((sq, i) => sq === null ? i : null).filter((i): i is number => i !== null);
-            
-            const findBestMove = () => {
-                // 1. AI can win
-                for (const i of emptySquares) {
-                    const nextBoard = board.slice();
-                    nextBoard[i] = 'O';
-                    if (calculateWinner(nextBoard) === 'O') return i;
-                }
-                // 2. Player can win, block
-                for (const i of emptySquares) {
-                    const nextBoard = board.slice();
-                    nextBoard[i] = 'X';
-                    if (calculateWinner(nextBoard) === 'X') return i;
-                }
-                // 3. Take center
-                if (emptySquares.includes(4)) return 4;
-                // 4. Take a corner
-                const corners = [0, 2, 6, 8].filter(i => emptySquares.includes(i));
-                if (corners.length > 0) return corners[Math.floor(Math.random() * corners.length)];
-                // 5. Random
-                return emptySquares[Math.floor(Math.random() * emptySquares.length)];
-            };
+        const gameInterval = setInterval(() => {
+            if (!isXNext && !winner && !isBoardFull) {
+                const emptySquares = board.map((sq, i) => sq === null ? i : null).filter((i): i is number => i !== null);
+                
+                const findBestMove = () => {
+                    for (const i of emptySquares) {
+                        const nextBoard = board.slice();
+                        nextBoard[i] = 'O';
+                        if (calculateWinner(nextBoard) === 'O') return i;
+                    }
+                    for (const i of emptySquares) {
+                        const nextBoard = board.slice();
+                        nextBoard[i] = 'X';
+                        if (calculateWinner(nextBoard) === 'X') return i;
+                    }
+                    if (emptySquares.includes(4)) return 4;
+                    const corners = [0, 2, 6, 8].filter(i => emptySquares.includes(i));
+                    if (corners.length > 0) return corners[Math.floor(Math.random() * corners.length)];
+                    return emptySquares[Math.floor(Math.random() * emptySquares.length)];
+                };
 
-            const aiMove = findBestMove();
-            
-            if(aiMove !== undefined) {
-                setTimeout(() => {
+                const aiMove = findBestMove();
+                
+                if(aiMove !== undefined) {
                     const newBoard = board.slice();
                     newBoard[aiMove] = 'O';
                     setBoard(newBoard);
                     setIsXNext(true);
-                }, 500);
+                }
             }
-        }
+        }, 500);
+        return () => clearInterval(gameInterval);
     }, [isXNext, board, winner, isBoardFull]);
 
     const resetGame = () => {
@@ -651,7 +742,7 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
             case 'trivia': return <TriviaView onBack={() => setView('menu')} />;
             case 'animals': return <AnimalsView onBack={() => setView('menu')} />;
             case 'minigames_menu': return <MinigamesMenu setView={setView} onBack={() => setView('menu')} />;
-            case 'snake': return <SnakeGame onBack={() => setView('minigames_menu')} />;
+            case 'snake': return <SnakeGame />;
             case '2048': return <Game2048 onBack={() => setView('minigames_menu')} />;
             case 'tic-tac-toe': return <TicTacToeGame onBack={() => setView('minigames_menu')} />;
             case 'menu':
