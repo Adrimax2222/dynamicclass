@@ -42,6 +42,7 @@ export type User = {
   emailNotifications?: boolean;
   plantCount?: number;
   desertRunHighScore?: number;
+  flappyBotHighScore?: number;
   createdAt?: Timestamp;
 };
 
