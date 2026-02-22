@@ -290,206 +290,217 @@ const MinigamesMenu = ({ setView, onBack }: { setView: (view: View) => void, onB
 };
 
 const SnakeGame = ({ onBack }: { onBack: () => void }) => {
-    const GRID_SIZE = 20;
-    const SPEED = 150;
-    const FRUITS = ["🍎", "🍌", "🍇", "🍓", "🍒", "🍍", "🥭", "🍉"];
+  const GRID_SIZE = 20;
+  const SPEED = 150;
+  const FRUITS = ["🍎", "🍌", "🍇", "🍓", "🍒", "🍍", "🥭", "🍉"];
 
-    // Estado inicial
-    const getInitialSnake = () => [{ x: 10, y: 10 }];
-    const getInitialDirection = () => ({ x: 0, y: -1 }); // Empieza subiendo
+  const getInitialSnake = () => [{ x: 10, y: 10 }];
+  const getInitialDirection = () => ({ x: 0, y: -1 });
 
-    const [snake, setSnake] = useState(getInitialSnake());
-    const [direction, setDirection] = useState(getInitialDirection());
-    const [food, setFood] = useState({ x: 5, y: 5, emoji: "🍎" });
-    const [gameOver, setGameOver] = useState(false);
-    const [score, setScore] = useState(0);
-    const [isPaused, setIsPaused] = useState(false);
+  const [snake, setSnake] = useState(getInitialSnake());
+  const [direction, setDirection] = useState(getInitialDirection());
+  const [food, setFood] = useState({ x: 5, y: 5, emoji: "🍎" });
+  const [gameOver, setGameOver] = useState(false);
+  const [score, setScore] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const lastProcessedDirection = useRef(getInitialDirection());
 
-    const lastProcessedDirection = useRef(getInitialDirection());
+  const generateFood = useCallback((currentSnake: {x: number; y: number}[]) => {
+    let newX, newY;
+    let isOccupied = true;
+    while (isOccupied) {
+      newX = Math.floor(Math.random() * GRID_SIZE);
+      newY = Math.floor(Math.random() * GRID_SIZE);
+      isOccupied = currentSnake.some((segment) => segment.x === newX && segment.y === newY);
+    }
+    const randomFruit = FRUITS[Math.floor(Math.random() * FRUITS.length)];
+    setFood({ x: newX, y: newY, emoji: randomFruit });
+  }, []);
 
-    const generateFood = useCallback((currentSnake: {x: number; y: number}[]) => {
-      let newX, newY;
-      let isOccupied = true;
-      while (isOccupied) {
-        newX = Math.floor(Math.random() * GRID_SIZE);
-        newY = Math.floor(Math.random() * GRID_SIZE);
-        isOccupied = currentSnake.some((segment) => segment.x === newX && segment.y === newY);
-      }
-      const randomFruit = FRUITS[Math.floor(Math.random() * FRUITS.length)];
-      setFood({ x: newX, y: newY, emoji: randomFruit });
-    }, []);
+  const resetGame = () => {
+    setSnake(getInitialSnake());
+    setDirection(getInitialDirection());
+    lastProcessedDirection.current = getInitialDirection();
+    setScore(0);
+    setGameOver(false);
+    setIsPaused(false);
+    generateFood(getInitialSnake());
+  };
 
-    const resetGame = () => {
-      setSnake(getInitialSnake());
-      setDirection(getInitialDirection());
-      lastProcessedDirection.current = getInitialDirection();
-      setScore(0);
-      setGameOver(false);
-      setIsPaused(false);
-      generateFood(getInitialSnake());
-    };
+  useEffect(() => {
+    if (gameOver || isPaused) return;
 
-    useEffect(() => {
-      if (gameOver || isPaused) return;
+    const moveSnake = () => {
+      setSnake((prevSnake) => {
+        const head = prevSnake[0];
+        const newHead = { x: head.x + direction.x, y: head.y + direction.y };
 
-      const moveSnake = () => {
-        setSnake((prevSnake) => {
-          const head = prevSnake[0];
-          const newHead = { x: head.x + direction.x, y: head.y + direction.y };
-
-          if (newHead.x < 0 || newHead.x >= GRID_SIZE || newHead.y < 0 || newHead.y >= GRID_SIZE || prevSnake.some((segment) => segment.x === newHead.x && segment.y === newHead.y)) {
-            setGameOver(true);
-            return prevSnake;
-          }
-
-          const newSnake = [newHead, ...prevSnake];
-
-          if (newHead.x === food.x && newHead.y === food.y) {
-            setScore((s) => s + 10);
-            generateFood(newSnake);
-          } else {
-            newSnake.pop();
-          }
-
-          lastProcessedDirection.current = direction;
-          return newSnake;
-        });
-      };
-
-      const gameInterval = setInterval(moveSnake, SPEED);
-      return () => clearInterval(gameInterval);
-    }, [direction, gameOver, isPaused, food, generateFood]);
-
-    useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (gameOver) return;
-        
-        const { key } = e;
-        const currentDir = lastProcessedDirection.current;
-
-        let newDir: {x: number, y: number} | null = null;
-
-        if (key === "ArrowUp" || key.toLowerCase() === "w") newDir = { x: 0, y: -1 };
-        if (key === "ArrowDown" || key.toLowerCase() === "s") newDir = { x: 0, y: 1 };
-        if (key === "ArrowLeft" || key.toLowerCase() === "a") newDir = { x: -1, y: 0 };
-        if (key === "ArrowRight" || key.toLowerCase() === "d") newDir = { x: 1, y: 0 };
-
-        if (newDir) {
-          if (newDir.x !== 0 && currentDir.x === -newDir.x) return;
-          if (newDir.y !== 0 && currentDir.y === -newDir.y) return;
-          
-          e.preventDefault();
-          setDirection(newDir);
+        if (newHead.x < 0 || newHead.x >= GRID_SIZE || newHead.y < 0 || newHead.y >= GRID_SIZE || prevSnake.some((segment) => segment.x === newHead.x && segment.y === newHead.y)) {
+          setGameOver(true);
+          return prevSnake;
         }
-      };
 
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [gameOver]);
+        const newSnake = [newHead, ...prevSnake];
 
-    const handleTouchControl = (newDir: {x: number, y: number}) => {
-      const currentDir = lastProcessedDirection.current;
-      if (newDir.x !== 0 && currentDir.x === -newDir.x) return;
-      if (newDir.y !== 0 && currentDir.y === -newDir.y) return;
-      setDirection(newDir);
+        if (newHead.x === food.x && newHead.y === food.y) {
+          setScore((s) => s + 10);
+          generateFood(newSnake);
+        } else {
+          newSnake.pop();
+        }
+
+        lastProcessedDirection.current = direction;
+        return newSnake;
+      });
     };
 
-    return (
-        <ViewContainer title="Snake" onBack={onBack}>
-            <div className="flex flex-col items-center w-full max-w-md mx-auto select-none">
-              <div className="flex justify-between items-center w-full mb-4 bg-slate-800 text-white p-3 rounded-lg shadow-md font-mono">
-                <div className="text-xl font-bold">PUNTOS: {score}</div>
-                <button
-                  onClick={() => setIsPaused(!isPaused)}
-                  className="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-sm transition-colors"
-                >
-                  {isPaused ? "REANUDAR" : "PAUSAR"}
-                </button>
-              </div>
+    const gameInterval = setInterval(moveSnake, SPEED);
+    return () => clearInterval(gameInterval);
+  }, [direction, gameOver, isPaused, food, generateFood]);
 
-              <div className="relative w-full aspect-square bg-slate-50 border-4 border-slate-800 shadow-xl overflow-hidden rounded-md"
-                   style={{
-                     backgroundImage: "linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)",
-                     backgroundSize: `${100 / GRID_SIZE}% ${100 / GRID_SIZE}%`
-                   }}>
-                
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (gameOver) return;
+      
+      const { key } = e;
+      const currentDir = lastProcessedDirection.current;
+
+      let newDir: {x: number, y: number} | null = null;
+
+      if (key === "ArrowUp" || key.toLowerCase() === "w") newDir = { x: 0, y: -1 };
+      if (key === "ArrowDown" || key.toLowerCase() === "s") newDir = { x: 0, y: 1 };
+      if (key === "ArrowLeft" || key.toLowerCase() === "a") newDir = { x: -1, y: 0 };
+      if (key === "ArrowRight" || key.toLowerCase() === "d") newDir = { x: 1, y: 0 };
+
+      if (newDir) {
+        if (newDir.x !== 0 && currentDir.x === -newDir.x) return;
+        if (newDir.y !== 0 && currentDir.y === -newDir.y) return;
+        
+        e.preventDefault();
+        setDirection(newDir);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [gameOver]);
+
+  const handleTouchControl = (newDir: {x: number, y: number}) => {
+    const currentDir = lastProcessedDirection.current;
+    if (newDir.x !== 0 && currentDir.x === -newDir.x) return;
+    if (newDir.y !== 0 && currentDir.y === -newDir.y) return;
+    setDirection(newDir);
+  };
+    
+  return (
+    <ViewContainer title="Snake" onBack={onBack}>
+        <div className="flex flex-col items-center w-full max-w-md mx-auto select-none">
+          <div className="flex justify-between items-center w-full mb-4 bg-slate-800 text-white p-3 rounded-lg shadow-md font-mono">
+            <div className="text-xl font-bold">PUNTOS: {score}</div>
+            <button
+              onClick={() => setIsPaused(!isPaused)}
+              className="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-sm transition-colors"
+            >
+              {isPaused ? "REANUDAR" : "PAUSAR"}
+            </button>
+          </div>
+
+          <div className="relative w-full aspect-square bg-slate-50 border-4 border-slate-800 shadow-xl overflow-hidden rounded-md"
+               style={{
+                 backgroundImage: "linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)",
+                 backgroundSize: `${100 / GRID_SIZE}% ${100 / GRID_SIZE}%`
+               }}>
+            
+            <div
+              className="absolute flex items-center justify-center text-xl transition-all duration-100"
+              style={{
+                left: `${(food.x / GRID_SIZE) * 100}%`,
+                top: `${(food.y / GRID_SIZE) * 100}%`,
+                width: `${100 / GRID_SIZE}%`,
+                height: `${100 / GRID_SIZE}%`,
+              }}
+            >
+              {food.emoji}
+            </div>
+
+            {snake.map((segment, index) => {
+              const isHead = index === 0;
+              return (
                 <div
-                  className="absolute flex items-center justify-center text-2xl"
+                  key={`${segment.x}-${segment.y}-${index}`}
+                  className={`absolute rounded-sm border border-black/20 ${
+                    isHead ? "bg-emerald-800 z-10" : "bg-emerald-500 z-0"
+                  }`}
                   style={{
-                    left: `${(food.x / GRID_SIZE) * 100}%`,
-                    top: `${(food.y / GRID_SIZE) * 100}%`,
+                    left: `${(segment.x / GRID_SIZE) * 100}%`,
+                    top: `${(segment.y / GRID_SIZE) * 100}%`,
                     width: `${100 / GRID_SIZE}%`,
                     height: `${100 / GRID_SIZE}%`,
                   }}
                 >
-                  {food.emoji}
-                </div>
-
-                {snake.map((segment, index) => {
-                  const isHead = index === 0;
-                  return (
-                    <div
-                      key={`${segment.x}-${segment.y}-${index}`}
-                      className={`absolute rounded-sm ${
-                        isHead ? "z-10" : "bg-emerald-500 z-0 border border-black/20"
-                      }`}
-                      style={{
-                        left: `${(segment.x / GRID_SIZE) * 100}%`,
-                        top: `${(segment.y / GRID_SIZE) * 100}%`,
-                        width: `${100 / GRID_SIZE}%`,
-                        height: `${100 / GRID_SIZE}%`,
-                      }}
-                    >
-                      {isHead && "🐍"}
+                  {isHead && (
+                    <div className="relative w-full h-full">
+                      <div className="absolute w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2">
+                        <div className="w-0.5 h-0.5 bg-black rounded-full" />
+                      </div>
+                      <div className="absolute w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center top-1/2 right-1/4 translate-x-1/2 -translate-y-1/2">
+                        <div className="w-0.5 h-0.5 bg-black rounded-full" />
+                      </div>
+                      {direction.y === -1 && <div className="absolute w-1 h-2 bg-red-500 top-0 left-1/2 -translate-x-1/2 rounded-b-full"></div>}
+                      {direction.y === 1 && <div className="absolute w-1 h-2 bg-red-500 bottom-0 left-1/2 -translate-x-1/2 rounded-t-full"></div>}
+                      {direction.x === -1 && <div className="absolute w-2 h-1 bg-red-500 left-0 top-1/2 -translate-y-1/2 rounded-r-full"></div>}
+                      {direction.x === 1 && <div className="absolute w-2 h-1 bg-red-500 right-0 top-1/2 -translate-y-1/2 rounded-l-full"></div>}
                     </div>
-                  );
-                })}
+                  )}
+                </div>
+              );
+            })}
 
-                {gameOver && (
-                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-20">
-                    <h2 className="text-3xl font-bold text-white mb-2">¡Juego Terminado!</h2>
-                    <p className="text-slate-200 mb-6">Puntuación final: {score}</p>
-                    <button
-                      onClick={resetGame}
-                      className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-6 rounded-full shadow-lg transform transition active:scale-95"
-                    >
-                      Jugar de nuevo
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-8 grid grid-cols-3 gap-2 w-48 opacity-80 hover:opacity-100 transition-opacity">
-                <div />
+            {gameOver && (
+              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-20">
+                <h2 className="text-3xl font-bold text-white mb-2">¡Juego Terminado!</h2>
+                <p className="text-slate-200 mb-6">Puntuación final: {score}</p>
                 <button
-                  onClick={() => handleTouchControl({ x: 0, y: -1 })}
-                  className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
+                  onClick={resetGame}
+                  className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-6 rounded-full shadow-lg transform transition active:scale-95"
                 >
-                  ⬆️
-                </button>
-                <div />
-                <button
-                  onClick={() => handleTouchControl({ x: -1, y: 0 })}
-                  className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
-                >
-                  ⬅️
-                </button>
-                <button
-                  onClick={() => handleTouchControl({ x: 0, y: 1 })}
-                  className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
-                >
-                  ⬇️
-                </button>
-                <button
-                  onClick={() => handleTouchControl({ x: 1, y: 0 })}
-                  className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
-                >
-                  ➡️
+                  Jugar de nuevo
                 </button>
               </div>
-            </div>
-        </ViewContainer>
-    );
+            )}
+          </div>
+
+          <div className="mt-8 grid grid-cols-3 gap-2 w-48 opacity-80 hover:opacity-100 transition-opacity">
+            <div />
+            <button
+              onClick={() => handleTouchControl({ x: 0, y: -1 })}
+              className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
+            >
+              ⬆️
+            </button>
+            <div />
+            <button
+              onClick={() => handleTouchControl({ x: -1, y: 0 })}
+              className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
+            >
+              ⬅️
+            </button>
+            <button
+              onClick={() => handleTouchControl({ x: 0, y: 1 })}
+              className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
+            >
+              ⬇️
+            </button>
+            <button
+              onClick={() => handleTouchControl({ x: 1, y: 0 })}
+              className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
+            >
+              ➡️
+            </button>
+          </div>
+        </div>
+    </ViewContainer>
+  );
 }
 
 const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
@@ -742,7 +753,7 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
             case 'trivia': return <TriviaView onBack={() => setView('menu')} />;
             case 'animals': return <AnimalsView onBack={() => setView('menu')} />;
             case 'minigames_menu': return <MinigamesMenu setView={setView} onBack={() => setView('menu')} />;
-            case 'snake': return <SnakeGame />;
+            case 'snake': return <SnakeGame onBack={() => setView('minigames_menu')} />;
             case '2048': return <Game2048 onBack={() => setView('minigames_menu')} />;
             case 'tic-tac-toe': return <TicTacToeGame onBack={() => setView('minigames_menu')} />;
             case 'menu':
