@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -8,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { useApp } from '@/lib/hooks/use-app';
 
 // --- Type Definitions ---
 type View = 'menu' | 'trivia' | 'animals' | 'minigames_menu' | 'snake' | '2048' | 'tic-tac-toe';
@@ -412,7 +412,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                }}>
             
             <div
-              className="absolute flex items-center justify-center text-xl transition-all duration-150 ease-linear"
+              className="absolute flex items-center justify-center text-xl transition-all duration-150"
               style={{
                 left: `${(food.x / GRID_SIZE) * 100}%`,
                 top: `${(food.y / GRID_SIZE) * 100}%`,
