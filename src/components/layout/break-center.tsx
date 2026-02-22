@@ -441,7 +441,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                     top: `${(segment.y / GRID_SIZE) * 100}%`,
                     width: `${100 / GRID_SIZE}%`,
                     height: `${100 / GRID_SIZE}%`,
-                    backgroundColor: isHead ? '#1e3a20' : '#40916c',
+                    backgroundColor: isHead ? '#1e4620' : '#40916c',
                     zIndex: isHead ? 10 : 0,
                     transition: 'all 150ms linear'
                   }}
@@ -863,36 +863,42 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
         { id: 4500, location: "Río de Janeiro, Brasil" },
     ];
 
-    const [currentImageId, setCurrentImageId] = useState(earthImages[Math.floor(Math.random() * earthImages.length)].id);
+    const [currentImageId, setCurrentImageId] = useState(earthImages[0].id);
     const [isLoadingImage, setIsLoadingImage] = useState(true);
-    const [canClickNext, setCanClickNext] = useState(true);
     const [cacheBuster, setCacheBuster] = useState(Date.now());
+    const [secondsLeft, setSecondsLeft] = useState(10);
 
     const currentImage = earthImages.find(img => img.id === currentImageId)!;
     const imageUrl = `https://www.gstatic.com/prettyearth/assets/full/${currentImageId}.jpg?t=${cacheBuster}`;
 
-    const selectRandomImage = useCallback(() => {
-        if (!canClickNext) return;
-
+    const handleNextImage = useCallback(() => {
         setIsLoadingImage(true);
-        setCanClickNext(false);
-
-        let newId;
-        const availableImages = earthImages.filter(img => img.id !== currentImageId);
-        if (availableImages.length > 0) {
-            newId = availableImages[Math.floor(Math.random() * availableImages.length)].id;
-        } else {
-            // Fallback if there's only one image
-            newId = earthImages[0].id;
-        }
-        
-        setCurrentImageId(newId);
+        setCurrentImageId(prevId => {
+            const availableImages = earthImages.filter(img => img.id !== prevId);
+            if (availableImages.length > 0) {
+                return availableImages[Math.floor(Math.random() * availableImages.length)].id;
+            }
+            return earthImages[0].id;
+        });
         setCacheBuster(Date.now());
+    }, [earthImages]);
 
-        setTimeout(() => {
-            setCanClickNext(true);
-        }, 3000);
-    }, [canClickNext, currentImageId, earthImages]);
+    useEffect(() => {
+        if (isLoadingImage) return; // Pause timer while loading
+
+        const countdownInterval = setInterval(() => {
+            setSecondsLeft(prev => {
+                if (prev <= 1) {
+                    handleNextImage();
+                    return 10;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(countdownInterval);
+    }, [isLoadingImage, handleNextImage]);
+
 
     return (
         <div className="relative h-full w-full overflow-hidden bg-black">
@@ -911,7 +917,7 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
             </AnimatePresence>
             
             <motion.img
-                key={imageUrl}
+                key={imageUrl} // Important for re-triggering animation
                 src={imageUrl}
                 alt={currentImage.location}
                 className="absolute inset-0 w-full h-full object-cover animate-kenburns"
@@ -919,11 +925,10 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
                 animate={{ opacity: isLoadingImage ? 0 : 1 }}
                 transition={{ duration: 1.5 }}
                 onLoad={() => setIsLoadingImage(false)}
-                onError={selectRandomImage}
+                onError={handleNextImage}
             />
             <div className="absolute inset-0 bg-black/10" />
             
-
             <div className="absolute inset-0 z-10 flex flex-col justify-between p-4">
                 <div className="flex justify-end">
                     <Button onClick={onClose} variant="ghost" className="text-white bg-black/30 backdrop-blur-sm hover:bg-black/50 hover:text-white rounded-full h-9 w-9 p-0">
@@ -947,8 +952,12 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
                         )}
                     </AnimatePresence>
                     
-                    <Button onClick={selectRandomImage} variant="secondary" className="bg-black/40 text-white backdrop-blur-md border-white/20 hover:bg-white/20" disabled={!canClickNext || isLoadingImage}>
-                         {(!canClickNext || isLoadingImage) ? <Loader2 className="h-4 w-4 animate-spin" /> : "Siguiente destino"}
+                    <Button variant="secondary" className="bg-black/40 text-white backdrop-blur-md border-white/20 cursor-default pointer-events-none opacity-90">
+                         {isLoadingImage ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                         ) : (
+                            `Próxima en... ${secondsLeft}s`
+                         )}
                     </Button>
                 </div>
             </div>
@@ -1028,17 +1037,6 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
                         variants={modalVariants}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {view !== 'zen' && view !== 'menu' && (
-                             <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-3 left-3 h-8 w-8 rounded-full z-20"
-                                onClick={() => setView(view.includes('menu') ? 'menu' : 'minigames_menu')}
-                                aria-label="Volver"
-                            >
-                                <ArrowLeft className="h-5 w-5" />
-                            </Button>
-                        )}
                         {view !== 'zen' && (
                              <Button
                                 variant="ghost"
@@ -1070,4 +1068,3 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
         </AnimatePresence>
     );
 };
-
