@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw, Globe, Waves, SkipForward } from 'lucide-react';
+import { X, ArrowLeft, Brain, Dog, Cat, Gamepad2, Loader2, AlertTriangle, Check, Trophy, RotateCcw, Globe, Waves, SkipForward, Ghost } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -12,7 +12,7 @@ import { useApp } from '@/lib/hooks/use-app';
 
 
 // --- Type Definitions ---
-type View = 'menu' | 'trivia' | 'animals' | 'minigames_menu' | 'snake' | '2048' | 'tic-tac-toe' | 'zen';
+type View = 'menu' | 'trivia' | 'animals' | 'minigames_menu' | 'snake' | '2048' | 'tic-tac-toe' | 'zen' | 'dino';
 
 interface TriviaQuestion {
     question: string;
@@ -288,6 +288,7 @@ const MinigamesMenu = ({ setView, onBack }: { setView: (view: View) => void, onB
     return (
         <ViewContainer title="Minijuegos" onBack={onBack}>
             <div className="space-y-3">
+                <Button onClick={() => setView('dino')} className="w-full h-14" variant="outline"><Ghost className="mr-2 h-5 w-5"/>Dino Run</Button>
                 <Button onClick={() => setView('snake')} className="w-full h-14" variant="outline">Snake</Button>
                 <Button onClick={() => setView('tic-tac-toe')} className="w-full h-14" variant="outline">Tres en Raya</Button>
                 <Button onClick={() => setView('2048')} className="w-full h-14" variant="outline">2048</Button>
@@ -295,6 +296,251 @@ const MinigamesMenu = ({ setView, onBack }: { setView: (view: View) => void, onB
         </ViewContainer>
     );
 };
+
+function DinoGame({ onBack }: { onBack: () => void }) {
+    // Constantes físicas e iniciales
+    const DINO_SIZE = 40;
+    const DINO_X = 50; // Posición horizontal fija del dino
+    const GRAVITY = 0.6;
+    const JUMP_VELOCITY = 12;
+    const SPAWN_X = 1000; // Distancia de spawn (fuera de pantalla a la derecha)
+    const BASE_SPEED = 6;
+
+    type Obstacle = {
+      id: number;
+      x: number;
+      width: number;
+      height: number;
+    };
+
+    type GameState = {
+      dinoY: number;
+      dinoVY: number;
+      obstacles: Obstacle[];
+      score: number;
+      speed: number;
+      nextObstacleIn: number;
+      gameOver: boolean;
+      isPlaying: boolean;
+      hasStarted: boolean;
+    };
+    const [gameState, setGameState] = useState<GameState>({
+        dinoY: 0,
+        dinoVY: 0,
+        obstacles: [],
+        score: 0,
+        speed: BASE_SPEED,
+        nextObstacleIn: 60,
+        gameOver: false,
+        isPlaying: false,
+        hasStarted: false,
+    });
+
+    const requestRef = useRef<number>();
+
+    // Controlador de Salto y Reinicio
+    const jump = useCallback(() => {
+        setGameState((prev) => {
+        // Reiniciar si es Game Over
+        if (prev.gameOver) {
+            return {
+            dinoY: 0,
+            dinoVY: 0,
+            obstacles: [],
+            score: 0,
+            speed: BASE_SPEED,
+            nextObstacleIn: 60,
+            gameOver: false,
+            isPlaying: true,
+            hasStarted: true,
+            };
+        }
+        // Empezar si no ha empezado
+        if (!prev.isPlaying) {
+            return { ...prev, isPlaying: true, hasStarted: true };
+        }
+        // Saltar solo si está en el suelo (y=0)
+        if (prev.dinoY === 0) {
+            return { ...prev, dinoVY: JUMP_VELOCITY };
+        }
+        return prev;
+        });
+    }, []);
+
+    // Listeners de teclado
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.code === "Space" || e.code === "ArrowUp") {
+            e.preventDefault();
+            jump();
+        }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [jump]);
+
+    // Motor del juego (Game Loop)
+    useEffect(() => {
+        const loop = () => {
+        setGameState((prev) => {
+            if (!prev.isPlaying || prev.gameOver) return prev;
+
+            // 1. Físicas y Gravedad
+            let newVY = prev.dinoVY - GRAVITY;
+            let newY = prev.dinoY + newVY;
+            
+            // Colisión con el suelo
+            if (newY <= 0) {
+            newY = 0;
+            newVY = 0;
+            }
+
+            // 2. Lógica de Obstáculos (Mover y limpiar memoria)
+            const newObstacles = prev.obstacles
+            .map((obs) => ({ ...obs, x: obs.x - prev.speed }))
+            .filter((obs) => obs.x + obs.width > -50); // Eliminar si sale por la izquierda
+
+            let nextIn = prev.nextObstacleIn - 1;
+            
+            // Generar nuevos obstáculos
+            if (nextIn <= 0) {
+            newObstacles.push({
+                id: Date.now() + Math.random(),
+                x: SPAWN_X,
+                width: Math.floor(Math.random() * 20) + 20, // Ancho: 20px a 40px
+                height: Math.floor(Math.random() * 30) + 30, // Alto: 30px a 60px
+            });
+            
+            // Calcular cuándo aparecerá el siguiente (aumenta dificultad con velocidad)
+            const minFrames = Math.max(30, 80 - prev.speed * 2);
+            const maxFrames = Math.max(60, 150 - prev.speed * 2);
+            nextIn = Math.floor(Math.random() * (maxFrames - minFrames)) + minFrames;
+            }
+
+            // 3. Puntuación y Velocidad Dinámica
+            const newScore = prev.score + 0.1;
+            const newSpeed = BASE_SPEED + Math.floor(newScore / 100) * 0.4;
+
+            // 4. Detección de Colisiones AABB
+            let isGameOver = false;
+            // Margen de hit para que no sea tan punitivo (mejora la experiencia)
+            const hitMarginX = 5; 
+            const hitMarginY = 5;
+
+            for (const obs of newObstacles) {
+            if (
+                DINO_X + hitMarginX < obs.x + obs.width &&
+                DINO_X + DINO_SIZE - hitMarginX > obs.x &&
+                newY + hitMarginY < obs.height && // newY es el "bottom" del dino
+                newY + DINO_SIZE - hitMarginY > 0
+            ) {
+                isGameOver = true;
+            }
+            }
+
+            return {
+            ...prev,
+            dinoY: newY,
+            dinoVY: newVY,
+            obstacles: newObstacles,
+            nextObstacleIn: nextIn,
+            score: newScore,
+            speed: newSpeed,
+            gameOver: isGameOver,
+            isPlaying: !isGameOver,
+            };
+        });
+
+        requestRef.current = requestAnimationFrame(loop);
+        };
+
+        requestRef.current = requestAnimationFrame(loop);
+        
+        // Clean-up del frame de animación al desmontar
+        return () => {
+        if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        };
+    }, []);
+
+    return (
+        <ViewContainer title="Dino Run" onBack={onBack}>
+            <div className="w-full max-w-3xl mx-auto flex flex-col items-center">
+            
+            {/* Marcador Superior */}
+            <div className="w-full flex justify-end px-4 py-2 text-2xl font-mono text-slate-700 tracking-widest">
+                {Math.floor(gameState.score).toString().padStart(5, "0")}
+            </div>
+
+            {/* Contenedor Principal del Juego */}
+            <div
+                className="relative w-full h-64 bg-slate-50 overflow-hidden border-b-4 border-slate-700 select-none touch-none cursor-pointer"
+                onTouchStart={(e) => {
+                e.preventDefault(); // Evita scroll en móviles al tocar
+                jump();
+                }}
+                onClick={jump}
+            >
+                
+                {/* Dino */}
+                <div
+                className="absolute bg-slate-800 rounded-sm"
+                style={{
+                    width: `${DINO_SIZE}px`,
+                    height: `${DINO_SIZE}px`,
+                    left: `${DINO_X}px`,
+                    bottom: `${gameState.dinoY}px`,
+                }}
+                >
+                {/* Pequeño detalle de un "ojo" para darle dirección al bloque */}
+                <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-slate-50 rounded-full" />
+                </div>
+
+                {/* Obstáculos (Cactus) */}
+                {gameState.obstacles.map((obs) => (
+                <div
+                    key={obs.id}
+                    className="absolute bg-emerald-600 rounded-t-md"
+                    style={{
+                    width: `${obs.width}px`,
+                    height: `${obs.height}px`,
+                    left: `${obs.x}px`,
+                    bottom: "0px",
+                    }}
+                />
+                ))}
+
+                {/* Overlay Inicial */}
+                {!gameState.hasStarted && !gameState.gameOver && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40">
+                    <span className="animate-pulse text-lg font-bold text-slate-700 bg-white/80 px-4 py-2 rounded shadow">
+                    Pulsa ESPACIO o toca para empezar
+                    </span>
+                </div>
+                )}
+
+                {/* Overlay Game Over */}
+                {gameState.gameOver && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10">
+                    <h2 className="text-4xl font-black text-slate-800 tracking-wider mb-4">
+                    GAME OVER
+                    </h2>
+                    <button 
+                    className="px-6 py-2 bg-slate-700 text-white font-bold rounded hover:bg-slate-800 transition shadow-lg active:scale-95"
+                    >
+                    Pulsa ESPACIO para reiniciar
+                    </button>
+                </div>
+                )}
+            </div>
+            
+            <p className="mt-4 text-sm text-slate-500">
+                Usa la barra espaciadora, la flecha arriba o toca la zona de juego para saltar.
+            </p>
+            </div>
+        </ViewContainer>
+    );
+}
 
 const SnakeGame = ({ onBack }: { onBack: () => void }) => {
   const GRID_SIZE = 20;
@@ -894,16 +1140,17 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
         setSecondsLeft(13);
         setCacheBuster(Date.now());
         setCurrentIndex(prevIndex => {
-            const nextIndex = prevIndex + 1;
-            if (nextIndex >= playlist.length) {
-                let newShuffledPlaylist = shuffleArray(earthImages);
+            let newShuffledPlaylist = playlist;
+            let nextIndex = prevIndex + 1;
+            
+            if (nextIndex >= newShuffledPlaylist.length) {
+                newShuffledPlaylist = shuffleArray(earthImages);
                 // Ensure the new first image is not the same as the last one.
                 if (playlist.length > 1 && newShuffledPlaylist[0].id === playlist[playlist.length - 1].id) {
-                    // Simple swap with the second element
                     [newShuffledPlaylist[0], newShuffledPlaylist[1]] = [newShuffledPlaylist[1], newShuffledPlaylist[0]];
                 }
                 setPlaylist(newShuffledPlaylist);
-                return 0;
+                nextIndex = 0;
             }
             return nextIndex;
         });
@@ -955,9 +1202,10 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
                 src={imageUrl}
                 alt={currentImage.location}
                 className="absolute inset-0 w-full h-full object-cover animate-kenburns"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: isLoadingImage ? 0 : 1 }}
-                transition={{ duration: 1.5 }}
+                style={{ animationDuration: '13s' }}
+                initial={{ opacity: 0, scale: 1 }}
+                animate={{ opacity: isLoadingImage ? 0 : 1, scale: isLoadingImage ? 1 : 1.08 }}
+                transition={{ duration: 1.5, scale: { duration: 13, ease: 'linear' } }}
                 onLoad={() => setIsLoadingImage(false)}
                 onError={handleNextImage}
             />
@@ -1045,6 +1293,7 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
             case 'trivia': return <TriviaView onBack={() => setView('menu')} />;
             case 'animals': return <AnimalsView onBack={() => setView('menu')} />;
             case 'minigames_menu': return <MinigamesMenu setView={setView} onBack={() => setView('menu')} />;
+            case 'dino': return <DinoGame onBack={() => setView('minigames_menu')} />;
             case 'snake': return <SnakeGame onBack={() => setView('minigames_menu')} />;
             case '2048': return <Game2048 onBack={() => setView('minigames_menu')} />;
             case 'tic-tac-toe': return <TicTacToeGame onBack={() => setView('minigames_menu')} />;
@@ -1102,5 +1351,3 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
         </AnimatePresence>
     );
 };
-
-    
