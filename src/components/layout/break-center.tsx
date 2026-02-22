@@ -324,7 +324,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
     setFood({ x: newX, y: newY, emoji: randomFruit });
   }, []);
 
-  const resetGame = () => {
+  const resetGame = useCallback(() => {
     setSnake(getInitialSnake());
     setDirection(getInitialDirection());
     lastProcessedDirection.current = getInitialDirection();
@@ -332,7 +332,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
     setGameOver(false);
     setIsPaused(false);
     generateFood(getInitialSnake());
-  };
+  }, [generateFood]);
 
   useEffect(() => {
     if (gameOver || isPaused) return;
@@ -425,6 +425,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                 top: `${(food.y / GRID_SIZE) * 100}%`,
                 width: `${100 / GRID_SIZE}%`,
                 height: `${100 / GRID_SIZE}%`,
+                transition: `all ${SPEED}ms linear`
               }}
             >
               {food.emoji}
@@ -443,7 +444,7 @@ const SnakeGame = ({ onBack }: { onBack: () => void }) => {
                     height: `${100 / GRID_SIZE}%`,
                     backgroundColor: isHead ? '#065f46' : '#10b981',
                     zIndex: isHead ? 10 : 0,
-                    transition: 'all 150ms linear'
+                    transition: `all ${SPEED}ms linear`
                   }}
                 >
                   {isHead && (
@@ -849,43 +850,67 @@ const Game2048 = ({ onBack }: { onBack: () => void }) => {
     );
 };
 
-const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () => void; }) => {
-    const earthImages: EarthImage[] = [
-        { id: 1003, location: "Cañón del Antílope, EE.UU." },
-        { id: 1108, location: "Campos de Tulipanes, Países Bajos" },
-        { id: 1224, location: "Glaciar Perito Moreno, Argentina" },
-        { id: 1500, location: "Salar de Uyuni, Bolivia" },
-        { id: 1820, location: "Valle de la Luna, Chile" },
-        { id: 2030, location: "Monte Fuji, Japón" },
-        { id: 2155, location: "Estructura de Richat, Mauritania" },
-        { id: 2560, location: "Delta del Río Lena, Rusia" },
-        { id: 3045, location: "Desierto del Namib, Namibia" },
-        { id: 4500, location: "Río de Janeiro, Brasil" },
-    ];
+const earthImages: EarthImage[] = [
+    { id: 1003, location: "Cañón del Antílope, EE.UU." },
+    { id: 1021, location: "Parque Nacional de los Arcos, EE.UU." },
+    { id: 1056, location: "Glaciar de Columbia, Alaska" },
+    { id: 1081, location: "Parque Nacional de las Dunas de Arena, EE.UU." },
+    { id: 1108, location: "Campos de Tulipanes, Países Bajos" },
+    { id: 1224, location: "Glaciar Perito Moreno, Argentina" },
+    { id: 1350, location: "Bahía de Halong, Vietnam" },
+    { id: 1500, location: "Salar de Uyuni, Bolivia" },
+    { id: 1820, location: "Valle de la Luna, Chile" },
+    { id: 2030, location: "Monte Fuji, Japón" },
+    { id: 2155, location: "Estructura de Richat, Mauritania" },
+    { id: 2560, location: "Delta del Río Lena, Rusia" },
+    { id: 3045, location: "Desierto del Namib, Namibia" },
+    { id: 4500, location: "Río de Janeiro, Brasil" },
+    { id: 5010, location: "Parque Nacional del Teide, España" },
+    { id: 6020, location: "Gran Barrera de Coral, Australia" },
+];
 
-    const [currentImageId, setCurrentImageId] = useState(earthImages[0].id);
+
+const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () => void; }) => {
+    const [playlist, setPlaylist] = useState<EarthImage[]>([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
     const [isLoadingImage, setIsLoadingImage] = useState(true);
     const [cacheBuster, setCacheBuster] = useState(Date.now());
     const [secondsLeft, setSecondsLeft] = useState(13);
+    const [isMounted, setIsMounted] = useState(false);
 
-    const currentImage = earthImages.find(img => img.id === currentImageId)!;
-    const imageUrl = `https://www.gstatic.com/prettyearth/assets/full/${currentImageId}.jpg?t=${cacheBuster}`;
+    useEffect(() => {
+        setIsMounted(true);
+        setPlaylist(shuffleArray(earthImages));
+        setCurrentIndex(0);
+        setIsLoadingImage(true);
+        setSecondsLeft(13);
+    }, []);
+    
+    const currentImage = playlist[currentIndex];
+    const imageUrl = currentImage ? `https://www.gstatic.com/prettyearth/assets/full/${currentImage.id}.jpg?t=${cacheBuster}` : '';
 
     const handleNextImage = useCallback(() => {
         setIsLoadingImage(true);
         setSecondsLeft(13);
-        setCurrentImageId(prevId => {
-            const availableImages = earthImages.filter(img => img.id !== prevId);
-            if (availableImages.length > 0) {
-                return availableImages[Math.floor(Math.random() * availableImages.length)].id;
-            }
-            return earthImages[0].id; // Fallback
-        });
         setCacheBuster(Date.now());
-    }, [earthImages]);
+        setCurrentIndex(prevIndex => {
+            const nextIndex = prevIndex + 1;
+            if (nextIndex >= playlist.length) {
+                let newShuffledPlaylist = shuffleArray(earthImages);
+                // Ensure the new first image is not the same as the last one.
+                if (playlist.length > 1 && newShuffledPlaylist[0].id === playlist[playlist.length - 1].id) {
+                    // Simple swap with the second element
+                    [newShuffledPlaylist[0], newShuffledPlaylist[1]] = [newShuffledPlaylist[1], newShuffledPlaylist[0]];
+                }
+                setPlaylist(newShuffledPlaylist);
+                return 0;
+            }
+            return nextIndex;
+        });
+    }, [playlist]);
 
     useEffect(() => {
-        if (isLoadingImage) return;
+        if (!isMounted || isLoadingImage) return;
 
         const countdownInterval = setInterval(() => {
             setSecondsLeft(prev => {
@@ -898,9 +923,17 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
         }, 1000);
 
         return () => clearInterval(countdownInterval);
-    }, [isLoadingImage, handleNextImage]);
+    }, [isMounted, isLoadingImage, handleNextImage]);
 
 
+    if (!isMounted || !currentImage) {
+        return (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-black">
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
+            </div>
+        );
+    }
+    
     return (
         <div className="relative h-full w-full overflow-hidden bg-black">
              <AnimatePresence>
@@ -932,7 +965,7 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
             
             <div className="absolute inset-0 z-10 flex flex-col justify-between p-4">
                 <div className="flex justify-end">
-                    <Button onClick={onClose} variant="ghost" className="text-white bg-black/30 backdrop-blur-sm hover:bg-black/50 hover:text-white rounded-full h-9 w-9 p-0">
+                    <Button onClick={onClose} variant="ghost" className="text-white bg-black/40 backdrop-blur-md hover:bg-black/50 hover:text-white rounded-full h-9 w-9 p-0">
                         <X className="h-5 w-5" />
                     </Button>
                 </div>
@@ -953,7 +986,7 @@ const ZenFlightView = ({ onBack, onClose }: { onBack: () => void; onClose: () =>
                         )}
                     </AnimatePresence>
                     
-                    <Button variant="secondary" className="bg-black/40 text-white backdrop-blur-md border-white/20 cursor-default pointer-events-none opacity-90">
+                    <Button variant="secondary" className="bg-black/40 text-white backdrop-blur-md border-white/20 cursor-default pointer-events-none opacity-90 h-9 px-4">
                          {isLoadingImage ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                          ) : (
@@ -1069,3 +1102,5 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
         </AnimatePresence>
     );
 };
+
+    
