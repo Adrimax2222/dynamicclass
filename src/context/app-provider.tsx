@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { createContext, useState, useEffect, useCallback, type ReactNode, useMemo, useRef } from 'react';
@@ -66,6 +67,14 @@ export interface AppContextType {
   plantCount: number;
   setPlantCount: React.Dispatch<React.SetStateAction<number>>;
 
+  // Break Center State
+  isBreakActive: boolean;
+  breakTimeLeft: number;
+  cooldownTimeLeft: number;
+  startBreak: () => void;
+  endBreak: () => void;
+  wasStudyTimerActive: boolean;
+
   // Notification states
   hasNewAnnouncements: boolean;
   setHasNewAnnouncements: (hasNew: boolean) => void;
@@ -105,6 +114,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [customMode, setCustomMode] = useState<CustomMode>({ focus: 45, break: 15 });
   const [plantCount, setPlantCount] = useState(0);
+  
+  // Break Center State
+  const [isBreakActive, setIsBreakActive] = useState(false);
+  const [wasStudyTimerActive, setWasStudyTimerActive] = useState(false);
+  const [breakEndTime, setBreakEndTime] = useState<number | null>(null);
+  const [cooldownEndTime, setCooldownEndTime] = useState<number | null>(null);
+  const [breakTimeLeft, setBreakTimeLeft] = useState(0);
+  const [cooldownTimeLeft, setCooldownTimeLeft] = useState(0);
+
 
   const modes = useMemo(() => ({
     pomodoro: { focus: 25, break: 5 },
@@ -547,6 +565,84 @@ export function AppProvider({ children }: { children: ReactNode }) {
     lastLoggedMinuteRef.current = null;
   }, [phase]);
 
+  // --- BREAK & COOLDOWN LOGIC ---
+  const endBreak = useCallback(() => {
+    setIsBreakActive(false);
+    if (wasStudyTimerActive) {
+      setIsActive(true);
+    }
+    const cooldownEnd = Date.now() + 10 * 60 * 1000;
+    setCooldownEndTime(cooldownEnd);
+    localStorage.setItem('cooldownEndTime', String(cooldownEnd));
+    setBreakEndTime(null);
+    localStorage.removeItem('breakEndTime');
+  }, [wasStudyTimerActive, setIsActive]);
+
+  useEffect(() => {
+    const timerInterval = setInterval(() => {
+      const now = Date.now();
+      
+      if (breakEndTime) {
+        const remaining = Math.round((breakEndTime - now) / 1000);
+        if (remaining <= 0) {
+          endBreak();
+          setBreakTimeLeft(0);
+        } else {
+          setBreakTimeLeft(remaining);
+        }
+      }
+
+      if (cooldownEndTime) {
+        const remaining = Math.round((cooldownEndTime - now) / 1000);
+        if (remaining <= 0) {
+          setCooldownEndTime(null);
+          localStorage.removeItem('cooldownEndTime');
+          setCooldownTimeLeft(0);
+        } else {
+          setCooldownTimeLeft(remaining);
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(timerInterval);
+  }, [breakEndTime, cooldownEndTime, endBreak]);
+
+  useEffect(() => {
+    const storedBreakEnd = localStorage.getItem('breakEndTime');
+    if (storedBreakEnd) {
+      const end = parseInt(storedBreakEnd, 10);
+      if (end > Date.now()) {
+        setBreakEndTime(end);
+        setIsBreakActive(true);
+        // Also pause study timer if break is active on load
+        if (isActive) {
+          setWasStudyTimerActive(true);
+          setIsActive(false);
+        }
+      } else {
+        localStorage.removeItem('breakEndTime');
+      }
+    }
+    const storedCooldownEnd = localStorage.getItem('cooldownEndTime');
+    if (storedCooldownEnd) {
+      const end = parseInt(storedCooldownEnd, 10);
+      if (end > Date.now()) {
+        setCooldownEndTime(end);
+      } else {
+        localStorage.removeItem('cooldownEndTime');
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const startBreak = useCallback(() => {
+    setWasStudyTimerActive(isActive);
+    setIsActive(false);
+    const breakEnd = Date.now() + 5 * 60 * 1000;
+    setBreakEndTime(breakEnd);
+    localStorage.setItem('breakEndTime', String(breakEnd));
+    setIsBreakActive(true);
+  }, [isActive]);
 
   const value: AppContextType = {
     user,
@@ -572,15 +668,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setIsStudyBubbleVisible,
     isChatDrawerOpen,
     setChatDrawerOpen,
-    // Chat context values
     chats,
     activeChatId,
     setActiveChatId,
     isChatsLoading,
-    // Scanner settings
     saveScannedDocs,
     setSaveScannedDocs,
-    // Global Timer
     timerMode,
     setTimerMode,
     phase,
@@ -597,7 +690,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     skipPhase,
     plantCount,
     setPlantCount,
-    // Notifications
+    isBreakActive,
+    breakTimeLeft,
+    cooldownTimeLeft,
+    startBreak,
+    endBreak,
+    wasStudyTimerActive,
     hasNewAnnouncements,
     setHasNewAnnouncements,
     hasNewChatMessages,

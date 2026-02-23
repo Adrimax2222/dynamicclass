@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -342,6 +343,10 @@ export default function StudyPage() {
         resetTimer,
         skipPhase,
         plantCount,
+        isBreakActive,
+        cooldownTimeLeft,
+        startBreak,
+        endBreak,
     } = useApp();
     const router = useRouter();
     const firestore = useFirestore();
@@ -355,9 +360,6 @@ export default function StudyPage() {
     const [isMounted, setIsMounted] = useState(false);
     const [isScheduleAvailable, setIsScheduleAvailable] = useState(false);
     const [plantStage, setPlantStage] = useState(0); 
-
-    const [isBreakCenterOpen, setIsBreakCenterOpen] = useState(false);
-    const [wasActiveBeforeBreak, setWasActiveBeforeBreak] = useState(false);
 
     const isPersonalUser = user?.center === 'personal' || user?.center === 'default';
 
@@ -534,6 +536,12 @@ export default function StudyPage() {
         return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
     };
 
+    const formatCooldown = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    };
+
     const formatStudyTime = (totalMinutes: number = 0) => {
         return `${totalMinutes}m`;
     };
@@ -574,35 +582,10 @@ export default function StudyPage() {
     
     }, [isActive, phase, timeLeft, timerMode, modes, plantStage]);
 
-    // Break Center Logic
-    const handleOpenBreakCenter = useCallback(() => {
-        setWasActiveBeforeBreak(isActive);
-        if (isActive && phase === 'focus') {
-            setIsActive(false);
-        }
-        setIsBreakCenterOpen(true);
-    }, [isActive, phase, setIsActive]);
-
-    const handleCloseBreakCenter = useCallback(() => {
-        setIsBreakCenterOpen(false);
-        if (wasActiveBeforeBreak && phase === 'focus') {
-            setIsActive(true);
-        }
-    }, [wasActiveBeforeBreak, phase, setIsActive]);
-
-    const prevPhaseRef = useRef(phase);
-    useEffect(() => {
-        const prevPhase = prevPhaseRef.current;
-        if (isBreakCenterOpen && prevPhase === 'break' && phase === 'focus') {
-            handleCloseBreakCenter();
-        }
-        prevPhaseRef.current = phase;
-    }, [phase, isBreakCenterOpen, handleCloseBreakCenter]);
-
-    
     if (!user) return null;
 
     const streakCount = user.streak || 0;
+    const cooldownActive = cooldownTimeLeft > 0;
 
     const phaseColors = phase === 'focus' 
         ? modes[timerMode].colors
@@ -773,8 +756,13 @@ export default function StudyPage() {
 
                     {isActive && (
                         <div className="text-center mb-4 -mt-2">
-                            <Button onClick={handleOpenBreakCenter} variant="outline" className="rounded-full h-8 px-4 text-xs font-semibold">
-                                Hacer un Break
+                             <Button
+                                onClick={startBreak}
+                                variant="outline"
+                                className="rounded-full h-8 px-4 text-xs font-semibold"
+                                disabled={cooldownActive}
+                            >
+                                {cooldownActive ? `Descanso en ${formatCooldown(cooldownTimeLeft)}` : 'Hacer un Break'}
                             </Button>
                         </div>
                     )}
@@ -1074,7 +1062,7 @@ export default function StudyPage() {
 
         </main>
       </ScrollArea>
-      <BreakCenter isOpen={isBreakCenterOpen} onClose={handleCloseBreakCenter} />
+      <BreakCenter isOpen={isBreakActive} onClose={endBreak} />
     </div>
   );
 }
