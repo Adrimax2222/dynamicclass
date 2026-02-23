@@ -28,6 +28,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { Input } from "@/components/ui/input";
+import { ViewContainer } from '@/components/layout/view-container';
 
 
 // --- Type Definitions ---
@@ -172,19 +173,6 @@ const viewVariants = {
 };
 
 // --- Sub-components ---
-
-const ViewContainer: React.FC<{title: string; onBack: () => void; children: React.ReactNode; className?: string}> = ({ title, onBack, children, className }) => {
-  return (
-    <div className={cn("flex flex-col h-full", className)}>
-      <header className="flex items-center p-2 border-b flex-shrink-0">
-        <Button onClick={onBack} variant="ghost" size="icon" aria-label="Volver"><ArrowLeft /></Button>
-        <h3 className="font-bold text-lg text-center flex-1">{title}</h3>
-        <div className="w-10"></div> {/* Spacer */}
-      </header>
-      <div className="flex-1 p-4 overflow-y-auto">{children}</div>
-    </div>
-  )
-};
 
 const MainMenu = ({ setView }: { setView: (view: View) => void }) => {
     const menuItems = [
@@ -413,20 +401,12 @@ const MinigamesMenu = ({ setView, onBack }: { setView: (view: View) => void, onB
 };
 
 const SnakeGame = ({ onBack }: { onBack: () => void }) => {
-    return (
-        <ViewContainer title="Snake" onBack={onBack}>
-            <SnakeGameContent />
-        </ViewContainer>
-    );
-};
-
-const SnakeGameContent = () => {
   const GRID_SIZE = 20;
-  const SPEED = 150;
+  const SPEED = 120;
   const FRUITS = ["🍎", "🍌", "🍇", "🍓", "🍒", "🍍", "🥭", "🍉"];
-    
+
   const getInitialSnake = () => [{ x: 10, y: 10 }];
-  const getInitialDirection = () => ({ x: 0, y: -1 }); // Empieza subiendo
+  const getInitialDirection = () => ({ x: 0, y: -1 });
 
   const [snake, setSnake] = useState(getInitialSnake());
   const [direction, setDirection] = useState(getInitialDirection());
@@ -538,119 +518,111 @@ const SnakeGameContent = () => {
     }
     setDirection(newDir);
   };
+  
+  const getRotation = (dir: { x: number; y: number }) => {
+    if (dir.y === -1) return 'rotate(0deg)';
+    if (dir.x === 1) return 'rotate(90deg)';
+    if (dir.y === 1) return 'rotate(180deg)';
+    if (dir.x === -1) return 'rotate(-90deg)';
+    return 'rotate(0deg)';
+  };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-md mx-auto select-none">
-      <div className="flex justify-between items-center w-full mb-4 bg-slate-800 text-white p-3 rounded-lg shadow-md font-mono">
-        <div className="text-xl font-bold">PUNTOS: {score}</div>
-        <button
-          onClick={() => setIsPaused(!isPaused)}
-          className="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-sm transition-colors"
-        >
-          {isPaused ? "REANUDAR" : "PAUSAR"}
-        </button>
-      </div>
-
-      <div className="relative w-full aspect-square bg-slate-50 border-4 border-slate-800 shadow-xl overflow-hidden rounded-md"
-           style={{
-             backgroundImage: "linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)",
-             backgroundSize: `${100 / GRID_SIZE}% ${100 / GRID_SIZE}%`
-           }}>
-        
-        <div
-          className="absolute flex items-center justify-center text-xl transition-all duration-100"
-          style={{
-            left: `${(food.x / GRID_SIZE) * 100}%`,
-            top: `${(food.y / GRID_SIZE) * 100}%`,
-            width: `${100 / GRID_SIZE}%`,
-            height: `${100 / GRID_SIZE}%`,
-          }}
-        >
-          {food.emoji}
+    <ViewContainer title="Snake" onBack={onBack}>
+      <div className="flex flex-col items-center w-full max-w-md mx-auto select-none">
+        <div className="flex justify-between items-center w-full mb-4 bg-slate-800 text-white p-3 rounded-lg shadow-md font-mono">
+            <div className="text-xl font-bold">PUNTOS: {score}</div>
+            <button
+            onClick={() => setIsPaused(!isPaused)}
+            className="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-sm transition-colors"
+            >
+            {isPaused ? "REANUDAR" : "PAUSAR"}
+            </button>
         </div>
-
-        {snake.map((segment, index) => {
-          const isHead = index === 0;
-          return (
+        <div className="relative w-full aspect-square bg-slate-50 border-4 border-slate-800 shadow-xl overflow-hidden rounded-md"
+            style={{
+                backgroundImage: "linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)",
+                backgroundSize: `${100 / GRID_SIZE}% ${100 / GRID_SIZE}%`
+            }}>
+            
             <div
-              key={`${segment.x}-${segment.y}-${index}`}
-              className={`absolute rounded-sm border border-black/20 ${
-                isHead ? "bg-emerald-700 z-10" : "bg-emerald-500 z-0"
-              }`}
-              style={{
-                left: `${(segment.x / GRID_SIZE) * 100}%`,
-                top: `${(segment.y / GRID_SIZE) * 100}%`,
+            className="absolute flex items-center justify-center text-xl"
+            style={{
+                left: `${(food.x / GRID_SIZE) * 100}%`,
+                top: `${(food.y / GRID_SIZE) * 100}%`,
                 width: `${100 / GRID_SIZE}%`,
                 height: `${100 / GRID_SIZE}%`,
-              }}
+            }}
             >
-              {isHead && (
-                <div className="relative w-full h-full">
-                  <div className="absolute w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2">
-                    <div className="w-0.5 h-0.5 bg-black rounded-full" />
-                  </div>
-                  <div className="absolute w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center top-1/2 right-1/4 translate-x-1/2 -translate-y-1/2">
-                    <div className="w-0.5 h-0.5 bg-black rounded-full" />
-                  </div>
-                </div>
-              )}
+            {food.emoji}
             </div>
-          );
-        })}
 
-        {gameOver && (
-          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-20">
-            <h2 className="text-3xl font-bold text-white mb-2">¡Juego Terminado!</h2>
-            <p className="text-slate-200 mb-6">Puntuación final: {score}</p>
-            <button
-              onClick={resetGame}
-              className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-6 rounded-full shadow-lg transform transition active:scale-95"
-            >
-              Jugar de nuevo
-            </button>
-          </div>
-        )}
-      </div>
+            {snake.map((segment, index) => {
+            const isHead = index === 0;
+            return (
+                <div
+                key={`${segment.x}-${segment.y}-${index}`}
+                className={`absolute rounded-sm border border-black/20 ${
+                    isHead ? "bg-emerald-700 z-10" : "bg-emerald-500 z-0"
+                }`}
+                style={{
+                    left: `${(segment.x / GRID_SIZE) * 100}%`,
+                    top: `${(segment.y / GRID_SIZE) * 100}%`,
+                    width: `${100 / GRID_SIZE}%`,
+                    height: `${100 / GRID_SIZE}%`,
+                    transition: 'left 0.1s linear, top 0.1s linear',
+                }}
+                >
+                {isHead && (
+                    <div
+                        className="relative w-full h-full transition-transform duration-200"
+                        style={{ transform: getRotation(direction) }}
+                    >
+                        <div className="absolute w-1 h-3 bg-red-500 rounded-b-full top-[-6px] left-1/2 -translate-x-1/2 border-b border-l border-r border-red-700"></div>
+                        <div className="absolute w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center top-1/3 left-1/4 border border-black/20">
+                            <div className="w-0.5 h-0.5 bg-black rounded-full" />
+                        </div>
+                        <div className="absolute w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center top-1/3 right-1/4 border border-black/20">
+                            <div className="w-0.5 h-0.5 bg-black rounded-full" />
+                        </div>
+                    </div>
+                )}
+                </div>
+            );
+            })}
 
-      <div className="mt-8 grid grid-cols-3 gap-2 w-48 opacity-80 hover:opacity-100 transition-opacity">
-        <div />
-        <button
-          onClick={() => handleTouchControl({ x: 0, y: -1 })}
-          className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
-        >
-          ⬆️
-        </button>
-        <div />
-        <button
-          onClick={() => handleTouchControl({ x: -1, y: 0 })}
-          className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
-        >
-          ⬅️
-        </button>
-        <button
-          onClick={() => handleTouchControl({ x: 0, y: 1 })}
-          className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
-        >
-          ⬇️
-        </button>
-        <button
-          onClick={() => handleTouchControl({ x: 1, y: 0 })}
-          className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl"
-        >
-          ➡️
-        </button>
-      </div>
-    </div>
+            {gameOver && (
+            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-20">
+                <h2 className="text-3xl font-bold text-white mb-2">¡Juego Terminado!</h2>
+                <p className="text-slate-200 mb-6">Puntuación final: {score}</p>
+                <button
+                onClick={resetGame}
+                className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-6 rounded-full shadow-lg transform transition active:scale-95"
+                >
+                Jugar de nuevo
+                </button>
+            </div>
+            )}
+        </div>
+
+        <div className="mt-8 grid grid-cols-3 gap-2 w-48 opacity-80 hover:opacity-100 transition-opacity">
+            <div />
+            <button onClick={() => handleTouchControl({ x: 0, y: -1 })} className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl">⬆️</button>
+            <div />
+            <button onClick={() => handleTouchControl({ x: -1, y: 0 })} className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl">⬅️</button>
+            <button onClick={() => handleTouchControl({ x: 0, y: 1 })} className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl">⬇️</button>
+            <button onClick={() => handleTouchControl({ x: 1, y: 0 })} className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl">➡️</button>
+        </div>
+        </div>
+    </ViewContainer>
   );
-}
+};
 
 const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
-    // ... Implementation remains the same
     return <ViewContainer title="Tres en Raya" onBack={onBack}><div className="text-center">Próximamente...</div></ViewContainer>;
 };
 
 const Game2048 = ({ onBack }: { onBack: () => void }) => {
-    // ... Implementation remains the same
     return <ViewContainer title="2048" onBack={onBack}><div className="text-center">Próximamente...</div></ViewContainer>;
 };
 
@@ -970,7 +942,7 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
 
         setTimeout(() => {
             isProcessingKey.current = false;
-        }, 100);
+        }, 150);
 
     }, [gameState, isSubmitting, currentRow, handleSubmitGuess]);
     
@@ -1205,534 +1177,4 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
             )}
         </AnimatePresence>
     );
-};
-
-const DesertRun = ({ onBack }: { onBack: () => void }) => {
-  const { user, updateUser } = useApp();
-  const firestore = useFirestore();
-  const [gameState, setGameState] = useState<DesertRunGameState>({
-    y: 0,
-    vy: 0,
-    obstacles: [],
-    clouds: [],
-    score: 0,
-    speed: DESERT_BASE_SPEED,
-    nextObstacleIn: 60,
-    nextCloudIn: 10,
-    gameOver: false,
-    isPlaying: false,
-    hasStarted: false,
-  });
-
-  const requestRef = useRef<number>();
-  const isPersonalUser = user?.center === 'personal' || user?.center === 'default';
-
-  const classmatesQuery = useMemoFirebase(() => {
-    if (!firestore || !user || isPersonalUser) return null;
-    return query(
-        collection(firestore, "users"),
-        where("organizationId", "==", user.organizationId),
-        where("course", "==", user.course),
-        where("className", "==", user.className),
-        orderBy("desertRunHighScore", "desc")
-    );
-  }, [firestore, user, isPersonalUser]);
-
-  const { data: classmatesData, isLoading: isLoadingClassmates } = useCollection<AppUser>(classmatesQuery);
-
-  const sortedClassmates = useMemo(() => {
-    if (!classmatesData) return [];
-    return classmatesData
-        .filter(c => c.uid !== user?.uid)
-        .sort((a, b) => (b.desertRunHighScore || 0) - (a.desertRunHighScore || 0));
-  }, [classmatesData, user]);
-
-  useEffect(() => {
-    if (gameState.gameOver && user && firestore) {
-      const finalScore = Math.floor(gameState.score);
-      const currentHighScore = user.desertRunHighScore || 0;
-      if (finalScore > currentHighScore) {
-        const userDocRef = doc(firestore, "users", user.uid);
-        updateDoc(userDocRef, { desertRunHighScore: finalScore });
-        updateUser({ desertRunHighScore: finalScore }); // Update local state
-      }
-    }
-  }, [gameState.gameOver, gameState.score, user, firestore, updateUser]);
-
-  const jump = useCallback(() => {
-    setGameState((prev) => {
-      if (prev.gameOver) {
-        return {
-          y: 0,
-          vy: 0,
-          obstacles: [],
-          clouds: [],
-          score: 0,
-          speed: DESERT_BASE_SPEED,
-          nextObstacleIn: 60,
-          nextCloudIn: 10,
-          gameOver: false,
-          isPlaying: true,
-          hasStarted: true,
-        };
-      }
-      if (!prev.isPlaying) {
-        return { ...prev, isPlaying: true, hasStarted: true };
-      }
-      if (prev.y === 0) {
-        return { ...prev, vy: DESERT_JUMP_VELOCITY };
-      }
-      return prev;
-    });
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space" || e.code === "ArrowUp") {
-        e.preventDefault();
-        jump();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [jump]);
-
-  useEffect(() => {
-    const loop = () => {
-      setGameState((prev) => {
-        if (!prev.isPlaying || prev.gameOver) return prev;
-        
-        let newVY = prev.vy - DESERT_GRAVITY;
-        let newY = prev.y + newVY;
-        if (newY <= 0) {
-          newY = 0;
-          newVY = 0;
-        }
-
-        const newScore = prev.score + 0.1;
-        const newSpeed = Math.min(12, DESERT_BASE_SPEED + Math.floor(newScore / 100) * 0.5);
-
-        const cloudSpeed = newSpeed * 0.3;
-        const newClouds = prev.clouds
-          .map((c) => ({ ...c, x: c.x - cloudSpeed }))
-          .filter((c) => c.x > -100);
-
-        let nextCloud = prev.nextCloudIn - 1;
-        if (nextCloud <= 0) {
-          newClouds.push({
-            id: Date.now() + Math.random(),
-            x: DESERT_SPAWN_X,
-            y: Math.floor(Math.random() * 100) + 20,
-            scale: 0.5 + Math.random() * 0.8,
-            opacity: 0.4 + Math.random() * 0.5,
-          });
-          nextCloud = Math.floor(Math.random() * 80) + 40;
-        }
-
-        const newObstacles = prev.obstacles
-          .map((obs) => ({ ...obs, x: obs.x - newSpeed }))
-          .filter((obs) => obs.x + obs.width > -50);
-
-        let nextObs = prev.nextObstacleIn - 1;
-        if (nextObs <= 0) {
-          const isDouble = Math.random() > 0.7 && newSpeed > 7;
-          const type = isDouble ? "double" : "single";
-          const width = isDouble ? 50 : 24;
-          const height = Math.floor(Math.random() * 20) + 40;
-
-          newObstacles.push({ id: Date.now(), x: DESERT_SPAWN_X, width, height, type });
-          
-          const minSafeFrames = 60; 
-          const maxRandomGap = Math.max(80, 160 - newSpeed * 5);
-          nextObs = Math.floor(Math.random() * (maxRandomGap - minSafeFrames)) + minSafeFrames;
-        }
-
-        let isGameOver = false;
-        const hitboxShrink = 6;
-        for (const obs of newObstacles) {
-          if (
-            DESERT_PLAYER_X + hitboxShrink < obs.x + obs.width &&
-            DESERT_PLAYER_X + DESERT_PLAYER_SIZE - hitboxShrink > obs.x &&
-            newY + hitboxShrink < obs.height &&
-            newY + DESERT_PLAYER_SIZE - hitboxShrink > 0
-          ) {
-            isGameOver = true;
-          }
-        }
-
-        return {
-          ...prev, y: newY, vy: newVY, obstacles: newObstacles, clouds: newClouds,
-          score: newScore, speed: newSpeed, nextObstacleIn: nextObs, nextCloudIn: nextCloud,
-          gameOver: isGameOver, isPlaying: !isGameOver,
-        };
-      });
-
-      requestRef.current = requestAnimationFrame(loop);
-    };
-
-    requestRef.current = requestAnimationFrame(loop);
-    return () => {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
-    };
-  }, []);
-
-  return (
-    <ViewContainer title="Desert Run" onBack={onBack}>
-      <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
-        <div className="w-full flex justify-between px-6 py-2 bg-slate-800 text-white rounded-t-lg font-mono text-xl shadow-md z-10">
-          <div className="text-amber-400">HI: {String(user?.desertRunHighScore || 0).padStart(5, '0')}</div>
-          <div className="tracking-widest flex items-center gap-2">
-            <span className="text-slate-400 text-sm">SCORE</span>
-            {Math.floor(gameState.score).toString().padStart(5, "0")}
-          </div>
-        </div>
-        <div
-          className="relative w-full h-72 bg-gradient-to-b from-sky-200 to-sky-50 overflow-hidden border-b-[8px] border-[#c2b280] shadow-xl rounded-b-lg select-none touch-none cursor-pointer"
-          onTouchStart={(e) => { e.preventDefault(); jump(); }} onClick={jump}
-        >
-          {gameState.clouds.map((cloud) => (
-            <div key={cloud.id} className="absolute bg-white rounded-full transition-transform" style={{ width: "60px", height: "20px", left: `${cloud.x}px`, top: `${cloud.y}px`, transform: `scale(${cloud.scale})`, opacity: cloud.opacity }}>
-              <div className="absolute -top-3 left-3 w-8 h-8 bg-white rounded-full" />
-              <div className="absolute -top-2 left-8 w-6 h-6 bg-white rounded-full" />
-            </div>
-          ))}
-          <div className="absolute z-20 transition-transform" style={{ width: `${DESERT_PLAYER_SIZE}px`, height: `${DESERT_PLAYER_SIZE}px`, left: `${DESERT_PLAYER_X}px`, bottom: `${gameState.y}px` }}>
-            <div className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm">
-              <div className="absolute top-2 right-1 w-5 h-4 bg-slate-900 rounded-sm flex items-center justify-end p-0.5">
-                <div className={`w-2 h-2 rounded-full ${gameState.gameOver ? 'bg-red-500' : 'bg-cyan-400 animate-pulse'}`} />
-              </div>
-              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-8 h-3 bg-slate-800 rounded-full border-2 border-slate-600 flex items-center justify-between px-1">
-                 <div className="w-1 h-1 bg-slate-400 rounded-full" />
-                 <div className="w-1 h-1 bg-slate-400 rounded-full" />
-              </div>
-            </div>
-          </div>
-          {gameState.obstacles.map((obs) => (
-            <div key={obs.id} className="absolute z-10 flex items-end justify-center gap-2" style={{ width: `${obs.width}px`, height: `${obs.height}px`, left: `${obs.x}px`, bottom: "0px" }}>
-              {obs.type === "single" && (
-                <div className="relative w-6 h-full bg-emerald-600 border-2 border-emerald-800 rounded-t-lg">
-                  <div className="absolute bottom-4 -left-3 w-4 h-6 border-b-2 border-l-2 border-emerald-800 rounded-bl-lg" />
-                  <div className="absolute bottom-6 -right-3 w-4 h-8 border-b-2 border-r-2 border-emerald-800 rounded-br-lg" />
-                </div>
-              )}
-              {obs.type === "double" && (<>
-                  <div className="relative w-6 h-full bg-emerald-600 border-2 border-emerald-800 rounded-t-lg" />
-                  <div className="relative w-6 bg-emerald-700 border-2 border-emerald-900 rounded-t-lg" style={{ height: '80%' }} />
-              </>)}
-            </div>
-          ))}
-          {!gameState.hasStarted && !gameState.gameOver && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/20 backdrop-blur-sm z-30">
-              <div className="bg-slate-800 text-white px-8 py-4 rounded-xl shadow-2xl text-center animate-bounce">
-                <h1 className="text-2xl font-black mb-2 text-amber-400">DESERT RUN</h1>
-                <p className="font-mono text-sm">ESPACIO / CLICK para saltar</p>
-              </div>
-            </div>
-          )}
-          {gameState.gameOver && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm z-30">
-              <div className="bg-white px-10 py-6 rounded-2xl shadow-2xl text-center transform scale-100 transition-all">
-                <h2 className="text-5xl font-black text-red-600 mb-2">CRASH!</h2>
-                <p className="text-slate-600 font-mono mb-6">Score: {Math.floor(gameState.score)}</p>
-                <button onClick={jump} className="bg-orange-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all">REINTENTAR</button>
-              </div>
-            </div>
-          )}
-        </div>
-        <p className="mt-2 text-xs font-mono text-slate-400">Engine: React Frame Loop | Render: DOM CSS | FPS: VSync</p>
-
-        {!isPersonalUser && (
-            <Collapsible className="w-full mt-4">
-              <CollapsibleTrigger asChild>
-                <div className="group flex w-full cursor-pointer items-center justify-between rounded-lg border bg-muted/50 p-4 transition-all hover:bg-muted">
-                    <div className="flex items-center gap-3">
-                        <Users className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold">Ranking de la Clase</h3>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-90" />
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                <div className="py-4">
-                    {isLoadingClassmates ? (
-                        <div className="p-4 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
-                    ) : sortedClassmates.length > 0 ? (
-                        <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                            <CarouselContent className="-ml-2">
-                                {sortedClassmates.map((classmate) => (
-                                    <CarouselItem key={classmate.uid} className="pl-2 basis-1/2 md:basis-1/3">
-                                        <div className="p-1">
-                                            <Card>
-                                                <CardContent className="flex flex-col items-center justify-center p-3 sm:p-4 aspect-[4/5]">
-                                                    <AvatarDisplay user={classmate} className="h-12 w-12 sm:h-16 sm:w-16 mb-2" />
-                                                    <p className="font-bold text-sm text-center truncate w-full">{classmate.name}</p>
-                                                    <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-2">
-                                                        <Trophy className="h-3 w-3 text-amber-500" />
-                                                        <span className="font-bold">{classmate.desertRunHighScore || 0}</span>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        </div>
-                                    </CarouselItem>
-                                ))}
-                            </CarouselContent>
-                            <div className="flex justify-center gap-4 pt-4">
-                                <CarouselPrevious className="static translate-y-0" />
-                                <CarouselNext className="static translate-y-0" />
-                            </div>
-                        </Carousel>
-                    ) : (
-                        <div className="text-center text-sm text-muted-foreground p-4 border-dashed border-2 rounded-lg">Aún no hay puntuaciones en tu clase.</div>
-                    )}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-        )}
-      </div>
-    </ViewContainer>
-  );
-};
-
-const FlappyBirdGame = ({ onBack }: { onBack: () => void }) => {
-  const { user, updateUser } = useApp();
-  const firestore = useFirestore();
-  const [gameState, setGameState] = useState<FlappyBirdGameState>({
-    birdY: FLAPPY_GAME_HEIGHT / 2,
-    velocity: 0,
-    pipes: [],
-    score: 0,
-    status: "idle",
-    framesUntilNextPipe: 0,
-  });
-
-  const requestRef = useRef<number>();
-  const isPersonalUser = user?.center === 'personal' || user?.center === 'default';
-
-  const classmatesQuery = useMemoFirebase(() => {
-    if (!firestore || !user || isPersonalUser) return null;
-    return query(
-        collection(firestore, "users"),
-        where("organizationId", "==", user.organizationId),
-        where("course", "==", user.course),
-        where("className", "==", user.className),
-        orderBy("flappyBotHighScore", "desc")
-    );
-  }, [firestore, user, isPersonalUser]);
-
-  const { data: classmatesData, isLoading: isLoadingClassmates } = useCollection<AppUser>(classmatesQuery);
-
-  const sortedClassmates = useMemo(() => {
-    if (!classmatesData) return [];
-    return classmatesData
-        .filter(c => c.uid !== user?.uid)
-        .sort((a, b) => (b.flappyBotHighScore || 0) - (a.flappyBotHighScore || 0));
-  }, [classmatesData, user]);
-
-  useEffect(() => {
-    if (gameState.status === 'gameover' && user && firestore) {
-      const finalScore = gameState.score;
-      const currentHighScore = user.flappyBotHighScore || 0;
-      if (finalScore > currentHighScore) {
-        const userDocRef = doc(firestore, "users", user.uid);
-        updateDoc(userDocRef, { flappyBotHighScore: finalScore });
-        updateUser({ flappyBotHighScore: finalScore });
-      }
-    }
-  }, [gameState.status, gameState.score, user, firestore, updateUser]);
-
-  const flap = useCallback(() => {
-    setGameState((prev) => {
-      if (prev.status === "gameover") {
-        return {
-          birdY: FLAPPY_GAME_HEIGHT / 2,
-          velocity: FLAP_VELOCITY,
-          pipes: [],
-          score: 0,
-          status: "playing",
-          framesUntilNextPipe: FLAPPY_PIPE_SPAWN_RATE,
-        };
-      }
-      if (prev.status === "idle") {
-        return { ...prev, status: "playing", velocity: FLAP_VELOCITY };
-      }
-      return { ...prev, velocity: FLAP_VELOCITY };
-    });
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space") {
-        e.preventDefault();
-        flap();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [flap]);
-
-  useEffect(() => {
-    const loop = () => {
-      setGameState((prev) => {
-        if (prev.status !== "playing") return prev;
-
-        const newVelocity = prev.velocity + FLAPPY_GRAVITY;
-        let newBirdY = prev.birdY + newVelocity;
-
-        let newPipes = prev.pipes
-          .map((pipe) => ({ ...pipe, x: pipe.x - FLAPPY_PIPE_SPEED }))
-          .filter((pipe) => pipe.x + FLAPPY_PIPE_WIDTH > 0);
-
-        let nextPipeTimer = prev.framesUntilNextPipe - 1;
-        if (nextPipeTimer <= 0) {
-          const minPipeHeight = 50;
-          const maxPipeHeight = FLAPPY_GAME_HEIGHT - FLAPPY_GAP_SIZE - minPipeHeight;
-          const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight + 1)) + minPipeHeight;
-          newPipes.push({ id: Date.now(), x: FLAPPY_GAME_WIDTH, topHeight, passed: false });
-          nextPipeTimer = FLAPPY_PIPE_SPAWN_RATE;
-        }
-
-        let newScore = prev.score;
-        newPipes.forEach((pipe) => {
-          if (!pipe.passed && pipe.x + FLAPPY_PIPE_WIDTH < FLAPPY_BIRD_X) {
-            newScore += 1;
-            pipe.passed = true;
-          }
-        });
-
-        let isGameOver = false;
-        if (newBirdY < 0 || newBirdY + FLAPPY_BIRD_SIZE > FLAPPY_GAME_HEIGHT) {
-          isGameOver = true;
-          if (newBirdY + FLAPPY_BIRD_SIZE > FLAPPY_GAME_HEIGHT) newBirdY = FLAPPY_GAME_HEIGHT - FLAPPY_BIRD_SIZE;
-        }
-
-        const hitboxShrink = 4;
-        const bLeft = FLAPPY_BIRD_X + hitboxShrink;
-        const bRight = FLAPPY_BIRD_X + FLAPPY_BIRD_SIZE - hitboxShrink;
-        const bTop = newBirdY + hitboxShrink;
-        const bBottom = newBirdY + FLAPPY_BIRD_SIZE - hitboxShrink;
-
-        for (const pipe of newPipes) {
-          const pLeft = pipe.x;
-          const pRight = pipe.x + FLAPPY_PIPE_WIDTH;
-          if (bRight > pLeft && bLeft < pRight) {
-            if (bTop < pipe.topHeight || bBottom > pipe.topHeight + FLAPPY_GAP_SIZE) {
-              isGameOver = true;
-            }
-          }
-        }
-
-        return {
-          ...prev, birdY: newBirdY, velocity: newVelocity, pipes: newPipes,
-          score: newScore, status: isGameOver ? "gameover" : "playing",
-          framesUntilNextPipe: nextPipeTimer,
-        };
-      });
-
-      requestRef.current = requestAnimationFrame(loop);
-    };
-
-    requestRef.current = requestAnimationFrame(loop);
-    return () => {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
-    };
-  }, []);
-
-  return (
-    <ViewContainer title="Flappy BOT" onBack={onBack}>
-      <div className="flex flex-col items-center justify-center w-full p-4 font-sans select-none touch-none">
-        <div className="w-full flex justify-between px-6 py-2 bg-slate-800 text-white rounded-t-lg font-mono text-xl shadow-md z-10">
-          <div className="text-amber-400">HI: {String(user?.flappyBotHighScore || 0).padStart(5, '0')}</div>
-          <div className="tracking-widest flex items-center gap-2">
-            <span className="text-slate-400 text-sm">SCORE</span>
-            {gameState.score.toString().padStart(5, "0")}
-          </div>
-        </div>
-        <div className="relative overflow-hidden bg-sky-300 shadow-2xl rounded-b-lg border-4 border-slate-800 cursor-pointer" style={{ width: `${FLAPPY_GAME_WIDTH}px`, height: `${FLAPPY_GAME_HEIGHT}px` }} onClick={flap} onTouchStart={(e) => { e.preventDefault(); flap(); }}>
-          <div className="absolute top-6 w-full text-center z-20 pointer-events-none">
-            <span className="text-5xl font-black text-white" style={{ WebkitTextStroke: "2px #1e293b" }}>{gameState.score}</span>
-          </div>
-          <div className="absolute bg-yellow-400 rounded-full border-2 border-slate-800 z-10 transition-transform duration-75" style={{ width: `${FLAPPY_BIRD_SIZE}px`, height: `${FLAPPY_BIRD_SIZE}px`, left: `${FLAPPY_BIRD_X}px`, top: `${gameState.birdY}px`, transform: `rotate(${Math.min(Math.max(gameState.velocity * 4, -25), 90)}deg)` }}>
-            <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full"><div className="absolute top-0.5 right-0.5 w-1 h-1 bg-black rounded-full" /></div>
-            <div className="absolute top-2.5 -right-2 w-3 h-2 bg-orange-500 rounded-r-full border border-slate-800" />
-          </div>
-          {gameState.pipes.map((pipe) => (
-            <React.Fragment key={pipe.id}>
-              <div className="absolute bg-green-500 border-2 border-green-800 rounded-b-sm" style={{ width: `${FLAPPY_PIPE_WIDTH}px`, height: `${pipe.topHeight}px`, left: `${pipe.x}px`, top: 0 }}>
-                <div className="absolute bottom-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
-              </div>
-              <div className="absolute bg-green-500 border-2 border-green-800 rounded-t-sm" style={{ width: `${FLAPPY_PIPE_WIDTH}px`, height: `${FLAPPY_GAME_HEIGHT - pipe.topHeight - FLAPPY_GAP_SIZE}px`, left: `${pipe.x}px`, top: `${pipe.topHeight + FLAPPY_GAP_SIZE}px` }}>
-                <div className="absolute top-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
-              </div>
-            </React.Fragment>
-          ))}
-          <div className="absolute bottom-0 w-full h-4 bg-amber-200 border-t-4 border-amber-800 z-10" />
-          {gameState.status === "idle" && (
-            <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-center z-30 pointer-events-none">
-              <div className="bg-white px-6 py-3 rounded shadow-lg text-slate-800 font-bold text-lg animate-bounce">Toca para volar</div>
-            </div>
-          )}
-          {gameState.status === "gameover" && (
-            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-30 backdrop-blur-sm">
-              <div className="bg-[#ded895] border-4 border-[#543847] p-6 rounded-lg shadow-2xl text-center transform scale-100 transition-transform">
-                <h2 className="text-4xl font-black text-white mb-2" style={{ WebkitTextStroke: "1px #543847" }}>GAME OVER</h2>
-                <div className="bg-[#bdae58] border-2 border-[#543847] rounded p-4 mb-4 text-center">
-                  <p className="text-[#543847] font-bold uppercase text-sm mb-1">Score</p>
-                  <p className="text-3xl font-black text-white" style={{ WebkitTextStroke: "1px #543847" }}>{gameState.score}</p>
-                </div>
-                <button onClick={flap} className="bg-orange-500 border-2 border-white hover:bg-orange-600 text-white font-black uppercase tracking-wider py-2 px-6 rounded-full shadow-lg active:scale-95 transition-all">Reintentar</button>
-              </div>
-            </div>
-          )}
-        </div>
-        <p className="mt-4 text-xs text-slate-500 font-mono">Pulsa Espacio o toca la pantalla</p>
-         {!isPersonalUser && (
-            <Collapsible className="w-full mt-4">
-              <CollapsibleTrigger asChild>
-                <div className="group flex w-full cursor-pointer items-center justify-between rounded-lg border bg-muted/50 p-4 transition-all hover:bg-muted">
-                    <div className="flex items-center gap-3">
-                        <Users className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold">Ranking de la Clase</h3>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-90" />
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                <div className="py-4">
-                    {isLoadingClassmates ? (
-                        <div className="p-4 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
-                    ) : sortedClassmates.length > 0 ? (
-                        <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                            <CarouselContent className="-ml-2">
-                                {sortedClassmates.map((classmate) => (
-                                    <CarouselItem key={classmate.uid} className="pl-2 basis-1/2 md:basis-1/3">
-                                        <div className="p-1">
-                                            <Card>
-                                                <CardContent className="flex flex-col items-center justify-center p-3 sm:p-4 aspect-[4/5]">
-                                                    <AvatarDisplay user={classmate} className="h-12 w-12 sm:h-16 sm:w-16 mb-2" />
-                                                    <p className="font-bold text-sm text-center truncate w-full">{classmate.name}</p>
-                                                    <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-2">
-                                                        <Trophy className="h-3 w-3 text-amber-500" />
-                                                        <span className="font-bold">{classmate.flappyBotHighScore || 0}</span>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        </div>
-                                    </CarouselItem>
-                                ))}
-                            </CarouselContent>
-                            <div className="flex justify-center gap-4 pt-4">
-                                <CarouselPrevious className="static translate-y-0" />
-                                <CarouselNext className="static translate-y-0" />
-                            </div>
-                        </Carousel>
-                    ) : (
-                        <div className="text-center text-sm text-muted-foreground p-4 border-dashed border-2 rounded-lg">Aún no hay puntuaciones en tu clase.</div>
-                    )}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-        )}
-      </div>
-    </ViewContainer>
-  );
 };
