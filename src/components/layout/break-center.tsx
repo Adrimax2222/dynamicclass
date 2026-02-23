@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
@@ -64,7 +63,7 @@ const DESERT_SPAWN_X = 1000;
 const DESERT_BASE_SPEED = 6;
 
 // Types for DesertRun
-type Obstacle = {
+type DesertRunObstacle = {
   id: number;
   x: number;
   width: number;
@@ -72,7 +71,7 @@ type Obstacle = {
   type: "single" | "double";
 };
 
-type Cloud = {
+type DesertRunCloud = {
   id: number;
   x: number;
   y: number;
@@ -83,8 +82,8 @@ type Cloud = {
 type DesertRunGameState = {
   y: number;
   vy: number;
-  obstacles: Obstacle[];
-  clouds: Cloud[];
+  obstacles: DesertRunObstacle[];
+  clouds: DesertRunCloud[];
   score: number;
   speed: number;
   nextObstacleIn: number;
@@ -106,6 +105,7 @@ const FLAPPY_GAME_WIDTH = 350; // Resolución lógica interna (ancho)
 const FLAPPY_GAME_HEIGHT = 500; // Resolución lógica interna (alto)
 const FLAPPY_PIPE_SPAWN_RATE = 90; // Frames entre cada nueva tubería
 
+
 // Types for FlappyBird
 type FlappyBirdGameState = {
   birdY: number;
@@ -122,6 +122,16 @@ type Pipe = {
   topHeight: number;
   passed: boolean;
 };
+
+// Types for MemoryGame
+type MemoryCard = {
+  id: number;
+  seed: string;
+  isFlipped: boolean;
+  isMatched: boolean;
+};
+
+const DICEBEAR_STYLES = ['pixel-art', 'identicon', 'fun-emoji', 'croodles', 'bottts', 'avataaars', 'adventurer', 'lorelei', 'micah', 'open-peeps'];
 
 
 // --- Helper Functions ---
@@ -186,7 +196,6 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-    const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
     
     const hasFetched = useRef(false);
     const retryAttempted = useRef(false);
@@ -196,7 +205,6 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
         setError(null);
         setQuestion(null);
         setSelectedAnswer(null);
-        setIsCorrect(null);
         
         try {
             const response = await fetch('https://opentdb.com/api.php?amount=1&type=multiple&encode=url3986');
@@ -251,7 +259,6 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
     const handleAnswer = (answer: string) => {
         if (selectedAnswer) return;
         setSelectedAnswer(answer);
-        setIsCorrect(answer === question?.correct_answer);
         setTimeout(() => {
             fetchTrivia();
         }, 2000);
@@ -282,6 +289,9 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
                     {question.shuffled_answers.map(answer => {
                         const isSelected = selectedAnswer === answer;
                         const isTheCorrectAnswer = answer === question.correct_answer;
+                        const showAsCorrect = selectedAnswer && isTheCorrectAnswer;
+                        const showAsIncorrect = selectedAnswer && isSelected && !isTheCorrectAnswer;
+                        
                         return (
                             <Button
                                 key={answer}
@@ -289,8 +299,9 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
                                 disabled={!!selectedAnswer}
                                 className={cn(
                                     "h-auto py-3 whitespace-normal",
-                                    selectedAnswer && (isTheCorrectAnswer ? 'bg-green-500 hover:bg-green-600' : isSelected ? 'bg-destructive hover:bg-destructive/90' : 'bg-muted hover:bg-muted'),
-                                    selectedAnswer && !isSelected && !isTheCorrectAnswer && 'opacity-50'
+                                    showAsCorrect ? 'bg-green-500 hover:bg-green-600' : 
+                                    showAsIncorrect ? 'bg-destructive hover:bg-destructive/90' : 
+                                    selectedAnswer ? 'bg-muted hover:bg-muted opacity-50' : ''
                                 )}
                             >
                                 {answer}
@@ -304,9 +315,9 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
                             <motion.p 
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
-                                className={`font-bold text-lg ${isCorrect ? 'text-green-500' : 'text-destructive'}`}
+                                className={`font-bold text-lg ${selectedAnswer === question.correct_answer ? 'text-green-500' : 'text-destructive'}`}
                             >
-                                {isCorrect ? '¡Correcto!' : 'Incorrecto'}
+                                {selectedAnswer === question.correct_answer ? '¡Correcto!' : 'Incorrecto'}
                             </motion.p>
                         </AnimatePresence>
                     </div>
@@ -542,7 +553,7 @@ const MemoryGame = ({ onBack }: { onBack: () => void }) => {
       </div>
     </ViewContainer>
   );
-}
+};
 
 // WORDLE GAME
 type CellStatus = 'empty' | 'typing' | 'correct' | 'present' | 'absent'
@@ -553,7 +564,7 @@ type Cell = {
   status: CellStatus;
 };
 
-const FALLBACK_WORDS = ['QUESO', 'CASAS', 'FAROL', 'MANGO', 'PERRO', 'GATOS', 'CINCO', 'JUEGO', 'MUNDO', 'APPLE'];
+const FALLBACK_WORDS_ES = ['QUESO', 'CASAS', 'FAROL', 'MANGO', 'PERRO', 'GATOS', 'CINCO', 'JUEGO', 'MUNDO', 'ARBOL', 'PLAZA', 'LIBRO', 'MESAS', 'CIELO', 'NUBES', 'FLACO', 'GRANO', 'TRIGO', 'POLLO', 'LETRA', 'CORTO', 'LARGO', 'FOTOS', 'REGLA', 'PAPEL', 'LAPIZ', 'GOMAS', 'SALTO', 'FUEGO', 'AGUAS', 'PIEZA', 'BRAZO', 'MANOS', 'DEDOS', 'CARNE', 'PESAR', 'LISTA', 'CORAL', 'BARCO', 'AVION', 'MOTOS', 'LLAVE', 'PUERTA', 'LUCES', 'VERDE', 'ROJOS', 'AZUL', 'NUNCA', 'SIEMPRE', 'TARDE'];
 
 const normalizeWord = (str: string) => {
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -567,6 +578,8 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
     const [currentRow, setCurrentRow] = useState(0);
     const [usedChars, setUsedChars] = useState<Record<string, CellStatus>>({});
     const [error, setError] = useState<string | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
+
 
     const getPlayedWords = (): string[] => {
         try {
@@ -595,7 +608,7 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
         setGameState('loading');
         setError(null);
         try {
-            const response = await fetch(`https://api.datamuse.com/words?ml=${encodeURIComponent(currentTheme)}&max=100`);
+            const response = await fetch(`https://api.datamuse.com/words?ml=${encodeURIComponent(currentTheme)}&v=es&max=100`);
             if (!response.ok) throw new Error('API request failed');
             const data = await response.json();
             
@@ -606,13 +619,14 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
                 .filter((word: string) => 
                     word.length === 5 && 
                     /^[A-Z]+$/.test(word) && // Only letters
-                    !playedWords.includes(word)
+                    !playedWords.includes(word) &&
+                    (word.match(/[AEIOU]/g) || []).length >= 2 // At least 2 vowels
                 );
             
             if (validWords.length === 0) {
                 console.warn("No valid words from API, using fallback.");
-                validWords = FALLBACK_WORDS.filter(word => !playedWords.includes(word));
-                if (validWords.length === 0) validWords = FALLBACK_WORDS; // Reset if all fallbacks used
+                validWords = FALLBACK_WORDS_ES.filter(word => !playedWords.includes(word));
+                if (validWords.length === 0) validWords = FALLBACK_WORDS_ES; // Reset if all fallbacks used
             }
 
             const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
@@ -631,13 +645,17 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
     }, []);
 
     const handleSubmitGuess = () => {
+        if (isProcessing) return;
+    
         const guess = grid[currentRow].map(cell => cell.char).join('');
         if (guess.length !== 5) return;
         
+        setIsProcessing(true);
+    
         let newGrid = [...grid];
         let newUsedChars = { ...usedChars };
         const tempWord = wordToGuess.split('');
-
+    
         // First pass for 'correct' letters
         newGrid[currentRow] = newGrid[currentRow].map((cell, index) => {
             if (cell.char === tempWord[index]) {
@@ -651,7 +669,7 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
         // Second pass for 'present' and 'absent' letters
         newGrid[currentRow] = newGrid[currentRow].map((cell) => {
             if (cell.status === 'correct') return cell;
-
+    
             const charIndex = tempWord.indexOf(cell.char);
             if (charIndex !== -1) {
                 tempWord[charIndex] = ''; // Mark as used
@@ -665,22 +683,25 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
             }
             return { ...cell, status: 'absent' };
         });
-
+    
         setGrid(newGrid);
         setUsedChars(newUsedChars);
         
-        if (guess === wordToGuess) {
-            setGameState('won');
-        } else if (currentRow === 5) {
-            setGameState('lost');
-        } else {
-            setCurrentRow(prev => prev + 1);
-        }
+        setTimeout(() => {
+            if (guess === wordToGuess) {
+                setGameState('won');
+            } else if (currentRow === 5) {
+                setGameState('lost');
+            } else {
+                setCurrentRow(prev => prev + 1);
+            }
+            setIsProcessing(false);
+        }, 5 * 300); // Wait for all animations to finish
     };
     
     const handleKeyInput = useCallback((key: string) => {
-        if (gameState !== 'playing') return;
-
+        if (gameState !== 'playing' || isProcessing) return;
+        
         if (key === 'Enter') {
             handleSubmitGuess();
         } else if (key === 'Backspace') {
@@ -706,10 +727,13 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
                 return newGrid;
             });
         }
-    }, [gameState, grid, currentRow, handleSubmitGuess]);
+    }, [gameState, isProcessing, grid, currentRow, handleSubmitGuess]);
     
     useEffect(() => {
-        const listener = (e: KeyboardEvent) => handleKeyInput(e.key);
+        const listener = (e: KeyboardEvent) => {
+            e.preventDefault();
+            handleKeyInput(e.key)
+        };
         window.addEventListener('keydown', listener);
         return () => window.removeEventListener('keydown', listener);
     }, [handleKeyInput]);
@@ -754,18 +778,17 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
     return (
         <ViewContainer title={`Wordle: ${theme}`} onBack={() => setGameState('config')}>
             <div className="flex flex-col items-center gap-4 h-full">
-                <div className="grid grid-rows-6 gap-1.5 flex-grow">
+                <div className="grid grid-rows-6 gap-1.5">
                     {grid.map((row, rowIndex) => (
                         <div key={rowIndex} className="grid grid-cols-5 gap-1.5">
                             {row.map((cell, cellIndex) => {
-                                const isCurrentRow = rowIndex === currentRow;
                                 const isSubmitted = rowIndex < currentRow;
 
                                 return (
                                     <motion.div
                                         key={cellIndex}
                                         className={cn(
-                                            "w-14 h-14 rounded-md border-2 flex items-center justify-center text-2xl font-bold uppercase",
+                                            "w-14 h-14 rounded-md border-2 flex items-center justify-center text-2xl font-bold uppercase aspect-square",
                                             cell.status === 'empty' && 'border-muted-foreground/30',
                                             cell.status === 'typing' && 'border-primary',
                                             cell.status === 'correct' && 'bg-green-500 border-green-500 text-white',
@@ -797,7 +820,7 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
                     </div>
                 )}
                 
-                <div className="space-y-1 w-full max-w-sm">
+                <div className="space-y-1 w-full max-w-sm mt-auto">
                     {['QWERTYUIOP', 'ASDFGHJKLÑ', 'ZXCVBNM'].map((row, rowIndex) => (
                         <div key={rowIndex} className="flex justify-center gap-1">
                             {rowIndex === 2 && <Button className="h-10 px-3" variant="outline" onClick={() => handleKeyInput('Enter')}>↵</Button>}
@@ -809,9 +832,9 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
                                         onClick={() => handleKeyInput(key)}
                                         className={cn(
                                             'h-10 px-2.5 sm:px-3 text-sm font-bold flex-1',
-                                            status === 'correct' && 'bg-green-500 text-white',
-                                            status === 'present' && 'bg-yellow-500 text-white',
-                                            status === 'absent' && 'bg-slate-500 text-white'
+                                            status === 'correct' && 'bg-green-500 text-white hover:bg-green-600',
+                                            status === 'present' && 'bg-yellow-500 text-white hover:bg-yellow-600',
+                                            status === 'absent' && 'bg-slate-500 text-white hover:bg-slate-600'
                                         )}
                                         variant="outline"
                                     >
@@ -867,23 +890,20 @@ const ZenFlightView = ({ onClose }: { onClose: () => void; }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isLoadingImage, setIsLoadingImage] = useState(true);
     const [secondsLeft, setSecondsLeft] = useState(13);
-    const [isMounted, setIsMounted] = useState(false);
     
     const handleNextImage = useCallback(() => {
         setIsLoadingImage(true);
         setSecondsLeft(13);
         setCurrentIndex(prevIndex => {
-            const availableImages = earthImages.filter(img => img.id !== playlist[prevIndex]?.id);
             if (prevIndex >= playlist.length - 1) {
-                setPlaylist(shuffleArray(availableImages));
+                setPlaylist(shuffleArray(earthImages));
                 return 0;
             }
             return prevIndex + 1;
         });
-    }, [playlist]);
+    }, [playlist.length]);
     
     useEffect(() => {
-        setIsMounted(true);
         setPlaylist(shuffleArray(earthImages));
         setCurrentIndex(0);
         setIsLoadingImage(true);
@@ -894,7 +914,7 @@ const ZenFlightView = ({ onClose }: { onClose: () => void; }) => {
     const imageUrl = currentImage ? `https://www.gstatic.com/prettyearth/assets/full/${currentImage.id}.jpg?t=${Date.now()}` : '';
 
     useEffect(() => {
-        if (!isMounted || isLoadingImage) return;
+        if (isLoadingImage) return;
 
         const countdownInterval = setInterval(() => {
             setSecondsLeft(prev => {
@@ -907,9 +927,9 @@ const ZenFlightView = ({ onClose }: { onClose: () => void; }) => {
         }, 1000);
 
         return () => clearInterval(countdownInterval);
-    }, [isMounted, isLoadingImage, handleNextImage]);
+    }, [isLoadingImage, handleNextImage]);
 
-    if (!isMounted || !currentImage) {
+    if (!currentImage) {
         return (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-black">
                 <Loader2 className="h-8 w-8 animate-spin text-white" />
@@ -989,7 +1009,8 @@ const ZenFlightView = ({ onClose }: { onClose: () => void; }) => {
 };
 
 export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
-    const { isActive, setIsActive, phase } = useApp();
+    const { isActive, setIsActive, phase, user, updateUser, firestore } = useApp();
+    const { toast } = useToast();
     const [view, setView] = useState<View>('menu');
     const [wasActiveBeforeBreak, setWasActiveBeforeBreak] = useState(false);
 
