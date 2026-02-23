@@ -98,13 +98,12 @@ const FLAPPY_GRAVITY = 0.5;
 const FLAP_VELOCITY = -8;
 const FLAPPY_PIPE_SPEED = 3;
 const FLAPPY_PIPE_WIDTH = 60;
-const FLAPPY_GAP_SIZE = 140; // Hueco entre tuberías
+const FLAPPY_GAP_SIZE = 140;
 const FLAPPY_BIRD_SIZE = 24;
-const FLAPPY_BIRD_X = 50; // Posición horizontal estática del pájaro
-const FLAPPY_GAME_WIDTH = 350; // Resolución lógica interna (ancho)
-const FLAPPY_GAME_HEIGHT = 500; // Resolución lógica interna (alto)
-const FLAPPY_PIPE_SPAWN_RATE = 90; // Frames entre cada nueva tubería
-
+const FLAPPY_BIRD_X = 50;
+const FLAPPY_GAME_WIDTH = 350;
+const FLAPPY_GAME_HEIGHT = 500;
+const FLAPPY_PIPE_SPAWN_RATE = 90;
 
 // Types for FlappyBird
 type FlappyBirdGameState = {
@@ -133,11 +132,27 @@ type MemoryCard = {
 
 const DICEBEAR_STYLES = ['pixel-art', 'identicon', 'fun-emoji', 'croodles', 'bottts', 'avataaars', 'adventurer', 'lorelei', 'micah', 'open-peeps'];
 
+// Types for WordleGame
+type CellStatus = 'empty' | 'typing' | 'correct' | 'present' | 'absent';
+type GameStatus = 'playing' | 'won' | 'lost' | 'loading' | 'config';
+
+type Cell = {
+  char: string;
+  status: CellStatus;
+};
+
+const FALLBACK_WORDS_ES = ['QUESO', 'CASAS', 'FAROL', 'MANGO', 'PERRO', 'GATOS', 'CINCO', 'JUEGO', 'MUNDO', 'ARBOL', 'PLAZA', 'LIBRO', 'MESAS', 'CIELO', 'NUBES', 'FLACO', 'GRANO', 'TRIGO', 'POLLO', 'LETRA', 'CORTO', 'LARGO', 'FOTOS', 'REGLA', 'PAPEL', 'LAPIZ', 'GOMAS', 'SALTO', 'FUEGO', 'AGUAS', 'PIEZA', 'BRAZO', 'MANOS', 'DEDOS', 'CARNE', 'PESAR', 'LISTA', 'CORAL', 'BARCO', 'AVION', 'MOTOS', 'LLAVE', 'PUERTA', 'LUCES', 'VERDE', 'ROJOS', 'AZUL', 'NUNCA', 'SIEMPRE', 'TARDE'];
+
 
 // --- Helper Functions ---
 const shuffleArray = <T,>(array: T[]): T[] => {
     return [...array].sort(() => Math.random() - 0.5);
 };
+
+const normalizeWord = (str: string) => {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+};
+
 
 // --- Framer Motion Variants ---
 const backdropVariants = {
@@ -555,21 +570,6 @@ const MemoryGame = ({ onBack }: { onBack: () => void }) => {
   );
 };
 
-// WORDLE GAME
-type CellStatus = 'empty' | 'typing' | 'correct' | 'present' | 'absent'
-type GameStatus = 'playing' | 'won' | 'lost' | 'loading' | 'config'
-
-type Cell = {
-  char: string;
-  status: CellStatus;
-};
-
-const FALLBACK_WORDS_ES = ['QUESO', 'CASAS', 'FAROL', 'MANGO', 'PERRO', 'GATOS', 'CINCO', 'JUEGO', 'MUNDO', 'ARBOL', 'PLAZA', 'LIBRO', 'MESAS', 'CIELO', 'NUBES', 'FLACO', 'GRANO', 'TRIGO', 'POLLO', 'LETRA', 'CORTO', 'LARGO', 'FOTOS', 'REGLA', 'PAPEL', 'LAPIZ', 'GOMAS', 'SALTO', 'FUEGO', 'AGUAS', 'PIEZA', 'BRAZO', 'MANOS', 'DEDOS', 'CARNE', 'PESAR', 'LISTA', 'CORAL', 'BARCO', 'AVION', 'MOTOS', 'LLAVE', 'PUERTA', 'LUCES', 'VERDE', 'ROJOS', 'AZUL', 'NUNCA', 'SIEMPRE', 'TARDE'];
-
-const normalizeWord = (str: string) => {
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-};
-
 const Game2048 = ({ onBack }: { onBack: () => void }) => {
     // ... Implementation remains the same
     return <ViewContainer title="2048" onBack={onBack}><div className="text-center">Próximamente...</div></ViewContainer>;
@@ -736,7 +736,10 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
     const [currentRow, setCurrentRow] = useState(0);
     const [usedChars, setUsedChars] = useState<Record<string, CellStatus>>({});
     const [error, setError] = useState<string | null>(null);
-    const [isProcessing, setIsProcessing] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    const isProcessingKey = useRef(false);
+    const fallbackWords = useMemo(() => ['PERRO', 'GATOS', 'CASAS', 'SILLA', 'LIBRO', 'PLAYA', 'BARCO', 'FRUTA', 'VERDE', 'PIANO'], []);
 
 
     const getPlayedWords = (): string[] => {
@@ -776,15 +779,15 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
                 .map((d: { word: string }) => normalizeWord(d.word))
                 .filter((word: string) => 
                     word.length === 5 && 
-                    /^[A-Z]+$/.test(word) && // Only letters
+                    /^[A-Z]+$/.test(word) && 
                     !playedWords.includes(word) &&
-                    (word.match(/[AEIOU]/g) || []).length >= 2 // At least 2 vowels
+                    (word.match(/[AEIOU]/g) || []).length >= 2
                 );
             
             if (validWords.length === 0) {
                 console.warn("No valid words from API, using fallback.");
-                validWords = FALLBACK_WORDS_ES.filter(word => !playedWords.includes(word));
-                if (validWords.length === 0) validWords = FALLBACK_WORDS_ES; // Reset if all fallbacks used
+                validWords = fallbackWords.filter(word => !playedWords.includes(word));
+                if (validWords.length === 0) validWords = fallbackWords;
             }
 
             const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
@@ -797,73 +800,78 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
             setGameState('playing');
         } catch (err) {
             console.error(err);
-            setError('No se pudo generar una palabra. Intenta con otro tema.');
-            setGameState('config');
+            let validWords = fallbackWords.filter(word => !getPlayedWords().includes(word));
+            if (validWords.length === 0) validWords = fallbackWords;
+            const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
+            setWordToGuess(selectedWord);
+            addPlayedWord(selectedWord);
+            setGrid(initializeGrid());
+            setCurrentRow(0);
+            setUsedChars({});
+            setGameState('playing');
         }
-    }, []);
+    }, [fallbackWords]);
 
     const handleSubmitGuess = useCallback(() => {
-        if (isProcessing) return;
+        if (isSubmitting) return;
     
         const guess = grid[currentRow].map(cell => cell.char).join('');
         if (guess.length !== 5) return;
         
-        setIsProcessing(true);
+        setIsSubmitting(true);
     
-        let newGrid = [...grid];
-        let newUsedChars = { ...usedChars };
-        const tempWord = wordToGuess.split('');
-    
-        // First pass for 'correct' letters
-        newGrid[currentRow] = newGrid[currentRow].map((cell, index) => {
-            if (cell.char === tempWord[index]) {
-                tempWord[index] = ''; // Mark as used
-                newUsedChars[cell.char] = 'correct';
-                return { ...cell, status: 'correct' };
-            }
-            return cell;
-        });
-        
-        // Second pass for 'present' and 'absent' letters
-        newGrid[currentRow] = newGrid[currentRow].map((cell) => {
-            if (cell.status === 'correct') return cell;
-    
-            const charIndex = tempWord.indexOf(cell.char);
-            if (charIndex !== -1) {
-                tempWord[charIndex] = ''; // Mark as used
-                if (newUsedChars[cell.char] !== 'correct') {
-                    newUsedChars[cell.char] = 'present';
-                }
-                return { ...cell, status: 'present' };
-            }
-            if (!newUsedChars[cell.char]) {
-                newUsedChars[cell.char] = 'absent';
-            }
-            return { ...cell, status: 'absent' };
-        });
-    
-        setGrid(newGrid);
-        setUsedChars(newUsedChars);
-        
         setTimeout(() => {
+            let newGrid = [...grid];
+            let newUsedChars = { ...usedChars };
+            const tempWord = wordToGuess.split('');
+        
+            // First pass for 'correct' letters
+            newGrid[currentRow] = newGrid[currentRow].map((cell, index) => {
+                if (cell.char === tempWord[index]) {
+                    tempWord[index] = ''; // Mark as used
+                    newUsedChars[cell.char] = 'correct';
+                    return { ...cell, status: 'correct' };
+                }
+                return cell;
+            });
+            
+            // Second pass for 'present' and 'absent' letters
+            newGrid[currentRow] = newGrid[currentRow].map((cell) => {
+                if (cell.status === 'correct') return cell;
+        
+                const charIndex = tempWord.indexOf(cell.char);
+                if (charIndex !== -1) {
+                    tempWord[charIndex] = ''; // Mark as used
+                    if (newUsedChars[cell.char] !== 'correct') {
+                        newUsedChars[cell.char] = 'present';
+                    }
+                    return { ...cell, status: 'present' };
+                }
+                if (!newUsedChars[cell.char]) {
+                    newUsedChars[cell.char] = 'absent';
+                }
+                return { ...cell, status: 'absent' };
+            });
+        
+            setGrid(newGrid);
+            setUsedChars(newUsedChars);
+            
             if (guess === wordToGuess) {
-                setGameState('won');
+                setTimeout(() => setGameState('won'), 600);
             } else if (currentRow === 5) {
-                setGameState('lost');
+                setTimeout(() => setGameState('lost'), 600);
             } else {
                 setCurrentRow(prev => prev + 1);
             }
-            setIsProcessing(false);
-        }, 5 * 300); // Wait for all animations to finish
-    }, [grid, currentRow, wordToGuess, isProcessing, usedChars]);
+            setIsSubmitting(false);
+
+        }, 1000); // Wait for animations to finish
+    }, [grid, currentRow, wordToGuess, isSubmitting, usedChars]);
     
     const handleKeyInput = useCallback((key: string) => {
-        if (isProcessing) return;
-        
-        if (gameState !== 'playing') return;
-        
-        setIsProcessing(true);
-        setTimeout(() => setIsProcessing(false), 50);
+        if (isProcessingKey.current || gameState !== 'playing' || isSubmitting) return;
+
+        isProcessingKey.current = true;
 
         if (key === 'Enter') {
             handleSubmitGuess();
@@ -890,31 +898,27 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
                 return newGrid;
             });
         }
-    }, [gameState, isProcessing, grid, currentRow, handleSubmitGuess]);
+
+        setTimeout(() => {
+            isProcessingKey.current = false;
+        }, 100);
+
+    }, [gameState, isSubmitting, currentRow, handleSubmitGuess]);
     
     useEffect(() => {
         const listener = (e: KeyboardEvent) => {
             const target = e.target as HTMLElement;
-
-            // Don't interfere if the user is typing in an input or textarea
             if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
                 return;
             }
-
-            // Only prevent default for game-related keys when not in an input
             if (e.key === 'Enter' || e.key === 'Backspace' || /^[a-zA-ZñÑ]$/.test(e.key)) {
                 e.preventDefault();
-                handleKeyInput(e.key)
+                handleKeyInput(e.key);
             }
         };
         window.addEventListener('keydown', listener);
         return () => window.removeEventListener('keydown', listener);
     }, [handleKeyInput]);
-    
-    const resetForTheme = (newTheme: string) => {
-        setTheme(newTheme);
-        handleGenerateWord(newTheme);
-    };
 
     if (gameState === 'config' || gameState === 'loading') {
         return (
@@ -955,25 +959,26 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
                     {grid.map((row, rowIndex) => (
                         <div key={rowIndex} className="grid grid-cols-5 gap-1.5">
                             {row.map((cell, cellIndex) => {
-                                const isSubmitted = rowIndex < currentRow;
+                                const isSubmittedRow = rowIndex < currentRow;
+                                const isCurrentSubmittingRow = isSubmitting && rowIndex === currentRow;
 
                                 return (
-                                    <motion.div
+                                    <div
                                         key={cellIndex}
                                         className={cn(
-                                            "w-14 h-14 rounded-md border-2 flex items-center justify-center text-2xl font-bold uppercase aspect-square",
-                                            cell.status === 'empty' && 'border-muted-foreground/30',
+                                            "w-14 h-14 rounded-md border-2 flex items-center justify-center text-2xl font-bold uppercase aspect-square transition-all duration-500",
+                                            isCurrentSubmittingRow ? "animate-flip-reveal" : "",
                                             cell.status === 'typing' && 'border-primary',
-                                            cell.status === 'correct' && 'bg-green-500 border-green-500 text-white',
-                                            cell.status === 'present' && 'bg-yellow-500 border-yellow-500 text-white',
-                                            cell.status === 'absent' && 'bg-slate-500 border-slate-500 text-white',
+                                            isSubmittedRow || (isCurrentSubmittingRow && cell.status !== 'typing' && cell.status !== 'empty') ? 
+                                              (cell.status === 'correct' ? 'bg-green-500 border-green-500 text-white' :
+                                               cell.status === 'present' ? 'bg-yellow-500 border-yellow-500 text-white' :
+                                               cell.status === 'absent' ? 'bg-slate-500 border-slate-500 text-white' : 'border-muted-foreground/30')
+                                            : 'border-muted-foreground/30'
                                         )}
-                                        initial={false}
-                                        animate={{ rotateY: isSubmitted ? 360 : 0 }}
-                                        transition={{ duration: 0.5, delay: isSubmitted ? cellIndex * 0.1 : 0 }}
+                                        style={{ animationDelay: isCurrentSubmittingRow ? `${cellIndex * 150}ms` : '0ms' }}
                                     >
                                         {cell.char}
-                                    </motion.div>
+                                    </div>
                                 );
                             })}
                         </div>
@@ -1432,6 +1437,27 @@ const FlappyBirdGame = ({ onBack }: { onBack: () => void }) => {
   });
 
   const requestRef = useRef<number>();
+  const isPersonalUser = user?.center === 'personal' || user?.center === 'default';
+
+  const classmatesQuery = useMemoFirebase(() => {
+    if (!firestore || !user || isPersonalUser) return null;
+    return query(
+        collection(firestore, "users"),
+        where("organizationId", "==", user.organizationId),
+        where("course", "==", user.course),
+        where("className", "==", user.className),
+        orderBy("flappyBotHighScore", "desc")
+    );
+  }, [firestore, user, isPersonalUser]);
+
+  const { data: classmatesData, isLoading: isLoadingClassmates } = useCollection<AppUser>(classmatesQuery);
+
+  const sortedClassmates = useMemo(() => {
+    if (!classmatesData) return [];
+    return classmatesData
+        .filter(c => c.uid !== user?.uid)
+        .sort((a, b) => (b.flappyBotHighScore || 0) - (a.flappyBotHighScore || 0));
+  }, [classmatesData, user]);
 
   useEffect(() => {
     if (gameState.status === 'gameover' && user && firestore) {
@@ -1541,28 +1567,6 @@ const FlappyBirdGame = ({ onBack }: { onBack: () => void }) => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
   }, []);
-
-  const isPersonalUser = user?.center === 'personal' || user?.center === 'default';
-
-  const classmatesQuery = useMemoFirebase(() => {
-    if (!firestore || !user || isPersonalUser) return null;
-    return query(
-        collection(firestore, "users"),
-        where("organizationId", "==", user.organizationId),
-        where("course", "==", user.course),
-        where("className", "==", user.className),
-        orderBy("flappyBotHighScore", "desc")
-    );
-  }, [firestore, user, isPersonalUser]);
-
-  const { data: classmatesData, isLoading: isLoadingClassmates } = useCollection<AppUser>(classmatesQuery);
-
-  const sortedClassmates = useMemo(() => {
-    if (!classmatesData) return [];
-    return classmatesData
-        .filter(c => c.uid !== user?.uid)
-        .sort((a, b) => (b.flappyBotHighScore || 0) - (a.flappyBotHighScore || 0));
-  }, [classmatesData, user]);
 
   return (
     <ViewContainer title="Flappy BOT" onBack={onBack}>

@@ -175,7 +175,12 @@ export default {
           '100%': {
             transform: 'scale(1.08)',
           },
-        }
+        },
+        'flip-reveal': {
+          '50%': {
+            transform: 'rotateX(90deg)',
+          },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -190,6 +195,7 @@ export default {
         'blob': 'blob 7s infinite',
         'shimmer': 'shimmer 2s infinite',
         'kenburns': 'kenburns 13s ease-out forwards',
+        'flip-reveal': 'flip-reveal 0.6s ease-in-out',
       },
     },
   },
