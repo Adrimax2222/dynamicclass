@@ -29,6 +29,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { Input } from "@/components/ui/input";
 import { ViewContainer } from '@/components/layout/view-container';
+import TicTacToeGame from '@/components/games/TicTacToeGame';
+import Game2048 from '@/components/games/Game2048';
 
 
 // --- Type Definitions ---
@@ -54,73 +56,6 @@ interface EarthImage {
     id: number;
     location: string;
 }
-
-// Types for DesertRun
-const DESERT_PLAYER_SIZE = 40;
-const DESERT_PLAYER_X = 50;
-const DESERT_JUMP_VELOCITY = 18;
-const DESERT_GRAVITY = 0.8;
-const DESERT_BASE_SPEED = 5;
-const DESERT_SPAWN_X = 800;
-
-type DesertRunObstacle = {
-  id: number;
-  x: number;
-  width: number;
-  height: number;
-  type: "single" | "double";
-};
-
-type DesertRunCloud = {
-  id: number;
-  x: number;
-  y: number;
-  scale: number;
-  opacity: number;
-};
-
-type DesertRunGameState = {
-  y: number;
-  vy: number;
-  obstacles: DesertRunObstacle[];
-  clouds: DesertRunCloud[];
-  score: number;
-  speed: number;
-  nextObstacleIn: number;
-  nextCloudIn: number;
-  gameOver: boolean;
-  isPlaying: boolean;
-  hasStarted: boolean;
-};
-
-
-// Types for FlappyBird
-const FLAPPY_GAME_HEIGHT = 500;
-const FLAPPY_GAME_WIDTH = 350;
-const FLAPPY_BIRD_SIZE = 24;
-const FLAPPY_BIRD_X = 50;
-const FLAPPY_GRAVITY = 0.5;
-const FLAP_VELOCITY = -8;
-const FLAPPY_PIPE_WIDTH = 60;
-const FLAPPY_GAP_SIZE = 140;
-const FLAPPY_PIPE_SPEED = 3;
-const FLAPPY_PIPE_SPAWN_RATE = 90; // in frames
-
-type FlappyBirdGameState = {
-  birdY: number;
-  velocity: number;
-  pipes: Pipe[];
-  score: number;
-  status: 'idle' | 'playing' | 'gameover';
-  framesUntilNextPipe: number;
-};
-
-type Pipe = {
-  id: number;
-  x: number;
-  topHeight: number;
-  passed: boolean;
-};
 
 // Types for MemoryGame
 type MemoryCard = {
@@ -397,456 +332,6 @@ const MinigamesMenu = ({ setView, onBack }: { setView: (view: View) => void, onB
             </div>
         </ViewContainer>
     );
-};
-
-const DesertRun = ({ onBack }: { onBack: () => void }) => {
-    const [gameState, setGameState] = useState<DesertRunGameState>({
-        y: 400 - DESERT_PLAYER_SIZE,
-        vy: 0,
-        obstacles: [],
-        clouds: [],
-        score: 0,
-        speed: DESERT_BASE_SPEED,
-        nextObstacleIn: 100,
-        nextCloudIn: 50,
-        gameOver: false,
-        isPlaying: false,
-        hasStarted: false,
-    });
-    const gameLoopRef = useRef<number>();
-    const gameAreaRef = useRef<HTMLDivElement>(null);
-
-    const resetGame = () => {
-        setGameState({
-            y: 400 - DESERT_PLAYER_SIZE,
-            vy: 0,
-            obstacles: [],
-            clouds: [],
-            score: 0,
-            speed: DESERT_BASE_SPEED,
-            nextObstacleIn: 100,
-            nextCloudIn: 50,
-            gameOver: false,
-            isPlaying: false,
-            hasStarted: false,
-        });
-    };
-    
-    const startGame = () => {
-        if (!gameState.hasStarted || gameState.gameOver) {
-            resetGame();
-            setGameState(prev => ({...prev, isPlaying: true, hasStarted: true}));
-        }
-    };
-    
-    const jump = useCallback(() => {
-        if (gameState.isPlaying && gameState.y >= 400 - DESERT_PLAYER_SIZE) {
-            setGameState(prev => ({ ...prev, vy: -DESERT_JUMP_VELOCITY }));
-        }
-    }, [gameState.isPlaying, gameState.y]);
-
-    const gameLoop = useCallback(() => {
-        setGameState(prev => {
-            if (!prev.isPlaying || prev.gameOver) return prev;
-    
-            let { y, vy, obstacles, clouds, score, speed, nextObstacleIn, nextCloudIn, gameOver } = prev;
-    
-            // Update player
-            vy += DESERT_GRAVITY;
-            y += vy;
-            if (y >= 400 - DESERT_PLAYER_SIZE) {
-                y = 400 - DESERT_PLAYER_SIZE;
-                vy = 0;
-            }
-            
-            // Update obstacles
-            const newObstacles = obstacles
-                .map(o => ({...o, x: o.x - speed }))
-                .filter(o => o.x > -o.width);
-
-            // Update clouds
-            const newClouds = clouds
-                .map(c => ({ ...c, x: c.x - speed / 3 }))
-                .filter(c => c.x > -100);
-
-            // Collision detection
-            const playerRect = { x: DESERT_PLAYER_X, y, width: DESERT_PLAYER_SIZE, height: DESERT_PLAYER_SIZE };
-            for (const obstacle of newObstacles) {
-                const obstacleRect = { x: obstacle.x, y: 400 - obstacle.height, width: obstacle.width, height: obstacle.height };
-                if (
-                    playerRect.x < obstacleRect.x + obstacleRect.width &&
-                    playerRect.x + playerRect.width > obstacleRect.x &&
-                    playerRect.y < obstacleRect.y + obstacleRect.height &&
-                    playerRect.y + playerRect.height > obstacleRect.y
-                ) {
-                    gameOver = true;
-                }
-            }
-    
-            // Spawn new obstacles
-            let newNextObstacleIn = nextObstacleIn - 1;
-            if (newNextObstacleIn <= 0) {
-                const type = Math.random() > 0.7 ? 'double' : 'single';
-                newObstacles.push({
-                    id: Date.now(),
-                    x: DESERT_SPAWN_X,
-                    width: type === 'double' ? 60 : 30,
-                    height: type === 'double' ? 40 : 60,
-                    type,
-                });
-                newNextObstacleIn = 80 + Math.random() * 50;
-            }
-
-            // Spawn new clouds
-            let newNextCloudIn = nextCloudIn - 1;
-            if (newNextCloudIn <= 0) {
-                newClouds.push({
-                    id: Date.now(),
-                    x: DESERT_SPAWN_X,
-                    y: 50 + Math.random() * 100,
-                    scale: 0.8 + Math.random() * 0.4,
-                    opacity: 0.5 + Math.random() * 0.3
-                });
-                newNextCloudIn = 120 + Math.random() * 80;
-            }
-    
-            return {
-                ...prev,
-                y, vy,
-                obstacles: newObstacles,
-                clouds: newClouds,
-                score: gameOver ? prev.score : prev.score + 1,
-                speed: prev.speed + 0.002,
-                nextObstacleIn: newNextObstacleIn,
-                nextCloudIn: newNextCloudIn,
-                gameOver,
-            };
-        });
-        
-        gameLoopRef.current = requestAnimationFrame(gameLoop);
-    }, []);
-
-    useEffect(() => {
-        if (gameState.isPlaying && !gameState.gameOver) {
-            gameLoopRef.current = requestAnimationFrame(gameLoop);
-        }
-        return () => {
-            if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
-        };
-    }, [gameState.isPlaying, gameState.gameOver, gameLoop]);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.code === 'Space' || e.key === 'ArrowUp') {
-                e.preventDefault();
-                if (!gameState.hasStarted || gameState.gameOver) {
-                    startGame();
-                } else {
-                    jump();
-                }
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [gameState.hasStarted, gameState.gameOver, jump]);
-
-    return (
-        <ViewContainer title="Desert Run" onBack={onBack}>
-            <div className="flex flex-col items-center gap-4">
-                <div 
-                    ref={gameAreaRef} 
-                    className="relative w-full max-w-[800px] h-[400px] bg-sky-200 dark:bg-sky-900 overflow-hidden border-4 border-slate-800 rounded-lg shadow-xl"
-                    onClick={() => { if (!gameState.hasStarted || gameState.gameOver) startGame(); else jump(); }}
-                >
-                    {/* Sun/Moon */}
-                    <div className="absolute top-8 right-16 w-16 h-16 bg-yellow-300 dark:bg-slate-300 rounded-full" />
-                    
-                    {/* Clouds */}
-                    {gameState.clouds.map(cloud => (
-                        <div key={cloud.id} className="absolute bg-white/70 dark:bg-slate-400/50 rounded-full" style={{
-                            left: cloud.x,
-                            top: cloud.y,
-                            width: 80 * cloud.scale,
-                            height: 40 * cloud.scale,
-                            opacity: cloud.opacity
-                        }}/>
-                    ))}
-
-                    {/* Ground */}
-                    <div className="absolute bottom-0 left-0 w-full h-10 bg-orange-300 dark:bg-orange-800" />
-
-                    {/* Player */}
-                    <div className="absolute w-10 h-10" style={{ left: DESERT_PLAYER_X, top: gameState.y }}>
-                        <div className="w-full h-full bg-slate-700 rounded-md relative flex items-end justify-center">
-                            <div className="w-8 h-3 bg-slate-500 rounded-t-sm" />
-                            <div className="absolute w-4 h-4 bg-cyan-400 rounded-full top-3 flex items-center justify-center text-xs">
-                               🤖
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {/* Obstacles */}
-                    {gameState.obstacles.map(o => (
-                        <div key={o.id} className="absolute bg-green-600 dark:bg-green-800 rounded-t-md" style={{
-                            left: o.x,
-                            bottom: 0,
-                            width: o.width,
-                            height: o.height,
-                        }} />
-                    ))}
-
-                    {/* Score */}
-                    <div className="absolute top-4 right-4 font-mono text-2xl font-bold text-slate-700 dark:text-slate-200">
-                        {Math.floor(gameState.score / 10)}
-                    </div>
-
-                    {/* Game Over / Start Screen */}
-                    {(!gameState.hasStarted || gameState.gameOver) && (
-                        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white text-center">
-                            <h3 className="text-3xl font-bold">
-                                {gameState.gameOver ? 'Game Over' : 'Desert Run'}
-                            </h3>
-                            {gameState.gameOver && <p className="text-xl mt-2">Puntuación: {Math.floor(gameState.score / 10)}</p>}
-                            <p className="mt-4 text-lg animate-pulse">
-                                {gameState.gameOver ? 'Toca para reintentar' : 'Toca o pulsa espacio para empezar'}
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </ViewContainer>
-    );
-};
-
-const FlappyBirdGame = ({ onBack }: { onBack: () => void }) => {
-    const [gameState, setGameState] = useState<FlappyBirdGameState>({
-        birdY: FLAPPY_GAME_HEIGHT / 2,
-        velocity: 0,
-        pipes: [],
-        score: 0,
-        status: "idle",
-        framesUntilNextPipe: 0,
-    });
-    
-    const requestRef = useRef<number>();
-    
-    const flap = useCallback(() => {
-        setGameState((prev) => {
-          if (prev.status === "gameover") {
-            return {
-              birdY: FLAPPY_GAME_HEIGHT / 2,
-              velocity: FLAP_VELOCITY,
-              pipes: [],
-              score: 0,
-              status: "playing",
-              framesUntilNextPipe: FLAPPY_PIPE_SPAWN_RATE,
-            };
-          }
-          if (prev.status === "idle") {
-            return { ...prev, status: "playing", velocity: FLAP_VELOCITY };
-          }
-          return { ...prev, velocity: FLAP_VELOCITY };
-        });
-    }, []);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-          if (e.code === "Space") {
-            e.preventDefault();
-            flap();
-          }
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [flap]);
-    
-    useEffect(() => {
-        const loop = () => {
-          setGameState((prev) => {
-            if (prev.status !== "playing") return prev;
-    
-            const newVelocity = prev.velocity + FLAPPY_GRAVITY;
-            let newBirdY = prev.birdY + newVelocity;
-    
-            let newPipes = prev.pipes
-              .map((pipe) => ({ ...pipe, x: pipe.x - FLAPPY_PIPE_SPEED }))
-              .filter((pipe) => pipe.x + FLAPPY_PIPE_WIDTH > 0);
-    
-            let nextPipeTimer = prev.framesUntilNextPipe - 1;
-            if (nextPipeTimer <= 0) {
-              const minPipeHeight = 50;
-              const maxPipeHeight = FLAPPY_GAME_HEIGHT - FLAPPY_GAP_SIZE - minPipeHeight;
-              const topHeight =
-                Math.floor(Math.random() * (maxPipeHeight - minPipeHeight + 1)) +
-                minPipeHeight;
-    
-              newPipes.push({
-                id: Date.now(),
-                x: FLAPPY_GAME_WIDTH,
-                topHeight: topHeight,
-                passed: false,
-              });
-              nextPipeTimer = FLAPPY_PIPE_SPAWN_RATE;
-            }
-    
-            let newScore = prev.score;
-            newPipes.forEach((pipe) => {
-              if (!pipe.passed && pipe.x + FLAPPY_PIPE_WIDTH < FLAPPY_BIRD_X) {
-                newScore += 1;
-                pipe.passed = true;
-              }
-            });
-    
-            let isGameOver = false;
-            if (newBirdY < 0 || newBirdY + FLAPPY_BIRD_SIZE > FLAPPY_GAME_HEIGHT) {
-              isGameOver = true;
-              if (newBirdY + FLAPPY_BIRD_SIZE > FLAPPY_GAME_HEIGHT) newBirdY = FLAPPY_GAME_HEIGHT - FLAPPY_BIRD_SIZE;
-            }
-    
-            const hitboxShrink = 4;
-            const bLeft = FLAPPY_BIRD_X + hitboxShrink;
-            const bRight = FLAPPY_BIRD_X + FLAPPY_BIRD_SIZE - hitboxShrink;
-            const bTop = newBirdY + hitboxShrink;
-            const bBottom = newBirdY + FLAPPY_BIRD_SIZE - hitboxShrink;
-    
-            for (const pipe of newPipes) {
-              const pLeft = pipe.x;
-              const pRight = pipe.x + FLAPPY_PIPE_WIDTH;
-    
-              if (bRight > pLeft && bLeft < pRight) {
-                if (bTop < pipe.topHeight || bBottom > pipe.topHeight + FLAPPY_GAP_SIZE) {
-                  isGameOver = true;
-                }
-              }
-            }
-    
-            return {
-              ...prev,
-              birdY: newBirdY,
-              velocity: newVelocity,
-              pipes: newPipes,
-              score: newScore,
-              status: isGameOver ? "gameover" : "playing",
-              framesUntilNextPipe: nextPipeTimer,
-            };
-          });
-    
-          requestRef.current = requestAnimationFrame(loop);
-        };
-    
-        requestRef.current = requestAnimationFrame(loop);
-        return () => {
-          if (requestRef.current) cancelAnimationFrame(requestRef.current);
-        };
-    }, []);
-    
-    return (
-        <ViewContainer title="Flappy BOT" onBack={onBack}>
-          <div className="flex flex-col items-center justify-center w-full p-4 font-sans select-none touch-none">
-            <div
-              className="relative overflow-hidden bg-sky-300 shadow-2xl rounded-lg border-4 border-slate-800 cursor-pointer"
-              style={{ width: `${FLAPPY_GAME_WIDTH}px`, height: `${FLAPPY_GAME_HEIGHT}px` }}
-              onClick={flap}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                flap();
-              }}
-            >
-              <div className="absolute top-6 w-full text-center z-20 pointer-events-none">
-                <span className="text-5xl font-black text-white" style={{ WebkitTextStroke: "2px #1e293b" }}>
-                  {gameState.score}
-                </span>
-              </div>
-              <div
-                className="absolute bg-yellow-400 rounded-full border-2 border-slate-800 z-10 transition-transform duration-75"
-                style={{
-                  width: `${FLAPPY_BIRD_SIZE}px`,
-                  height: `${FLAPPY_BIRD_SIZE}px`,
-                  left: `${FLAPPY_BIRD_X}px`,
-                  top: `${gameState.birdY}px`,
-                  transform: `rotate(${Math.min(Math.max(gameState.velocity * 4, -25), 90)}deg)`,
-                }}
-              >
-                <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full">
-                  <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-black rounded-full" />
-                </div>
-                <div className="absolute top-2.5 -right-2 w-3 h-2 bg-orange-500 rounded-r-full border border-slate-800" />
-              </div>
-              {gameState.pipes.map((pipe) => (
-                <React.Fragment key={pipe.id}>
-                  <div
-                    className="absolute bg-green-500 border-2 border-green-800 rounded-b-sm"
-                    style={{
-                      width: `${FLAPPY_PIPE_WIDTH}px`,
-                      height: `${pipe.topHeight}px`,
-                      left: `${pipe.x}px`,
-                      top: 0,
-                    }}
-                  >
-                    <div className="absolute bottom-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
-                  </div>
-                  <div
-                    className="absolute bg-green-500 border-2 border-green-800 rounded-t-sm"
-                    style={{
-                      width: `${FLAPPY_PIPE_WIDTH}px`,
-                      height: `${FLAPPY_GAME_HEIGHT - pipe.topHeight - FLAPPY_GAP_SIZE}px`,
-                      left: `${pipe.x}px`,
-                      top: `${pipe.topHeight + FLAPPY_GAP_SIZE}px`,
-                    }}
-                  >
-                    <div className="absolute top-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
-                  </div>
-                </React.Fragment>
-              ))}
-              <div className="absolute bottom-0 w-full h-4 bg-amber-200 border-t-4 border-amber-800 z-10" />
-              {gameState.status === "idle" && (
-                <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-center z-30 pointer-events-none">
-                  <div className="bg-white px-6 py-3 rounded shadow-lg text-slate-800 font-bold text-lg animate-bounce">
-                    Toca para volar
-                  </div>
-                </div>
-              )}
-              {gameState.status === "gameover" && (
-                <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-30 backdrop-blur-sm">
-                  <div className="bg-[#ded895] border-4 border-[#543847] p-6 rounded-lg shadow-2xl text-center transform scale-100 transition-transform">
-                    <h2 className="text-4xl font-black text-white mb-2" style={{ WebkitTextStroke: "1px #543847" }}>
-                      GAME OVER
-                    </h2>
-                    <div className="bg-[#bdae58] border-2 border-[#543847] rounded p-4 mb-4 text-center">
-                      <p className="text-[#543847] font-bold uppercase text-sm mb-1">Score</p>
-                      <p className="text-3xl font-black text-white" style={{ WebkitTextStroke: "1px #543847" }}>
-                        {gameState.score}
-                      </p>
-                    </div>
-                    <button
-                      onClick={flap}
-                      className="bg-orange-500 border-2 border-white hover:bg-orange-600 text-white font-black uppercase tracking-wider py-2 px-6 rounded-full shadow-lg active:scale-95 transition-all"
-                    >
-                      Reintentar
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-            <p className="mt-4 text-xs text-slate-500 font-mono">
-              Pulsa Espacio o toca la pantalla
-            </p>
-          </div>
-        </ViewContainer>
-      );
-};
-
-
-const SnakeGame = ({ onBack }: { onBack: () => void }) => {
-    return <ViewContainer title="Snake" onBack={onBack}><div className="text-center">Próximamente...</div></ViewContainer>;
-};
-
-const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
-    return <ViewContainer title="Tres en Raya" onBack={onBack}><div className="text-center">Próximamente...</div></ViewContainer>;
-};
-
-const Game2048 = ({ onBack }: { onBack: () => void }) => {
-    return <ViewContainer title="2048" onBack={onBack}><div className="text-center">Próximamente...</div></ViewContainer>;
 };
 
 const earthImages: EarthImage[] = [
@@ -1387,8 +872,8 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
                                 <X className="h-5 w-5" />
                             </Button>
                         )}
-                        <div className="absolute top-3 left-3 z-20">
-                            <div className="flex items-center gap-2 h-9 px-4 rounded-full bg-destructive/10 border border-destructive/20">
+                        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
+                            <div className="flex items-center gap-2 h-9 px-4 rounded-full bg-destructive/10 border border-destructive/20 backdrop-blur-sm">
                                 <Timer className="h-5 w-5 text-destructive" />
                                 <span className="font-mono font-bold text-destructive">{formatBreakTime(breakTimeLeft)}</span>
                             </div>
@@ -1509,4 +994,440 @@ const MemoryGame = ({ onBack }: { onBack: () => void }) => {
   );
 };
 
+
+const DESERT_GAME_WIDTH = 350;
+const DESERT_GAME_HEIGHT = 200;
+const DESERT_PLAYER_SIZE = 20;
+const DESERT_GRAVITY = 0.6;
+const DESERT_JUMP_VELOCITY = -12;
+const DESERT_OBSTACLE_WIDTH = 20;
+const DESERT_OBSTACLE_HEIGHT = 40;
+const DESERT_SPEED = 4;
+const DESERT_CLOUD_SPEED = 1;
+
+type DesertRunGameState = {
+  y: number;
+  vy: number;
+  obstacles: { id: number; x: number }[];
+  clouds: { id: number; x: number; y: number; scale: number }[];
+  score: number;
+  highScore: number;
+  status: 'idle' | 'playing' | 'gameover';
+  frames: number;
+};
+
+const DesertRun = ({ onBack }: { onBack: () => void }) => {
+    const [gameState, setGameState] = useState<DesertRunGameState>({
+        y: 400 - DESERT_PLAYER_SIZE,
+        vy: 0,
+        obstacles: [],
+        clouds: [],
+        score: 0,
+        highScore: 0,
+        status: 'idle',
+        frames: 0,
+    });
     
+    const requestRef = useRef<number>();
+
+    const jump = useCallback(() => {
+        setGameState(prev => {
+            if (prev.status === 'gameover') {
+                return {
+                    y: DESERT_GAME_HEIGHT - DESERT_PLAYER_SIZE,
+                    vy: 0,
+                    obstacles: [],
+                    clouds: prev.clouds,
+                    score: 0,
+                    highScore: prev.highScore,
+                    status: 'playing',
+                    frames: 0,
+                };
+            }
+            if (prev.y >= DESERT_GAME_HEIGHT - DESERT_PLAYER_SIZE) {
+                return { ...prev, vy: DESERT_JUMP_VELOCITY, status: 'playing' };
+            }
+            return prev;
+        });
+    }, []);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.code === "Space") {
+                e.preventDefault();
+                jump();
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [jump]);
+
+    useEffect(() => {
+        const loop = () => {
+            setGameState(prev => {
+                if (prev.status !== 'playing') return prev;
+
+                let { y, vy, obstacles, clouds, score, frames } = { ...prev };
+                
+                vy += DESERT_GRAVITY;
+                y += vy;
+
+                if (y >= DESERT_GAME_HEIGHT - DESERT_PLAYER_SIZE) {
+                    y = DESERT_GAME_HEIGHT - DESERT_PLAYER_SIZE;
+                    vy = 0;
+                }
+
+                let newObstacles = obstacles
+                    .map(o => ({ ...o, x: o.x - DESERT_SPEED }))
+                    .filter(o => o.x + DESERT_OBSTACLE_WIDTH > 0);
+                
+                if (frames % 90 === 0 && Math.random() > 0.5) {
+                    newObstacles.push({ id: Date.now(), x: DESERT_GAME_WIDTH });
+                }
+
+                let newClouds = clouds
+                    .map(c => ({...c, x: c.x - DESERT_CLOUD_SPEED}))
+                    .filter(c => c.x + 50 > 0);
+
+                if (frames % 120 === 0 && Math.random() > 0.3) {
+                    newClouds.push({ id: Date.now(), x: DESERT_GAME_WIDTH, y: 20 + Math.random() * 50, scale: 0.8 + Math.random() * 0.4 });
+                }
+                
+                let newStatus: DesertRunGameState['status'] = 'playing';
+                const playerRect = { x: 50, y, width: DESERT_PLAYER_SIZE, height: DESERT_PLAYER_SIZE };
+                for (const obstacle of newObstacles) {
+                    const obstacleRect = { x: obstacle.x, y: DESERT_GAME_HEIGHT - DESERT_OBSTACLE_HEIGHT, width: DESERT_OBSTACLE_WIDTH, height: DESERT_OBSTACLE_HEIGHT };
+                    if (playerRect.x < obstacleRect.x + obstacleRect.width &&
+                        playerRect.x + playerRect.width > obstacleRect.x &&
+                        playerRect.y < obstacleRect.y + obstacleRect.height &&
+                        playerRect.y + playerRect.height > obstacleRect.y) {
+                        newStatus = 'gameover';
+                    }
+                }
+                
+                const newScore = prev.status === 'playing' ? score + 1 : score;
+                const newHighScore = Math.max(prev.highScore, newScore);
+
+                return {
+                    ...prev,
+                    y, vy,
+                    obstacles: newObstacles,
+                    clouds: newClouds,
+                    score: newScore,
+                    highScore: newHighScore,
+                    status: newStatus,
+                    frames: frames + 1,
+                };
+            });
+            requestRef.current = requestAnimationFrame(loop);
+        };
+        requestRef.current = requestAnimationFrame(loop);
+        return () => {
+          if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        };
+    }, []);
+
+    return (
+        <ViewContainer title="Desert Run" onBack={onBack}>
+            <div
+                className="relative overflow-hidden bg-gradient-to-b from-sky-300 to-sky-100 dark:from-sky-800 dark:to-sky-600 shadow-2xl rounded-lg border-4 border-slate-800 cursor-pointer"
+                style={{ width: `${DESERT_GAME_WIDTH}px`, height: `${DESERT_GAME_HEIGHT}px`, margin: 'auto' }}
+                onClick={jump}
+                onTouchStart={(e) => { e.preventDefault(); jump(); }}
+            >
+                <div className="absolute top-2 left-2 text-slate-600 dark:text-slate-200 font-mono font-bold text-sm">HI {String(gameState.highScore).padStart(5, '0')}</div>
+                <div className="absolute top-2 right-2 text-slate-600 dark:text-slate-200 font-mono font-bold text-sm">{String(gameState.score).padStart(5, '0')}</div>
+
+                {gameState.clouds.map(cloud => (
+                    <div key={cloud.id} className="absolute w-[50px] h-[20px] bg-white/80 rounded-full" style={{ left: `${cloud.x}px`, top: `${cloud.y}px`, transform: `scale(${cloud.scale})` }}/>
+                ))}
+
+                <div className="absolute w-[20px] h-[20px] bg-yellow-400 rounded-sm" style={{ left: '50px', top: `${gameState.y}px` }} />
+
+                {gameState.obstacles.map(obstacle => (
+                    <div key={obstacle.id} className="absolute w-[20px] h-[40px] bg-green-600" style={{ left: `${obstacle.x}px`, top: `${DESERT_GAME_HEIGHT - 40}px` }} />
+                ))}
+
+                <div className="absolute bottom-0 left-0 w-full h-10 bg-gradient-to-t from-amber-300 to-amber-200 dark:from-amber-700 dark:to-amber-600 border-t-2 border-amber-800/20" />
+            
+                {gameState.status !== 'playing' && (
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
+                        <div className="text-center text-white">
+                            {gameState.status === 'idle' && <h2 className="text-2xl font-bold">Toca para empezar</h2>}
+                            {gameState.status === 'gameover' && (
+                                <>
+                                    <h2 className="text-2xl font-bold">GAME OVER</h2>
+                                    <p>Toca para reintentar</p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+            <p className="text-center text-xs text-muted-foreground mt-2 font-mono">Pulsa Espacio o toca para saltar</p>
+        </ViewContainer>
+    );
+};
+
+// Constantes del motor del juego
+const FLAPPY_GRAVITY = 0.5;
+const FLAPPY_FLAP_VELOCITY = -8;
+const FLAPPY_PIPE_SPEED = 3;
+const FLAPPY_PIPE_WIDTH = 60;
+const FLAPPY_GAP_SIZE = 140;
+const FLAPPY_BIRD_SIZE = 24;
+const FLAPPY_BIRD_X = 50;
+const FLAPPY_GAME_WIDTH = 350;
+const FLAPPY_GAME_HEIGHT = 500;
+const FLAPPY_PIPE_SPAWN_RATE = 90;
+
+type FlappyPipe = {
+  id: number;
+  x: number;
+  topHeight: number;
+  passed: boolean;
+};
+
+type FlappyGameState = {
+  birdY: number;
+  velocity: number;
+  pipes: FlappyPipe[];
+  score: number;
+  status: "idle" | "playing" | "gameover";
+  framesUntilNextPipe: number;
+};
+
+const FlappyBirdGame = ({ onBack }: { onBack: () => void }) => {
+  const [gameState, setGameState] = useState<FlappyGameState>({
+    birdY: FLAPPY_GAME_HEIGHT / 2,
+    velocity: 0,
+    pipes: [],
+    score: 0,
+    status: "idle",
+    framesUntilNextPipe: 0,
+  });
+
+  const requestRef = useRef<number>();
+
+  const flap = useCallback(() => {
+    setGameState((prev) => {
+      if (prev.status === "gameover") {
+        return {
+          birdY: FLAPPY_GAME_HEIGHT / 2,
+          velocity: FLAPPY_FLAP_VELOCITY,
+          pipes: [],
+          score: 0,
+          status: "playing",
+          framesUntilNextPipe: FLAPPY_PIPE_SPAWN_RATE,
+        };
+      }
+      if (prev.status === "idle") {
+        return { ...prev, status: "playing", velocity: FLAPPY_FLAP_VELOCITY };
+      }
+      return { ...prev, velocity: FLAPPY_FLAP_VELOCITY };
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        flap();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [flap]);
+
+  useEffect(() => {
+    const loop = () => {
+      setGameState((prev) => {
+        if (prev.status !== "playing") return prev;
+
+        const newVelocity = prev.velocity + FLAPPY_GRAVITY;
+        let newBirdY = prev.birdY + newVelocity;
+
+        let newPipes = prev.pipes
+          .map((pipe) => ({ ...pipe, x: pipe.x - FLAPPY_PIPE_SPEED }))
+          .filter((pipe) => pipe.x + FLAPPY_PIPE_WIDTH > 0);
+
+        let nextPipeTimer = prev.framesUntilNextPipe - 1;
+        if (nextPipeTimer <= 0) {
+          const minPipeHeight = 50;
+          const maxPipeHeight = FLAPPY_GAME_HEIGHT - FLAPPY_GAP_SIZE - minPipeHeight;
+          const topHeight =
+            Math.floor(Math.random() * (maxPipeHeight - minPipeHeight + 1)) +
+            minPipeHeight;
+
+          newPipes.push({
+            id: Date.now(),
+            x: FLAPPY_GAME_WIDTH,
+            topHeight: topHeight,
+            passed: false,
+          });
+          nextPipeTimer = FLAPPY_PIPE_SPAWN_RATE;
+        }
+
+        let newScore = prev.score;
+        newPipes.forEach((pipe) => {
+          if (!pipe.passed && pipe.x + FLAPPY_PIPE_WIDTH < FLAPPY_BIRD_X) {
+            newScore += 1;
+            pipe.passed = true;
+          }
+        });
+
+        let isGameOver = false;
+        if (newBirdY < 0 || newBirdY + FLAPPY_BIRD_SIZE > FLAPPY_GAME_HEIGHT) {
+          isGameOver = true;
+          if (newBirdY + FLAPPY_BIRD_SIZE > FLAPPY_GAME_HEIGHT) newBirdY = FLAPPY_GAME_HEIGHT - FLAPPY_BIRD_SIZE;
+        }
+
+        const hitboxShrink = 4;
+        const bLeft = FLAPPY_BIRD_X + hitboxShrink;
+        const bRight = FLAPPY_BIRD_X + FLAPPY_BIRD_SIZE - hitboxShrink;
+        const bTop = newBirdY + hitboxShrink;
+        const bBottom = newBirdY + FLAPPY_BIRD_SIZE - hitboxShrink;
+
+        for (const pipe of newPipes) {
+          const pLeft = pipe.x;
+          const pRight = pipe.x + FLAPPY_PIPE_WIDTH;
+
+          if (bRight > pLeft && bLeft < pRight) {
+            if (bTop < pipe.topHeight || bBottom > pipe.topHeight + FLAPPY_GAP_SIZE) {
+              isGameOver = true;
+            }
+          }
+        }
+
+        return {
+          ...prev,
+          birdY: newBirdY,
+          velocity: newVelocity,
+          pipes: newPipes,
+          score: newScore,
+          status: isGameOver ? "gameover" : "playing",
+          framesUntilNextPipe: nextPipeTimer,
+        };
+      });
+
+      requestRef.current = requestAnimationFrame(loop);
+    };
+
+    requestRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
+  }, []);
+
+  return (
+    <ViewContainer title="Flappy BOT" onBack={onBack}>
+      <div
+        className="relative overflow-hidden bg-sky-300 shadow-2xl rounded-lg border-4 border-slate-800 cursor-pointer"
+        style={{ width: `${FLAPPY_GAME_WIDTH}px`, height: `${FLAPPY_GAME_HEIGHT}px`, margin: 'auto' }}
+        onClick={flap}
+        onTouchStart={(e) => {
+          e.preventDefault();
+          flap();
+        }}
+      >
+        <div className="absolute top-6 w-full text-center z-20 pointer-events-none">
+          <span className="text-5xl font-black text-white" style={{ WebkitTextStroke: "2px #1e293b" }}>
+            {gameState.score}
+          </span>
+        </div>
+
+        <div
+          className="absolute bg-yellow-400 rounded-full border-2 border-slate-800 z-10 transition-transform duration-75"
+          style={{
+            width: `${FLAPPY_BIRD_SIZE}px`,
+            height: `${FLAPPY_BIRD_SIZE}px`,
+            left: `${FLAPPY_BIRD_X}px`,
+            top: `${gameState.birdY}px`,
+            transform: `rotate(${Math.min(Math.max(gameState.velocity * 4, -25), 90)}deg)`,
+          }}
+        >
+          <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full">
+            <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-black rounded-full" />
+          </div>
+          <div className="absolute top-2.5 -right-2 w-3 h-2 bg-orange-500 rounded-r-full border border-slate-800" />
+        </div>
+
+        {gameState.pipes.map((pipe) => (
+          <React.Fragment key={pipe.id}>
+            <div
+              className="absolute bg-green-500 border-2 border-green-800 rounded-b-sm"
+              style={{
+                width: `${FLAPPY_PIPE_WIDTH}px`,
+                height: `${pipe.topHeight}px`,
+                left: `${pipe.x}px`,
+                top: 0,
+              }}
+            >
+              <div className="absolute bottom-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
+            </div>
+            <div
+              className="absolute bg-green-500 border-2 border-green-800 rounded-t-sm"
+              style={{
+                width: `${FLAPPY_PIPE_WIDTH}px`,
+                height: `${FLAPPY_GAME_HEIGHT - pipe.topHeight - FLAPPY_GAP_SIZE}px`,
+                left: `${pipe.x}px`,
+                top: `${pipe.topHeight + FLAPPY_GAP_SIZE}px`,
+              }}
+            >
+              <div className="absolute top-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
+            </div>
+          </React.Fragment>
+        ))}
+
+        <div className="absolute bottom-0 w-full h-4 bg-amber-200 border-t-4 border-amber-800 z-10" />
+
+        {gameState.status === "idle" && (
+          <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-center z-30 pointer-events-none">
+            <div className="bg-white px-6 py-3 rounded shadow-lg text-slate-800 font-bold text-lg animate-bounce">
+              Toca para volar
+            </div>
+          </div>
+        )}
+
+        {gameState.status === "gameover" && (
+          <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-30 backdrop-blur-sm">
+            <div className="bg-[#ded895] border-4 border-[#543847] p-6 rounded-lg shadow-2xl text-center transform scale-100 transition-transform">
+              <h2 className="text-4xl font-black text-white mb-2" style={{ WebkitTextStroke: "1px #543847" }}>
+                GAME OVER
+              </h2>
+              <div className="bg-[#bdae58] border-2 border-[#543847] rounded p-4 mb-4 text-center">
+                <p className="text-[#543847] font-bold uppercase text-sm mb-1">Score</p>
+                <p className="text-3xl font-black text-white" style={{ WebkitTextStroke: "1px #543847" }}>
+                  {gameState.score}
+                </p>
+              </div>
+              <button
+                onClick={flap}
+                className="bg-orange-500 border-2 border-white hover:bg-orange-600 text-white font-black uppercase tracking-wider py-2 px-6 rounded-full shadow-lg active:scale-95 transition-all"
+              >
+                Reintentar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+      <p className="mt-4 text-xs text-slate-500 font-mono">
+        Pulsa Espacio o toca la pantalla
+      </p>
+    </ViewContainer>
+  );
+};
+
+const SnakeGame = ({ onBack }: { onBack: () => void }) => {
+    return (
+        <ViewContainer title="Snake" onBack={onBack}>
+            <div className="text-center p-12 space-y-4 border-2 border-dashed rounded-lg max-w-lg mx-auto mt-8">
+                <Wrench className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="font-semibold text-xl">Próximamente</h3>
+                <p className="text-sm text-muted-foreground">
+                    Estamos trabajando en este juego. ¡Vuelve pronto!
+                </p>
+            </div>
+        </ViewContainer>
+    );
+};
