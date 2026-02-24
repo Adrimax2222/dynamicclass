@@ -400,222 +400,181 @@ const MinigamesMenu = ({ setView, onBack }: { setView: (view: View) => void, onB
     );
 };
 
-const SnakeGame = ({ onBack }: { onBack: () => void }) => {
-  const GRID_SIZE = 20;
-  const SPEED = 120;
-  const FRUITS = ["🍎", "🍌", "🍇", "🍓", "🍒", "🍍", "🥭", "🍉"];
+const FlappyBirdGame = ({ onBack }: { onBack: () => void }) => {
+    const [gameState, setGameState] = React.useState<FlappyBirdGameState>({
+        birdY: FLAPPY_GAME_HEIGHT / 2,
+        velocity: 0,
+        pipes: [],
+        score: 0,
+        status: 'idle',
+        framesUntilNextPipe: 0,
+    });
+    const gameLoopRef = React.useRef<number>();
+    const gameAreaRef = React.useRef<HTMLDivElement>(null);
 
-  const getInitialSnake = () => [{ x: 10, y: 10 }];
-  const getInitialDirection = () => ({ x: 0, y: -1 });
-
-  const [snake, setSnake] = useState(getInitialSnake());
-  const [direction, setDirection] = useState(getInitialDirection());
-  const [food, setFood] = useState({ x: 5, y: 5, emoji: "🍎" });
-  const [gameOver, setGameOver] = useState(false);
-  const [score, setScore] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-
-  const lastProcessedDirection = useRef(getInitialDirection());
-
-  const generateFood = useCallback((currentSnake: {x:number, y:number}[]) => {
-    let newX, newY;
-    let isOccupied = true;
-    while (isOccupied) {
-      newX = Math.floor(Math.random() * GRID_SIZE);
-      newY = Math.floor(Math.random() * GRID_SIZE);
-      isOccupied = currentSnake.some((segment) => segment.x === newX && segment.y === newY);
-    }
-    const randomFruit = FRUITS[Math.floor(Math.random() * FRUITS.length)];
-    setFood({ x: newX, y: newY, emoji: randomFruit });
-  }, []);
-
-  const resetGame = () => {
-    setSnake(getInitialSnake());
-    setDirection(getInitialDirection());
-    lastProcessedDirection.current = getInitialDirection();
-    setScore(0);
-    setGameOver(false);
-    setIsPaused(false);
-    generateFood(getInitialSnake());
-  };
-
-  useEffect(() => {
-    if (gameOver || isPaused) return;
-
-    const moveSnake = () => {
-      setSnake((prevSnake) => {
-        const head = prevSnake[0];
-        const newHead = {
-          x: head.x + direction.x,
-          y: head.y + direction.y,
-        };
-
-        if (
-          newHead.x < 0 ||
-          newHead.x >= GRID_SIZE ||
-          newHead.y < 0 ||
-          newHead.y >= GRID_SIZE
-        ) {
-          setGameOver(true);
-          return prevSnake;
-        }
-
-        if (prevSnake.some((segment) => segment.x === newHead.x && segment.y === newHead.y)) {
-          setGameOver(true);
-          return prevSnake;
-        }
-
-        const newSnake = [newHead, ...prevSnake];
-
-        if (newHead.x === food.x && newHead.y === food.y) {
-          setScore((s) => s + 10);
-          generateFood(newSnake);
-        } else {
-          newSnake.pop();
-        }
-
-        lastProcessedDirection.current = direction;
-        return newSnake;
-      });
+    const resetGame = () => {
+        setGameState({
+            birdY: FLAPPY_GAME_HEIGHT / 2,
+            velocity: 0,
+            pipes: [],
+            score: 0,
+            status: 'idle',
+            framesUntilNextPipe: 0,
+        });
     };
 
-    const gameInterval = setInterval(moveSnake, SPEED);
-    return () => clearInterval(gameInterval);
-  }, [direction, gameOver, isPaused, food, generateFood]);
+    const gameLoop = useCallback(() => {
+        if (gameState.status !== 'playing') return;
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (gameOver) return;
-      
-      const { key } = e;
-      const currentDir = lastProcessedDirection.current;
+        setGameState(prev => {
+            const newVelocity = prev.velocity + FLAPPY_GRAVITY;
+            const newBirdY = prev.birdY + newVelocity;
+            let newStatus = prev.status;
+            let newScore = prev.score;
 
-      let newDir: {x: number, y: number} | null = null;
+            if (newBirdY > FLAPPY_GAME_HEIGHT - FLAPPY_BIRD_SIZE || newBirdY < 0) {
+                newStatus = 'gameover';
+            }
 
-      if (key === "ArrowUp" || key.toLowerCase() === "w") newDir = { x: 0, y: -1 };
-      if (key === "ArrowDown" || key.toLowerCase() === "s") newDir = { x: 0, y: 1 };
-      if (key === "ArrowLeft" || key.toLowerCase() === "a") newDir = { x: -1, y: 0 };
-      if (key === "ArrowRight" || key.toLowerCase() === "d") newDir = { x: 1, y: 0 };
-
-      if (newDir) {
-        if ((newDir.x !== 0 && currentDir.x === -newDir.x) || (newDir.y !== 0 && currentDir.y === -newDir.y)) {
-            return;
-        }
-        
-        e.preventDefault();
-        setDirection(newDir);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [gameOver]);
-
-  const handleTouchControl = (newDir: {x: number, y: number}) => {
-    const currentDir = lastProcessedDirection.current;
-    if ((newDir.x !== 0 && currentDir.x === -newDir.x) || (newDir.y !== 0 && currentDir.y === -newDir.y)) {
-        return;
-    }
-    setDirection(newDir);
-  };
-  
-  const getRotation = (dir: { x: number; y: number }) => {
-    if (dir.y === -1) return 'rotate(0deg)';
-    if (dir.x === 1) return 'rotate(90deg)';
-    if (dir.y === 1) return 'rotate(180deg)';
-    if (dir.x === -1) return 'rotate(-90deg)';
-    return 'rotate(0deg)';
-  };
-
-  return (
-    <ViewContainer title="Snake" onBack={onBack}>
-      <div className="flex flex-col items-center w-full max-w-md mx-auto select-none">
-        <div className="flex justify-between items-center w-full mb-4 bg-slate-800 text-white p-3 rounded-lg shadow-md font-mono">
-            <div className="text-xl font-bold">PUNTOS: {score}</div>
-            <button
-            onClick={() => setIsPaused(!isPaused)}
-            className="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-sm transition-colors"
-            >
-            {isPaused ? "REANUDAR" : "PAUSAR"}
-            </button>
-        </div>
-        <div className="relative w-full aspect-square bg-slate-50 border-4 border-slate-800 shadow-xl overflow-hidden rounded-md"
-            style={{
-                backgroundImage: "linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)",
-                backgroundSize: `${100 / GRID_SIZE}% ${100 / GRID_SIZE}%`
-            }}>
+            let newPipes = prev.pipes.map(pipe => ({ ...pipe, x: pipe.x - FLAPPY_PIPE_SPEED })).filter(pipe => pipe.x > -FLAPPY_PIPE_WIDTH);
             
-            <div
-            className="absolute flex items-center justify-center text-xl"
-            style={{
-                left: `${(food.x / GRID_SIZE) * 100}%`,
-                top: `${(food.y / GRID_SIZE) * 100}%`,
-                width: `${100 / GRID_SIZE}%`,
-                height: `${100 / GRID_SIZE}%`,
-            }}
-            >
-            {food.emoji}
-            </div>
+            newPipes.forEach(pipe => {
+                if (
+                    FLAPPY_BIRD_X < pipe.x + FLAPPY_PIPE_WIDTH &&
+                    FLAPPY_BIRD_X + FLAPPY_BIRD_SIZE > pipe.x &&
+                    (newBirdY < pipe.topHeight || newBirdY + FLAPPY_BIRD_SIZE > pipe.topHeight + FLAPPY_GAP_SIZE)
+                ) {
+                    newStatus = 'gameover';
+                }
 
-            {snake.map((segment, index) => {
-            const isHead = index === 0;
-            return (
+                if (pipe.x + FLAPPY_PIPE_WIDTH < FLAPPY_BIRD_X && !pipe.passed) {
+                    pipe.passed = true;
+                    newScore += 1;
+                }
+            });
+
+            let newFramesUntilNextPipe = prev.framesUntilNextPipe - 1;
+            if (newFramesUntilNextPipe <= 0) {
+                newPipes.push({
+                    id: Date.now(),
+                    x: FLAPPY_GAME_WIDTH,
+                    topHeight: Math.random() * (FLAPPY_GAME_HEIGHT - FLAPPY_GAP_SIZE - 40) + 20,
+                    passed: false,
+                });
+                newFramesUntilNextPipe = FLAPPY_PIPE_SPAWN_RATE;
+            }
+
+            return {
+                ...prev,
+                birdY: newBirdY,
+                velocity: newVelocity,
+                status: newStatus,
+                pipes: newPipes,
+                score: newScore,
+                framesUntilNextPipe: newFramesUntilNextPipe,
+            };
+        });
+
+        gameLoopRef.current = requestAnimationFrame(gameLoop);
+    }, [gameState.status]);
+
+    useEffect(() => {
+        if (gameState.status === 'playing') {
+            gameLoopRef.current = requestAnimationFrame(gameLoop);
+        }
+        return () => {
+            if (gameLoopRef.current) {
+                cancelAnimationFrame(gameLoopRef.current);
+            }
+        };
+    }, [gameLoop, gameState.status]);
+
+    const handleTap = () => {
+        if (gameState.status === 'idle') {
+            setGameState(prev => ({ ...prev, status: 'playing', velocity: FLAP_VELOCITY }));
+        } else if (gameState.status === 'playing') {
+            setGameState(prev => ({ ...prev, velocity: FLAP_VELOCITY }));
+        } else if (gameState.status === 'gameover') {
+            resetGame();
+        }
+    };
+    
+    return (
+        <ViewContainer title="Flappy BOT" onBack={onBack}>
+            <div className="flex flex-col items-center gap-4">
                 <div
-                key={`${segment.x}-${segment.y}-${index}`}
-                className={`absolute rounded-sm border border-black/20 ${
-                    isHead ? "bg-emerald-700 z-10" : "bg-emerald-500 z-0"
-                }`}
-                style={{
-                    left: `${(segment.x / GRID_SIZE) * 100}%`,
-                    top: `${(segment.y / GRID_SIZE) * 100}%`,
-                    width: `${100 / GRID_SIZE}%`,
-                    height: `${100 / GRID_SIZE}%`,
-                    transition: 'left 0.1s linear, top 0.1s linear',
-                }}
+                    ref={gameAreaRef}
+                    className="relative w-full max-w-[350px] bg-sky-300 dark:bg-sky-800 overflow-hidden border-4 border-slate-800 rounded-lg shadow-xl"
+                    style={{ height: `${FLAPPY_GAME_HEIGHT}px` }}
+                    onClick={handleTap}
+                    tabIndex={0}
                 >
-                {isHead && (
-                    <div
-                        className="relative w-full h-full transition-transform duration-200"
-                        style={{ transform: getRotation(direction) }}
+                    {/* Bird */}
+                    <motion.div
+                        className="absolute bg-yellow-400 rounded-full flex items-center justify-center border-2 border-slate-800"
+                        style={{
+                            width: FLAPPY_BIRD_SIZE,
+                            height: FLAPPY_BIRD_SIZE,
+                            left: FLAPPY_BIRD_X,
+                            top: gameState.birdY,
+                            rotate: Math.min(Math.max(-30, gameState.velocity * 4), 60)
+                        }}
                     >
-                        <div className="absolute w-1 h-3 bg-red-500 rounded-b-full top-[-6px] left-1/2 -translate-x-1/2 border-b border-l border-r border-red-700"></div>
-                        <div className="absolute w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center top-1/3 left-1/4 border border-black/20">
-                            <div className="w-0.5 h-0.5 bg-black rounded-full" />
+                        <div className="w-2 h-2 bg-white rounded-full border border-black/50 ml-1 flex items-center justify-center">
+                            <div className="w-1 h-1 bg-black rounded-full" />
                         </div>
-                        <div className="absolute w-1.5 h-1.5 bg-white rounded-full flex items-center justify-center top-1/3 right-1/4 border border-black/20">
-                            <div className="w-0.5 h-0.5 bg-black rounded-full" />
-                        </div>
+                    </motion.div>
+
+                    {/* Pipes */}
+                    {gameState.pipes.map(pipe => (
+                        <React.Fragment key={pipe.id}>
+                            <div
+                                className="absolute bg-green-600 border-2 border-slate-800"
+                                style={{
+                                    left: pipe.x,
+                                    top: 0,
+                                    width: FLAPPY_PIPE_WIDTH,
+                                    height: pipe.topHeight,
+                                }}
+                            />
+                            <div
+                                className="absolute bg-green-600 border-2 border-slate-800"
+                                style={{
+                                    left: pipe.x,
+                                    top: pipe.topHeight + FLAPPY_GAP_SIZE,
+                                    width: FLAPPY_PIPE_WIDTH,
+                                    height: FLAPPY_GAME_HEIGHT - (pipe.topHeight + FLAPPY_GAP_SIZE),
+                                }}
+                            />
+                        </React.Fragment>
+                    ))}
+
+                    {/* Score */}
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 text-4xl font-bold text-white" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+                        {gameState.score}
                     </div>
-                )}
+
+                    {/* Game Over Screen */}
+                    {gameState.status === 'gameover' && (
+                        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-4 text-white">
+                            <h3 className="text-3xl font-bold">Game Over</h3>
+                            <Button onClick={resetGame}>Reintentar</Button>
+                        </div>
+                    )}
+                    
+                    {gameState.status === 'idle' && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-white p-4">
+                            <p className="text-xl font-bold text-center" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>Toca para empezar</p>
+                        </div>
+                    )}
                 </div>
-            );
-            })}
-
-            {gameOver && (
-            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-20">
-                <h2 className="text-3xl font-bold text-white mb-2">¡Juego Terminado!</h2>
-                <p className="text-slate-200 mb-6">Puntuación final: {score}</p>
-                <button
-                onClick={resetGame}
-                className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-6 rounded-full shadow-lg transform transition active:scale-95"
-                >
-                Jugar de nuevo
-                </button>
             </div>
-            )}
-        </div>
+        </ViewContainer>
+    );
+};
 
-        <div className="mt-8 grid grid-cols-3 gap-2 w-48 opacity-80 hover:opacity-100 transition-opacity">
-            <div />
-            <button onClick={() => handleTouchControl({ x: 0, y: -1 })} className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl">⬆️</button>
-            <div />
-            <button onClick={() => handleTouchControl({ x: -1, y: 0 })} className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl">⬅️</button>
-            <button onClick={() => handleTouchControl({ x: 0, y: 1 })} className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl">⬇️</button>
-            <button onClick={() => handleTouchControl({ x: 1, y: 0 })} className="bg-slate-200 hover:bg-slate-300 active:bg-slate-400 aspect-square rounded-lg flex items-center justify-center shadow-sm text-2xl">➡️</button>
-        </div>
-        </div>
-    </ViewContainer>
-  );
+const SnakeGame = ({ onBack }: { onBack: () => void }) => {
+    return <ViewContainer title="Snake" onBack={onBack}><div className="text-center">Próximamente...</div></ViewContainer>;
 };
 
 const TicTacToeGame = ({ onBack }: { onBack: () => void }) => {
