@@ -55,14 +55,6 @@ interface EarthImage {
     location: string;
 }
 
-// Constantes del motor del juego Desert Run
-const DESERT_PLAYER_SIZE = 40;
-const DESERT_PLAYER_X = 50;
-const DESERT_GRAVITY = 0.6;
-const DESERT_JUMP_VELOCITY = 12;
-const DESERT_SPAWN_X = 1000;
-const DESERT_BASE_SPEED = 6;
-
 // Types for DesertRun
 type DesertRunObstacle = {
   id: number;
@@ -93,18 +85,6 @@ type DesertRunGameState = {
   isPlaying: boolean;
   hasStarted: boolean;
 };
-
-// Constantes del motor del juego Flappy BOT
-const FLAPPY_GRAVITY = 0.5;
-const FLAP_VELOCITY = -8;
-const FLAPPY_PIPE_SPEED = 3;
-const FLAPPY_PIPE_WIDTH = 60;
-const FLAPPY_GAP_SIZE = 140;
-const FLAPPY_BIRD_SIZE = 24;
-const FLAPPY_BIRD_X = 50;
-const FLAPPY_GAME_WIDTH = 350;
-const FLAPPY_GAME_HEIGHT = 500;
-const FLAPPY_PIPE_SPAWN_RATE = 90;
 
 // Types for FlappyBird
 type FlappyBirdGameState = {
@@ -401,7 +381,7 @@ const MinigamesMenu = ({ setView, onBack }: { setView: (view: View) => void, onB
 };
 
 const FlappyBirdGame = ({ onBack }: { onBack: () => void }) => {
-    const [gameState, setGameState] = React.useState<FlappyBirdGameState>({
+    const [gameState, setGameState] = useState<FlappyBirdGameState>({
         birdY: FLAPPY_GAME_HEIGHT / 2,
         velocity: 0,
         pipes: [],
@@ -409,8 +389,8 @@ const FlappyBirdGame = ({ onBack }: { onBack: () => void }) => {
         status: 'idle',
         framesUntilNextPipe: 0,
     });
-    const gameLoopRef = React.useRef<number>();
-    const gameAreaRef = React.useRef<HTMLDivElement>(null);
+    const gameLoopRef = useRef<number>();
+    const gameAreaRef = useRef<HTMLDivElement>(null);
 
     const resetGame = () => {
         setGameState({
@@ -572,6 +552,226 @@ const FlappyBirdGame = ({ onBack }: { onBack: () => void }) => {
         </ViewContainer>
     );
 };
+
+const DesertRun = ({ onBack }: { onBack: () => void }) => {
+    const [gameState, setGameState] = useState<DesertRunGameState>({
+        y: 400 - DESERT_PLAYER_SIZE,
+        vy: 0,
+        obstacles: [],
+        clouds: [],
+        score: 0,
+        speed: DESERT_BASE_SPEED,
+        nextObstacleIn: 100,
+        nextCloudIn: 50,
+        gameOver: false,
+        isPlaying: false,
+        hasStarted: false,
+    });
+    const gameLoopRef = useRef<number>();
+    const gameAreaRef = useRef<HTMLDivElement>(null);
+
+    const resetGame = () => {
+        setGameState({
+            y: 400 - DESERT_PLAYER_SIZE,
+            vy: 0,
+            obstacles: [],
+            clouds: [],
+            score: 0,
+            speed: DESERT_BASE_SPEED,
+            nextObstacleIn: 100,
+            nextCloudIn: 50,
+            gameOver: false,
+            isPlaying: false,
+            hasStarted: false,
+        });
+    };
+    
+    const startGame = () => {
+        if (!gameState.hasStarted || gameState.gameOver) {
+            resetGame();
+            setGameState(prev => ({...prev, isPlaying: true, hasStarted: true}));
+        }
+    };
+    
+    const jump = useCallback(() => {
+        if (gameState.isPlaying && gameState.y >= 400 - DESERT_PLAYER_SIZE) {
+            setGameState(prev => ({ ...prev, vy: -DESERT_JUMP_VELOCITY }));
+        }
+    }, [gameState.isPlaying, gameState.y]);
+
+    const gameLoop = useCallback(() => {
+        setGameState(prev => {
+            if (!prev.isPlaying || prev.gameOver) return prev;
+    
+            let { y, vy, obstacles, clouds, score, speed, nextObstacleIn, nextCloudIn, gameOver } = prev;
+    
+            // Update player
+            vy += DESERT_GRAVITY;
+            y += vy;
+            if (y >= 400 - DESERT_PLAYER_SIZE) {
+                y = 400 - DESERT_PLAYER_SIZE;
+                vy = 0;
+            }
+            
+            // Update obstacles
+            const newObstacles = obstacles
+                .map(o => ({...o, x: o.x - speed }))
+                .filter(o => o.x > -o.width);
+
+            // Update clouds
+            const newClouds = clouds
+                .map(c => ({ ...c, x: c.x - speed / 3 }))
+                .filter(c => c.x > -100);
+
+            // Collision detection
+            const playerRect = { x: DESERT_PLAYER_X, y, width: DESERT_PLAYER_SIZE, height: DESERT_PLAYER_SIZE };
+            for (const obstacle of newObstacles) {
+                const obstacleRect = { x: obstacle.x, y: 400 - obstacle.height, width: obstacle.width, height: obstacle.height };
+                if (
+                    playerRect.x < obstacleRect.x + obstacleRect.width &&
+                    playerRect.x + playerRect.width > obstacleRect.x &&
+                    playerRect.y < obstacleRect.y + obstacleRect.height &&
+                    playerRect.y + playerRect.height > obstacleRect.y
+                ) {
+                    gameOver = true;
+                }
+            }
+    
+            // Spawn new obstacles
+            let newNextObstacleIn = nextObstacleIn - 1;
+            if (newNextObstacleIn <= 0) {
+                const type = Math.random() > 0.7 ? 'double' : 'single';
+                newObstacles.push({
+                    id: Date.now(),
+                    x: DESERT_SPAWN_X,
+                    width: type === 'double' ? 60 : 30,
+                    height: type === 'double' ? 40 : 60,
+                    type,
+                });
+                newNextObstacleIn = 80 + Math.random() * 50;
+            }
+
+            // Spawn new clouds
+            let newNextCloudIn = nextCloudIn - 1;
+            if (newNextCloudIn <= 0) {
+                newClouds.push({
+                    id: Date.now(),
+                    x: DESERT_SPAWN_X,
+                    y: 50 + Math.random() * 100,
+                    scale: 0.8 + Math.random() * 0.4,
+                    opacity: 0.5 + Math.random() * 0.3
+                });
+                newNextCloudIn = 120 + Math.random() * 80;
+            }
+    
+            return {
+                ...prev,
+                y, vy,
+                obstacles: newObstacles,
+                clouds: newClouds,
+                score: gameOver ? prev.score : prev.score + 1,
+                speed: prev.speed + 0.002,
+                nextObstacleIn: newNextObstacleIn,
+                nextCloudIn: newNextCloudIn,
+                gameOver,
+            };
+        });
+        
+        gameLoopRef.current = requestAnimationFrame(gameLoop);
+    }, []);
+
+    useEffect(() => {
+        if (gameState.isPlaying && !gameState.gameOver) {
+            gameLoopRef.current = requestAnimationFrame(gameLoop);
+        }
+        return () => {
+            if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
+        };
+    }, [gameState.isPlaying, gameState.gameOver, gameLoop]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.code === 'Space' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (!gameState.hasStarted || gameState.gameOver) {
+                    startGame();
+                } else {
+                    jump();
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [gameState.hasStarted, gameState.gameOver, jump]);
+
+    return (
+        <ViewContainer title="Desert Run" onBack={onBack}>
+            <div className="flex flex-col items-center gap-4">
+                <div 
+                    ref={gameAreaRef} 
+                    className="relative w-full max-w-[800px] h-[400px] bg-sky-200 dark:bg-sky-900 overflow-hidden border-4 border-slate-800 rounded-lg shadow-xl"
+                    onClick={() => { if (!gameState.hasStarted || gameState.gameOver) startGame(); else jump(); }}
+                >
+                    {/* Sun/Moon */}
+                    <div className="absolute top-8 right-16 w-16 h-16 bg-yellow-300 dark:bg-slate-300 rounded-full" />
+                    
+                    {/* Clouds */}
+                    {gameState.clouds.map(cloud => (
+                        <div key={cloud.id} className="absolute bg-white/70 dark:bg-slate-400/50 rounded-full" style={{
+                            left: cloud.x,
+                            top: cloud.y,
+                            width: 80 * cloud.scale,
+                            height: 40 * cloud.scale,
+                            opacity: cloud.opacity
+                        }}/>
+                    ))}
+
+                    {/* Ground */}
+                    <div className="absolute bottom-0 left-0 w-full h-10 bg-orange-300 dark:bg-orange-800" />
+
+                    {/* Player */}
+                    <div className="absolute w-10 h-10" style={{ left: DESERT_PLAYER_X, top: gameState.y }}>
+                        <div className="w-full h-full bg-slate-700 rounded-md relative flex items-end justify-center">
+                            <div className="w-8 h-3 bg-slate-500 rounded-t-sm" />
+                            <div className="absolute w-4 h-4 bg-cyan-400 rounded-full top-3 flex items-center justify-center text-xs">
+                               🤖
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Obstacles */}
+                    {gameState.obstacles.map(o => (
+                        <div key={o.id} className="absolute bg-green-600 dark:bg-green-800 rounded-t-md" style={{
+                            left: o.x,
+                            bottom: 0,
+                            width: o.width,
+                            height: o.height,
+                        }} />
+                    ))}
+
+                    {/* Score */}
+                    <div className="absolute top-4 right-4 font-mono text-2xl font-bold text-slate-700 dark:text-slate-200">
+                        {Math.floor(gameState.score / 10)}
+                    </div>
+
+                    {/* Game Over / Start Screen */}
+                    {(!gameState.hasStarted || gameState.gameOver) && (
+                        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white text-center">
+                            <h3 className="text-3xl font-bold">
+                                {gameState.gameOver ? 'Game Over' : 'Desert Run'}
+                            </h3>
+                            {gameState.gameOver && <p className="text-xl mt-2">Puntuación: {Math.floor(gameState.score / 10)}</p>}
+                            <p className="mt-4 text-lg animate-pulse">
+                                {gameState.gameOver ? 'Toca para reintentar' : 'Toca o pulsa espacio para empezar'}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </ViewContainer>
+    );
+};
+
 
 const SnakeGame = ({ onBack }: { onBack: () => void }) => {
     return <ViewContainer title="Snake" onBack={onBack}><div className="text-center">Próximamente...</div></ViewContainer>;
@@ -1136,4 +1336,99 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
             )}
         </AnimatePresence>
     );
+};
+
+const MemoryGame = ({ onBack }: { onBack: () => void }) => {
+  const [cards, setCards] = useState<MemoryCard[]>([]);
+  const [flippedCards, setFlippedCards] = useState<number[]>([]);
+  const [moves, setMoves] = useState(0);
+  const [isChecking, setIsChecking] = useState(false);
+  const [gameSize, setGameSize] = useState(12);
+
+  const generateCards = useCallback(() => {
+    const seeds = Array(gameSize / 2).fill(0).map(() => Math.random().toString(36).substring(7));
+    const cardPairs = seeds.flatMap(seed => [
+      { id: Math.random(), seed, isFlipped: false, isMatched: false },
+      { id: Math.random(), seed, isFlipped: false, isMatched: false }
+    ]);
+    setCards(shuffleArray(cardPairs));
+    setFlippedCards([]);
+    setMoves(0);
+  }, [gameSize]);
+
+  useEffect(() => {
+    generateCards();
+  }, [generateCards]);
+
+  const handleCardClick = (id: number) => {
+    if (isChecking || flippedCards.includes(id) || cards.find(c => c.id === id)?.isMatched) {
+      return;
+    }
+
+    const newFlippedCards = [...flippedCards, id];
+    setCards(prev => prev.map(c => c.id === id ? { ...c, isFlipped: true } : c));
+    setFlippedCards(newFlippedCards);
+
+    if (newFlippedCards.length === 2) {
+      setIsChecking(true);
+      setMoves(m => m + 1);
+      const [firstId, secondId] = newFlippedCards;
+      const firstCard = cards.find(c => c.id === firstId);
+      const secondCard = cards.find(c => c.id === secondId);
+
+      if (firstCard && secondCard && firstCard.seed === secondCard.seed) {
+        // Match
+        setTimeout(() => {
+          setCards(prev => prev.map(c => (c.id === firstId || c.id === secondId) ? { ...c, isMatched: true } : c));
+          setFlippedCards([]);
+          setIsChecking(false);
+        }, 800);
+      } else {
+        // No match
+        setTimeout(() => {
+          setCards(prev => prev.map(c => (c.id === firstId || c.id === secondId) ? { ...c, isFlipped: false } : c));
+          setFlippedCards([]);
+          setIsChecking(false);
+        }, 1200);
+      }
+    }
+  };
+
+  const isGameWon = cards.length > 0 && cards.every(c => c.isMatched);
+
+  return (
+      <ViewContainer title="Memory" onBack={onBack}>
+          <div className="flex flex-col items-center gap-4">
+              <div className="flex justify-between w-full font-semibold">
+                  <span>Movimientos: {moves}</span>
+                  <Button variant="outline" size="sm" onClick={generateCards}>Reiniciar</Button>
+              </div>
+              <div className={`grid gap-2 w-full`} style={{ gridTemplateColumns: `repeat(${gameSize === 12 ? 3 : 4}, 1fr)` }}>
+                  {cards.map(card => (
+                      <div key={card.id} className="w-full aspect-square" onClick={() => handleCardClick(card.id)}>
+                          <div
+                              className="relative w-full h-full cursor-pointer transition-transform duration-500 rounded-lg"
+                              style={{ transformStyle: 'preserve-3d', transform: card.isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
+                          >
+                              <div className="absolute w-full h-full bg-primary rounded-lg flex items-center justify-center" style={{ backfaceVisibility: 'hidden' }}>
+                                  <Brain className="h-8 w-8 text-primary-foreground"/>
+                              </div>
+                              <div
+                                  className={cn("absolute w-full h-full bg-muted rounded-lg border-2 flex items-center justify-center", card.isMatched && 'border-green-500 bg-green-500/20')}
+                                  style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                              >
+                                  <img src={`https://api.dicebear.com/9.x/${DICEBEAR_STYLES[Math.floor(Math.random() * DICEBEAR_STYLES.length)]}/svg?seed=${card.seed}`} alt="avatar" className="w-12 h-12"/>
+                              </div>
+                          </div>
+                      </div>
+                  ))}
+              </div>
+               {isGameWon && (
+                <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <p className="font-bold text-green-600">¡Felicidades, lo has completado!</p>
+                </div>
+            )}
+          </div>
+      </ViewContainer>
+  );
 };
