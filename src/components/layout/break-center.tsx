@@ -86,6 +86,13 @@ type DesertRunGameState = {
   hasStarted: boolean;
 };
 
+const DESERT_PLAYER_SIZE = 40;
+const DESERT_PLAYER_X = 50;
+const DESERT_JUMP_VELOCITY = 18;
+const DESERT_GRAVITY = 0.8;
+const DESERT_BASE_SPEED = 5;
+const DESERT_SPAWN_X = 800;
+
 // Types for FlappyBird
 type FlappyBirdGameState = {
   birdY: number;
@@ -102,6 +109,18 @@ type Pipe = {
   topHeight: number;
   passed: boolean;
 };
+
+const FLAPPY_GAME_HEIGHT = 500;
+const FLAPPY_GAME_WIDTH = 350;
+const FLAPPY_BIRD_SIZE = 30;
+const FLAPPY_BIRD_X = 50;
+const FLAPPY_GRAVITY = 0.5;
+const FLAP_VELOCITY = -8;
+const FLAPPY_PIPE_WIDTH = 60;
+const FLAPPY_GAP_SIZE = 150;
+const FLAPPY_PIPE_SPEED = 4;
+const FLAPPY_PIPE_SPAWN_RATE = 90; // in frames
+
 
 // Types for MemoryGame
 type MemoryCard = {
@@ -380,179 +399,6 @@ const MinigamesMenu = ({ setView, onBack }: { setView: (view: View) => void, onB
     );
 };
 
-const FlappyBirdGame = ({ onBack }: { onBack: () => void }) => {
-    const [gameState, setGameState] = useState<FlappyBirdGameState>({
-        birdY: FLAPPY_GAME_HEIGHT / 2,
-        velocity: 0,
-        pipes: [],
-        score: 0,
-        status: 'idle',
-        framesUntilNextPipe: 0,
-    });
-    const gameLoopRef = useRef<number>();
-    const gameAreaRef = useRef<HTMLDivElement>(null);
-
-    const resetGame = () => {
-        setGameState({
-            birdY: FLAPPY_GAME_HEIGHT / 2,
-            velocity: 0,
-            pipes: [],
-            score: 0,
-            status: 'idle',
-            framesUntilNextPipe: 0,
-        });
-    };
-
-    const gameLoop = useCallback(() => {
-        if (gameState.status !== 'playing') return;
-
-        setGameState(prev => {
-            const newVelocity = prev.velocity + FLAPPY_GRAVITY;
-            const newBirdY = prev.birdY + newVelocity;
-            let newStatus = prev.status;
-            let newScore = prev.score;
-
-            if (newBirdY > FLAPPY_GAME_HEIGHT - FLAPPY_BIRD_SIZE || newBirdY < 0) {
-                newStatus = 'gameover';
-            }
-
-            let newPipes = prev.pipes.map(pipe => ({ ...pipe, x: pipe.x - FLAPPY_PIPE_SPEED })).filter(pipe => pipe.x > -FLAPPY_PIPE_WIDTH);
-            
-            newPipes.forEach(pipe => {
-                if (
-                    FLAPPY_BIRD_X < pipe.x + FLAPPY_PIPE_WIDTH &&
-                    FLAPPY_BIRD_X + FLAPPY_BIRD_SIZE > pipe.x &&
-                    (newBirdY < pipe.topHeight || newBirdY + FLAPPY_BIRD_SIZE > pipe.topHeight + FLAPPY_GAP_SIZE)
-                ) {
-                    newStatus = 'gameover';
-                }
-
-                if (pipe.x + FLAPPY_PIPE_WIDTH < FLAPPY_BIRD_X && !pipe.passed) {
-                    pipe.passed = true;
-                    newScore += 1;
-                }
-            });
-
-            let newFramesUntilNextPipe = prev.framesUntilNextPipe - 1;
-            if (newFramesUntilNextPipe <= 0) {
-                newPipes.push({
-                    id: Date.now(),
-                    x: FLAPPY_GAME_WIDTH,
-                    topHeight: Math.random() * (FLAPPY_GAME_HEIGHT - FLAPPY_GAP_SIZE - 40) + 20,
-                    passed: false,
-                });
-                newFramesUntilNextPipe = FLAPPY_PIPE_SPAWN_RATE;
-            }
-
-            return {
-                ...prev,
-                birdY: newBirdY,
-                velocity: newVelocity,
-                status: newStatus,
-                pipes: newPipes,
-                score: newScore,
-                framesUntilNextPipe: newFramesUntilNextPipe,
-            };
-        });
-
-        gameLoopRef.current = requestAnimationFrame(gameLoop);
-    }, [gameState.status]);
-
-    useEffect(() => {
-        if (gameState.status === 'playing') {
-            gameLoopRef.current = requestAnimationFrame(gameLoop);
-        }
-        return () => {
-            if (gameLoopRef.current) {
-                cancelAnimationFrame(gameLoopRef.current);
-            }
-        };
-    }, [gameLoop, gameState.status]);
-
-    const handleTap = () => {
-        if (gameState.status === 'idle') {
-            setGameState(prev => ({ ...prev, status: 'playing', velocity: FLAP_VELOCITY }));
-        } else if (gameState.status === 'playing') {
-            setGameState(prev => ({ ...prev, velocity: FLAP_VELOCITY }));
-        } else if (gameState.status === 'gameover') {
-            resetGame();
-        }
-    };
-    
-    return (
-        <ViewContainer title="Flappy BOT" onBack={onBack}>
-            <div className="flex flex-col items-center gap-4">
-                <div
-                    ref={gameAreaRef}
-                    className="relative w-full max-w-[350px] bg-sky-300 dark:bg-sky-800 overflow-hidden border-4 border-slate-800 rounded-lg shadow-xl"
-                    style={{ height: `${FLAPPY_GAME_HEIGHT}px` }}
-                    onClick={handleTap}
-                    tabIndex={0}
-                >
-                    {/* Bird */}
-                    <motion.div
-                        className="absolute bg-yellow-400 rounded-full flex items-center justify-center border-2 border-slate-800"
-                        style={{
-                            width: FLAPPY_BIRD_SIZE,
-                            height: FLAPPY_BIRD_SIZE,
-                            left: FLAPPY_BIRD_X,
-                            top: gameState.birdY,
-                            rotate: Math.min(Math.max(-30, gameState.velocity * 4), 60)
-                        }}
-                    >
-                        <div className="w-2 h-2 bg-white rounded-full border border-black/50 ml-1 flex items-center justify-center">
-                            <div className="w-1 h-1 bg-black rounded-full" />
-                        </div>
-                    </motion.div>
-
-                    {/* Pipes */}
-                    {gameState.pipes.map(pipe => (
-                        <React.Fragment key={pipe.id}>
-                            <div
-                                className="absolute bg-green-600 border-2 border-slate-800"
-                                style={{
-                                    left: pipe.x,
-                                    top: 0,
-                                    width: FLAPPY_PIPE_WIDTH,
-                                    height: pipe.topHeight,
-                                }}
-                            />
-                            <div
-                                className="absolute bg-green-600 border-2 border-slate-800"
-                                style={{
-                                    left: pipe.x,
-                                    top: pipe.topHeight + FLAPPY_GAP_SIZE,
-                                    width: FLAPPY_PIPE_WIDTH,
-                                    height: FLAPPY_GAME_HEIGHT - (pipe.topHeight + FLAPPY_GAP_SIZE),
-                                }}
-                            />
-                        </React.Fragment>
-                    ))}
-
-                    {/* Score */}
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 text-4xl font-bold text-white" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-                        {gameState.score}
-                    </div>
-
-                    {/* Game Over Screen */}
-                    {gameState.status === 'gameover' && (
-                        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-4 text-white">
-                            <h3 className="text-3xl font-bold">Game Over</h3>
-                            <Button onClick={resetGame}>Reintentar</Button>
-                        </div>
-                    )}
-                    
-                    {gameState.status === 'idle' && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-white p-4">
-                            <p className="text-xl font-bold text-center" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>Toca para empezar</p>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </ViewContainer>
-    );
-};
-
 const DesertRun = ({ onBack }: { onBack: () => void }) => {
     const [gameState, setGameState] = useState<DesertRunGameState>({
         y: 400 - DESERT_PLAYER_SIZE,
@@ -764,6 +610,179 @@ const DesertRun = ({ onBack }: { onBack: () => void }) => {
                             <p className="mt-4 text-lg animate-pulse">
                                 {gameState.gameOver ? 'Toca para reintentar' : 'Toca o pulsa espacio para empezar'}
                             </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </ViewContainer>
+    );
+};
+
+const FlappyBirdGame = ({ onBack }: { onBack: () => void }) => {
+    const [gameState, setGameState] = useState<FlappyBirdGameState>({
+        birdY: FLAPPY_GAME_HEIGHT / 2,
+        velocity: 0,
+        pipes: [],
+        score: 0,
+        status: 'idle',
+        framesUntilNextPipe: 0,
+    });
+    const gameLoopRef = useRef<number>();
+    const gameAreaRef = useRef<HTMLDivElement>(null);
+
+    const resetGame = () => {
+        setGameState({
+            birdY: FLAPPY_GAME_HEIGHT / 2,
+            velocity: 0,
+            pipes: [],
+            score: 0,
+            status: 'idle',
+            framesUntilNextPipe: 0,
+        });
+    };
+
+    const gameLoop = useCallback(() => {
+        if (gameState.status !== 'playing') return;
+
+        setGameState(prev => {
+            const newVelocity = prev.velocity + FLAPPY_GRAVITY;
+            const newBirdY = prev.birdY + newVelocity;
+            let newStatus = prev.status;
+            let newScore = prev.score;
+
+            if (newBirdY > FLAPPY_GAME_HEIGHT - FLAPPY_BIRD_SIZE || newBirdY < 0) {
+                newStatus = 'gameover';
+            }
+
+            let newPipes = prev.pipes.map(pipe => ({ ...pipe, x: pipe.x - FLAPPY_PIPE_SPEED })).filter(pipe => pipe.x > -FLAPPY_PIPE_WIDTH);
+            
+            newPipes.forEach(pipe => {
+                if (
+                    FLAPPY_BIRD_X < pipe.x + FLAPPY_PIPE_WIDTH &&
+                    FLAPPY_BIRD_X + FLAPPY_BIRD_SIZE > pipe.x &&
+                    (newBirdY < pipe.topHeight || newBirdY + FLAPPY_BIRD_SIZE > pipe.topHeight + FLAPPY_GAP_SIZE)
+                ) {
+                    newStatus = 'gameover';
+                }
+
+                if (pipe.x + FLAPPY_PIPE_WIDTH < FLAPPY_BIRD_X && !pipe.passed) {
+                    pipe.passed = true;
+                    newScore += 1;
+                }
+            });
+
+            let newFramesUntilNextPipe = prev.framesUntilNextPipe - 1;
+            if (newFramesUntilNextPipe <= 0) {
+                newPipes.push({
+                    id: Date.now(),
+                    x: FLAPPY_GAME_WIDTH,
+                    topHeight: Math.random() * (FLAPPY_GAME_HEIGHT - FLAPPY_GAP_SIZE - 40) + 20,
+                    passed: false,
+                });
+                newFramesUntilNextPipe = FLAPPY_PIPE_SPAWN_RATE;
+            }
+
+            return {
+                ...prev,
+                birdY: newBirdY,
+                velocity: newVelocity,
+                status: newStatus,
+                pipes: newPipes,
+                score: newScore,
+                framesUntilNextPipe: newFramesUntilNextPipe,
+            };
+        });
+
+        gameLoopRef.current = requestAnimationFrame(gameLoop);
+    }, [gameState.status]);
+
+    useEffect(() => {
+        if (gameState.status === 'playing') {
+            gameLoopRef.current = requestAnimationFrame(gameLoop);
+        }
+        return () => {
+            if (gameLoopRef.current) {
+                cancelAnimationFrame(gameLoopRef.current);
+            }
+        };
+    }, [gameLoop, gameState.status]);
+
+    const handleTap = () => {
+        if (gameState.status === 'idle') {
+            setGameState(prev => ({ ...prev, status: 'playing', velocity: FLAP_VELOCITY }));
+        } else if (gameState.status === 'playing') {
+            setGameState(prev => ({ ...prev, velocity: FLAP_VELOCITY }));
+        } else if (gameState.status === 'gameover') {
+            resetGame();
+        }
+    };
+    
+    return (
+        <ViewContainer title="Flappy BOT" onBack={onBack}>
+            <div className="flex flex-col items-center gap-4">
+                <div
+                    ref={gameAreaRef}
+                    className="relative w-full max-w-[350px] bg-sky-300 dark:bg-sky-800 overflow-hidden border-4 border-slate-800 rounded-lg shadow-xl"
+                    style={{ height: `${FLAPPY_GAME_HEIGHT}px` }}
+                    onClick={handleTap}
+                    tabIndex={0}
+                >
+                    {/* Bird */}
+                    <motion.div
+                        className="absolute bg-yellow-400 rounded-full flex items-center justify-center border-2 border-slate-800"
+                        style={{
+                            width: FLAPPY_BIRD_SIZE,
+                            height: FLAPPY_BIRD_SIZE,
+                            left: FLAPPY_BIRD_X,
+                            top: gameState.birdY,
+                            rotate: Math.min(Math.max(-30, gameState.velocity * 4), 60)
+                        }}
+                    >
+                        <div className="w-2 h-2 bg-white rounded-full border border-black/50 ml-1 flex items-center justify-center">
+                            <div className="w-1 h-1 bg-black rounded-full" />
+                        </div>
+                    </motion.div>
+
+                    {/* Pipes */}
+                    {gameState.pipes.map(pipe => (
+                        <React.Fragment key={pipe.id}>
+                            <div
+                                className="absolute bg-green-600 border-2 border-slate-800"
+                                style={{
+                                    left: pipe.x,
+                                    top: 0,
+                                    width: FLAPPY_PIPE_WIDTH,
+                                    height: pipe.topHeight,
+                                }}
+                            />
+                            <div
+                                className="absolute bg-green-600 border-2 border-slate-800"
+                                style={{
+                                    left: pipe.x,
+                                    top: pipe.topHeight + FLAPPY_GAP_SIZE,
+                                    width: FLAPPY_PIPE_WIDTH,
+                                    height: FLAPPY_GAME_HEIGHT - (pipe.topHeight + FLAPPY_GAP_SIZE),
+                                }}
+                            />
+                        </React.Fragment>
+                    ))}
+
+                    {/* Score */}
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 text-4xl font-bold text-white" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+                        {gameState.score}
+                    </div>
+
+                    {/* Game Over Screen */}
+                    {gameState.status === 'gameover' && (
+                        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-4 text-white">
+                            <h3 className="text-3xl font-bold">Game Over</h3>
+                            <Button onClick={resetGame}>Reintentar</Button>
+                        </div>
+                    )}
+                    
+                    {gameState.status === 'idle' && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-white p-4">
+                            <p className="text-xl font-bold text-center" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>Toca para empezar</p>
                         </div>
                     )}
                 </div>
@@ -1230,7 +1249,7 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
 };
 
 export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
-    const { isActive, setIsActive, phase, user, updateUser, firestore } = useApp();
+    const { isActive, setIsActive, phase, user, updateUser, firestore, breakTimeLeft } = useApp();
     const { toast } = useToast();
     const [view, setView] = useState<View>('menu');
     const [wasActiveBeforeBreak, setWasActiveBeforeBreak] = useState(false);
@@ -1289,6 +1308,12 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
                 return <MainMenu setView={setView} />;
         }
     };
+    
+    const formatBreakTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    };
 
     return (
         <AnimatePresence>
@@ -1317,6 +1342,12 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
                                 <X className="h-5 w-5" />
                             </Button>
                         )}
+                        <div className="absolute top-3 left-3 z-20">
+                            <div className="flex items-center gap-2 h-9 px-4 rounded-full bg-destructive/10 border border-destructive/20">
+                                <Timer className="h-5 w-5 text-destructive" />
+                                <span className="font-mono font-bold text-destructive">{formatBreakTime(breakTimeLeft)}</span>
+                            </div>
+                        </div>
                         <div className="relative h-full w-full overflow-hidden rounded-2xl">
                            <AnimatePresence mode="wait">
                              <motion.div
