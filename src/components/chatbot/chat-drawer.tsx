@@ -154,14 +154,19 @@ export default function ChatDrawer() {
 
     } catch (error: any) {
         console.error("Error sending message:", error);
+        let errorMessage = "No se pudo enviar tu mensaje. Inténtalo de nuevo.";
+        if (error.code === 'permission-denied') {
+            errorMessage = 'Error de permisos. Tu sesión podría haber expirado.';
+        }
+
         if (currentChatId) {
             const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
-            const errorMessage: Omit<ChatMessage, 'uid'> = {
+            const systemErrorMessage: Omit<ChatMessage, 'uid'> = {
                 role: "system",
-                content: `Lo siento, he encontrado un problema: ${error.message || 'Error desconocido'}.`,
+                content: `Lo siento, he encontrado un problema: ${errorMessage}.`,
                 timestamp: Timestamp.now(),
             };
-            await addDoc(messagesRef, errorMessage);
+            await addDoc(messagesRef, systemErrorMessage);
         }
         setIsSending(false);
     }

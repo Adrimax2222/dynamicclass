@@ -129,6 +129,15 @@ service cloud.firestore {
         }
       }
 
+      // AI Prompts subcollection for Firestore Extension
+      match /ai_prompts/{promptId} {
+        allow read, create: if isOwner(userId);
+        // Only the backend extension should update with a response.
+        // Deletion can be allowed for chat history clearing.
+        allow update: if false; 
+        allow delete: if isOwner(userId);
+      }
+
       // Completed items history subcollection
       match /completedItems/{itemId} {
         allow list, get, create: if isOwner(userId);

@@ -253,7 +253,11 @@ export default function ChatbotPage() {
 
     } catch (error: any) {
         console.error("❌ Error en handleSend:", error);
-        setError({ hasError: true, message: `Error al enviar: ${error.message}`, canRetry: false });
+        let errorMessage = 'No se pudo enviar tu mensaje. Inténtalo de nuevo.';
+        if (error.code === 'permission-denied') {
+            errorMessage = 'Error de permisos. Es posible que tu sesión haya expirado. Por favor, recarga la página.';
+        }
+        setError({ hasError: true, message: errorMessage, canRetry: false });
         setIsSending(false);
     }
   };
