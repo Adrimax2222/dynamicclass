@@ -50,7 +50,7 @@ import {
 
 // Custom Components & Hooks
 import type { ChatMessage, Chat } from "@/lib/types";
-import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance";
+// import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance"; - DEACTIVATED
 import { useApp } from "@/lib/hooks/use-app";
 import { Logo } from "@/components/icons";
 import { MarkdownRenderer } from "@/components/chatbot/markdown-renderer";
@@ -73,6 +73,7 @@ import {
   deleteDoc,
   writeBatch,
   getDocs,
+  onSnapshot,
 } from "firebase/firestore";
 
 // Utils
@@ -105,7 +106,6 @@ export default function ChatbotPage() {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<ErrorState>({ hasError: false, message: '', canRetry: false });
-  const [pendingMessage, setPendingMessage] = useState<string>("");
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -156,7 +156,7 @@ export default function ChatbotPage() {
       setError({
         hasError: true,
         message: 'No se pudo crear un nuevo chat. Verifica tu conexión.',
-        canRetry: true,
+        canRetry: false,
       });
     }
   };
@@ -187,104 +187,77 @@ export default function ChatbotPage() {
     }
   };
 
-  const handleSend = async (retryMessage?: string) => {
-    const messageToSend = retryMessage || input.trim();
-    
-    if (!messageToSend || !user || !firestore) {
-      if (!user) {
-        setError({
-          hasError: true,
-          message: 'Debes iniciar sesión para usar el chatbot.',
-          canRetry: false,
-        });
-      }
-      return;
+  const handleSend = async () => {
+    const messageToSend = input.trim();
+    if (!messageToSend || !user || !firestore || isSending) {
+        if (!user) {
+            setError({ hasError: true, message: 'Debes iniciar sesión para usar el chatbot.', canRetry: false });
+        }
+        return;
     }
-
-    // Prevent duplicate sends
-    if (isSending) return;
 
     setIsSending(true);
     setError({ hasError: false, message: '', canRetry: false });
-    setPendingMessage(messageToSend);
-    
+
     let currentChatId = activeChatId;
 
     try {
-      // Create a new chat if one doesn't exist
-      if (!currentChatId) {
-        const newChatRef = await addDoc(collection(firestore, `users/${user.uid}/chats`), {
-          userId: user.uid,
-          title: messageToSend.substring(0, 30) + (messageToSend.length > 30 ? '...' : ''),
-          createdAt: serverTimestamp(),
-        });
-        currentChatId = newChatRef.id;
-        setActiveChatId(currentChatId);
-      }
+        if (!currentChatId) {
+            const newChatRef = await addDoc(collection(firestore, `users/${user.uid}/chats`), {
+                userId: user.uid,
+                title: messageToSend.substring(0, 30) + (messageToSend.length > 30 ? '...' : ''),
+                createdAt: serverTimestamp(),
+            });
+            currentChatId = newChatRef.id;
+            setActiveChatId(currentChatId);
+        }
 
-      const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
-
-      // Save user message to Firestore
-      const userMessage: Omit<ChatMessage, 'uid'> = {
-        role: "user",
-        content: messageToSend,
-        timestamp: Timestamp.now(),
-      };
-      await addDoc(messagesRef, userMessage);
-
-      // Clear input immediately for better UX
-      if (!retryMessage) {
+        const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
+        
+        const userMessage: Omit<ChatMessage, 'uid'> = {
+            role: "user",
+            content: messageToSend,
+            timestamp: Timestamp.now(),
+        };
+        await addDoc(messagesRef, userMessage);
+        
         setInput("");
-      }
-      
-      const result = await aiChatbotAssistance({ 
-        query: messageToSend,
-      });
+        
+        const aiPromptsRef = collection(firestore, `users/${user.uid}/ai_prompts`);
+        const newPromptDocRef = await addDoc(aiPromptsRef, {
+            prompt: messageToSend,
+            createdAt: serverTimestamp(),
+        });
 
-      // Validate response
-      if (!result || !result.response || result.response.trim() === '') {
-        throw new Error('La IA devolvió una respuesta vacía');
-      }
+        const unsubscribe = onSnapshot(newPromptDocRef, async (snapshot) => {
+            const data = snapshot.data();
+            if (!data) return;
 
-      // Save assistant's response to Firestore
-      const assistantMessage: Omit<ChatMessage, 'uid'> = {
-        role: "assistant",
-        content: result.response,
-        timestamp: Timestamp.now(),
-      };
-      await addDoc(messagesRef, assistantMessage);
+            if (data.response || data.error) {
+                unsubscribe();
+                
+                if(data.response) {
+                    const assistantMessage: Omit<ChatMessage, 'uid'> = {
+                        role: "assistant",
+                        content: data.response,
+                        timestamp: Timestamp.now(),
+                    };
+                    await addDoc(messagesRef, assistantMessage);
+                } else {
+                     setError({ hasError: true, message: `Error de la IA: ${data.error}`, canRetry: false });
+                }
 
-      setPendingMessage("");
+                setIsSending(false);
+            }
+        });
 
     } catch (error: any) {
-      console.error("❌ Error en handleSend:", error);
-      const errorMsg = error.message || 'No se pudo obtener respuesta.';
-      
-      // Save error message to chat for user reference
-      if (currentChatId) {
-        const errorMessage: Omit<ChatMessage, 'uid'> = {
-          role: "system",
-          content: `⚠️ Error: ${errorMsg}`,
-          timestamp: Timestamp.now(),
-        };
-        try {
-          const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
-          await addDoc(messagesRef, errorMessage);
-        } catch (e) {
-          console.error('No se pudo guardar mensaje de error:', e);
-        }
-      }
-    } finally {
-      setIsSending(false);
+        console.error("❌ Error en handleSend:", error);
+        setError({ hasError: true, message: `Error al enviar: ${error.message}`, canRetry: false });
+        setIsSending(false);
     }
   };
 
-
-  const handleRetry = () => {
-    if (pendingMessage && error.canRetry) {
-      handleSend(pendingMessage);
-    }
-  };
 
   const formatTimestamp = (timestamp: any): string => {
     if (!timestamp) return "";
@@ -292,7 +265,6 @@ export default function ChatbotPage() {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Función para copiar texto al portapapeles
   const copyToClipboard = async (text: string, messageId: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -303,16 +275,11 @@ export default function ChatbotPage() {
     }
   };
 
-  // ============= RENDER CONDITIONS =============
-
   const showWelcomeScreen = !isChatsLoading && (!activeChatId || (activeChatId && messages.length === 0 && !isMessagesLoading));
   const isInputDisabled = isMessagesLoading || isSending || !user;
 
-  // ============= RENDER =============
-
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
-      {/* Header */}
       <header className="border-b p-4 flex items-center justify-between relative bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <ChatHistorySheet
           chats={chats}
@@ -337,7 +304,6 @@ export default function ChatbotPage() {
         <AiModulesSheet />
       </header>
 
-      {/* Messages Area */}
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="space-y-6 p-4">
           {showWelcomeScreen ? (
@@ -379,7 +345,6 @@ export default function ChatbotPage() {
                       : "bg-destructive/10 text-destructive border border-destructive/20"
                   )}
                 >
-                  {/* Botón de copiar para mensajes de la IA */}
                   {message.role === 'assistant' && (
                     <Button
                       variant="ghost"
@@ -422,14 +387,12 @@ export default function ChatbotPage() {
             ))
           )}
 
-          {/* Loading indicator with shimmer effect */}
           {isSending && (
             <div className="flex items-end gap-3 justify-start">
               <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
                 <Logo className="h-5 w-5" />
               </Avatar>
               <div className="max-w-md rounded-lg p-3 bg-muted space-y-2">
-                {/* Shimmer lines effect like Gemini */}
                 <div className="space-y-2">
                   <div className="h-4 bg-gradient-to-r from-muted-foreground/20 via-muted-foreground/40 to-muted-foreground/20 rounded animate-shimmer bg-[length:200%_100%]" style={{ width: '90%' }}></div>
                   <div className="h-4 bg-gradient-to-r from-muted-foreground/20 via-muted-foreground/40 to-muted-foreground/20 rounded animate-shimmer bg-[length:200%_100%]" style={{ width: '75%', animationDelay: '0.1s' }}></div>
@@ -445,31 +408,17 @@ export default function ChatbotPage() {
         </div>
       </ScrollArea>
 
-      {/* Error Alert */}
       {error.hasError && (
         <div className="px-4 py-2">
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between">
               <span>{error.message}</span>
-              {error.canRetry && pendingMessage && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleRetry}
-                  disabled={isSending}
-                  className="ml-2"
-                >
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                  Reintentar
-                </Button>
-              )}
             </AlertDescription>
           </Alert>
         </div>
       )}
 
-      {/* Input Area */}
       <div className="mt-auto border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-4 space-y-2">
         <div className="relative">
           <Textarea
@@ -517,8 +466,6 @@ export default function ChatbotPage() {
     </div>
   );
 }
-
-// ============= SUBCOMPONENTS =============
 
 function ChatHistorySheet({
   chats,

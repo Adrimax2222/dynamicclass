@@ -174,6 +174,18 @@
       },
       "required": ["role", "content", "timestamp"]
     },
+    "AIChatRequest": {
+        "title": "AI Chat Request",
+        "description": "A prompt sent by a user to be processed by a Firestore AI extension.",
+        "type": "object",
+        "properties": {
+            "prompt": { "type": "string" },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "response": { "type": "string", "description": "The response from the AI." },
+            "error": { "type": "string", "description": "Any error message from processing." }
+        },
+        "required": ["prompt", "createdAt"]
+    },
     "ClassChatMessage": {
       "title": "Class Chat Message",
       "description": "Represents a single message within a class-wide chat.",
@@ -263,6 +275,10 @@
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profile information."
+    },
+    "/users/{userId}/ai_prompts/{promptId}": {
+        "schema": { "$ref": "#/entities/AIChatRequest" },
+        "description": "Stores user prompts for AI processing and the corresponding AI responses."
     },
     "/users/{userId}/reservedCourses/{courseId}": {
       "schema": { "$ref": "#/entities/ReservedCourse" },

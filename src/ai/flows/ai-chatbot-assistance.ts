@@ -2,9 +2,9 @@
 
 /**
  * @fileOverview Minimal Viable Product for AI Chatbot Assistance.
- * This is a simplified version for debugging purposes.
+ * THIS FILE IS DEACTIVATED AND REPLACED BY A FIRESTORE-BASED WORKFLOW.
  */
-
+/*
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Simple input/output types for debugging
@@ -16,13 +16,6 @@ interface AIChatbotAssistanceOutput {
   response: string;
 }
 
-/**
- * Processes a user query and returns a simple AI response.
- * Uses the 'gemini-1.5-flash' model with the v1 API.
- * 
- * @param input - An object containing the user's query.
- * @returns An object with the AI's response or an error message.
- */
 export async function aiChatbotAssistance(input: AIChatbotAssistanceInput): Promise<AIChatbotAssistanceOutput> {
   // 1. Verify API Key
   const apiKey = process.env.GEMINI_API_KEY;
@@ -59,3 +52,4 @@ export async function aiChatbotAssistance(input: AIChatbotAssistanceInput): Prom
     return { response: `Error: ${error.message}` };
   }
 }
+*/

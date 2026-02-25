@@ -22,6 +22,7 @@ import {
   writeBatch,
   getDocs,
   updateDoc,
+  onSnapshot,
 } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ import {
 } from "@/components/ui/sheet";
 import { useApp } from "@/lib/hooks/use-app";
 import type { ChatMessage, Chat } from "@/lib/types";
-import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance";
+// import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance"; - DEACTIVATED
 import { ScrollArea } from "../ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { cn } from "@/lib/utils";
@@ -97,56 +98,72 @@ export default function ChatDrawer() {
   }, [messages, isSending]);
 
   const handleSend = async () => {
-    if (!input.trim() || !user || !firestore) return;
+    if (!input.trim() || !user || !firestore || isSending) return;
 
-    let currentChatId = activeChatId;
-    
-    if (!currentChatId) {
-        const newChatRef = await addDoc(collection(firestore, `users/${user.uid}/chats`), {
-            userId: user.uid,
-            title: `Chat ${chats.length + 1}`,
-            createdAt: serverTimestamp(),
-        });
-        currentChatId = newChatRef.id;
-        setActiveChatId(currentChatId);
-    }
-    
-    const userMessage: Omit<ChatMessage, 'uid'> = {
-      role: "user",
-      content: input,
-      timestamp: Timestamp.now(),
-    };
-    
-    const currentInput = input;
-    setInput("");
     setIsSending(true);
+    let currentChatId = activeChatId;
+    const messageToSend = input;
+    setInput("");
 
     try {
-      const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
-      await addDoc(messagesRef, userMessage);
-      
-      const result = await aiChatbotAssistance({ query: currentInput });
-      
-      const assistantMessage: Omit<ChatMessage, 'uid'> = {
-        role: "assistant",
-        content: result.response,
-        timestamp: Timestamp.now(),
-      };
-      await addDoc(messagesRef, assistantMessage);
+        if (!currentChatId) {
+            const newChatRef = await addDoc(collection(firestore, `users/${user.uid}/chats`), {
+                userId: user.uid,
+                title: messageToSend.substring(0, 30) + (messageToSend.length > 30 ? '...' : ''),
+                createdAt: serverTimestamp(),
+            });
+            currentChatId = newChatRef.id;
+            setActiveChatId(currentChatId);
+        }
+
+        const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
+
+        const userMessage: Omit<ChatMessage, 'uid'> = {
+            role: "user",
+            content: messageToSend,
+            timestamp: Timestamp.now(),
+        };
+        await addDoc(messagesRef, userMessage);
+
+        const aiPromptsRef = collection(firestore, `users/${user.uid}/ai_prompts`);
+        const newPromptDocRef = await addDoc(aiPromptsRef, {
+            prompt: messageToSend,
+            createdAt: serverTimestamp(),
+        });
+
+        const unsubscribe = onSnapshot(newPromptDocRef, async (snapshot) => {
+            const data = snapshot.data();
+            if (!data) return;
+
+            if (data.response || data.error) {
+                unsubscribe();
+                
+                const messageContent = data.response || `⚠️ Error de la IA: ${data.error}`;
+                const messageRole = data.response ? 'assistant' : 'system';
+
+                const assistantMessage: Omit<ChatMessage, 'uid'> = {
+                    role: messageRole,
+                    content: messageContent,
+                    timestamp: Timestamp.now(),
+                };
+                await addDoc(messagesRef, assistantMessage);
+                
+                setIsSending(false);
+            }
+        });
 
     } catch (error: any) {
-      console.error("AI Error:", error);
-      const errorMessage: Omit<ChatMessage, 'uid'> = {
-        role: "system",
-        content: `Lo siento, he encontrado un problema: ${error.message || 'Error desconocido'}. Por favor, inténtalo de nuevo.`,
-        timestamp: Timestamp.now(),
-      };
-       if (currentChatId) {
+        console.error("Error sending message:", error);
+        if (currentChatId) {
             const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
+            const errorMessage: Omit<ChatMessage, 'uid'> = {
+                role: "system",
+                content: `Lo siento, he encontrado un problema: ${error.message || 'Error desconocido'}.`,
+                timestamp: Timestamp.now(),
+            };
             await addDoc(messagesRef, errorMessage);
-       }
-    } finally {
-      setIsSending(false);
+        }
+        setIsSending(false);
     }
   };
   
