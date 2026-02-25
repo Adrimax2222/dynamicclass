@@ -43,7 +43,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
   SheetDescription,
   SheetClose,
 } from "@/components/ui/sheet";
@@ -231,7 +230,18 @@ export default function ChatbotPage() {
 
         const unsubscribe = onSnapshot(newPromptDocRef, async (snapshot) => {
             const data = snapshot.data();
+            console.log('AI prompt document snapshot:', data); // Debug log
+
             if (!data) return;
+
+            // Check for processing status and errors from the extension
+            if (data.status && data.status.state === 'ERROR') {
+              console.error('Firebase AI Extension Error:', data.status.error);
+              setError({ hasError: true, message: `Error de la IA: ${data.status.error}`, canRetry: false });
+              unsubscribe();
+              setIsSending(false);
+              return;
+            }
 
             if (data.response || data.error) {
                 unsubscribe();
@@ -635,3 +645,5 @@ function AiModulesSheet() {
     </Sheet>
   );
 }
+
+    

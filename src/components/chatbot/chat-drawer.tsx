@@ -133,7 +133,24 @@ export default function ChatDrawer() {
 
         const unsubscribe = onSnapshot(newPromptDocRef, async (snapshot) => {
             const data = snapshot.data();
+            console.log('AI prompt document snapshot:', data); // Debug log
+
             if (!data) return;
+
+            // Check for processing status and errors from the extension
+            if (data.status && data.status.state === 'ERROR') {
+              console.error('Firebase AI Extension Error:', data.status.error);
+              const errorMessage = `⚠️ Error de la IA: ${data.status.error}`;
+              const systemErrorMessage: Omit<ChatMessage, 'uid'> = {
+                  role: "system",
+                  content: errorMessage,
+                  timestamp: Timestamp.now(),
+              };
+              await addDoc(messagesRef, systemErrorMessage);
+              unsubscribe();
+              setIsSending(false);
+              return;
+            }
 
             if (data.response || data.error) {
                 unsubscribe();
@@ -370,3 +387,5 @@ export default function ChatDrawer() {
     </Sheet>
   );
 }
+
+    
