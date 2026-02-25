@@ -232,11 +232,10 @@ export default function ChatbotPage() {
 
         const unsubscribe = onSnapshot(newPromptDocRef, async (snapshot) => {
             const data = snapshot.data();
-            console.log('AI prompt document snapshot:', data); // User requested log
+            console.log('AI prompt document snapshot:', data); 
 
             if (!data) return;
 
-            // Case 1: The extension reports an error in its status object.
             if (data.status && data.status.state === 'ERROR') {
               console.error('Firebase AI Extension Error:', data.status.error);
               const errorMessage = `⚠️ Error de la IA: ${data.status.error || 'Ocurrió un error desconocido.'}`;
@@ -251,8 +250,6 @@ export default function ChatbotPage() {
               return;
             }
 
-            // Case 2: The extension has finished, either with a response or an error string.
-            // Check for property existence to handle empty strings as valid responses.
             if ('response' in data || 'error' in data) {
                 unsubscribe();
                 
