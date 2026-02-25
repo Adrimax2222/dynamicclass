@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { format, startOfToday, addDays, isWithinInterval, endOfDay, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Loader2, Info, Pencil, BrainCircuit, MailCheck, Trophy, Flame, TreePine, Clock, FileCheck2, NotebookText, Star, RefreshCw, Download } from "lucide-react";
@@ -162,7 +162,7 @@ export default function CalendarPage() {
   }, [calendarType, user, isClassCalendarAvailable, isPersonalCalendarConnected, isClassIcalLoading]);
 
 
-  const parseIcal = (icalData: string, type: CalendarType): ParsedEvent[] => {
+  const parseIcal = useCallback((icalData: string, type: CalendarType): ParsedEvent[] => {
     const events: ParsedEvent[] = [];
     const lines = icalData.split(/\r\n|\n|\r/);
     let currentEvent: any = null;
@@ -179,7 +179,7 @@ export default function CalendarPage() {
                     const month = parseInt(dateStr.substring(4, 6), 10) - 1;
                     const day = parseInt(dateStr.substring(6, 8), 10);
                     
-                    const eventDate = new Date(Date.UTC(year, month, day));
+                    const eventDate = new Date(year, month, day); // FIX: Do not use UTC for all-day events
                     const description = (currentEvent.description || 'No hay descripción.').replace(/\\n/g, '\n');
 
                     events.push({
@@ -208,9 +208,9 @@ export default function CalendarPage() {
         }
     }
     return events;
-  };
+  }, []);
   
-  const handleFetchEvents = async (type: CalendarType, urlOverride?: string | null) => {
+  const handleFetchEvents = useCallback(async (type: CalendarType, urlOverride?: string | null) => {
       let urlToFetch: string | null = null;
       
       if (type === 'personal') {
@@ -233,6 +233,8 @@ export default function CalendarPage() {
       setIsLoading(true);
       setError(null);
       
+      const cacheKey = `ical_cache_${encodeURIComponent(urlToFetch)}`;
+      
       try {
           const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(urlToFetch)}`);
           if (!response.ok) {
@@ -242,11 +244,12 @@ export default function CalendarPage() {
           const icalData = await response.text();
           const parsed = parseIcal(icalData, type);
           
-          if (parsed.length === 0) {
+          if (parsed.length === 0 && icalData.length < 100) {
             setError("No se encontraron eventos o el formato no es compatible. Si es un calendario personal, asegúrate de que la URL de iCal sea 'pública'.");
             setProcessedEvents([]);
           } else {
             setProcessedEvents(parsed);
+            localStorage.setItem(cacheKey, JSON.stringify(parsed));
             if (type === 'personal') {
               setIsPersonalCalendarConnected(true);
               localStorage.setItem('icalUrl', urlToFetch);
@@ -255,16 +258,35 @@ export default function CalendarPage() {
 
       } catch (err: any) {
           console.error("Error al obtener el iCal:", err);
-          setError(err.message || "No se pudo cargar el calendario. Verifica la URL y su configuración de privacidad.");
+          const cachedData = localStorage.getItem(cacheKey);
+          if (cachedData) {
+              try {
+                  const parsedCache = JSON.parse(cachedData).map((event: any) => ({
+                      ...event,
+                      date: new Date(event.date) 
+                  }));
+                  setProcessedEvents(parsedCache);
+                  setError(null);
+                  console.log("Loaded events from cache due to fetch error.");
+                   if (type === 'personal') {
+                    setIsPersonalCalendarConnected(true);
+                   }
+              } catch (cacheError) {
+                  setError(err.message || "No se pudo cargar el calendario. Verifica la URL y su configuración de privacidad.");
+                  setProcessedEvents([]);
+              }
+          } else {
+              setError(err.message || "No se pudo cargar el calendario. Verifica la URL y su configuración de privacidad.");
+              setProcessedEvents([]);
+          }
            if(type === 'personal') {
-            setIsPersonalCalendarConnected(false); // Disconnect on error
+            setIsPersonalCalendarConnected(false);
             localStorage.removeItem('icalUrl');
           }
-          setProcessedEvents([]);
       } finally {
           setIsLoading(false);
       }
-  };
+  }, [personalIcalUrl, isClassCalendarAvailable, classIcalUrl, parseIcal]);
 
   const handlePersonalCalendarConnect = () => {
     handleFetchEvents('personal');

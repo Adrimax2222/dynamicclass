@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -198,7 +199,7 @@ export default function HomePage() {
 
 
   // Moved parser and fetch logic inside useEffect or as standalone functions within the component
-    const parseIcal = (icalData: string): ParsedEvent[] => {
+    const parseIcal = useCallback((icalData: string): ParsedEvent[] => {
         const events: ParsedEvent[] = [];
         const lines = icalData.split(/\r\n|\n|\r/);
         let currentEvent: any = null;
@@ -215,7 +216,7 @@ export default function HomePage() {
                         const month = parseInt(dateStr.substring(4, 6), 10) - 1;
                         const day = parseInt(dateStr.substring(6, 8), 10);
                         
-                        const eventDate = new Date(Date.UTC(year, month, day));
+                        const eventDate = new Date(year, month, day); // FIX: Do not use UTC for all-day events
                         
                         events.push({
                             id: currentEvent.uid || Math.random().toString(),
@@ -243,7 +244,7 @@ export default function HomePage() {
             }
         }
         return events;
-    };
+    }, []);
 
     const announcementsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -288,15 +289,27 @@ export default function HomePage() {
         }
 
         if (icalUrlToFetch) {
+            const cacheKey = `ical_cache_${encodeURIComponent(icalUrlToFetch)}`;
             try {
                 const response = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(icalUrlToFetch)}`);
                 if (!response.ok) throw new Error(`Failed to fetch calendar: ${response.status}`);
                 const icalData = await response.text();
                 const parsedEvents = parseIcal(icalData);
                 setAllEvents(parsedEvents);
+                localStorage.setItem(cacheKey, JSON.stringify(parsedEvents));
             } catch (error) {
                 console.error("Error fetching or processing calendar for variables:", error);
-                setAllEvents([]);
+                const cachedData = localStorage.getItem(cacheKey);
+                if (cachedData) {
+                    try {
+                        const parsedCache = JSON.parse(cachedData).map((event: any) => ({ ...event, date: new Date(event.date) }));
+                        setAllEvents(parsedCache);
+                    } catch (cacheError) {
+                        setAllEvents([]);
+                    }
+                } else {
+                    setAllEvents([]);
+                }
             }
         } else {
             setAllEvents([]);
@@ -318,7 +331,7 @@ export default function HomePage() {
     };
     
     fetchAndCalculateVars();
-  }, [user, firestore, announcementsData]);
+  }, [user, firestore, announcementsData, parseIcal]);
 
 
   useEffect(() => {
@@ -852,7 +865,7 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete, c
 
     const getDayLabel = (dateStr: string) => {
         const date = new Date(dateStr);
-        const localDate = new Date(date.getUTCFullYear(), date.getUTCDate());
+        const localDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
         
         if (isToday(localDate)) return "Hoy";
         if (isTomorrow(localDate)) return "Mañana";
@@ -980,3 +993,5 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
+    

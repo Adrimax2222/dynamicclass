@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 
 // Maintenance Mode Switch
-const IS_MAINTENANCE_MODE = true;
+const IS_MAINTENANCE_MODE = false;
 
 function MaintenancePage() {
   return (
