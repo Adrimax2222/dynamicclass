@@ -912,7 +912,9 @@ function DetailsDialog({ title, children, events, isLoading, onMarkAsComplete, c
                                       <div key={event.id} className="flex items-center gap-2 group p-3 rounded-lg transition-colors border bg-card hover:bg-muted/50 hover:border-border shadow-sm">
                                         <div className="flex-1">
                                           <p className="font-semibold leading-tight">{event.title}</p>
-                                          <p className="text-xs text-muted-foreground">{formatDistanceToNow(event.date, { locale: es, addSuffix: true })}</p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {format(event.date, "EEEE d", { locale: es }).replace(/^\w/, c => c.toUpperCase())}
+                                          </p>
                                         </div>
                                         <AlertDialog>
                                           <AlertDialogTrigger asChild>
@@ -993,5 +995,7 @@ function ScheduleDialog({ children, scheduleData, selectedClassId, userCourse, u
         </Dialog>
     );
 }
+
+    
 
     
