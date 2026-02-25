@@ -15,6 +15,39 @@ import FloatingStudyTimer from "@/components/layout/floating-study-timer";
 import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
 import { doc, updateDoc, increment } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
+import { Logo } from "@/components/icons";
+import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
+
+// Maintenance Mode Switch
+const IS_MAINTENANCE_MODE = true;
+
+function MaintenancePage() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6 text-center">
+      <div className="max-w-md">
+        <Logo className="mx-auto h-20 w-20 text-primary mb-8" />
+        <h1 className="text-2xl font-bold font-headline text-foreground mb-4">Servidor en Mantenimiento</h1>
+        <p className="text-muted-foreground mb-8">
+          Estamos experimentando problemas técnicos. Por seguridad y para mejorar tu experiencia, el servidor permanecerá cerrado temporalmente.
+        </p>
+        
+        <div className="space-y-4">
+            <a href="https://form.jotform.com/230622014643040" target="_blank" rel="noopener noreferrer">
+                <Button className="w-full bg-destructive hover:bg-destructive/90">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Acceder a la Hoja de Reclamaciones
+                </Button>
+            </a>
+            <p className="text-xs text-muted-foreground">
+                Para dudas o consultas, contáctanos aquí: <a href="mailto:info.dynamicclass@gmail.com" className="font-semibold text-primary hover:underline">info.dynamicclass@gmail.com</a>
+            </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, theme, firebaseUser, auth, updateUser } = useApp();
@@ -26,6 +59,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   // Hook to handle FCM token logic
   useFcmToken();
+
+  // If maintenance mode is on, render only that page.
+  if (IS_MAINTENANCE_MODE) {
+    return <MaintenancePage />;
+  }
 
   // Handles theme changes
   useEffect(() => {
