@@ -1,4 +1,5 @@
 
+      
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -45,6 +46,7 @@ import {
   SheetTitle,
   SheetDescription,
   SheetClose,
+  SheetTrigger,
 } from "@/components/ui/sheet";
 
 // Custom Components & Hooks
@@ -645,5 +647,7 @@ function AiModulesSheet() {
     </Sheet>
   );
 }
+
+    
 
     
