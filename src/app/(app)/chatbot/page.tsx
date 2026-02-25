@@ -232,33 +232,43 @@ export default function ChatbotPage() {
 
         const unsubscribe = onSnapshot(newPromptDocRef, async (snapshot) => {
             const data = snapshot.data();
-            console.log('AI prompt document snapshot:', data); // Debug log
+            console.log('AI prompt document snapshot:', data); // User requested log
 
             if (!data) return;
 
-            // Check for processing status and errors from the extension
+            // Case 1: The extension reports an error in its status object.
             if (data.status && data.status.state === 'ERROR') {
               console.error('Firebase AI Extension Error:', data.status.error);
-              setError({ hasError: true, message: `Error de la IA: ${data.status.error}`, canRetry: false });
+              const errorMessage = `⚠️ Error de la IA: ${data.status.error || 'Ocurrió un error desconocido.'}`;
+              const systemErrorMessage: Omit<ChatMessage, 'uid'> = {
+                  role: "system",
+                  content: errorMessage,
+                  timestamp: Timestamp.now(),
+              };
+              await addDoc(messagesRef, systemErrorMessage);
               unsubscribe();
               setIsSending(false);
               return;
             }
 
-            if (data.response || data.error) {
+            // Case 2: The extension has finished, either with a response or an error string.
+            // Check for property existence to handle empty strings as valid responses.
+            if ('response' in data || 'error' in data) {
                 unsubscribe();
                 
-                if(data.response) {
-                    const assistantMessage: Omit<ChatMessage, 'uid'> = {
-                        role: "assistant",
-                        content: data.response,
-                        timestamp: Timestamp.now(),
-                    };
-                    await addDoc(messagesRef, assistantMessage);
-                } else {
-                     setError({ hasError: true, message: `Error de la IA: ${data.error}`, canRetry: false });
-                }
+                const messageContent = 'response' in data 
+                    ? data.response 
+                    : `⚠️ Error de la IA: ${data.error}`;
+                
+                const messageRole = 'response' in data ? 'assistant' : 'system';
 
+                const responseMessage: Omit<ChatMessage, 'uid'> = {
+                    role: messageRole,
+                    content: messageContent,
+                    timestamp: Timestamp.now(),
+                };
+                await addDoc(messagesRef, responseMessage);
+                
                 setIsSending(false);
             }
         });
@@ -269,7 +279,13 @@ export default function ChatbotPage() {
         if (error.code === 'permission-denied') {
             errorMessage = 'Error de permisos. Es posible que tu sesión haya expirado. Por favor, recarga la página.';
         }
-        setError({ hasError: true, message: errorMessage, canRetry: false });
+         const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
+        const systemErrorMessage: Omit<ChatMessage, 'uid'> = {
+            role: "system",
+            content: `Lo siento, he encontrado un problema: ${errorMessage}.`,
+            timestamp: Timestamp.now(),
+        };
+        await addDoc(messagesRef, systemErrorMessage);
         setIsSending(false);
     }
   };
