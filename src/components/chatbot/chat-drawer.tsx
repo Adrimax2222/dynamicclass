@@ -38,7 +38,6 @@ import {
 } from "@/components/ui/sheet";
 import { useApp } from "@/lib/hooks/use-app";
 import type { ChatMessage, Chat } from "@/lib/types";
-// import { aiChatbotAssistance } from "@/ai/flows/ai-chatbot-assistance"; - DEACTIVATED
 import { ScrollArea } from "../ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { cn } from "@/lib/utils";
@@ -81,9 +80,9 @@ export default function ChatDrawer() {
     return query(
       collection(
         firestore,
-        `users/${user.uid}/chat`
+        `users/${user.uid}/chats/${activeChatId}/messages`
       ),
-      orderBy("createdAt", "asc")
+      orderBy("timestamp", "asc")
     );
   }, [firestore, user, activeChatId]);
 
@@ -117,27 +116,17 @@ export default function ChatDrawer() {
             setActiveChatId(currentChatId);
         }
 
-        const messagesRef = collection(firestore, `users/${user.uid}/chat`);
-        
+        const displayMessagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
+
         const userMessage: Omit<ChatMessage, 'uid'> = {
             role: "user",
             content: messageToSend,
             timestamp: Timestamp.now(),
         };
-        // This seems to be writing to the wrong collection for the user message.
-        // It should write to the active chat's messages subcollection.
-        // Let's assume the user wants the AI interaction in one place, so let's stick to the /chat collection for now.
-        // await addDoc(collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`), userMessage);
-
+        await addDoc(displayMessagesRef, userMessage);
+        
         const aiPromptsRef = collection(firestore, `users/${user.uid}/chat`);
         
-        console.log(`Intentando escribir en: users/${user.uid}/chat`);
-        console.table({
-            userId: user.uid,
-            path: `users/${user.uid}/chat`,
-            data: { prompt: messageToSend, createdAt: "serverTimestamp" }
-        });
-
         const newPromptDocRef = await addDoc(aiPromptsRef, {
             prompt: messageToSend,
             createdAt: serverTimestamp(),
@@ -149,35 +138,27 @@ export default function ChatDrawer() {
 
             if (!data) return;
 
-            if (data.status && data.status.state === 'ERROR') {
-              console.error('Firebase AI Extension Error:', data.status.error);
-              const errorMessage = `⚠️ Error de la IA: ${data.status.error || 'Ocurrió un error desconocido.'}`;
-              const systemErrorMessage: Omit<ChatMessage, 'uid'> = {
-                  role: "system",
-                  content: errorMessage,
-                  timestamp: Timestamp.now(),
-              };
-              await addDoc(messagesRef, systemErrorMessage);
-              unsubscribe();
-              setIsSending(false);
-              return;
-            }
-
-            if ('response' in data || 'error' in data) {
+            const hasError = data.status && data.status.state === 'ERROR';
+            const hasResponse = 'response' in data;
+            const hasResponseError = 'error' in data;
+            
+            if (hasError || hasResponse || hasResponseError) {
                 unsubscribe();
                 
-                const messageContent = 'response' in data 
+                const messageContent = hasResponse
                     ? data.response 
-                    : `⚠️ Error de la IA: ${data.error}`;
-                
-                const messageRole = 'response' in data ? 'assistant' : 'system';
+                    : hasResponseError
+                    ? `⚠️ Error de la IA: ${data.error}`
+                    : `⚠️ Error de la IA: ${data.status.error || 'Ocurrió un error desconocido.'}`;
+
+                const messageRole = hasResponse ? 'assistant' : 'system';
 
                 const responseMessage: Omit<ChatMessage, 'uid'> = {
                     role: messageRole,
                     content: messageContent,
                     timestamp: Timestamp.now(),
                 };
-                await addDoc(messagesRef, responseMessage);
+                await addDoc(displayMessagesRef, responseMessage);
                 
                 setIsSending(false);
             }
@@ -191,13 +172,13 @@ export default function ChatDrawer() {
         }
 
         if (currentChatId) {
-            const messagesRef = collection(firestore, `users/${user.uid}/chat`);
+            const displayMessagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
             const systemErrorMessage: Omit<ChatMessage, 'uid'> = {
                 role: "system",
                 content: `Lo siento, he encontrado un problema: ${errorMessage}.`,
                 timestamp: Timestamp.now(),
             };
-            await addDoc(messagesRef, systemErrorMessage);
+            await addDoc(displayMessagesRef, systemErrorMessage);
         }
         setIsSending(false);
     }
