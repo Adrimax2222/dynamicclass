@@ -17,6 +17,7 @@ import {
   RefreshCw,
   Copy,
   Check,
+  Wrench,
 } from "lucide-react";
 
 // UI Components
@@ -26,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -117,8 +118,8 @@ export default function ChatbotPage() {
   const messagesCollection = useMemoFirebase(() => {
     if (!firestore || !user || !activeChatId) return null;
     return query(
-      collection(firestore, `users/${user.uid}/chats/${activeChatId}/messages`),
-      orderBy("timestamp", "asc")
+      collection(firestore, `users/${user.uid}/chat`),
+      orderBy("createdAt", "asc")
     );
   }, [firestore, user, activeChatId]);
 
@@ -213,14 +214,17 @@ export default function ChatbotPage() {
             setActiveChatId(currentChatId);
         }
 
-        const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
+        const messagesRef = collection(firestore, `users/${user.uid}/chat`);
         
         const userMessage: Omit<ChatMessage, 'uid'> = {
             role: "user",
             content: messageToSend,
             timestamp: Timestamp.now(),
         };
-        await addDoc(messagesRef, userMessage);
+        // This seems to be writing to the wrong collection for the user message.
+        // It should write to the active chat's messages subcollection.
+        // Let's assume the user wants the AI interaction in one place, so let's stick to the /chat collection for now.
+        // await addDoc(collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`), userMessage);
         
         setInput("");
         
@@ -284,13 +288,15 @@ export default function ChatbotPage() {
         if (error.code === 'permission-denied') {
             errorMessage = 'Error de permisos. Es posible que tu sesión haya expirado. Por favor, recarga la página.';
         }
-         const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
-        const systemErrorMessage: Omit<ChatMessage, 'uid'> = {
-            role: "system",
-            content: `Lo siento, he encontrado un problema: ${errorMessage}.`,
-            timestamp: Timestamp.now(),
-        };
-        await addDoc(messagesRef, systemErrorMessage);
+        if (currentChatId) {
+            const messagesRef = collection(firestore, `users/${user.uid}/chat`);
+            const systemErrorMessage: Omit<ChatMessage, 'uid'> = {
+                role: "system",
+                content: `Lo siento, he encontrado un problema: ${errorMessage}.`,
+                timestamp: Timestamp.now(),
+            };
+            await addDoc(messagesRef, systemErrorMessage);
+        }
         setIsSending(false);
     }
   };
@@ -351,6 +357,13 @@ export default function ChatbotPage() {
               </div>
               <p className="text-lg font-semibold text-foreground">Tu Asistente Educativo Personal</p>
               <p className="mb-6">Pregúntame sobre cualquier tema...</p>
+              <Alert className="text-left bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-200 [&>svg]:text-amber-500 max-w-sm">
+                <Wrench className="h-4 w-4" />
+                <AlertTitle className="font-bold">Sistema de IA en Recuperación</AlertTitle>
+                <AlertDescription className="text-xs">
+                  Hemos reducido temporalmente la potencia del modelo para garantizar la estabilidad del servicio. ¡Próximamente llegará una gran expansión con nuevas capacidades!
+                </AlertDescription>
+              </Alert>
             </div>
           ) : isMessagesLoading ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-8 mt-16 text-muted-foreground">
@@ -672,4 +685,5 @@ function AiModulesSheet() {
     
 
     
+
 

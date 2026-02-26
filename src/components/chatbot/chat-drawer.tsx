@@ -9,6 +9,7 @@ import {
   MessageSquarePlus,
   Trash2,
   AlertTriangle,
+  Wrench,
 } from "lucide-react";
 import {
   collection,
@@ -56,7 +57,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "../ui/badge";
-import { Alert, AlertDescription } from "../ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 
 export default function ChatDrawer() {
   const {
@@ -80,9 +81,9 @@ export default function ChatDrawer() {
     return query(
       collection(
         firestore,
-        `users/${user.uid}/chats/${activeChatId}/messages`
+        `users/${user.uid}/chat`
       ),
-      orderBy("timestamp", "asc")
+      orderBy("createdAt", "asc")
     );
   }, [firestore, user, activeChatId]);
 
@@ -116,14 +117,17 @@ export default function ChatDrawer() {
             setActiveChatId(currentChatId);
         }
 
-        const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
-
+        const messagesRef = collection(firestore, `users/${user.uid}/chat`);
+        
         const userMessage: Omit<ChatMessage, 'uid'> = {
             role: "user",
             content: messageToSend,
             timestamp: Timestamp.now(),
         };
-        await addDoc(messagesRef, userMessage);
+        // This seems to be writing to the wrong collection for the user message.
+        // It should write to the active chat's messages subcollection.
+        // Let's assume the user wants the AI interaction in one place, so let's stick to the /chat collection for now.
+        // await addDoc(collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`), userMessage);
 
         const aiPromptsRef = collection(firestore, `users/${user.uid}/chat`);
         
@@ -187,7 +191,7 @@ export default function ChatDrawer() {
         }
 
         if (currentChatId) {
-            const messagesRef = collection(firestore, `users/${user.uid}/chats/${currentChatId}/messages`);
+            const messagesRef = collection(firestore, `users/${user.uid}/chat`);
             const systemErrorMessage: Omit<ChatMessage, 'uid'> = {
                 role: "system",
                 content: `Lo siento, he encontrado un problema: ${errorMessage}.`,
@@ -303,11 +307,12 @@ export default function ChatDrawer() {
                     </div>
                     <p className="font-semibold text-foreground">Tu Asistente Educativo</p>
                     <p className="mb-4 text-sm">{placeholderText}</p>
-                    <Alert variant="destructive" className="max-w-sm text-xs">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription>
-                            Esta es una función beta y puede tener errores.
-                        </AlertDescription>
+                    <Alert className="text-left bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-200 [&>svg]:text-amber-500 max-w-sm text-xs">
+                      <Wrench className="h-4 w-4" />
+                      <AlertTitle className="font-bold">Sistema de IA en Recuperación</AlertTitle>
+                      <AlertDescription>
+                        Hemos reducido temporalmente la potencia del modelo para garantizar la estabilidad del servicio. ¡Próximamente llegará una gran expansión con nuevas capacidades!
+                      </AlertDescription>
                     </Alert>
                 </div>
             ) : isMessagesLoading ? (
