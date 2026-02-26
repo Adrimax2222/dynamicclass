@@ -431,7 +431,7 @@ export default function StudyPage() {
             const centerDoc = await getDoc(centerDocRef);
             if (centerDoc.exists()) {
                 const centerData = centerDoc.data() as Center;
-                const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
+                const userClassName = `${''}${user.course.replace('eso','ESO')}-${''}${user.className}`;
                 const userClassDef = centerData.classes.find(c => c.name === userClassName);
                 setIsScheduleAvailable(!!userClassDef?.schedule);
             } else {
@@ -448,19 +448,21 @@ export default function StudyPage() {
         if (selectedSound?.url) {
             if (audio.src !== selectedSound.url) {
                 audio.src = selectedSound.url;
+                audio.load();
             }
-            audio.load();
             audio.volume = volume / 100;
-            if (isActive) {
-                audio.play().catch(error => console.log("Audio playback failed:", error));
-            } else {
-                audio.pause();
+            
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Audio playback failed:", error);
+                });
             }
         } else {
             audio.pause();
             audio.src = '';
         }
-    }, [selectedSound, volume, isActive]);
+    }, [selectedSound, volume]);
     
     const handleToggleFocusMode = (checked: boolean) => {
         if (!isActive) return;
@@ -476,7 +478,7 @@ export default function StudyPage() {
 
         if (isFocusMode && isActive) {
             document.documentElement.requestFullscreen().catch(err => {
-                console.error(`Error al activar pantalla completa: ${err.message}`);
+                console.error(`Error al activar pantalla completa: ${''}${err.message}`);
                 setIsFocusMode(false);
                 toast({
                     title: "Error de Pantalla Completa",
@@ -533,17 +535,17 @@ export default function StudyPage() {
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
-        return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+        return `${''}${String(mins).padStart(2, "0")}:${''}${String(secs).padStart(2, "0")}`;
     };
 
     const formatCooldown = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
-        return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+        return `${''}${String(mins).padStart(2, "0")}:${''}${String(secs).padStart(2, "0")}`;
     };
 
     const formatStudyTime = (totalMinutes: number = 0) => {
-        return `${totalMinutes}m`;
+        return `${''}${totalMinutes}m`;
     };
 
     const progress = useMemo(() => {
@@ -660,7 +662,7 @@ export default function StudyPage() {
                                     className={cn(
                                         "w-full flex flex-col items-center justify-center gap-1 p-3 rounded-lg border-2 transition-all duration-300",
                                         timerMode === key
-                                            ? `border-transparent bg-gradient-to-br text-white shadow-lg ${modeData.colors}`
+                                            ? `border-transparent bg-gradient-to-br text-white shadow-lg ${''}${modeData.colors}`
                                             : "border-dashed bg-muted/50 hover:bg-muted"
                                     )}
                                 >
@@ -762,12 +764,12 @@ export default function StudyPage() {
                                 className="rounded-full h-8 px-4 text-xs font-semibold"
                                 disabled={cooldownActive}
                             >
-                                {cooldownActive ? `Descanso en ${formatCooldown(cooldownTimeLeft)}` : 'Hacer un Break'}
+                                {cooldownActive ? `Descanso en ${''}${formatCooldown(cooldownTimeLeft)}` : 'Hacer un Break'}
                             </Button>
                         </div>
                     )}
 
-                    <Progress value={100 - progress} className={cn("h-2", `[&>div]:bg-gradient-to-r ${phaseColors}`)} />
+                    <Progress value={100 - progress} className={cn("h-2", `[&>div]:bg-gradient-to-r ${''}${phaseColors}`)} />
 
                     <div className="flex justify-between items-center gap-2 mt-6">
                         <Dialog>
@@ -1388,7 +1390,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
               };
               savedDocs.push(newDoc);
               localStorage.setItem('scannedDocuments', JSON.stringify(savedDocs));
-              toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${fileName}" en tu historial.` });
+              toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${''}${fileName}" en tu historial.` });
             } else {
               toast({ title: 'PDF Descargado', description: `El guardado en el historial está desactivado.` });
             }
@@ -1482,7 +1484,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 onMouseUp={handleCropMouseUp}
                                 onMouseLeave={handleCropMouseUp}
                             >
-                                <img src={activePage.processedSrc} alt={`Page ${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
+                                <img src={activePage.processedSrc} alt={`Page ${''}${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
                                 {isCropping && activePage.crop && (
                                     <div
                                         className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
@@ -1508,7 +1510,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 <div key={p.id} className="relative group shrink-0" onClick={() => setActivePageId(p.id)}>
                                      <img 
                                         src={p.processedSrc} 
-                                        alt={`Thumbnail ${index + 1}`}
+                                        alt={`Thumbnail ${''}${index + 1}`}
                                         className={cn(
                                             "h-20 w-20 object-cover rounded-md border-2 cursor-pointer transition-all",
                                             activePageId === p.id ? "border-primary shadow-lg scale-105" : "border-transparent hover:border-primary/50"
@@ -1672,10 +1674,10 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
             return;
         }
 
-        const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator`;
+        const embedUrl = `https://open.spotify.com/embed/playlist/${''}${playlistId}?utm_source=generator`;
         
         const newPlaylist: Playlist = {
-            id: `user-${Date.now()}`,
+            id: `user-${''}${Date.now()}`,
             name: newPlaylistName,
             url: embedUrl,
         };
@@ -1683,7 +1685,7 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
         setUserPlaylists(prev => [...prev, newPlaylist]);
         setNewPlaylistName("");
         setNewPlaylistUrl("");
-        toast({ title: "¡Playlist añadida!", description: `"${newPlaylist.name}" se ha guardado.`});
+        toast({ title: "¡Playlist añadida!", description: `"${''}${newPlaylist.name}" se ha guardado.`});
     };
     
     const handleDeletePlaylist = (id: string) => {
@@ -1807,7 +1809,7 @@ function ScienceCalculatorDialog() {
             const resultString = String(result);
             setDisplay(resultString);
             setExpression(resultString);
-            setHistory(prev => [`${expression} = ${resultString}`, ...prev].slice(0, 10));
+            setHistory(prev => [`${''}${expression} = ${''}${resultString}`, ...prev].slice(0, 10));
         } catch (e) {
             setDisplay("Error");
             setExpression("");
