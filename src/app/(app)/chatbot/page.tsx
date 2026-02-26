@@ -225,6 +225,14 @@ export default function ChatbotPage() {
         setInput("");
         
         const aiPromptsRef = collection(firestore, `users/${user.uid}/ai_prompts`);
+        
+        console.log(`Intentando escribir en: users/${user.uid}/ai_prompts`);
+        console.table({
+            userId: user.uid,
+            path: `users/${user.uid}/ai_prompts`,
+            data: { prompt: messageToSend, createdAt: "serverTimestamp" }
+        });
+
         const newPromptDocRef = await addDoc(aiPromptsRef, {
             prompt: messageToSend,
             createdAt: serverTimestamp(),
@@ -664,3 +672,4 @@ function AiModulesSheet() {
     
 
     
+
