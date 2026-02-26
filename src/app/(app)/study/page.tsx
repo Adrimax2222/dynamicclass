@@ -1,4 +1,5 @@
 
+
       
 
 "use client";
@@ -316,14 +317,14 @@ const defaultPlaylists: Playlist[] = [
 ];
 
 const sounds: Sound[] = [
-    { id: "rain", label: "Lluvia", icon: CloudRain, url: "https://cdn.pixabay.com/download/audio/2022/11/17/audio_87a816a76e.mp3" },
-    { id: "cafe", label: "Cafetería", icon: Coffee, url: "https://cdn.pixabay.com/download/audio/2022/02/07/audio_c3a4d33430.mp3" },
-    { id: "forest", label: "Bosque", icon: Trees, url: "https://cdn.pixabay.com/download/audio/2022/04/16/audio_49b95088f2.mp3" },
-    { id: "sea", label: "Mar", icon: Waves, url: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_756247c07c.mp3" },
-    { id: "noise", label: "Ruido Blanco", icon: Waves, url: "https://cdn.pixabay.com/download/audio/2022/09/28/audio_2e23730e12.mp3" },
-    { id: "nature", label: "Pájaros", icon: Leaf, url: "https://cdn.pixabay.com/download/audio/2022/05/22/audio_ea42b3eb2b.mp3" },
-    { id: "city", label: "Ciudad", icon: Building2, url: "https://cdn.pixabay.com/download/audio/2022/08/04/audio_3b5e4e899a.mp3" },
-    { id: "fireplace", label: "Chimenea", icon: Flame, url: "https://cdn.pixabay.com/download/audio/2022/09/20/audio_8b3152d1eb.mp3" },
+    { id: "rain", label: "Lluvia", icon: CloudRain, url: "https://orangefreesounds.com/wp-content/uploads/2024/02/Rain-sound-effect.mp3" },
+    { id: "cafe", label: "Cafetería", icon: Coffee, url: "https://orangefreesounds.com/wp-content/uploads/2020/06/Cafeteria-sound-effect.mp3" },
+    { id: "forest", label: "Bosque", icon: Trees, url: "https://orangefreesounds.com/wp-content/uploads/2021/04/Forest-sound-effect.mp3" },
+    { id: "sea", label: "Mar", icon: Waves, url: "https://orangefreesounds.com/wp-content/uploads/2022/02/Sea-waves-sound-effect.mp3" },
+    { id: "noise", label: "Ruido Blanco", icon: Waves, url: "https://orangefreesounds.com/wp-content/uploads/2021/02/White-noise-sound-effect.mp3" },
+    { id: "nature", label: "Pájaros", icon: Leaf, url: "https://orangefreesounds.com/wp-content/uploads/2023/02/Birds-chirping-sound-effect.mp3" },
+    { id: "city", label: "Ciudad", icon: Building2, url: "https://orangefreesounds.com/wp-content/uploads/2022/01/City-traffic-sound-effect.mp3" },
+    { id: "fireplace", label: "Chimenea", icon: Flame, url: "https://orangefreesounds.com/wp-content/uploads/2020/05/Fireplace-sound-effect.mp3" },
 ];
 
 
@@ -449,11 +450,10 @@ export default function StudyPage() {
         if (selectedSound?.url) {
             if (audio.src !== selectedSound.url) {
                 audio.src = selectedSound.url;
-                audio.load(); // Ensure the new source is loaded
+                audio.load();
             }
             audio.volume = volume / 100;
             
-            // Only try to play if a sound is selected
             const playPromise = audio.play();
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
@@ -469,7 +469,9 @@ export default function StudyPage() {
             }
         } else {
             audio.pause();
-            audio.currentTime = 0; // Reset audio position
+            if (audio.src) { // Prevent error if src is not set yet
+                audio.currentTime = 0;
+            }
         }
     }, [selectedSound, volume, toast]);
     
@@ -2082,5 +2084,3 @@ function UnitConverter() {
         </Tabs>
     );
 }
-
-    
