@@ -276,7 +276,7 @@
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profile information."
     },
-    "/users/{userId}/ai_prompts/{promptId}": {
+    "/users/{userId}/chat/{promptId}": {
         "schema": { "$ref": "#/entities/AIChatRequest" },
         "description": "Stores user prompts for AI processing and the corresponding AI responses."
     },

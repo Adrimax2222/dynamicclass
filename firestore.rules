@@ -130,7 +130,7 @@ service cloud.firestore {
       }
 
       // AI Prompts subcollection for Firestore Extension
-      match /ai_prompts/{promptId} {
+      match /chat/{promptId} {
         allow read, create: if isOwner(userId);
         // Only the backend extension should update with a response.
         // Deletion can be allowed for chat history clearing.

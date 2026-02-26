@@ -125,12 +125,12 @@ export default function ChatDrawer() {
         };
         await addDoc(messagesRef, userMessage);
 
-        const aiPromptsRef = collection(firestore, `users/${user.uid}/ai_prompts`);
+        const aiPromptsRef = collection(firestore, `users/${user.uid}/chat`);
         
-        console.log(`Intentando escribir en: users/${user.uid}/ai_prompts`);
+        console.log(`Intentando escribir en: users/${user.uid}/chat`);
         console.table({
             userId: user.uid,
-            path: `users/${user.uid}/ai_prompts`,
+            path: `users/${user.uid}/chat`,
             data: { prompt: messageToSend, createdAt: "serverTimestamp" }
         });
 
