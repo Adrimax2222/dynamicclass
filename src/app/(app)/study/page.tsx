@@ -1,4 +1,5 @@
 
+      
 
 "use client";
 
@@ -315,14 +316,14 @@ const defaultPlaylists: Playlist[] = [
 ];
 
 const sounds: Sound[] = [
-    { id: "rain", label: "Lluvia", icon: CloudRain, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/relaxing-rain-419012.mp3?alt=media&token=aa591a3a-8eed-42d0-9347-f8e0da836dcf" },
-    { id: "cafe", label: "Cafetería", icon: Coffee, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/casual-cafe-restaurant-noise-73945.mp3?alt=media&token=bc050ad2-746b-410d-8fdb-c89c620f10c" },
-    { id: "forest", label: "Bosque", icon: Trees, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/ambiente-de-bosque-arvi-ambix-17159.mp3?alt=media&token=3311c173-b307-4fbb-97ff-8450fbc3cdc8" },
-    { id: "sea", label: "Mar", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/mar-agitado-272999.mp3?alt=media&token=d7322a3a-6397-42eb-9039-b569be846fc7" },
-    { id: "noise", label: "Ruido Blanco", icon: Waves, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/white-noise-358382.mp3?alt=media&token=e4fae111-a420-45f0-a75a-9a3e09d8a357" },
-    { id: "nature", label: "Pájaros", icon: Leaf, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/birds-frogs-nature-8257.mp3?alt=media&token=462a8b0e-ffd7-46a0-917f-5510f4085649" },
-    { id: "city", label: "Ciudad", icon: Building2, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/city-ambience-121693.mp3?alt=media&token=00c7c7fa-cba2-4a8a-b091-6d07e56262c0" },
-    { id: "library", label: "Biblioteca", icon: BookOpen, url: "https://firebasestorage.googleapis.com/v0/b/studio-7840988595-13b35.appspot.com/o/biblioteca.mp3?alt=media&token=b60acf9f-d0c9-40f5-9cf4-0e63af7d9385" },
+    { id: "rain", label: "Lluvia", icon: CloudRain, url: "https://cdn.pixabay.com/download/audio/2022/11/17/audio_87a816a76e.mp3" },
+    { id: "cafe", label: "Cafetería", icon: Coffee, url: "https://cdn.pixabay.com/download/audio/2022/02/07/audio_c3a4d33430.mp3" },
+    { id: "forest", label: "Bosque", icon: Trees, url: "https://cdn.pixabay.com/download/audio/2022/04/16/audio_49b95088f2.mp3" },
+    { id: "sea", label: "Mar", icon: Waves, url: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_756247c07c.mp3" },
+    { id: "noise", label: "Ruido Blanco", icon: Waves, url: "https://cdn.pixabay.com/download/audio/2022/09/28/audio_2e23730e12.mp3" },
+    { id: "nature", label: "Pájaros", icon: Leaf, url: "https://cdn.pixabay.com/download/audio/2022/05/22/audio_ea42b3eb2b.mp3" },
+    { id: "city", label: "Ciudad", icon: Building2, url: "https://cdn.pixabay.com/download/audio/2022/08/04/audio_3b5e4e899a.mp3" },
+    { id: "fireplace", label: "Chimenea", icon: Flame, url: "https://cdn.pixabay.com/download/audio/2022/09/20/audio_8b3152d1eb.mp3" },
 ];
 
 
@@ -431,7 +432,7 @@ export default function StudyPage() {
             const centerDoc = await getDoc(centerDocRef);
             if (centerDoc.exists()) {
                 const centerData = centerDoc.data() as Center;
-                const userClassName = `${''}${user.course.replace('eso','ESO')}-${''}${user.className}`;
+                const userClassName = `${user.course.replace('eso','ESO')}-${user.className}`;
                 const userClassDef = centerData.classes.find(c => c.name === userClassName);
                 setIsScheduleAvailable(!!userClassDef?.schedule);
             } else {
@@ -448,21 +449,29 @@ export default function StudyPage() {
         if (selectedSound?.url) {
             if (audio.src !== selectedSound.url) {
                 audio.src = selectedSound.url;
-                audio.load();
+                audio.load(); // Ensure the new source is loaded
             }
             audio.volume = volume / 100;
             
+            // Only try to play if a sound is selected
             const playPromise = audio.play();
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
                     console.log("Audio playback failed:", error);
+                    if (error.name === 'NotSupportedError') {
+                        toast({
+                            title: "Error de audio",
+                            description: "No se pudo cargar el sonido. La fuente podría no ser compatible o no estar disponible.",
+                            variant: "destructive",
+                        });
+                    }
                 });
             }
         } else {
             audio.pause();
-            audio.src = '';
+            audio.currentTime = 0; // Reset audio position
         }
-    }, [selectedSound, volume]);
+    }, [selectedSound, volume, toast]);
     
     const handleToggleFocusMode = (checked: boolean) => {
         if (!isActive) return;
@@ -478,7 +487,7 @@ export default function StudyPage() {
 
         if (isFocusMode && isActive) {
             document.documentElement.requestFullscreen().catch(err => {
-                console.error(`Error al activar pantalla completa: ${''}${err.message}`);
+                console.error(`Error al activar pantalla completa: ${err.message}`);
                 setIsFocusMode(false);
                 toast({
                     title: "Error de Pantalla Completa",
@@ -535,17 +544,17 @@ export default function StudyPage() {
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
-        return `${''}${String(mins).padStart(2, "0")}:${''}${String(secs).padStart(2, "0")}`;
+        return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
     };
 
     const formatCooldown = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
-        return `${''}${String(mins).padStart(2, "0")}:${''}${String(secs).padStart(2, "0")}`;
+        return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
     };
 
     const formatStudyTime = (totalMinutes: number = 0) => {
-        return `${''}${totalMinutes}m`;
+        return `${totalMinutes}m`;
     };
 
     const progress = useMemo(() => {
@@ -662,7 +671,7 @@ export default function StudyPage() {
                                     className={cn(
                                         "w-full flex flex-col items-center justify-center gap-1 p-3 rounded-lg border-2 transition-all duration-300",
                                         timerMode === key
-                                            ? `border-transparent bg-gradient-to-br text-white shadow-lg ${''}${modeData.colors}`
+                                            ? `border-transparent bg-gradient-to-br text-white shadow-lg ${modeData.colors}`
                                             : "border-dashed bg-muted/50 hover:bg-muted"
                                     )}
                                 >
@@ -764,12 +773,12 @@ export default function StudyPage() {
                                 className="rounded-full h-8 px-4 text-xs font-semibold"
                                 disabled={cooldownActive}
                             >
-                                {cooldownActive ? `Descanso en ${''}${formatCooldown(cooldownTimeLeft)}` : 'Hacer un Break'}
+                                {cooldownActive ? `Descanso en ${formatCooldown(cooldownTimeLeft)}` : 'Hacer un Break'}
                             </Button>
                         </div>
                     )}
 
-                    <Progress value={100 - progress} className={cn("h-2", `[&>div]:bg-gradient-to-r ${''}${phaseColors}`)} />
+                    <Progress value={100 - progress} className={cn("h-2", `[&>div]:bg-gradient-to-r ${phaseColors}`)} />
 
                     <div className="flex justify-between items-center gap-2 mt-6">
                         <Dialog>
@@ -1390,7 +1399,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
               };
               savedDocs.push(newDoc);
               localStorage.setItem('scannedDocuments', JSON.stringify(savedDocs));
-              toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${''}${fileName}" en tu historial.` });
+              toast({ title: 'PDF Descargado y Guardado', description: `Se ha guardado "${fileName}" en tu historial.` });
             } else {
               toast({ title: 'PDF Descargado', description: `El guardado en el historial está desactivado.` });
             }
@@ -1484,7 +1493,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 onMouseUp={handleCropMouseUp}
                                 onMouseLeave={handleCropMouseUp}
                             >
-                                <img src={activePage.processedSrc} alt={`Page ${''}${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
+                                <img src={activePage.processedSrc} alt={`Page ${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
                                 {isCropping && activePage.crop && (
                                     <div
                                         className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
@@ -1510,7 +1519,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 <div key={p.id} className="relative group shrink-0" onClick={() => setActivePageId(p.id)}>
                                      <img 
                                         src={p.processedSrc} 
-                                        alt={`Thumbnail ${''}${index + 1}`}
+                                        alt={`Thumbnail ${index + 1}`}
                                         className={cn(
                                             "h-20 w-20 object-cover rounded-md border-2 cursor-pointer transition-all",
                                             activePageId === p.id ? "border-primary shadow-lg scale-105" : "border-transparent hover:border-primary/50"
@@ -1674,10 +1683,10 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
             return;
         }
 
-        const embedUrl = `https://open.spotify.com/embed/playlist/${''}${playlistId}?utm_source=generator`;
+        const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator`;
         
         const newPlaylist: Playlist = {
-            id: `user-${''}${Date.now()}`,
+            id: `user-${Date.now()}`,
             name: newPlaylistName,
             url: embedUrl,
         };
@@ -1685,7 +1694,7 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
         setUserPlaylists(prev => [...prev, newPlaylist]);
         setNewPlaylistName("");
         setNewPlaylistUrl("");
-        toast({ title: "¡Playlist añadida!", description: `"${''}${newPlaylist.name}" se ha guardado.`});
+        toast({ title: "¡Playlist añadida!", description: `"${newPlaylist.name}" se ha guardado.`});
     };
     
     const handleDeletePlaylist = (id: string) => {
@@ -1809,7 +1818,7 @@ function ScienceCalculatorDialog() {
             const resultString = String(result);
             setDisplay(resultString);
             setExpression(resultString);
-            setHistory(prev => [`${''}${expression} = ${''}${resultString}`, ...prev].slice(0, 10));
+            setHistory(prev => [`${expression} = ${resultString}`, ...prev].slice(0, 10));
         } catch (e) {
             setDisplay("Error");
             setExpression("");
@@ -2073,3 +2082,5 @@ function UnitConverter() {
         </Tabs>
     );
 }
+
+    
