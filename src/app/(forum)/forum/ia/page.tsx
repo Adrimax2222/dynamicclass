@@ -303,12 +303,12 @@ function renderCards(){
   filtered.forEach(t=>{if(!groups[t.cat])groups[t.cat]=[];groups[t.cat].push(t)});
   let html="";
   Object.entries(groups).forEach(([cat,tools])=>{
-    html+=`<div class="section-header"><span class="section-label">${CAT_LABELS[cat]}</span><span class="section-line"></span><span class="section-count">${tools.length}</span></div><div class="grid">`;
+    html += '<div class="section-header"><span class="section-label">' + CAT_LABELS[cat] + '</span><span class="section-line"></span><span class="section-count">' + tools.length + '</span></div><div class="grid">';
     tools.forEach((t,i)=>{
-      const nb=t.isNew?`<span class="badge-new">Nuevo</span>`:"";
-      html+=`<a class="card cat-${t.cat}" href="${t.url}" target="_blank" rel="noopener noreferrer" style="animation-delay:${i*30}ms"><div class="card-head"><div class="card-icon icon-${t.cat}">${t.icon}</div><div class="card-meta"><div class="card-title">${t.name}${nb}</div><span class="card-tag tag-${t.cat}">${CAT_LABELS[t.cat].replace(/^\S+ /,"")}</span></div></div><p class="card-desc">${t.desc}</p><div class="card-footer"><span class="card-url">${getDomain(t.url)}</span><span class="card-btn">Abrir →</span></div></a>`;
+      const nb=t.isNew?'<span class="badge-new">Nuevo</span>':"";
+      html += '<a class="card cat-' + t.cat + '" href="' + t.url + '" target="_blank" rel="noopener noreferrer" style="animation-delay:' + (i*30) + 'ms"><div class="card-head"><div class="card-icon icon-' + t.cat + '">' + t.icon + '</div><div class="card-meta"><div class="card-title">' + t.name + nb + '</div><span class="card-tag tag-' + t.cat + '">' + CAT_LABELS[t.cat].replace(/^\\S+ /,"") + '</span></div></div><p class="card-desc">' + t.desc + '</p><div class="card-footer"><span class="card-url">' + getDomain(t.url) + '</span><span class="card-btn">Abrir →</span></div></a>';
     });
-    html+=`</div>`;
+    html+='</div>';
   });
   container.innerHTML=html;
 }
