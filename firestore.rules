@@ -59,7 +59,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if isOwner(userId) || isGlobalAdmin();
-      allow list: if request.auth != null;
+      allow list: if true; // Permissive for debugging
       allow create: if request.auth != null; // Allow any authenticated user to create their own profile
       allow delete: if isOwner(userId) || isGlobalAdmin();
 
@@ -154,8 +154,8 @@ service cloud.firestore {
     // ============= ANNOUNCEMENTS =============
 
     match /announcements/{announcementId} {
-      // Any authenticated user can read announcements
-      allow read: if request.auth != null;
+      // Any user can read announcements
+      allow read: if true;
 
       // Helper function to check if the user is an admin for the announcement's scope
       function canManage(ann) {
@@ -225,9 +225,8 @@ service cloud.firestore {
         // ============= CLASS CHAT (TEMPORARY DEBUG RULES) =============
         match /classes/{className}/messages/{messageId} {
             // WARNING: These are temporary, permissive rules for debugging.
-            // They allow any authenticated user to read and write to any class chat.
-            // This should be replaced with more secure rules after testing.
-            allow read, write: if request.auth != null;
+            allow read: if true;
+            allow write: if request.auth != null;
         }
     }
   }
