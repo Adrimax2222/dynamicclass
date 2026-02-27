@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Users, MessageSquare, Star, GraduationCap, Zap, HelpCircle, ArrowLeft, BookCopy } from "lucide-react";
+import { Users, MessageSquare, Star, GraduationCap, Zap, HelpCircle, ArrowLeft, BookCopy, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/forum/community", label: "Comunidad", icon: Users },
+  { href: "/forum/ia", label: "IA", icon: Wand2 },
   { href: "/forum/valoracion", label: "Valoración", icon: Star },
   { href: "/forum/discussions", label: "Discusiones", icon: MessageSquare },
   { href: "/forum/clase", label: "Clase", icon: GraduationCap },
@@ -63,13 +64,13 @@ export default function ForumLayout({
 
         <div className="flex flex-col flex-1 md:h-screen md:overflow-hidden">
             {/* Main Content Area */}
-            <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+            <main className="flex-1 overflow-y-auto pb-36 md:pb-0">
                 {children}
             </main>
 
             {/* Bottom Nav for Mobile */}
             <nav className="flex-shrink-0 border-t bg-card/95 backdrop-blur-sm sticky bottom-0 z-10 md:hidden">
-            <div className="mx-auto grid h-16 max-w-md grid-cols-7 items-center">
+            <div className="mx-auto grid h-32 max-w-md grid-cols-4 items-center">
                 {navItems.map((item) => {
                 const isActive = pathname.startsWith(item.href);
                 return (
