@@ -192,6 +192,13 @@ service cloud.firestore {
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollVoteCounts', 'votedUserIds']);
     }
 
+    // ============= REVIEWS =============
+    match /reviews/{reviewId} {
+      allow list, get: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
+      allow update, delete: if (request.auth != null && resource.data.authorId == request.auth.uid) || isGlobalAdmin();
+    }
+
     // ============= GLOBAL ADMIN FEATURES =============
 
     match /globalNotes/{noteId} {

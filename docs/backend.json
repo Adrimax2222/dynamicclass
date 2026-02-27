@@ -266,6 +266,22 @@
         },
         "required": ["id", "subject", "time", "teacher", "room"]
       }
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Represents a user's review and rating of the application.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorAvatar": { "type": "string", "format": "uri" },
+        "isAnonymous": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "isAnonymous", "rating", "comment", "createdAt"]
     }
   },
   "auth": {
@@ -323,6 +339,10 @@
     "/globalChat/{messageId}": {
       "schema": { "$ref": "#/entities/GlobalAdminChatMessage" },
       "description": "Stores messages for the global admin chat."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Stores user reviews and ratings for the application."
     }
   }
 }

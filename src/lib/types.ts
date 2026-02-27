@@ -163,6 +163,17 @@ export type Note = {
     isPinned?: boolean;
 };
 
+export type Review = {
+    uid: string;
+    authorId: string;
+    authorName: string;
+    authorAvatar: string;
+    isAnonymous: boolean;
+    rating: number;
+    comment: string;
+    createdAt: Timestamp;
+}
+
 export type AnnouncementScope = 'general' | 'center' | 'class';
 export type AnnouncementType = 'text' | 'poll' | 'file';
 
