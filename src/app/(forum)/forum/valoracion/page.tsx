@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -20,7 +19,7 @@ import { es } from 'date-fns/locale';
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 const noteColors = ['#FECACA', '#FDE68A', '#A7F3D0', '#BFDBFE', '#C7D2FE', '#E9D5FF'];
 
@@ -41,7 +40,6 @@ export default function ValoracionPage() {
     const handleSaveReview = async (data: { comment: string, rating: number, isAnonymous: boolean, color: string }, reviewId?: string) => {
         if (!user || !firestore) return;
         
-        setIsLoading(true);
         try {
             if (reviewId) { // Update existing review
                 const reviewRef = doc(firestore, 'reviews', reviewId);
@@ -60,8 +58,6 @@ export default function ValoracionPage() {
             }
         } catch (error) {
              toast({ title: 'Error', description: 'No se pudo guardar tu valoración.', variant: 'destructive' });
-        } finally {
-            setIsLoading(false);
         }
     };
     
@@ -299,4 +295,3 @@ function NewReviewDialog({ onSave, user, review, children }: { onSave: (data: { 
         </Dialog>
     );
 }
-
