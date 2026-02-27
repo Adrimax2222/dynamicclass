@@ -279,7 +279,8 @@
         "isAnonymous": { "type": "boolean" },
         "rating": { "type": "number" },
         "comment": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "color": { "type": "string" }
       },
       "required": ["authorId", "isAnonymous", "rating", "comment", "createdAt"]
     }

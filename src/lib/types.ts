@@ -172,6 +172,7 @@ export type Review = {
     rating: number;
     comment: string;
     createdAt: Timestamp;
+    color?: string;
 }
 
 export type AnnouncementScope = 'general' | 'center' | 'class';
