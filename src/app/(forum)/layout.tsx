@@ -72,7 +72,10 @@ export default function ForumLayout({
             </main>
             
             {/* Toggle button for mobile */}
-            <div className="md:hidden fixed bottom-4 right-4 z-20">
+            <div className={cn(
+                "md:hidden fixed right-4 z-20 transition-all duration-300",
+                isNavVisible ? "bottom-36" : "bottom-4"
+            )}>
                 <Button size="icon" variant="secondary" className="rounded-full shadow-lg" onClick={() => setIsNavVisible(!isNavVisible)}>
                     {isNavVisible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     <span className="sr-only">Mostrar/Ocultar Navegación</span>
