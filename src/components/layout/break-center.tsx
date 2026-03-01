@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
@@ -33,6 +32,7 @@ import TicTacToeGame from '@/components/games/TicTacToeGame';
 import Game2048 from '@/components/games/Game2048';
 import FlappyBirdGame from '@/components/games/FlappyBirdGame';
 import DesertRun from '@/components/games/DesertRunGame';
+import SnakeGame from '@/components/games/SnakeGame';
 
 
 // --- Type Definitions ---
@@ -996,24 +996,4 @@ const MemoryGame = ({ onBack }: { onBack: () => void }) => {
           </div>
       </ViewContainer>
   );
-};
-
-
-// Constantes del motor del juego
-const SNAKE_GAME_SIZE = 20; // 20x20 grid
-const SNAKE_INITIAL_SPEED = 200; // ms per move
-
-
-const SnakeGame = ({ onBack }: { onBack: () => void }) => {
-    return (
-        <ViewContainer title="Snake" onBack={onBack}>
-            <div className="text-center p-12 space-y-4 border-2 border-dashed rounded-lg max-w-lg mx-auto mt-8">
-                <Wrench className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="font-semibold text-xl">Próximamente</h3>
-                <p className="text-sm text-muted-foreground">
-                    Estamos trabajando en este juego. ¡Vuelve pronto!
-                </p>
-            </div>
-        </ViewContainer>
-    );
 };
