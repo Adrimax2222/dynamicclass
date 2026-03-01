@@ -26,7 +26,6 @@ import { AvatarDisplay } from '@/components/profile/avatar-creator';
 const navItems = [
   { href: "/forum/community", label: "Comunitat", icon: Users },
   { href: "/forum/actualitat", label: "Actualitat", icon: Newspaper },
-  { href: "/forum/clase", label: "La Meva Classe", icon: GraduationCap },
   { href: "/forum/discussions", label: "Discussions", icon: MessageSquare },
   { href: "/forum/resources", label: "Recursos", icon: BookCopy },
   { href: "/forum/valoracion", label: "Valoracions", icon: Star },
