@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ViewContainer } from '@/components/layout/view-container';
+import { cn } from "@/lib/utils";
 
 // Constantes físicas del motor
 const PLAYER_SIZE = 40;
@@ -42,7 +43,7 @@ type GameState = {
   hasStarted: boolean;
 };
 
-const DesertRun = ({ onBack }: { onBack: () => void }) => {
+export default function DesertRun({ onBack }: { onBack: () => void }) {
   const [gameState, setGameState] = useState<GameState>({
     y: 0,
     vy: 0,
@@ -201,7 +202,7 @@ const DesertRun = ({ onBack }: { onBack: () => void }) => {
 
   return (
     <ViewContainer title="Desert Run" onBack={onBack}>
-        <div className="w-full max-w-4xl mx-auto flex flex-col items-center p-4">
+        <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
             {/* Marcador Superior estilo Arcade */}
             <div className="w-full flex justify-between px-6 py-2 bg-slate-800 text-white rounded-t-lg font-mono text-xl shadow-md z-10">
                 <div className="text-amber-400">HI: 00999</div> {/* Aquí podrías meter tu highscore de Firebase */}
@@ -253,8 +254,8 @@ const DesertRun = ({ onBack }: { onBack: () => void }) => {
                 {/* Cuerpo naranja */}
                 <div className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm">
                     {/* Visor del ojo */}
-                    <div className={`absolute top-2 right-1 w-5 h-4 bg-slate-900 rounded-sm flex items-center justify-end p-0.5`}>
-                    <div className={`w-2 h-2 rounded-full ${'${gameState.gameOver ? \'bg-red-500\' : \'bg-cyan-400 animate-pulse\'}'}`} />
+                    <div className="absolute top-2 right-1 w-5 h-4 bg-slate-900 rounded-sm flex items-center justify-end p-0.5">
+                    <div className={cn("w-2 h-2 rounded-full", gameState.gameOver ? 'bg-red-500' : 'bg-cyan-400 animate-pulse')} />
                     </div>
                     {/* Rueda/Oruga base */}
                     <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-8 h-3 bg-slate-800 rounded-full border-2 border-slate-600 flex items-center justify-between px-1">
@@ -328,6 +329,3 @@ const DesertRun = ({ onBack }: { onBack: () => void }) => {
     </ViewContainer>
   );
 };
-export default DesertRun;
-
-    
