@@ -43,7 +43,7 @@ type GameState = {
   hasStarted: boolean;
 };
 
-export default function DesertRun({ onBack }: { onBack: () => void }) {
+function DesertRunGameContent() {
   const [gameState, setGameState] = useState<GameState>({
     y: 0,
     vy: 0,
@@ -156,7 +156,7 @@ export default function DesertRun({ onBack }: { onBack: () => void }) {
 
           // MATEMÁTICAS DE FAIR PLAY (Equidad)
           // Un salto dura aprox 40 frames. Le sumamos 20 frames de margen de aterrizaje.
-          const minSafeFrames = 60; 
+          const minSafeFrames = 60;
           const maxRandomGap = Math.max(80, 160 - newSpeed * 5); // El gap baja conforme sube la vel
           nextObs = Math.floor(Math.random() * (maxRandomGap - minSafeFrames)) + minSafeFrames;
         }
@@ -201,131 +201,139 @@ export default function DesertRun({ onBack }: { onBack: () => void }) {
   }, []);
 
   return (
-    <ViewContainer title="Desert Run" onBack={onBack}>
-        <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
-            {/* Marcador Superior estilo Arcade */}
-            <div className="w-full flex justify-between px-6 py-2 bg-slate-800 text-white rounded-t-lg font-mono text-xl shadow-md z-10">
-                <div className="text-amber-400">HI: 00999</div> {/* Aquí podrías meter tu highscore de Firebase */}
-                <div className="tracking-widest flex items-center gap-2">
-                <span className="text-slate-400 text-sm">SCORE</span>
-                {Math.floor(gameState.score).toString().padStart(5, "0")}
-                </div>
-            </div>
-
-            {/* Escenario */}
-            <div
-                className="relative w-full h-72 bg-gradient-to-b from-sky-200 to-sky-50 dark:from-sky-800 dark:to-sky-600 overflow-hidden border-b-[8px] border-[#c2b280] dark:border-amber-800 shadow-xl rounded-b-lg select-none touch-none cursor-pointer"
-                onTouchStart={(e) => {
-                e.preventDefault();
-                jump();
-                }}
-                onClick={jump}
-            >
-                {/* Nubes en el fondo */}
-                {gameState.clouds.map((cloud) => (
-                <div
-                    key={cloud.id}
-                    className="absolute bg-white rounded-full transition-transform"
-                    style={{
-                    width: "60px",
-                    height: "20px",
-                    left: `${'${cloud.x}'}px`,
-                    top: `${'${cloud.y}'}px`,
-                    transform: `scale(${'${cloud.scale}'})`,
-                    opacity: cloud.opacity,
-                    }}
-                >
-                    {/* Volumen superior de la nube */}
-                    <div className="absolute -top-3 left-3 w-8 h-8 bg-white rounded-full" />
-                    <div className="absolute -top-2 left-8 w-6 h-6 bg-white rounded-full" />
-                </div>
-                ))}
-
-                {/* B.O.B el Robot (Jugador) */}
-                <div
-                className="absolute z-20 transition-transform"
-                style={{
-                    width: `${'${PLAYER_SIZE}'}px`,
-                    height: `${'${PLAYER_SIZE}'}px`,
-                    left: `${'${PLAYER_X}'}px`,
-                    bottom: `${'${gameState.y}'}px`,
-                }}
-                >
-                {/* Cuerpo naranja */}
-                <div className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm">
-                    {/* Visor del ojo */}
-                    <div className="absolute top-2 right-1 w-5 h-4 bg-slate-900 rounded-sm flex items-center justify-end p-0.5">
-                    <div className={cn("w-2 h-2 rounded-full", gameState.gameOver ? 'bg-red-500' : 'bg-cyan-400 animate-pulse')} />
-                    </div>
-                    {/* Rueda/Oruga base */}
-                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-8 h-3 bg-slate-800 rounded-full border-2 border-slate-600 flex items-center justify-between px-1">
-                    <div className="w-1 h-1 bg-slate-400 rounded-full" />
-                    <div className="w-1 h-1 bg-slate-400 rounded-full" />
-                    </div>
-                </div>
-                </div>
-
-                {/* Obstáculos (Cactus Detallados) */}
-                {gameState.obstacles.map((obs) => (
-                <div
-                    key={obs.id}
-                    className="absolute z-10 flex items-end justify-center gap-2"
-                    style={{
-                    width: `${'${obs.width}'}px`,
-                    height: `${'${obs.height}'}px`,
-                    left: `${'${obs.x}'}px`,
-                    bottom: "0px",
-                    }}
-                >
-                    {/* Cactus Simple */}
-                    {obs.type === "single" && (
-                    <div className="relative w-6 h-full bg-emerald-600 border-2 border-emerald-800 rounded-t-lg">
-                        <div className="absolute bottom-4 -left-3 w-4 h-6 border-b-2 border-l-2 border-emerald-800 rounded-bl-lg" />
-                        <div className="absolute bottom-6 -right-3 w-4 h-8 border-b-2 border-r-2 border-emerald-800 rounded-br-lg" />
-                    </div>
-                    )}
-                    
-                    {/* Cactus Doble */}
-                    {obs.type === "double" && (
-                    <>
-                        <div className="relative w-6 h-full bg-emerald-600 border-2 border-emerald-800 rounded-t-lg" />
-                        <div className="relative w-6 bg-emerald-700 border-2 border-emerald-900 rounded-t-lg" style={{ height: '80%' }} />
-                    </>
-                    )}
-                </div>
-                ))}
-
-                {/* Pantalla de Inicio */}
-                {!gameState.hasStarted && !gameState.gameOver && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/20 backdrop-blur-sm z-30">
-                    <div className="bg-slate-800 text-white px-8 py-4 rounded-xl shadow-2xl text-center animate-bounce">
-                    <h1 className="text-2xl font-black mb-2 text-amber-400">DESERT RUN</h1>
-                    <p className="font-mono text-sm">ESPACIO / CLICK para saltar</p>
-                    </div>
-                </div>
-                )}
-
-                {/* Pantalla de Muerte */}
-                {gameState.gameOver && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm z-30">
-                    <div className="bg-white px-10 py-6 rounded-2xl shadow-2xl text-center transform scale-100 transition-all">
-                    <h2 className="text-5xl font-black text-red-600 mb-2">CRASH!</h2>
-                    <p className="text-slate-600 font-mono mb-6">Score: {Math.floor(gameState.score)}</p>
-                    <button 
-                        onClick={jump}
-                        className="bg-orange-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all"
-                    >
-                        REINTENTAR
-                    </button>
-                    </div>
-                </div>
-                )}
-            </div>
-            
-            <p className="mt-4 text-xs font-mono text-slate-400">
-                Engine: React Frame Loop | Render: DOM CSS | FPS: VSync
-            </p>
+    <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
+      {/* Marcador Superior estilo Arcade */}
+      <div className="w-full flex justify-between px-6 py-2 bg-slate-800 text-white rounded-t-lg font-mono text-xl shadow-md z-10">
+        <div className="text-amber-400">HI: 00999</div> {/* Aquí podrías meter tu highscore de Firebase */}
+        <div className="tracking-widest flex items-center gap-2">
+          <span className="text-slate-400 text-sm">SCORE</span>
+          {Math.floor(gameState.score).toString().padStart(5, "0")}
         </div>
-    </ViewContainer>
+      </div>
+
+      {/* Escenario */}
+      <div
+        className="relative w-full h-72 bg-gradient-to-b from-sky-200 to-sky-50 dark:from-sky-800 dark:to-sky-600 overflow-hidden border-b-[8px] border-[#c2b280] dark:border-amber-800 shadow-xl rounded-b-lg select-none touch-none cursor-pointer"
+        onTouchStart={(e) => {
+          e.preventDefault();
+          jump();
+        }}
+        onClick={jump}
+      >
+        {/* Nubes en el fondo */}
+        {gameState.clouds.map((cloud) => (
+          <div
+            key={cloud.id}
+            className="absolute bg-white rounded-full transition-transform"
+            style={{
+              width: "60px",
+              height: "20px",
+              left: cloud.x,
+              top: cloud.y,
+              transform: `scale(${cloud.scale})`,
+              opacity: cloud.opacity,
+            }}
+          >
+            {/* Volumen superior de la nube */}
+            <div className="absolute -top-3 left-3 w-8 h-8 bg-white rounded-full" />
+            <div className="absolute -top-2 left-8 w-6 h-6 bg-white rounded-full" />
+          </div>
+        ))}
+
+        {/* B.O.B el Robot (Jugador) */}
+        <div
+          className="absolute z-20 transition-transform"
+          style={{
+            width: PLAYER_SIZE,
+            height: PLAYER_SIZE,
+            left: PLAYER_X,
+            bottom: gameState.y,
+          }}
+        >
+          {/* Cuerpo naranja */}
+          <div className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm">
+            {/* Visor del ojo */}
+            <div className="absolute top-2 right-1 w-5 h-4 bg-slate-900 rounded-sm flex items-center justify-end p-0.5">
+              <div className={cn("w-2 h-2 rounded-full", gameState.gameOver ? 'bg-red-500' : 'bg-cyan-400 animate-pulse')} />
+            </div>
+            {/* Rueda/Oruga base */}
+            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-8 h-3 bg-slate-800 rounded-full border-2 border-slate-600 flex items-center justify-between px-1">
+               <div className="w-1 h-1 bg-slate-400 rounded-full" />
+               <div className="w-1 h-1 bg-slate-400 rounded-full" />
+            </div>
+          </div>
+        </div>
+
+        {/* Obstáculos (Cactus Detallados) */}
+        {gameState.obstacles.map((obs) => (
+          <div
+            key={obs.id}
+            className="absolute z-10 flex items-end justify-center gap-2"
+            style={{
+              width: obs.width,
+              height: obs.height,
+              left: obs.x,
+              bottom: 0,
+            }}
+          >
+            {/* Cactus Simple */}
+            {obs.type === "single" && (
+              <div className="relative w-6 h-full bg-emerald-600 border-2 border-emerald-800 rounded-t-lg">
+                <div className="absolute bottom-4 -left-3 w-4 h-6 border-b-2 border-l-2 border-emerald-800 rounded-bl-lg" />
+                <div className="absolute bottom-6 -right-3 w-4 h-8 border-b-2 border-r-2 border-emerald-800 rounded-br-lg" />
+              </div>
+            )}
+            
+            {/* Cactus Doble */}
+            {obs.type === "double" && (
+              <>
+                <div className="relative w-6 h-full bg-emerald-600 border-2 border-emerald-800 rounded-t-lg" />
+                <div className="relative w-6 bg-emerald-700 border-2 border-emerald-900 rounded-t-lg" style={{ height: '80%' }} />
+              </>
+            )}
+          </div>
+        ))}
+
+        {/* Pantalla de Inicio */}
+        {!gameState.hasStarted && !gameState.gameOver && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/20 backdrop-blur-sm z-30">
+            <div className="bg-slate-800 text-white px-8 py-4 rounded-xl shadow-2xl text-center animate-bounce">
+              <h1 className="text-2xl font-black mb-2 text-amber-400">DESERT RUN</h1>
+              <p className="font-mono text-sm">ESPACIO / CLICK para saltar</p>
+            </div>
+          </div>
+        )}
+
+        {/* Pantalla de Muerte */}
+        {gameState.gameOver && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm z-30">
+            <div className="bg-white px-10 py-6 rounded-2xl shadow-2xl text-center transform scale-100 transition-all">
+              <h2 className="text-5xl font-black text-red-600 mb-2">CRASH!</h2>
+              <p className="text-slate-600 font-mono mb-6">Score: {Math.floor(gameState.score)}</p>
+              <button 
+                onClick={jump}
+                className="bg-orange-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all"
+              >
+                REINTENTAR
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <p className="mt-4 text-xs font-mono text-slate-400 dark:text-slate-500">
+        Engine: React Frame Loop | Render: DOM CSS | FPS: VSync
+      </p>
+    </div>
   );
+}
+
+const DesertRunGame = ({ onBack }: { onBack: () => void }) => {
+    return (
+        <ViewContainer title="Desert Run" onBack={onBack}>
+            <DesertRunGameContent />
+        </ViewContainer>
+    );
 };
+
+export default DesertRunGame;
