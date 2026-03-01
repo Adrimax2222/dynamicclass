@@ -35,24 +35,61 @@ export default function ActualitatPage() {
     const fetchNoticies = useCallback(async (territori: string) => {
         setIsLoading(true);
         setError(null);
+        setNoticies([]);
         try {
-            const url = `https://api.rss2json.com/v1/api.json?rss_url=https://www.ccma.cat/multimedia/rss/324/${territori}/`;
-            const response = await fetch(url);
+            const rssFeedUrl = `https://www.ccma.cat/multimedia/rss/324/${territori}/`;
+            const apiUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssFeedUrl)}`;
+            
+            const response = await fetch(apiUrl);
             if (!response.ok) {
                 throw new Error('No s\'ha pogut carregar les notícies.');
             }
+            
             const data = await response.json();
-            if (data.status === 'ok') {
-                setNoticies(data.items);
-            } else {
-                throw new Error('Error en la resposta de l\'API de notícies.');
+             if (!data.contents) {
+                throw new Error('La resposta de l\'API no té contingut.');
             }
+            
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(data.contents, "application/xml");
+            const items = xmlDoc.querySelectorAll("item");
+
+            if (items.length === 0) {
+                 setNoticies([]);
+                 return;
+            }
+
+            const parsedNoticies: Noticia[] = Array.from(items).map(item => {
+                const enclosure = item.querySelector("enclosure");
+                const imageUrl = enclosure ? enclosure.getAttribute("url") || '' : '';
+
+                const descriptionHtml = item.querySelector("description")?.textContent || '';
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = descriptionHtml;
+                const descriptionText = tempDiv.textContent || tempDiv.innerText || "";
+
+
+                return {
+                    title: item.querySelector("title")?.textContent || 'Sense títol',
+                    pubDate: item.querySelector("pubDate")?.textContent || new Date().toISOString(),
+                    link: item.querySelector("link")?.textContent || '#',
+                    enclosure: {
+                        link: imageUrl
+                    },
+                    description: descriptionText
+                };
+            });
+
+            setNoticies(parsedNoticies);
+
         } catch (err) {
+            console.error("Fetch error: ", err);
             setError(err instanceof Error ? err.message : 'Un error desconegut ha ocorregut.');
         } finally {
             setIsLoading(false);
         }
     }, []);
+
 
     useEffect(() => {
         fetchNoticies(territori);
@@ -92,10 +129,27 @@ export default function ActualitatPage() {
             )}
             
             {error && (
-                 <div className="text-center p-12 space-y-4 border-2 border-dashed border-destructive/50 rounded-lg max-w-lg mx-auto">
-                    <p className="font-semibold text-destructive">{error}</p>
-                    <Button onClick={() => fetchNoticies(territori)}>Reintentar</Button>
-                </div>
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[...Array(3)].map((_, index) => (
+                           <Card key={index} className="h-full flex flex-col overflow-hidden animate-pulse">
+                                <div className="aspect-video relative bg-muted" />
+                                <div className="p-4 flex-1">
+                                    <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+                                    <div className="h-4 bg-muted rounded w-full" />
+                                </div>
+                                <div className="p-4 pt-0">
+                                     <div className="h-3 bg-muted rounded w-1/4" />
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                     <div className="text-center mt-8">
+                        <Button onClick={() => fetchNoticies(territori)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                            Reintentar
+                        </Button>
+                    </div>
+                </>
             )}
 
             {!isLoading && !error && (
