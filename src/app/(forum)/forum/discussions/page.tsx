@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -730,7 +731,7 @@ export default function DiscussionsPage() {
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Sparkles size={12} className="text-primary" />
-              Missatge pendent de moderació
+              El contingut publicat serà revisat.
             </span>
             <Button
               onClick={handleNewPost}
@@ -794,3 +795,5 @@ export default function DiscussionsPage() {
     </div>
   );
 }
+
+    
