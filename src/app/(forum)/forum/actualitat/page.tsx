@@ -86,7 +86,7 @@ export default function ActualitatPage() {
                                     <Image 
                                         src={noticia.imageUrl} 
                                         alt={noticia.title}
-                                        layout="fill"
+                                        fill
                                         className="object-cover"
                                     />
                                 </div>
