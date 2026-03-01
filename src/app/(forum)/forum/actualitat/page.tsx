@@ -36,12 +36,12 @@ function timeAgo(dateStr: string): string {
 
 function SkeletonCard({ featured = false }: { featured?: boolean }) {
   return (
-    <div className={`bg-white rounded-3xl shadow-sm overflow-hidden animate-pulse ${featured ? 'col-span-1 md:col-span-2' : ''}`}>
-      <div className={`bg-gray-200 w-full ${featured ? 'aspect-[16/7]' : 'aspect-video'}`} />
+    <div className={`bg-white dark:bg-slate-800/50 rounded-3xl shadow-sm overflow-hidden animate-pulse ${featured ? 'col-span-1 md:col-span-2 lg:col-span-3' : ''}`}>
+      <div className={`bg-gray-200 dark:bg-slate-700 w-full ${featured ? 'aspect-[16/7]' : 'aspect-video'}`} />
       <div className="p-4 space-y-2">
-        <div className="h-3 bg-gray-200 rounded-full w-1/4" />
-        <div className="h-4 bg-gray-200 rounded-full w-full" />
-        <div className="h-4 bg-gray-200 rounded-full w-2/3" />
+        <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded-full w-1/4" />
+        <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded-full w-full" />
+        <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded-full w-2/3" />
       </div>
     </div>
   );
@@ -57,7 +57,7 @@ function NewsCard({ item, featured = false }: { item: NewsItem; featured?: boole
       href={item.link || '#'}
       target="_blank"
       rel="noopener noreferrer"
-      className={`group block bg-white rounded-3xl shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200 ${featured ? 'col-span-1 md:col-span-2' : ''}`}
+      className={`group block bg-white dark:bg-slate-900/50 rounded-3xl shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200 ${featured ? 'col-span-1 md:col-span-2 lg:col-span-3' : ''}`}
     >
       <div className={`relative w-full overflow-hidden ${featured ? 'aspect-[16/7]' : 'aspect-video'}`}>
         {hasImage ? (
@@ -89,7 +89,7 @@ function NewsCard({ item, featured = false }: { item: NewsItem; featured?: boole
       </div>
 
       <div className="p-4">
-        <h3 className={`font-bold text-gray-900 leading-snug line-clamp-3 group-hover:text-violet-700 transition-colors ${featured ? 'text-lg' : 'text-sm'}`}>
+        <h3 className={`font-bold text-gray-900 dark:text-gray-100 leading-snug line-clamp-3 group-hover:text-violet-700 dark:group-hover:text-violet-400 transition-colors ${featured ? 'text-lg' : 'text-base'}`}>
           {item.title}
         </h3>
       </div>
@@ -137,13 +137,13 @@ export default function ActualitatPage() {
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-3">
             <div>
-              <h1 className="text-2xl font-black text-gray-900 tracking-tight">Actualitat</h1>
-              <p className="text-xs text-gray-400 mt-0.5">Font: 324.cat · CCMA</p>
+              <h1 className="text-2xl font-black text-gray-900 dark:text-gray-50 tracking-tight">Actualitat</h1>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Font: 324.cat · CCMA</p>
             </div>
             {!loading && (
               <button
                 onClick={() => fetchNews(territori)}
-                className="text-violet-600 text-sm font-semibold active:scale-95 transition-transform"
+                className="text-violet-600 dark:text-violet-400 text-sm font-semibold active:scale-95 transition-transform"
               >
                 ↻ Actualitza
               </button>
@@ -154,7 +154,7 @@ export default function ActualitatPage() {
             <select
               value={territori}
               onChange={(e) => setTeritori(e.target.value)}
-              className="w-full appearance-none bg-white border border-gray-200 rounded-2xl px-4 py-2.5 text-sm font-medium text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent pr-10"
+              className="w-full appearance-none bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 text-sm font-medium text-gray-800 dark:text-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent pr-10"
             >
               {TERRITORIS.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -168,11 +168,11 @@ export default function ActualitatPage() {
         </div>
         
         {error && (
-          <div className="bg-red-50 border border-red-100 rounded-2xl p-5 text-center">
-            <p className="text-red-600 font-semibold text-sm">⚠️ {error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-500/30 rounded-2xl p-5 text-center">
+            <p className="text-red-600 dark:text-red-400 font-semibold text-sm">⚠️ {error}</p>
             <button
               onClick={() => fetchNews(territori)}
-              className="mt-3 text-red-500 text-xs underline"
+              className="mt-3 text-red-500 dark:text-red-400 text-xs underline"
             >
               Torna-ho a intentar
             </button>
@@ -198,8 +198,8 @@ export default function ActualitatPage() {
         {!loading && !error && news.length === 0 && (
           <div className="text-center py-20">
             <p className="text-4xl mb-3">📰</p>
-            <p className="text-gray-600 font-semibold">Sense notícies disponibles</p>
-            <p className="text-gray-400 text-sm mt-1">Prova amb una altra zona o torna a intentar-ho més tard.</p>
+            <p className="text-gray-600 dark:text-gray-300 font-semibold">Sense notícies disponibles</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Prova amb una altra zona o torna a intentar-ho més tard.</p>
           </div>
         )}
 
