@@ -1,5 +1,4 @@
-
-"use server";
+'use server';
 
 interface NewsItem {
     title: string;
@@ -8,26 +7,18 @@ interface NewsItem {
     imageUrl: string;
 }
 
-const FALLBACK_NEWS: NewsItem[] = [
-    {
-      title: "Benvingut a la Comunitat de Dynamic Class",
-      link: "#",
-      pubDate: "Ara mateix",
-      imageUrl: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    },
-    {
-      title: "Explora els nous recursos i eines d'IA",
-      link: "#",
-      pubDate: "Recent",
-      imageUrl: "https://images.unsplash.com/photo-1508084052338-79138c351053?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    },
-    {
-      title: "Participa en les discussions i ajuda a altres estudiants",
-      link: "#",
-      pubDate: "Comunitat",
-      imageUrl: "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    },
-];
+// Helper to extract content from an XML tag
+function extractContent(xml: string, tag: string): string {
+    const match = xml.match(new RegExp(`<${tag}>(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?<\\/${tag}>`));
+    return match ? match[1].trim() : '';
+}
+
+// Helper to extract an attribute from a tag
+function extractAttribute(xml: string, tag: string, attr: string): string {
+    const match = xml.match(new RegExp(`<${tag}[^>]*${attr}="([^"]*)"`));
+    return match ? match[1] : '';
+}
+
 
 export async function getNews(url: string): Promise<NewsItem[]> {
     try {
@@ -36,29 +27,30 @@ export async function getNews(url: string): Promise<NewsItem[]> {
         });
 
         if (!response.ok) {
-            console.error("Failed to fetch RSS feed, returning fallback.");
-            return FALLBACK_NEWS;
+            throw new Error('Error de connexió amb el servidor de notícies.');
         }
 
         const data = await response.json();
         const text = data.contents;
         
         if (!text) {
-             console.error("No content in RSS feed response, returning fallback.");
-            return FALLBACK_NEWS;
+             throw new Error('No s\'ha rebut contingut del servidor de notícies.');
         }
 
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(text, 'application/xml');
-        const items = Array.from(xml.querySelectorAll('item'));
+        const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+        const items = text.match(itemRegex) || [];
 
-        return items.slice(0, 12).map(item => {
-            const title = item.querySelector('title')?.textContent ?? 'Sense títol';
-            const link = item.querySelector('link')?.textContent ?? '#';
-            const pubDate = item.querySelector('pubDate')?.textContent ?? '';
+        if (items.length === 0) {
+            return [];
+        }
+
+        return items.slice(0, 12).map((itemXml: string) => {
+            const title = extractContent(itemXml, 'title');
+            const link = extractContent(itemXml, 'link');
+            const pubDate = extractContent(itemXml, 'pubDate');
             
-            const imageUrl = item.querySelector('enclosure')?.getAttribute('url') || 
-                             item.querySelector('media\\:content')?.getAttribute('url') || 
+            const imageUrl = extractAttribute(itemXml, 'enclosure', 'url') || 
+                             extractAttribute(itemXml, 'media:content', 'url') || 
                              '';
 
             return { title, link, pubDate, imageUrl };
@@ -66,6 +58,7 @@ export async function getNews(url: string): Promise<NewsItem[]> {
 
     } catch (error) {
         console.error("Error processing RSS feed:", error);
-        return FALLBACK_NEWS;
+        // Propagate the error to be handled by the client component
+        throw new Error('Error de connexió amb el servidor de notícies.');
     }
 }
