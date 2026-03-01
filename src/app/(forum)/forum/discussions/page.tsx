@@ -1,7 +1,6 @@
-
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Heart,
   MessageCircle,
@@ -69,11 +68,12 @@ interface BasePost {
   content: string;
   createdAt: Timestamp;
   likedBy: string[];
+  parentId?: string;
+  replyCount?: number;
 }
 
 interface Post extends BasePost {
   uid: string;
-  replyCount?: number;
 }
 
 interface Reply extends BasePost {
@@ -132,9 +132,26 @@ function RoleBadge({ role }: { role: Role }) {
 // REPLY CARD & LIST
 // ─────────────────────────────────────────────
 
-function ReplyCard({ reply, onLike }: { reply: Reply; onLike: () => void }) {
+function ReplyCard({ reply, postId, onLike, onAddReply, onLikeReply }: { 
+    reply: Reply; 
+    postId: string;
+    onLike: () => void;
+    onAddReply: (content: string, parentId?: string) => Promise<void>;
+    onLikeReply: (replyId: string) => Promise<void>;
+}) {
   const { user } = useApp();
   const likedByMe = user ? reply.likedBy.includes(user.uid) : false;
+  const [showReplies, setShowReplies] = useState(false);
+  const [showReplyInput, setShowReplyInput] = useState(false);
+  const [replyText, setReplyText] = useState("");
+
+  const handleSubReply = async () => {
+    if (!replyText.trim()) return;
+    await onAddReply(replyText, reply.uid);
+    setReplyText("");
+    setShowReplyInput(false);
+    setShowReplies(true);
+  };
   
   return (
     <div className="flex gap-3 group">
@@ -150,27 +167,80 @@ function ReplyCard({ reply, onLike }: { reply: Reply; onLike: () => void }) {
           <span className="text-xs text-muted-foreground ml-auto">{formatTimeAgo(reply.createdAt)}</span>
         </div>
         <p className="text-sm text-secondary-foreground leading-relaxed">{reply.content}</p>
-        <button
-          onClick={onLike}
-          className={`mt-2 flex items-center gap-1.5 text-xs transition-all ${
-            likedByMe
-              ? "text-rose-500"
-              : "text-muted-foreground hover:text-rose-400"
-          }`}
-        >
-          <Heart
-            size={13}
-            className={cn("transition-all", likedByMe && "fill-rose-500")}
-          />
-          <span>{reply.likedBy.length}</span>
-        </button>
+        
+        <div className="flex items-center gap-1 mt-2">
+            <button
+                onClick={onLike}
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-all ${
+                    likedByMe
+                    ? "text-rose-500 bg-rose-50 dark:bg-rose-500/10"
+                    : "text-muted-foreground hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10"
+                }`}
+            >
+                <Heart size={13} className={cn("transition-all", likedByMe && "fill-rose-500")} />
+                <span>{reply.likedBy.length}</span>
+            </button>
+            <button
+                onClick={() => setShowReplyInput(!showReplyInput)}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+            >
+                <MessageCircle size={13} />
+                <span>Respondre</span>
+            </button>
+             {(reply.replyCount || 0) > 0 && (
+                <button
+                    onClick={() => setShowReplies(!showReplies)}
+                    className="ml-auto flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium transition-all"
+                >
+                    {showReplies ? "Amaga" : `Veure ${reply.replyCount} respostes`}
+                    <ChevronDown size={14} className={`transition-transform ${showReplies ? "rotate-180" : ""}`}/>
+                </button>
+            )}
+        </div>
+        
+        {showReplyInput && (
+          <div className="mt-3 flex gap-2 items-center animate-in slide-in-from-top-2 duration-200">
+             {user && <AvatarDisplay user={user} className="w-8 h-8 flex-shrink-0"/>}
+            <div className="flex-1 flex gap-2 bg-muted/50 border border-border/70 rounded-2xl px-3 py-2">
+              <input
+                type="text"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSubReply()}
+                placeholder="Escriu la teva resposta..."
+                className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder-muted-foreground"
+                autoFocus
+              />
+              <button
+                onClick={handleSubReply}
+                disabled={!replyText.trim()}
+                className="text-primary hover:text-primary/80 disabled:opacity-30 transition-all"
+              >
+                <Send size={15} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showReplies && (
+            <RepliesList 
+                postId={postId} 
+                parentId={reply.uid} 
+                onAddReply={onAddReply}
+                onLikeReply={onLikeReply}
+            />
+        )}
       </div>
     </div>
   );
 }
 
-function RepliesList({ postId }: { postId: string }) {
-    const { user } = useApp();
+function RepliesList({ postId, parentId, onAddReply, onLikeReply }: { 
+    postId: string;
+    parentId?: string;
+    onAddReply: (content: string, parentId?: string) => Promise<void>;
+    onLikeReply: (replyId: string) => Promise<void>;
+}) {
     const firestore = useFirestore();
 
     const repliesQuery = useMemoFirebase(() => {
@@ -178,33 +248,35 @@ function RepliesList({ postId }: { postId: string }) {
         return query(collection(firestore, `discussions/${postId}/replies`), orderBy('createdAt', 'asc'));
     }, [firestore, postId]);
     
-    const { data: replies, isLoading } = useCollection<Reply>(repliesQuery);
+    const { data: allReplies, isLoading } = useCollection<Reply>(repliesQuery);
 
-    const handleLikeReply = async (replyId: string) => {
-        if (!user || !firestore) return;
-        const replyRef = doc(firestore, `discussions/${postId}/replies`, replyId);
-
-        await runTransaction(firestore, async (transaction) => {
-            const replyDoc = await transaction.get(replyRef);
-            if (!replyDoc.exists()) return;
-
-            const currentLikedBy = replyDoc.data().likedBy || [];
-            const isLiked = currentLikedBy.includes(user.uid);
-            
-            transaction.update(replyRef, {
-                likedBy: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid),
-            });
-        });
-    };
+    const filteredReplies = useMemo(() => {
+        if (!allReplies) return [];
+        if (!parentId) {
+            return allReplies.filter(reply => !reply.parentId);
+        }
+        return allReplies.filter(reply => reply.parentId === parentId);
+    }, [allReplies, parentId]);
 
     if (isLoading) {
         return <div className="p-4 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto"/></div>
     }
 
+    if (filteredReplies.length === 0) {
+        return null;
+    }
+
     return (
         <div className="mt-4 pl-4 border-l-2 border-primary/20 space-y-3">
-            {replies.map(reply => (
-                <ReplyCard key={reply.uid} reply={reply} onLike={() => handleLikeReply(reply.uid)} />
+            {filteredReplies.map(reply => (
+                <ReplyCard 
+                    key={reply.uid}
+                    reply={reply} 
+                    postId={postId}
+                    onLike={() => onLikeReply(reply.uid)} 
+                    onAddReply={onAddReply}
+                    onLikeReply={onLikeReply}
+                />
             ))}
         </div>
     );
@@ -236,28 +308,62 @@ function PostCard({ post, onDelete, onUpdate }: { post: Post, onDelete: (id: str
     });
   }
 
-  const handleAddReply = async () => {
-    if (!user || !firestore || !replyText.trim()) return;
-    
-    const newReply: Omit<Reply, 'uid'> = {
+  const handleAddReply = async (content: string, parentId?: string) => {
+    if (!user || !firestore || !content.trim()) return;
+
+    const newReplyData: Omit<Reply, 'uid'> = {
         authorId: user.uid,
         authorName: user.name,
         authorAvatar: user.avatar,
         authorRole: user.role,
-        content: replyText,
+        content: content,
         createdAt: serverTimestamp() as Timestamp,
         likedBy: [],
+        replyCount: 0,
+        ...(parentId && { parentId }),
     };
-    
-    const postRef = doc(firestore, 'discussions', post.uid);
-    const repliesRef = collection(postRef, 'replies');
 
-    await addDoc(repliesRef, newReply);
-    await updateDoc(postRef, { replyCount: increment(1) });
-    
-    setReplyText("");
-    setShowReplyInput(false);
-    setShowReplies(true);
+    const postRef = doc(firestore, 'discussions', post.uid);
+    const repliesCollectionRef = collection(postRef, 'replies');
+
+    try {
+        await runTransaction(firestore, async (transaction) => {
+            const newReplyRef = doc(repliesCollectionRef); // Create a new doc reference
+            transaction.set(newReplyRef, newReplyData);
+            
+            transaction.update(postRef, { replyCount: increment(1) });
+
+            if (parentId) {
+                const parentReplyRef = doc(repliesCollectionRef, parentId);
+                transaction.update(parentReplyRef, { replyCount: increment(1) });
+            }
+        });
+
+        if (!parentId) {
+            setReplyText("");
+            setShowReplyInput(false);
+            setShowReplies(true);
+        }
+    } catch (e) {
+        console.error("Error adding reply:", e);
+    }
+  };
+
+  const handleLikeReply = async (replyId: string) => {
+    if (!user || !firestore) return;
+    const replyRef = doc(firestore, `discussions/${post.uid}/replies`, replyId);
+
+    await runTransaction(firestore, async (transaction) => {
+        const replyDoc = await transaction.get(replyRef);
+        if (!replyDoc.exists()) return;
+
+        const currentLikedBy = replyDoc.data().likedBy || [];
+        const isLiked = currentLikedBy.includes(user.uid);
+        
+        transaction.update(replyRef, {
+            likedBy: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid),
+        });
+    });
   };
   
   const handleSaveEdit = async () => {
@@ -378,13 +484,13 @@ function PostCard({ post, onDelete, onUpdate }: { post: Post, onDelete: (id: str
                 type="text"
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddReply()}
+                onKeyDown={(e) => e.key === "Enter" && handleAddReply(replyText)}
                 placeholder="Escriu la teva resposta..."
                 className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder-muted-foreground"
                 autoFocus
               />
               <button
-                onClick={handleAddReply}
+                onClick={() => handleAddReply(replyText)}
                 disabled={!replyText.trim()}
                 className="text-primary hover:text-primary/80 disabled:opacity-30 transition-all"
               >
@@ -394,7 +500,7 @@ function PostCard({ post, onDelete, onUpdate }: { post: Post, onDelete: (id: str
           </div>
         )}
 
-        {showReplies && <RepliesList postId={post.uid} />}
+        {showReplies && <RepliesList postId={post.uid} onAddReply={handleAddReply} onLikeReply={handleLikeReply}/>}
       </article>
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
           <AlertDialogContent>
@@ -458,6 +564,8 @@ export default function DiscussionsPage() {
   const handleDeletePost = async (postId: string) => {
     if (!firestore) return;
     try {
+        // Here you might also want to delete all sub-collections (replies) if you have any.
+        // For simplicity, we are just deleting the post document.
         await deleteDoc(doc(firestore, 'discussions', postId));
     } catch (err) {
         console.error("Error deleting post:", err);
@@ -533,7 +641,7 @@ export default function DiscussionsPage() {
               <div
                 key={i}
                 className="bg-background/70 rounded-3xl p-5 animate-pulse"
-                style={{ animationDelay: `${''}${i * 100}ms` }}
+                style={{ animationDelay: `${i * 100}ms` }}
               >
                 <div className="flex gap-3 mb-3">
                   <div className="w-10 h-10 rounded-full bg-muted" />
@@ -570,5 +678,3 @@ export default function DiscussionsPage() {
     </div>
   );
 }
-
-    

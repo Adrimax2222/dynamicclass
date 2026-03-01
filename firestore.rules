@@ -201,7 +201,7 @@ service cloud.firestore {
       allow update: if request.auth != null &&
                       (
                         // Anyone can like or update reply count.
-                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy', 'replyCount']) ||
+                        request.resource.data.diff(resource.data).affectedKeys().hasAny(['likedBy', 'replyCount']) ||
                         // Author can edit their own content.
                         (isOwner(resource.data.authorId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['content'])) ||
                         // Admin can edit anything.
@@ -212,11 +212,16 @@ service cloud.firestore {
 
       match /replies/{replyId} {
         allow read: if request.auth != null;
-        allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
+        allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid
+                      && request.resource.data.content is string
+                      && request.resource.data.content.size() > 0
+                      && (!('parentId' in request.resource.data) || request.resource.data.parentId is string)
+                      && (!('replyCount' in request.resource.data) || request.resource.data.replyCount == 0);
+                      
         allow update: if request.auth != null &&
                       (
-                        // Anyone can like
-                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy']) ||
+                        // Anyone can like or update reply count.
+                        request.resource.data.diff(resource.data).affectedKeys().hasAny(['likedBy', 'replyCount']) ||
                         // Author can edit content
                         (isOwner(resource.data.authorId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['content'])) ||
                         // Admin can edit anything
