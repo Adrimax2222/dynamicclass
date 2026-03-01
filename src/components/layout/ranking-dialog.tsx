@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -16,11 +17,11 @@ import { collection, query, where, getDocs, orderBy, limit } from "firebase/fire
 import type { User } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart, Users, GraduationCap, PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart, CaseUpper, Gift, X, Clapperboard, Shirt, ShoppingBag, BookMarked, Info, Music, Play, TreePine } from "lucide-react";
+import { ShieldAlert, Trophy, Gem, Medal, ShoppingCart, Users, GraduationCap, PawPrint, Gamepad2, Ghost, Palmtree, Rocket, Pizza, Cat, Heart, CaseUpper, Gift, X, Clapperboard, Shirt, ShoppingBag, BookMarked, Info, Music, Play, TreePine, Timer, BrainCircuit, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Card } from "../ui/card";
+import { Card, CardHeader, CardContent, CardFooter } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { useMemoFirebase } from "@/firebase/hooks";
 import { Alert, AlertDescription } from "../ui/alert";
@@ -28,18 +29,12 @@ import { AvatarDisplay } from "../profile/avatar-creator";
 
 const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau.cat', 'adrimax.dev@gmail.com'];
 
-const SHOP_AVATARS = [
-    { id: 'paw', icon: PawPrint },
-    { id: 'gamepad', icon: Gamepad2 },
-    { id: 'ghost', icon: Ghost },
-    { id: 'palmtree', icon: Palmtree },
-    { id: 'rocket', icon: Rocket },
-    { id: 'pizza', icon: Pizza },
-    { id: 'cat', icon: Cat },
-    { id: 'heart', icon: Heart },
+const appItems = [
+    { id: 'avatar-pack', name: 'Iconos y Avatares', icon: Gift, description: 'Desbloquea un pack de avatares exclusivos para tu perfil.', costTrophies: 200, costPlants: 100 },
+    { id: 'break-time', name: '+10 min de Descanso', icon: Timer, description: 'Añade 10 minutos a tu próximo descanso en el Modo Estudio.', costTrophies: 100, costPlants: 50 },
+    { id: 'ai-ultra', name: 'Adrimax AI Ultra', icon: BrainCircuit, description: 'Activa el modelo de IA más potente durante 24 horas.', costTrophies: 1000, costPlants: 500 },
+    { id: 'course-key', name: 'Llave de Curso Premium', icon: KeyRound, description: 'Accede a un curso de pago de tu elección.', costTrophies: 250, costPlants: 125 },
 ];
-
-const shopAvatarMap = new Map(SHOP_AVATARS.map(item => [item.id, item]));
 
 const shopItems = [
     { id: 'amazon', name: 'Amazon', icon: ShoppingBag, color: '#FF9900', values: [5, 10] },
@@ -54,6 +49,12 @@ const shopItems = [
     { id: 'google-play', name: 'Google Play', icon: Play, color: '#4CAF50', values: [5, 10, 15, 25] },
     { id: 'spotify', name: 'Spotify', icon: Music, color: '#1DB954', values: [10, 30] },
 ];
+
+const specialItems = [
+    { id: 'plant-pack', name: 'Pack de 250 Plantas', icon: TreePine, color: '#22C55E', costType: 'trophies' as const, cost: 500, reward: 250 },
+    { id: 'trophy-pack', name: 'Pack de 500 Trofeos', icon: Trophy, color: '#FBBF24', costType: 'plants' as const, cost: 250, reward: 500 },
+];
+
 
 export function RankingDialog({ children, user, openTo = "ranking" }: { children: React.ReactNode; user: User, openTo?: "ranking" | "shop" }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -222,27 +223,23 @@ function RankingTab({ user, isOpen }: { user: User; isOpen: boolean }) {
     );
 }
 
-const specialItems = [
-    { id: 'plant-pack', name: 'Pack de 250 Plantas', icon: TreePine, color: '#22C55E', costType: 'trophies' as const, cost: 500, reward: 250 },
-    { id: 'trophy-pack', name: 'Pack de 500 Trofeos', icon: Trophy, color: '#FBBF24', costType: 'plants' as const, cost: 250, reward: 500 },
-];
-
 function ShopTab({ user }: { user: User }) {
     const TROPHIES_PER_EURO = 100;
     const isAdmin = ADMIN_EMAILS.includes(user.email);
+    const [activeTab, setActiveTab] = useState('app');
 
     return (
         <div className="p-6 pt-2 space-y-6">
             <Card className="sticky top-0 z-10 p-3 bg-background/90 backdrop-blur-sm shadow-sm">
                 <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold">Tus Plantas y Trofeos</p>
+                    <p className="text-sm font-semibold">Tus Recursos</p>
                     <div className="flex items-center gap-4">
-                         <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                             <TreePine className="h-5 w-5 text-green-500" />
                             <p className="text-lg font-bold">{user.plantCount || 0}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Trophy className="h-5 w-5 text-yellow-400"/>
+                            <Trophy className="h-5 w-5 text-yellow-400" />
                             <p className="text-lg font-bold">{isAdmin ? '∞' : user.trophies}</p>
                         </div>
                     </div>
@@ -252,34 +249,89 @@ function ShopTab({ user }: { user: User }) {
             <Alert variant="default" className="border-blue-500/20 bg-blue-500/5 text-blue-700 dark:text-blue-300">
                 <Info className="h-4 w-4 !text-blue-500" />
                 <AlertDescription className="text-xs">
-                   Las marcas mostradas no están afiliadas a Dynamic Class. Son representativas del producto que se canjeará (ej. una tarjeta regalo de la marca solicitada por el usuario).
+                    Las marcas mostradas no están afiliadas a Dynamic Class. Son representativas del producto que se canjeará (ej. una tarjeta regalo de la marca solicitada por el usuario).
                 </AlertDescription>
             </Alert>
             
-             <div className="grid grid-cols-2 gap-4">
-                 {shopItems.map(item => (
-                    <ShopItemCard 
-                        key={item.id} 
-                        item={item} 
-                        trophiesPerEuro={TROPHIES_PER_EURO} 
-                        userTrophies={user.trophies}
-                    />
-                 ))}
-                 {specialItems.map(item => (
-                    <SpecialShopItemCard
-                        key={item.id}
-                        item={item}
-                        userTrophies={user.trophies}
-                        userPlants={user.plantCount || 0}
-                    />
-                 ))}
-             </div>
-             <p className="text-xs text-muted-foreground text-center pt-2">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="app">Mejoras App</TabsTrigger>
+                    <TabsTrigger value="cards">Tarjetas Regalo</TabsTrigger>
+                </TabsList>
+                <TabsContent value="app" className="mt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        {appItems.map(item => (
+                            <AppItemCard
+                                key={item.id}
+                                item={item}
+                            />
+                        ))}
+                    </div>
+                </TabsContent>
+                <TabsContent value="cards" className="mt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        {shopItems.map(item => (
+                            <ShopItemCard 
+                                key={item.id} 
+                                item={item} 
+                                trophiesPerEuro={TROPHIES_PER_EURO} 
+                                userTrophies={user.trophies}
+                            />
+                        ))}
+                         {specialItems.map(item => (
+                            <SpecialShopItemCard
+                                key={item.id}
+                                item={item}
+                                userTrophies={user.trophies}
+                                userPlants={user.plantCount || 0}
+                            />
+                         ))}
+                    </div>
+                </TabsContent>
+            </Tabs>
+
+            <p className="text-xs text-muted-foreground text-center pt-2">
                 Dynamic Class no está afiliada ni patrocinada por las marcas mencionadas. Los nombres se utilizan únicamente con fines identificativos.
-             </p>
+            </p>
         </div>
     );
 }
+
+function AppItemCard({ item }: { item: { id: string; name: string; description: string; icon: React.ElementType; costTrophies: number; costPlants: number; } }) {
+    const Icon = item.icon;
+
+    return (
+        <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
+            <CardHeader className="flex-row items-start gap-3 p-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                    <Icon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                    <h4 className="font-bold text-sm">{item.name}</h4>
+                </div>
+            </CardHeader>
+            <CardContent className="flex-1 p-3 pt-0">
+                <p className="text-xs text-muted-foreground">{item.description}</p>
+            </CardContent>
+            <CardFooter className="p-3 bg-muted/50 flex-col items-stretch gap-2">
+                 <div className="grid grid-cols-2 gap-1 text-center">
+                    <div className="flex items-center justify-center gap-1 font-bold text-xs text-yellow-500 bg-amber-500/10 px-1.5 py-1 rounded-md">
+                        <Trophy className="h-3 w-3" />
+                        <span>{item.costTrophies}</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-1 font-bold text-xs text-green-500 bg-green-500/10 px-1.5 py-1 rounded-md">
+                        <TreePine className="h-3 w-3" />
+                        <span>{item.costPlants}</span>
+                    </div>
+                </div>
+                <Button size="sm" className="w-full h-7 text-xs" disabled>
+                    Próximamente
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+}
+
 
 function ShopItemCard({ item, trophiesPerEuro, userTrophies }: { item: typeof shopItems[0], trophiesPerEuro: number, userTrophies: number }) {
     const [selectedValue, setSelectedValue] = useState(item.values[0].toString());
@@ -360,6 +412,7 @@ function SpecialShopItemCard({ item, userTrophies, userPlants }: {
     );
 }
 
+
 function PodiumPlace({ user, place, scope }: { user?: User; place: 1 | 2 | 3; scope: RankingScope }) {
     const classStyles = {
         1: { icon: Gem, color: "text-amber-400", ring: "ring-amber-400/50", podiumHeight: "h-32", podiumColor: "bg-amber-400/80 shadow-[0_0_15px_rgba(251,191,36,0.6)]", avatarSize: "h-16 w-16" },
@@ -437,3 +490,4 @@ function RankingItem({ user, rank, isCurrentUser, scope }: { user: User; rank: n
         </div>
     );
 }
+    
