@@ -199,7 +199,7 @@ service cloud.firestore {
       allow create: if request.auth != null 
                     && request.resource.data.authorId == request.auth.uid
                     && request.resource.data.content is string && request.resource.data.content.size() > 0 && request.resource.data.content.size() < 10000
-                    && request.resource.data.topic is string && request.resource.data.topic in ['Dubtes', 'Exàmens', 'Recursos', 'Cafeteria', 'Intel·ligència Artificial', 'Política', 'Notícies', 'General']
+                    && request.resource.data.topic is string && request.resource.data.topic in ['Dubtes', 'Exàmens', 'Recursos', 'Cafeteria', 'Intel·ligència Artificial', 'Política', 'Notícies', 'General', 'Motivació', 'Tips d\'Estudi', 'Networking', 'Suggeriments', 'Repàs Ràpid', 'Tecnologia']
                     && request.resource.data.likedBy == []
                     && request.resource.data.replyCount == 0;
       
@@ -283,5 +283,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

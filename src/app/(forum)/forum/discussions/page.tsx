@@ -90,10 +90,16 @@ const TOPICS = [
   { key: 'Dubtes', label: 'Dubtes', icon: '❓' },
   { key: 'Exàmens', label: 'Exàmens', icon: '📝' },
   { key: 'Recursos', label: 'Recursos', icon: '📚' },
-  { key: 'Cafeteria', label: 'Cafeteria', icon: '☕' },
+  { key: 'Tips d\'Estudi', label: 'Tips Estudi', icon: '📌' },
+  { key: 'Repàs Ràpid', label: 'Repàs Ràpid', icon: '🔥' },
+  { key: 'Motivació', label: 'Motivació', icon: '🚀' },
+  { key: 'Tecnologia', label: 'Tecnologia', icon: '💻' },
   { key: 'Intel·ligència Artificial', label: 'IA', icon: '🤖' },
-  { key: 'Política', label: 'Política', icon: '🏛️' },
+  { key: 'Networking', label: 'Networking', icon: '🤝' },
+  { key: 'Suggeriments', label: 'Suggeriments', icon: '💡' },
+  { key: 'Cafeteria', label: 'Cafeteria', icon: '☕' },
   { key: 'Notícies', label: 'Notícies', icon: '📰' },
+  { key: 'Política', label: 'Política', icon: '🏛️' },
   { key: 'General', label: 'General', icon: '💬' },
 ];
 
@@ -151,8 +157,8 @@ function RoleBadge({ role }: { role: Role }) {
 function ReplyCard({ reply, postId, onLikeReply, onAddReply, onDeleteReply, onUpdateReply }: { 
     reply: Reply; 
     postId: string;
-    onLikeReply: (replyId: string) => Promise<void>;
-    onAddReply: (content: string, parentId?: string) => Promise<void>;
+    onLikeReply: (postId: string, replyId: string) => Promise<void>;
+    onAddReply: (content: string, postId: string, parentId?: string) => Promise<void>;
     onDeleteReply: (postId: string, reply: Reply) => Promise<void>;
     onUpdateReply: (postId: string, replyId: string, newContent: string) => Promise<void>;
 }) {
@@ -170,7 +176,7 @@ function ReplyCard({ reply, postId, onLikeReply, onAddReply, onDeleteReply, onUp
 
   const handleSubReply = async () => {
     if (!replyText.trim()) return;
-    await onAddReply(replyText, reply.uid);
+    await onAddReply(replyText, postId, reply.uid);
     setReplyText("");
     setShowReplyInput(false);
     setShowReplies(true);
@@ -241,7 +247,7 @@ function ReplyCard({ reply, postId, onLikeReply, onAddReply, onDeleteReply, onUp
             
             <div className="flex items-center gap-1 mt-2">
                 <button
-                    onClick={() => onLikeReply(reply.uid)}
+                    onClick={() => onLikeReply(postId, reply.uid)}
                     className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-all ${
                         likedByMe
                         ? "text-rose-500 bg-rose-50 dark:bg-rose-500/10"
@@ -326,8 +332,8 @@ function ReplyCard({ reply, postId, onLikeReply, onAddReply, onDeleteReply, onUp
 function RepliesList({ postId, parentId, onAddReply, onLikeReply, onDeleteReply, onUpdateReply }: { 
     postId: string;
     parentId?: string;
-    onAddReply: (content: string, parentId?: string) => Promise<void>;
-    onLikeReply: (replyId: string) => Promise<void>;
+    onAddReply: (content: string, postId: string, parentId?: string) => Promise<void>;
+    onLikeReply: (postId: string, replyId: string) => Promise<void>;
     onDeleteReply: (postId: string, reply: Reply) => Promise<void>;
     onUpdateReply: (postId: string, replyId: string, newContent: string) => Promise<void>;
 }) {
@@ -381,8 +387,8 @@ function PostCard({ post, onDelete, onUpdate, onAddReply, onLikeReply, onDeleteR
     post: Post;
     onDelete: (id: string) => void;
     onUpdate: (id: string, content: string) => Promise<void>;
-    onAddReply: (content: string, parentId?: string) => Promise<void>;
-    onLikeReply: (replyId: string) => Promise<void>;
+    onAddReply: (content: string, postId: string, parentId?: string) => Promise<void>;
+    onLikeReply: (postId: string, replyId: string) => Promise<void>;
     onDeleteReply: (postId: string, reply: Reply) => Promise<void>;
     onUpdateReply: (postId: string, replyId: string, newContent: string) => Promise<void>;
 }) {
@@ -419,7 +425,7 @@ function PostCard({ post, onDelete, onUpdate, onAddReply, onLikeReply, onDeleteR
   
   const handleReplySubmit = async () => {
       if (!replyText.trim()) return;
-      await onAddReply(replyText);
+      await onAddReply(replyText, post.uid);
       setReplyText("");
       setShowReplyInput(false);
   };
@@ -556,14 +562,14 @@ function PostCard({ post, onDelete, onUpdate, onAddReply, onLikeReply, onDeleteR
           </div>
         )}
 
-        {showReplies && <RepliesList postId={post.uid} onAddReply={(content, parentId) => onAddReply(content, parentId)} onLikeReply={(replyId) => onLikeReply(replyId)} onDeleteReply={onDeleteReply} onUpdateReply={onUpdateReply} />}
+        {showReplies && <RepliesList postId={post.uid} onAddReply={onAddReply} onLikeReply={onLikeReply} onDeleteReply={onDeleteReply} onUpdateReply={onUpdateReply} />}
       </article>
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
           <AlertDialogContent>
               <AlertDialogHeader>
                   <AlertDialogTitle>¿Seguro que quieres eliminarlo?</AlertDialogTitle>
                   <AlertDialogDescription>
-                      Esta acción no se puede deshacer. La publicación se eliminará permanentemente.
+                      Esta acción no se puede deshacer. La publicación y todas sus respuestas se eliminarán permanentemente.
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -647,7 +653,7 @@ export default function DiscussionsPage() {
       }
   };
   
-  const handleAddReply = async (content: string, parentId?: string, postId?: string) => {
+  const handleAddReply = async (content: string, postId: string, parentId?: string) => {
     if (!user || !firestore || !content.trim() || !postId) return;
 
     const newReplyData: Omit<Reply, 'uid'> = {
@@ -842,10 +848,10 @@ export default function DiscussionsPage() {
                 post={post}
                 onDelete={handleDeletePost}
                 onUpdate={handleUpdatePost}
-                onAddReply={(content, parentId) => handleAddReply(content, parentId, post.uid)}
-                onLikeReply={(replyId) => handleLikeReply(post.uid, replyId)}
-                onDeleteReply={(postId, reply) => handleDeleteReply(postId, reply)}
-                onUpdateReply={(postId, replyId, content) => handleUpdateReply(postId, replyId, content)}
+                onAddReply={handleAddReply}
+                onLikeReply={handleLikeReply}
+                onDeleteReply={handleDeleteReply}
+                onUpdateReply={handleUpdateReply}
               />
             ))}
           </div>
@@ -854,7 +860,3 @@ export default function DiscussionsPage() {
     </div>
   );
 }
-
-    
-
-    
