@@ -30,7 +30,6 @@ const navItems = [
   { href: "/forum/recursos-dc", label: "Recursos DC", icon: BookCopy },
   { href: "/forum/valoracion", label: "Valoracions", icon: Star },
   { href: "/forum/ia", label: "Eines IA", icon: Sparkles },
-  { href: "/forum/members", label: "Membres", icon: Users },
   { href: "/forum/ayuda", label: "Ajuda", icon: HelpCircle },
 ];
 
