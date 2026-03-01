@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -19,7 +18,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { Loader2 } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
@@ -128,7 +127,7 @@ export default function RecursosDCPage() {
 const BugReportCard = ({ report, isAuthor, onSave, onDelete, user }: { report: BugReport, isAuthor: boolean, onSave: any, onDelete: any, user: User | null }) => {
     return (
         <div className="break-inside-avoid">
-            <Card className="hover:shadow-lg transition-shadow" style={{ borderTop: `44px solid ${report.color || 'transparent'}`}}>
+            <Card className="hover:shadow-lg transition-shadow" style={{ borderTop: `4px solid ${report.color || 'transparent'}`}}>
                 <CardHeader className="flex-row items-start gap-3 space-y-0">
                     <AvatarDisplay 
                         user={{
