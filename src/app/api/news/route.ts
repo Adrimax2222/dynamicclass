@@ -1,78 +1,101 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-interface NewsItem {
-    title: string;
-    link: string;
-    pubDate: string;
-    imageUrl: string;
-}
+const TERRITORI_QUERIES: Record<string, string> = {
+  // Espanya i Catalunya
+  espanya:              'España noticias',
+  general:              'Catalunya',
+  barcelona_city:       'Barcelona ciudad',
 
-const FEED_URLS: Record<string, string> = {
-    'catala': 'https://www.ccma.cat/multimedia/rss/324/catala/',
-    'barcelona': 'https://www.ccma.cat/multimedia/rss/324/barcelona/',
-    'girona': 'https://www.ccma.cat/multimedia/rss/324/girona/',
-    'lleida': 'https://www.ccma.cat/multimedia/rss/324/lleida/',
-    'tarragona': 'https://www.ccma.cat/multimedia/rss/324/tarragona/',
+  // Províncies
+  barcelona:            'provincia Barcelona Catalunya',
+  girona:               'Girona Catalunya',
+  lleida:               'Lleida Catalunya',
+  tarragona:            'Tarragona Catalunya',
+  'terres-de-l-ebre':   'Terres de l\'Ebre Tarragona',
+
+  // Comarques Barcelona
+  'baix-llobregat':     'Baix Llobregat Barcelona',
+  'valles-occidental':  'Vallès Occidental Sabadell Terrassa',
+  'valles-oriental':    'Vallès Oriental Granollers',
+  maresme:              'Maresme Mataró',
+  osona:                'Osona Vic Catalunya',
+  bergueda:             'Berguedà Berga Catalunya',
+  bages:                'Bages Manresa Catalunya',
+  anoia:                'Anoia Igualada Catalunya',
+  garraf:               'Garraf Vilanova Catalunya',
+  'alt-penedes':        'Alt Penedès Vilafranca',
+  'baix-penedes':       'Baix Penedès Catalunya',
+  selva:                'Selva Blanes Lloret Catalunya',
+
+  // Comarques Girona
+  'alt-emporda':        'Alt Empordà Figueres',
+  'baix-emporda':       'Baix Empordà Palamós',
+  garrotxa:             'Garrotxa Olot Catalunya',
+  ripolles:             'Ripollès Ripoll Catalunya',
+  cerdanya:             'Cerdanya Puigcerdà',
+  'pla-de-l-estany':    'Pla de l\'Estany Banyoles',
+  girones:              'Gironès Girona',
+
+  // Comarques Lleida
+  pallars:              'Pallars Lleida Pirineus',
+  'alta-ribagorca':     'Alta Ribagorça Lleida',
+  'val-d-aran':         'Val d\'Aran Vielha',
+  segria:               'Segrià Lleida',
+  urgell:               'Urgell Tàrrega',
+  'noguera':            'Noguera Balaguer',
+
+  // Comarques Tarragona
+  'alt-camp':           'Alt Camp Valls Tarragona',
+  'baix-camp':          'Baix Camp Reus',
+  'tarragues':          'Tarragonès Tarragona',
+  'priorat':            'Priorat Falset',
+  'ribera-d-ebre':      'Ribera d\'Ebre Móra',
+  'terra-alta':         'Terra Alta Gandesa',
 };
 
-// Helper to extract content from an XML tag
-function extractContent(xml: string, tag: string): string {
-    const match = xml.match(new RegExp(`<${tag}>(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?<\\/${tag}>`));
-    return match ? match[1].trim() : '';
-}
-
-// Helper to extract an attribute from a tag
-function extractAttribute(xml: string, tag: string, attr: string): string {
-    const match = xml.match(new RegExp(`<${tag}[^>]*${attr}="([^"]*)"`));
-    return match ? match[1] : '';
-}
-
 export async function GET(request: NextRequest) {
-    const { searchParams } = new URL(request.url);
-    const territori = searchParams.get('territori') || 'catala';
-    const rssUrl = FEED_URLS[territori] || FEED_URLS['catala'];
-    const apiUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
+  const { searchParams } = new URL(request.url);
+  const territori = searchParams.get('territori') ?? 'general';
+  const query = TERRITORI_QUERIES[territori] ?? 'Catalunya';
 
-    try {
-        const response = await fetch(apiUrl, {
-            next: { revalidate: 3600 } // Revalidate cada hora
-        });
+  const apiKey = process.env.NEWS_API_KEY;
+  if (!apiKey) {
+    console.error('[API /news] Falta NEWS_API_KEY al .env.local');
+    return NextResponse.json([]);
+  }
 
-        if (!response.ok) {
-            throw new Error(`Error de xarxa en contactar allorigins: ${response.status}`);
-        }
+  // NewsAPI free plan: màxim 100/dia, pageSize màx 100
+  const url = `https://newsapi.org/v2/everything?` +
+    `q=${encodeURIComponent(query)}` +
+    `&language=es` +
+    `&sortBy=publishedAt` +
+    `&pageSize=30` +
+    `&apiKey=${apiKey}`;
 
-        const data = await response.json();
-        const text = data.contents;
-        
-        if (!text) {
-             throw new Error('No s\'ha rebut contingut del servidor de notícies.');
-        }
+  try {
+    console.log(`[API /news] Cercant: "${query}"`);
+    const res = await fetch(url, { next: { revalidate: 300 } });
+    const data = await res.json();
 
-        const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-        const items = text.match(itemRegex) || [];
-
-        if (items.length === 0) {
-            return NextResponse.json([]);
-        }
-
-        const newsItems: NewsItem[] = items.slice(0, 12).map((itemXml: string) => {
-            const title = extractContent(itemXml, 'title');
-            const link = extractContent(itemXml, 'link');
-            const pubDate = extractContent(itemXml, 'pubDate');
-            
-            const imageUrl = extractAttribute(itemXml, 'enclosure', 'url') || 
-                             extractAttribute(itemXml, 'media:content', 'url') || 
-                             '';
-
-            return { title, link, pubDate, imageUrl };
-        });
-
-        return NextResponse.json(newsItems);
-
-    } catch (error) {
-        console.error("Error processant el feed RSS:", error);
-        // En cas d'error, retorna una llista buida per no trencar el client.
-        return NextResponse.json([]);
+    if (data.status !== 'ok' || !data.articles?.length) {
+      console.error('[API /news] Error NewsAPI:', data.message ?? 'sense articles');
+      return NextResponse.json([]);
     }
+
+    const items = data.articles
+      .filter((a: any) => a.title && a.title !== '[Removed]' && a.url)
+      .map((a: any) => ({
+        title:    a.title,
+        link:     a.url,
+        pubDate:  a.publishedAt,
+        imageUrl: a.urlToImage ?? '',
+      }));
+
+    console.log(`[API /news] ✅ ${items.length} notícies per "${query}"`);
+    return NextResponse.json(items);
+
+  } catch (error) {
+    console.error('[API /news] Error:', error);
+    return NextResponse.json([]);
+  }
 }
