@@ -6,7 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Newspaper, Loader2, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
-import { getNews } from './actions';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -19,11 +18,11 @@ interface NewsItem {
 }
 
 const territoriOptions = [
-    { value: 'catala', label: 'Catalunya', url: 'https://www.ccma.cat/multimedia/rss/324/catala/' },
-    { value: 'barcelona', label: 'Barcelona', url: 'https://www.ccma.cat/multimedia/rss/324/barcelona/' },
-    { value: 'girona', label: 'Girona', url: 'https://www.ccma.cat/multimedia/rss/324/girona/' },
-    { value: 'lleida', label: 'Lleida', url: 'https://www.ccma.cat/multimedia/rss/324/lleida/' },
-    { value: 'tarragona', label: 'Tarragona', url: 'https://www.ccma.cat/multimedia/rss/324/tarragona/' },
+    { value: 'catala', label: 'Catalunya' },
+    { value: 'barcelona', label: 'Barcelona' },
+    { value: 'girona', label: 'Girona' },
+    { value: 'lleida', label: 'Lleida' },
+    { value: 'tarragona', label: 'Tarragona' },
 ];
 
 function NewsSkeleton() {
@@ -47,16 +46,17 @@ export default function ActualitatPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const selectedUrl = useMemo(() => {
-        return territoriOptions.find(t => t.value === territori)?.url || territoriOptions[0].url;
-    }, [territori]);
-
     useEffect(() => {
         const fetchNews = async () => {
             setIsLoading(true);
             setError(null);
             try {
-                const fetchedNews = await getNews(selectedUrl);
+                const response = await fetch(`/api/news?territori=${territori}`);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Error de connexió amb el servidor de notícies.');
+                }
+                const fetchedNews: NewsItem[] = await response.json();
                 setNews(fetchedNews);
             } catch (err: any) {
                 setError(err.message || 'Ha ocorregut un error inesperat.');
@@ -65,7 +65,7 @@ export default function ActualitatPage() {
             }
         };
         fetchNews();
-    }, [selectedUrl]);
+    }, [territori]);
 
     const formatNewsDate = (dateString: string) => {
         if (!dateString) return "Recent";
@@ -132,7 +132,7 @@ export default function ActualitatPage() {
                                             className="object-cover"
                                         />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center">
+                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600">
                                             <Newspaper className="h-12 w-12 text-white/50" />
                                         </div>
                                     )}
