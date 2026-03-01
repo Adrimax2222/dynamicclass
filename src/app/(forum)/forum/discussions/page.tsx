@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -52,7 +53,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -214,7 +214,7 @@ function RepliesList({ postId }: { postId: string }) {
 // ─────────────────────────────────────────────
 // POST CARD
 // ─────────────────────────────────────────────
-function PostCard({ post, onDelete, onUpdate }: { post: Post, onDelete: (id: string) => void, onUpdate: (id: string, content: string) => void }) {
+function PostCard({ post, onDelete, onUpdate }: { post: Post, onDelete: (id: string) => void, onUpdate: (id: string, content: string) => Promise<void> }) {
   const { user } = useApp();
   const firestore = useFirestore();
   const [showReplies, setShowReplies] = useState(false);
@@ -222,6 +222,8 @@ function PostCard({ post, onDelete, onUpdate }: { post: Post, onDelete: (id: str
   const [replyText, setReplyText] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState(post.content);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const likedByMe = user ? post.likedBy.includes(user.uid) : false;
   const canManage = user?.uid === post.authorId || user?.role === 'admin';
@@ -258,153 +260,157 @@ function PostCard({ post, onDelete, onUpdate }: { post: Post, onDelete: (id: str
     setShowReplies(true);
   };
   
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editedText.trim() && editedText !== post.content) {
-        onUpdate(post.uid, editedText);
+        setIsSaving(true);
+        await onUpdate(post.uid, editedText);
+        setIsSaving(false);
     }
     setIsEditing(false);
   };
 
   return (
-    <article className="group bg-background/80 backdrop-blur-md border border-border/70 rounded-3xl p-5 hover:scale-[1.01] hover:shadow-xl hover:shadow-primary/10 hover:border-primary/20 transition-all duration-300">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-3">
-          <AvatarDisplay user={{name: post.authorName, avatar: post.authorAvatar}} className="w-10 h-10 flex-shrink-0" />
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-foreground text-sm">
-                {post.authorName}
-              </span>
-              {getRole(post.authorRole) === "moderador" && (
-                <BadgeCheck size={15} className="text-emerald-500" />
-              )}
-              <RoleBadge role={getRole(post.authorRole)} />
+    <>
+      <article className="group bg-background/80 backdrop-blur-md border border-border/70 rounded-3xl p-5 hover:scale-[1.01] hover:shadow-xl hover:shadow-primary/10 hover:border-primary/20 transition-all duration-300">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-center gap-3">
+            <AvatarDisplay user={{name: post.authorName, avatar: post.authorAvatar}} className="w-10 h-10 flex-shrink-0" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-foreground text-sm">
+                  {post.authorName}
+                </span>
+                {getRole(post.authorRole) === "moderador" && (
+                  <BadgeCheck size={15} className="text-emerald-500" />
+                )}
+                <RoleBadge role={getRole(post.authorRole)} />
+              </div>
+              <span className="text-xs text-muted-foreground">{formatTimeAgo(post.createdAt)}</span>
             </div>
-            <span className="text-xs text-muted-foreground">{formatTimeAgo(post.createdAt)}</span>
           </div>
+          {canManage && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                  <button className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted">
+                    <MoreHorizontal size={16} />
+                  </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => setIsEditing(true)}>
+                      <Edit className="mr-2 h-4 w-4"/>
+                      <span>Editar</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setIsDeleteAlertOpen(true)} className="text-destructive focus:text-destructive">
+                      <Trash2 className="mr-2 h-4 w-4"/>
+                      <span>Eliminar</span>
+                  </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
-        {canManage && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted">
-                  <MoreHorizontal size={16} />
-                </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setIsEditing(true)}>
-                    <Edit className="mr-2 h-4 w-4"/>
-                    <span>Editar</span>
-                </DropdownMenuItem>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4"/>
-                            <span>Eliminar</span>
-                        </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>¿Seguro que quieres eliminarlo?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Esta acción no se puede deshacer. La publicación se eliminará permanentemente.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onDelete(post.uid)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </DropdownMenuContent>
-        </DropdownMenu>
-        )}
-      </div>
 
-        {isEditing ? (
-            <div className="space-y-2 my-4">
-                <Textarea
-                    value={editedText}
-                    onChange={(e) => setEditedText(e.target.value)}
-                    className="text-base"
-                    autoFocus
-                    rows={4}
-                />
-                <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancelar</Button>
-                    <Button size="sm" onClick={handleSaveEdit}>Guardar</Button>
-                </div>
-            </div>
-        ) : (
-            <p className="text-secondary-foreground leading-relaxed text-[15px] mb-4">
-                {post.content}
-            </p>
-        )}
+          {isEditing ? (
+              <div className="space-y-2 my-4">
+                  <Textarea
+                      value={editedText}
+                      onChange={(e) => setEditedText(e.target.value)}
+                      className="text-base"
+                      autoFocus
+                      rows={4}
+                  />
+                  <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancelar</Button>
+                      <Button size="sm" onClick={handleSaveEdit} disabled={isSaving}>
+                          {isSaving ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Guardar'}
+                      </Button>
+                  </div>
+              </div>
+          ) : (
+              <p className="text-secondary-foreground leading-relaxed text-[15px] mb-4">
+                  {post.content}
+              </p>
+          )}
 
-      <div className="flex items-center gap-1 border-t border-border/50 pt-3">
-        <button
-          onClick={handleLike}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-            likedByMe
-              ? "text-rose-500 bg-rose-50 dark:bg-rose-500/10"
-              : "text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10"
-          }`}
-        >
-          <Heart size={15} className={cn("transition-all", likedByMe && "fill-rose-500")} />
-          <span>{post.likedBy.length}</span>
-        </button>
-
-        <button
-          onClick={() => setShowReplyInput(!showReplyInput)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
-        >
-          <MessageCircle size={15} />
-          <span>{post.replyCount || 0}</span>
-        </button>
-
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-muted-foreground hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-500/10 transition-all">
-          <Share2 size={15} />
-        </button>
-
-        {(post.replyCount || 0) > 0 && (
+        <div className="flex items-center gap-1 border-t border-border/50 pt-3">
           <button
-            onClick={() => setShowReplies(!showReplies)}
-            className="ml-auto flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium transition-all"
+            onClick={handleLike}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+              likedByMe
+                ? "text-rose-500 bg-rose-50 dark:bg-rose-500/10"
+                : "text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10"
+            }`}
           >
-            {showReplies ? "Amaga" : `Veure ${post.replyCount} respostes`}
-            <ChevronDown
-              size={14}
-              className={`transition-transform ${showReplies ? "rotate-180" : ""}`}
-            />
+            <Heart size={15} className={cn("transition-all", likedByMe && "fill-rose-500")} />
+            <span>{post.likedBy.length}</span>
           </button>
-        )}
-      </div>
 
-      {showReplyInput && (
-        <div className="mt-3 flex gap-2 items-center animate-in slide-in-from-top-2 duration-200">
-           {user && <AvatarDisplay user={user} className="w-8 h-8 flex-shrink-0"/>}
-          <div className="flex-1 flex gap-2 bg-muted/50 border border-border/70 rounded-2xl px-3 py-2">
-            <input
-              type="text"
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddReply()}
-              placeholder="Escriu la teva resposta..."
-              className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder-muted-foreground"
-              autoFocus
-            />
+          <button
+            onClick={() => setShowReplyInput(!showReplyInput)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+          >
+            <MessageCircle size={15} />
+            <span>{post.replyCount || 0}</span>
+          </button>
+
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-muted-foreground hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-500/10 transition-all">
+            <Share2 size={15} />
+          </button>
+
+          {(post.replyCount || 0) > 0 && (
             <button
-              onClick={handleAddReply}
-              disabled={!replyText.trim()}
-              className="text-primary hover:text-primary/80 disabled:opacity-30 transition-all"
+              onClick={() => setShowReplies(!showReplies)}
+              className="ml-auto flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium transition-all"
             >
-              <Send size={15} />
+              {showReplies ? "Amaga" : `Veure ${post.replyCount} respostes`}
+              <ChevronDown
+                size={14}
+                className={`transition-transform ${showReplies ? "rotate-180" : ""}`}
+              />
             </button>
-          </div>
+          )}
         </div>
-      )}
 
-      {showReplies && <RepliesList postId={post.uid} />}
-    </article>
+        {showReplyInput && (
+          <div className="mt-3 flex gap-2 items-center animate-in slide-in-from-top-2 duration-200">
+             {user && <AvatarDisplay user={user} className="w-8 h-8 flex-shrink-0"/>}
+            <div className="flex-1 flex gap-2 bg-muted/50 border border-border/70 rounded-2xl px-3 py-2">
+              <input
+                type="text"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddReply()}
+                placeholder="Escriu la teva resposta..."
+                className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder-muted-foreground"
+                autoFocus
+              />
+              <button
+                onClick={handleAddReply}
+                disabled={!replyText.trim()}
+                className="text-primary hover:text-primary/80 disabled:opacity-30 transition-all"
+              >
+                <Send size={15} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showReplies && <RepliesList postId={post.uid} />}
+      </article>
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>¿Seguro que quieres eliminarlo?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      Esta acción no se puede deshacer. La publicación se eliminará permanentemente.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDelete(post.uid)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -527,7 +533,7 @@ export default function DiscussionsPage() {
               <div
                 key={i}
                 className="bg-background/70 rounded-3xl p-5 animate-pulse"
-                style={{ animationDelay: `${i * 100}ms` }}
+                style={{ animationDelay: `${''}${i * 100}ms` }}
               >
                 <div className="flex gap-3 mb-3">
                   <div className="w-10 h-10 rounded-full bg-muted" />
@@ -564,3 +570,5 @@ export default function DiscussionsPage() {
     </div>
   );
 }
+
+    
