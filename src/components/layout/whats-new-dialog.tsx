@@ -12,48 +12,53 @@ import {
     DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { PartyPopper, Lightbulb, Rocket, GraduationCap, Monitor, MailCheck, CheckCircle, BrainCircuit, Globe, ShieldCheck } from "lucide-react";
+import { PartyPopper, Lightbulb, Rocket, GraduationCap, Monitor, Users, Coffee, Wrench, Palette, BrainCircuit, Sparkles } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { ScrollArea } from "../ui/scroll-area";
 
 const recentUpdates = [
-    { 
-        icon: ShieldCheck, 
-        text: "Nuevo sistema de administradores para que los delegados puedan gestionar sus clases directamente desde la app.",
-        color: "text-blue-500"
-    },
-    { 
-        icon: Globe, 
-        text: "Ampliación de la infraestructura para dar soporte a múltiples centros educativos y escalabilidad a nivel mundial.",
+    {
+        icon: Users,
+        text: "Foro reconstruido: una nueva experiencia con tópicos, filtros y un diseño más limpio para mejorar la interacción.",
         color: "text-indigo-500"
     },
-    { 
-        icon: BrainCircuit, 
-        text: "Mejoras fundamentales en el Modo Estudio, incluyendo música de Spotify, sonidos ambientales y una interfaz renovada.",
-        color: "text-teal-500"
+    {
+        icon: Coffee,
+        text: "Modo 'Break': ahora puedes tomarte un descanso cronometrado durante tus sesiones de estudio para recargar energías.",
+        color: "text-orange-500"
     },
-    { 
-        icon: ShieldCheck, 
-        text: "Actualización de la política de privacidad (RGPD) para mayor transparencia.",
-        color: "text-green-500"
+    {
+        icon: Wrench,
+        text: "Solución de bugs y mejora de la IA: hemos corregido errores en los paneles de inicio y estabilizado la IA temporalmente.",
+        color: "text-blue-500"
+    },
+    {
+        icon: Palette,
+        text: "Personalización de perfil mejorada: un nuevo sistema para elegir y personalizar tu avatar, incluyendo avatares de DiceBear.",
+        color: "text-pink-500"
     },
 ];
 
 const futureFeatures = [
-    { 
-        icon: GraduationCap, 
-        text: "Modo Profesorado: Herramientas exclusivas para que los educadores gestionen sus clases de manera más eficaz.",
-        color: "text-primary"
-    },
-    { 
-        icon: Monitor, 
+    {
+        icon: Monitor,
         text: "Dynamic Class para Escritorio: Una nueva interfaz completamente adaptada para ordenadores y pantallas horizontales.",
         color: "text-pink-500"
     },
     { 
-        icon: MailCheck, 
-        text: "Resúmenes Semanales: Recibe en tu correo un informe de tu rendimiento y las tareas de la próxima semana.",
-        color: "text-red-500"
+        icon: BrainCircuit, 
+        text: "IA tipo NotebookLM: podrás subir tus propios apuntes y chatear con una IA que solo usará tu información para responder.",
+        color: "text-teal-500"
+    },
+    { 
+        icon: GraduationCap, 
+        text: "Lanzamiento de los Nuevos Cursos: la biblioteca de 'Dynamic Learning' se activará con decenas de cursos interactivos.",
+        color: "text-primary"
+    },
+    { 
+        icon: Sparkles, 
+        text: "Personalización de avatares: más opciones para personalizar los avatares aleatorios con nuevos estilos y colores.",
+        color: "text-purple-500"
     },
 ];
 
