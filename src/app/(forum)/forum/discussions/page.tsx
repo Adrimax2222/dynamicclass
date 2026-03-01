@@ -55,10 +55,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 // ─────────────────────────────────────────────
-// TYPES
+// TYPES & CONSTANTS
 // ─────────────────────────────────────────────
 
 interface BasePost {
@@ -71,6 +72,7 @@ interface BasePost {
   likedBy: string[];
   parentId?: string;
   replyCount?: number;
+  topic: string;
 }
 
 interface Post extends BasePost {
@@ -82,6 +84,19 @@ interface Reply extends BasePost {
 }
 
 type Role = "alumne" | "moderador";
+
+const TOPICS = [
+  { key: 'Tots', label: 'Tots', icon: '✦' },
+  { key: 'Dubtes', label: 'Dubtes', icon: '❓' },
+  { key: 'Exàmens', label: 'Exàmens', icon: '📝' },
+  { key: 'Recursos', label: 'Recursos', icon: '📚' },
+  { key: 'Cafeteria', label: 'Cafeteria', icon: '☕' },
+  { key: 'Intel·ligència Artificial', label: 'IA', icon: '🤖' },
+  { key: 'Política', label: 'Política', icon: '🏛️' },
+  { key: 'Notícies', label: 'Notícies', icon: '📰' },
+  { key: 'General', label: 'General', icon: '💬' },
+];
+
 
 // ─────────────────────────────────────────────
 // HELPERS
@@ -383,6 +398,7 @@ function PostCard({ post, onDelete, onUpdate, onAddReply, onLikeReply, onDeleteR
 
   const likedByMe = user ? post.likedBy.includes(user.uid) : false;
   const canManage = user?.uid === post.authorId || user?.role === 'admin';
+  const topicConfig = TOPICS.find(t => t.key === post.topic);
 
   const handleLike = async () => {
     if (!user || !firestore) return;
@@ -399,6 +415,13 @@ function PostCard({ post, onDelete, onUpdate, onAddReply, onLikeReply, onDeleteR
         setIsSaving(false);
     }
     setIsEditing(false);
+  };
+  
+  const handleReplySubmit = async () => {
+      if (!replyText.trim()) return;
+      await onAddReply(replyText);
+      setReplyText("");
+      setShowReplyInput(false);
   };
 
   return (
@@ -420,25 +443,32 @@ function PostCard({ post, onDelete, onUpdate, onAddReply, onLikeReply, onDeleteR
               <span className="text-xs text-muted-foreground">{formatTimeAgo(post.createdAt)}</span>
             </div>
           </div>
-          {canManage && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                  <button className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted">
-                    <MoreHorizontal size={16} />
-                  </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={() => setIsEditing(true)}>
-                      <Edit className="mr-2 h-4 w-4"/>
-                      <span>Editar</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setIsDeleteAlertOpen(true)} className="text-destructive focus:text-destructive">
-                      <Trash2 className="mr-2 h-4 w-4"/>
-                      <span>Eliminar</span>
-                  </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <div className="flex items-center gap-2">
+            {topicConfig && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                {topicConfig.icon} {topicConfig.label}
+              </span>
+            )}
+            {canManage && (
+                <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <button className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted">
+                        <MoreHorizontal size={16} />
+                    </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => setIsEditing(true)}>
+                        <Edit className="mr-2 h-4 w-4"/>
+                        <span>Editar</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsDeleteAlertOpen(true)} className="text-destructive focus:text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4"/>
+                        <span>Eliminar</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+                </DropdownMenu>
+            )}
+          </div>
         </div>
 
           {isEditing ? (
@@ -510,13 +540,13 @@ function PostCard({ post, onDelete, onUpdate, onAddReply, onLikeReply, onDeleteR
                 type="text"
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && onAddReply(replyText)}
+                onKeyDown={(e) => e.key === "Enter" && handleReplySubmit()}
                 placeholder="Escriu la teva resposta..."
                 className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder-muted-foreground"
                 autoFocus
               />
               <button
-                onClick={() => onAddReply(replyText)}
+                onClick={handleReplySubmit}
                 disabled={!replyText.trim()}
                 className="text-primary hover:text-primary/80 disabled:opacity-30 transition-all"
               >
@@ -526,7 +556,7 @@ function PostCard({ post, onDelete, onUpdate, onAddReply, onLikeReply, onDeleteR
           </div>
         )}
 
-        {showReplies && <RepliesList postId={post.uid} onAddReply={onAddReply} onLikeReply={onLikeReply} onDeleteReply={onDeleteReply} onUpdateReply={onUpdateReply} />}
+        {showReplies && <RepliesList postId={post.uid} onAddReply={(content, parentId) => onAddReply(content, parentId)} onLikeReply={(replyId) => onLikeReply(replyId)} onDeleteReply={onDeleteReply} onUpdateReply={onUpdateReply} />}
       </article>
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
           <AlertDialogContent>
@@ -554,6 +584,8 @@ export default function DiscussionsPage() {
   const firestore = useFirestore();
   const [newPostText, setNewPostText] = useState("");
   const [isPosting, setIsPosting] = useState(false);
+  const [filter, setFilter] = useState('Tots');
+  const [newPostTopic, setNewPostTopic] = useState('');
 
   const postsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -561,9 +593,15 @@ export default function DiscussionsPage() {
   }, [firestore]);
 
   const { data: posts, isLoading } = useCollection<Post>(postsQuery);
+  
+  const filteredPosts = useMemo(() => {
+      if (!posts) return [];
+      if (filter === 'Tots') return posts;
+      return posts.filter(post => post.topic === filter);
+  }, [posts, filter]);
 
   const handleNewPost = async () => {
-    if (!newPostText.trim() || !user || !firestore) return;
+    if (!newPostText.trim() || !user || !firestore || !newPostTopic) return;
     setIsPosting(true);
     
     const newPost: Omit<Post, 'uid'> = {
@@ -572,6 +610,7 @@ export default function DiscussionsPage() {
         authorAvatar: user.avatar,
         authorRole: user.role,
         content: newPostText,
+        topic: newPostTopic,
         createdAt: serverTimestamp() as Timestamp,
         likedBy: [],
         replyCount: 0,
@@ -580,6 +619,7 @@ export default function DiscussionsPage() {
     try {
         await addDoc(collection(firestore, 'discussions'), newPost);
         setNewPostText("");
+        setNewPostTopic("");
     } catch(err) {
         console.error("Error creating post:", err);
     } finally {
@@ -607,15 +647,8 @@ export default function DiscussionsPage() {
       }
   };
   
-  const handleAddReply = async (content: string, parentId?: string) => {
-    if (!user || !firestore || !content.trim()) return;
-
-    // This seems wrong, PostCard should not handle this, it should be passed from the parent list
-    // For now, I'll assume the postId is somehow available or passed down.
-    // This is a placeholder as the logic should be handled where the post id is known.
-    const postId = (posts && posts.length > 0) ? posts[0].uid : ''; // This is not robust
-    if (!postId) return;
-
+  const handleAddReply = async (content: string, parentId?: string, postId?: string) => {
+    if (!user || !firestore || !content.trim() || !postId) return;
 
     const newReplyData: Omit<Reply, 'uid'> = {
         authorId: user.uid,
@@ -626,6 +659,7 @@ export default function DiscussionsPage() {
         createdAt: serverTimestamp() as Timestamp,
         likedBy: [],
         replyCount: 0,
+        topic: '', // Topics are for posts, not replies
         ...(parentId && { parentId }),
     };
 
@@ -699,7 +733,7 @@ export default function DiscussionsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/30 to-purple-50/20 dark:from-slate-900/50 dark:via-violet-900/20 dark:to-purple-900/20">
       <div className="max-w-2xl mx-auto px-4 py-8 pb-24">
-        <div className="mb-6 text-center">
+        <div className="mb-4 text-center">
           <h1 className="text-3xl font-extrabold text-foreground tracking-tight mb-1">
             Comunitat 💬
           </h1>
@@ -708,34 +742,58 @@ export default function DiscussionsPage() {
           </p>
         </div>
 
+        <div className="flex gap-2 overflow-x-auto pb-4 mb-4">
+            {TOPICS.map(topic => (
+                <button
+                    key={topic.key}
+                    onClick={() => setFilter(topic.key)}
+                    className={cn(
+                        "flex-shrink-0 flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full transition-all duration-200",
+                        filter === topic.key
+                            ? "bg-violet-600 text-white shadow-md"
+                            : "bg-background/80 text-muted-foreground hover:bg-muted/80"
+                    )}
+                >
+                    <span>{topic.icon}</span>
+                    <span>{topic.label}</span>
+                </button>
+            ))}
+        </div>
+
         <div className="mb-5 flex items-start gap-3 bg-amber-50/90 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-500/30 rounded-2xl px-4 py-3 shadow-sm">
           <span className="text-lg leading-none mt-0.5">⚠️</span>
           <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-            <strong>Espai Moderat:</strong> Per garantir un ambient d'aprenentatge
-            segur, tots els missatges són revisats. Respecta les normes de la
-            comunitat.
+            <strong>El contingut publicat serà revisat.</strong>
           </p>
         </div>
 
         <div className="mb-6 bg-background/80 backdrop-blur-md border border-border/70 rounded-3xl p-4 shadow-sm">
           <div className="flex gap-3 items-start">
             {user && <AvatarDisplay user={user} className="w-10 h-10 flex-shrink-0" />}
-            <textarea
+            <Textarea
               value={newPostText}
               onChange={(e) => setNewPostText(e.target.value)}
               placeholder="Inicia una nova conversa amb la comunitat..."
               rows={3}
-              className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder-muted-foreground outline-none leading-relaxed"
+              className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder-muted-foreground outline-none leading-relaxed border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
             />
           </div>
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Sparkles size={12} className="text-primary" />
-              El contingut publicat serà revisat.
-            </span>
+             <Select value={newPostTopic} onValueChange={setNewPostTopic}>
+                <SelectTrigger className="w-[180px] h-9 text-xs">
+                    <SelectValue placeholder="Selecciona un tòpic..." />
+                </SelectTrigger>
+                <SelectContent>
+                    {TOPICS.filter(t => t.key !== 'Tots').map(topic => (
+                        <SelectItem key={topic.key} value={topic.key} className="text-xs">
+                           <span className="mr-2">{topic.icon}</span> {topic.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
             <Button
               onClick={handleNewPost}
-              disabled={!newPostText.trim() || isPosting}
+              disabled={!newPostText.trim() || !newPostTopic || isPosting}
               className="flex items-center gap-2 bg-primary hover:bg-primary/90 disabled:opacity-40 text-primary-foreground text-sm font-semibold px-4 py-2 rounded-2xl transition-all active:scale-95 shadow-sm shadow-primary/30"
             >
               {isPosting ? (
@@ -770,20 +828,21 @@ export default function DiscussionsPage() {
               </div>
             ))}
           </div>
-        ) : posts.length === 0 ? (
+        ) : filteredPosts.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <MessageCircle size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Sigues el primer en iniciar una conversa!</p>
+            <p className="text-sm font-semibold">No hi ha publicacions en aquest tòpic.</p>
+            <p className="text-xs">Sigues el primer en iniciar una conversa!</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {posts.map((post) => (
+            {filteredPosts.map((post) => (
               <PostCard
                 key={post.uid}
                 post={post}
                 onDelete={handleDeletePost}
                 onUpdate={handleUpdatePost}
-                onAddReply={(content, parentId) => handleAddReply(content, parentId)}
+                onAddReply={(content, parentId) => handleAddReply(content, parentId, post.uid)}
                 onLikeReply={(replyId) => handleLikeReply(post.uid, replyId)}
                 onDeleteReply={(postId, reply) => handleDeleteReply(postId, reply)}
                 onUpdateReply={(postId, replyId, content) => handleUpdateReply(postId, replyId, content)}
@@ -795,5 +854,7 @@ export default function DiscussionsPage() {
     </div>
   );
 }
+
+    
 
     
