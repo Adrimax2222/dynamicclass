@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -7,7 +8,7 @@ import { collection, query, orderBy, addDoc, serverTimestamp, type Timestamp, do
 import type { User, BugReport } from "@/lib/types";
 import { Zap, Plus, Edit, Trash2, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -18,7 +19,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { Loader2 } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
@@ -127,7 +128,7 @@ export default function RecursosDCPage() {
 const BugReportCard = ({ report, isAuthor, onSave, onDelete, user }: { report: BugReport, isAuthor: boolean, onSave: any, onDelete: any, user: User | null }) => {
     return (
         <div className="break-inside-avoid">
-            <Card className="hover:shadow-lg transition-shadow" style={{ borderTop: `4px solid ${report.color || 'transparent'}`}}>
+            <Card className="hover:shadow-lg transition-shadow" style={{ borderTop: `44px solid ${report.color || 'transparent'}`}}>
                 <CardHeader className="flex-row items-start gap-3 space-y-0">
                     <AvatarDisplay 
                         user={{
@@ -194,7 +195,7 @@ function NewBugReportDialog({ onSave, user, report, children }: { onSave: (data:
             setTitle(report?.title || '');
             setDescription(report?.description || '');
             setIsAnonymous(report?.isAnonymous || false);
-            setColor(report?.color || noteColors[Math.floor(Math.random() * noteColors.length)]);
+            setColor(report?.color || noteColors[0]);
         }
     }, [isOpen, report]);
 
