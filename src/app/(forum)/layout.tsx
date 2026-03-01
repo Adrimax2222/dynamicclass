@@ -16,7 +16,9 @@ import {
     Menu,
     X,
     LayoutDashboard,
-    Wrench
+    Wrench,
+    ChevronLeft,
+    ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,8 +45,9 @@ export default function ForumLayout({
   const router = useRouter();
   const { user } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
 
-  const SidebarContent = () => (
+  const SidebarContent = ({ onHide }: { onHide?: () => void; }) => (
     <>
         <div className="p-4 border-b h-16 flex items-center justify-between">
             <Link href="/forum" className="flex items-center gap-3">
@@ -76,8 +79,13 @@ export default function ForumLayout({
             );
         })}
         </div>
-        <div className="p-2 border-t space-y-2">
-            <Button variant="outline" className="w-full justify-start" onClick={() => router.push('/home')}>
+        <div className="p-2 border-t space-y-2 mt-auto">
+            {onHide && (
+              <Button variant="outline" className="w-full justify-start hidden md:flex" onClick={onHide}>
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Ocultar
+              </Button>
+            )}
+            <Button variant="ghost" className="w-full justify-start" onClick={() => router.push('/home')}>
                 <ArrowLeft className="mr-2 h-4 w-4" /> Tornar a l'inici
             </Button>
             {user && (
@@ -96,9 +104,11 @@ export default function ForumLayout({
   return (
     <div className="flex w-full min-h-screen bg-muted/40">
         {/* Sidebar for Desktop */}
-        <nav className="hidden md:flex flex-col w-60 border-r bg-background">
-          <SidebarContent />
-        </nav>
+        {isDesktopSidebarOpen && (
+            <nav className="hidden md:flex flex-col w-60 border-r bg-background">
+                <SidebarContent onHide={() => setIsDesktopSidebarOpen(false)} />
+            </nav>
+        )}
 
         {/* Sidebar for Mobile (Drawer) */}
         {isSidebarOpen && (
@@ -109,7 +119,14 @@ export default function ForumLayout({
             </div>
         )}
 
-        <div className="flex flex-col flex-1 h-screen">
+        <div className="flex flex-col flex-1 h-screen relative">
+            {!isDesktopSidebarOpen && (
+              <div className="hidden md:block absolute top-5 left-4 z-30">
+                  <Button size="icon" variant="outline" onClick={() => setIsDesktopSidebarOpen(true)}>
+                      <ChevronRight className="h-5 w-5" />
+                  </Button>
+              </div>
+            )}
             {/* Top Header for Mobile */}
             <header className="md:hidden flex items-center justify-between px-2 border-b h-16 bg-background/95 backdrop-blur-sm sticky top-0 z-30">
                 <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)}>
