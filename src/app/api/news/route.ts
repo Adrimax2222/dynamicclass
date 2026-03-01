@@ -1,16 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-interface Rss2JsonItem {
-    title: string;
-    link: string;
-    pubDate: string;
-    enclosure: {
-        link: string;
-        [key: string]: any;
-    };
-    thumbnail: string;
-}
-
 interface NewsItem {
     title: string;
     link: string;
@@ -26,39 +15,64 @@ const FEED_URLS: Record<string, string> = {
     'tarragona': 'https://www.ccma.cat/multimedia/rss/324/tarragona/',
 };
 
+// Helper to extract content from an XML tag
+function extractContent(xml: string, tag: string): string {
+    const match = xml.match(new RegExp(`<${tag}>(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?<\\/${tag}>`));
+    return match ? match[1].trim() : '';
+}
+
+// Helper to extract an attribute from a tag
+function extractAttribute(xml: string, tag: string, attr: string): string {
+    const match = xml.match(new RegExp(`<${tag}[^>]*${attr}="([^"]*)"`));
+    return match ? match[1] : '';
+}
+
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const territori = searchParams.get('territori') || 'catala';
-
     const rssUrl = FEED_URLS[territori] || FEED_URLS['catala'];
-    const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+    const apiUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
 
     try {
         const response = await fetch(apiUrl, {
-            next: { revalidate: 3600 } // Cache for 1 hour
+            next: { revalidate: 3600 } // Revalidate cada hora
         });
 
         if (!response.ok) {
-            throw new Error(`Error de xarxa: ${response.status}`);
+            throw new Error(`Error de xarxa en contactar allorigins: ${response.status}`);
         }
 
         const data = await response.json();
-
-        if (data.status !== 'ok') {
-            throw new Error('La API de notícies ha retornat un error.');
+        const text = data.contents;
+        
+        if (!text) {
+             throw new Error('No s\'ha rebut contingut del servidor de notícies.');
         }
 
-        const newsItems: NewsItem[] = data.items.slice(0, 12).map((item: Rss2JsonItem) => ({
-            title: item.title,
-            link: item.link,
-            pubDate: item.pubDate,
-            imageUrl: item.enclosure?.link || item.thumbnail || '',
-        }));
+        const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+        const items = text.match(itemRegex) || [];
+
+        if (items.length === 0) {
+            return NextResponse.json([]);
+        }
+
+        const newsItems: NewsItem[] = items.slice(0, 12).map((itemXml: string) => {
+            const title = extractContent(itemXml, 'title');
+            const link = extractContent(itemXml, 'link');
+            const pubDate = extractContent(itemXml, 'pubDate');
+            
+            const imageUrl = extractAttribute(itemXml, 'enclosure', 'url') || 
+                             extractAttribute(itemXml, 'media:content', 'url') || 
+                             '';
+
+            return { title, link, pubDate, imageUrl };
+        });
 
         return NextResponse.json(newsItems);
 
-    } catch (error: any) {
-        console.error("Error a l'API de notícies:", error);
-        return NextResponse.json({ error: error.message || 'Error de connexió amb el servidor de notícies.' }, { status: 500 });
+    } catch (error) {
+        console.error("Error processant el feed RSS:", error);
+        // En cas d'error, retorna una llista buida per no trencar el client.
+        return NextResponse.json([]);
     }
 }
