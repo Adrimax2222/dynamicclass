@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { ViewContainer } from '@/components/layout/view-container';
 
 // Constantes del motor del juego
 const GRAVITY = 0.5;
@@ -30,7 +31,7 @@ type GameState = {
   framesUntilNextPipe: number;
 };
 
-export default function FlappyBirdGame() {
+const FlappyBirdGame = ({ onBack }: { onBack: () => void }) => {
   const [gameState, setGameState] = useState<GameState>({
     birdY: GAME_HEIGHT / 2,
     velocity: 0,
@@ -170,117 +171,120 @@ export default function FlappyBirdGame() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center w-full w-full p-4 font-sans select-none touch-none">
-      
-      {/* Contenedor Principal del Juego */}
-      <div
-        className="relative overflow-hidden bg-sky-300 shadow-2xl rounded-lg border-4 border-slate-800 cursor-pointer"
-        style={{ width: `${GAME_WIDTH}px`, height: `${GAME_HEIGHT}px` }}
-        onClick={flap}
-        onTouchStart={(e) => {
-          e.preventDefault();
-          flap();
-        }}
-      >
+    <ViewContainer title="Flappy BOT" onBack={onBack}>
+        <div className="flex flex-col items-center justify-center w-full w-full p-4 font-sans select-none touch-none">
         
-        {/* UI: Puntuación en tiempo real */}
-        <div className="absolute top-6 w-full text-center z-20 pointer-events-none">
-          <span className="text-5xl font-black text-white" style={{ WebkitTextStroke: "2px #1e293b" }}>
-            {gameState.score}
-          </span>
-        </div>
-
-        {/* El Pájaro */}
+        {/* Contenedor Principal del Juego */}
         <div
-          className="absolute bg-yellow-400 rounded-full border-2 border-slate-800 z-10 transition-transform duration-75"
-          style={{
-            width: `${BIRD_SIZE}px`,
-            height: `${BIRD_SIZE}px`,
-            left: `${BIRD_X}px`,
-            top: `${gameState.birdY}px`,
-            // Rota el pájaro dependiendo de su velocidad vertical (da un toque visual excelente)
-            transform: `rotate(${Math.min(Math.max(gameState.velocity * 4, -25), 90)}deg)`,
-          }}
+            className="relative overflow-hidden bg-sky-300 shadow-2xl rounded-lg border-4 border-slate-800 cursor-pointer"
+            style={{ width: `${GAME_WIDTH}px`, height: `${GAME_HEIGHT}px` }}
+            onClick={flap}
+            onTouchStart={(e) => {
+            e.preventDefault();
+            flap();
+            }}
         >
-          {/* Ojo del pájaro */}
-          <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full">
-            <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-black rounded-full" />
-          </div>
-          {/* Pico del pájaro */}
-          <div className="absolute top-2.5 -right-2 w-3 h-2 bg-orange-500 rounded-r-full border border-slate-800" />
+            
+            {/* UI: Puntuación en tiempo real */}
+            <div className="absolute top-6 w-full text-center z-20 pointer-events-none">
+            <span className="text-5xl font-black text-white" style={{ WebkitTextStroke: "2px #1e293b" }}>
+                {gameState.score}
+            </span>
+            </div>
+
+            {/* El Pájaro */}
+            <div
+            className="absolute bg-yellow-400 rounded-full border-2 border-slate-800 z-10 transition-transform duration-75"
+            style={{
+                width: `${BIRD_SIZE}px`,
+                height: `${BIRD_SIZE}px`,
+                left: `${BIRD_X}px`,
+                top: `${gameState.birdY}px`,
+                // Rota el pájaro dependiendo de su velocidad vertical (da un toque visual excelente)
+                transform: `rotate(${Math.min(Math.max(gameState.velocity * 4, -25), 90)}deg)`,
+            }}
+            >
+            {/* Ojo del pájaro */}
+            <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full">
+                <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-black rounded-full" />
+            </div>
+            {/* Pico del pájaro */}
+            <div className="absolute top-2.5 -right-2 w-3 h-2 bg-orange-500 rounded-r-full border border-slate-800" />
+            </div>
+
+            {/* Las Tuberías */}
+            {gameState.pipes.map((pipe) => (
+            <React.Fragment key={pipe.id}>
+                {/* Tubería Superior */}
+                <div
+                className="absolute bg-green-500 border-2 border-green-800 rounded-b-sm"
+                style={{
+                    width: `${PIPE_WIDTH}px`,
+                    height: `${pipe.topHeight}px`,
+                    left: `${pipe.x}px`,
+                    top: 0,
+                }}
+                >
+                {/* Reborde inferior de la tubería (para darle el look clásico de Mario/Flappy) */}
+                <div className="absolute bottom-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
+                </div>
+
+                {/* Tubería Inferior */}
+                <div
+                className="absolute bg-green-500 border-2 border-green-800 rounded-t-sm"
+                style={{
+                    width: `${PIPE_WIDTH}px`,
+                    height: `${GAME_HEIGHT - pipe.topHeight - GAP_SIZE}px`,
+                    left: `${pipe.x}px`,
+                    top: `${pipe.topHeight + GAP_SIZE}px`,
+                }}
+                >
+                {/* Reborde superior de la tubería */}
+                <div className="absolute top-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
+                </div>
+            </React.Fragment>
+            ))}
+
+            {/* Suelo (Visual) */}
+            <div className="absolute bottom-0 w-full h-4 bg-amber-200 border-t-4 border-amber-800 z-10" />
+
+            {/* Overlays de Estado (Start / Game Over) */}
+            {gameState.status === "idle" && (
+            <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-center z-30 pointer-events-none">
+                <div className="bg-white px-6 py-3 rounded shadow-lg text-slate-800 font-bold text-lg animate-bounce">
+                Toca para volar
+                </div>
+            </div>
+            )}
+
+            {gameState.status === "gameover" && (
+            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-30 backdrop-blur-sm">
+                <div className="bg-[#ded895] border-4 border-[#543847] p-6 rounded-lg shadow-2xl text-center transform scale-100 transition-transform">
+                <h2 className="text-4xl font-black text-white mb-2" style={{ WebkitTextStroke: "1px #543847" }}>
+                    GAME OVER
+                </h2>
+                <div className="bg-[#bdae58] border-2 border-[#543847] rounded p-4 mb-4 text-center">
+                    <p className="text-[#543847] font-bold uppercase text-sm mb-1">Score</p>
+                    <p className="text-3xl font-black text-white" style={{ WebkitTextStroke: "1px #543847" }}>
+                    {gameState.score}
+                    </p>
+                </div>
+                <button
+                    onClick={flap}
+                    className="bg-orange-500 border-2 border-white hover:bg-orange-600 text-white font-black uppercase tracking-wider py-2 px-6 rounded-full shadow-lg active:scale-95 transition-all"
+                >
+                    Reintentar
+                </button>
+                </div>
+            </div>
+            )}
         </div>
-
-        {/* Las Tuberías */}
-        {gameState.pipes.map((pipe) => (
-          <React.Fragment key={pipe.id}>
-            {/* Tubería Superior */}
-            <div
-              className="absolute bg-green-500 border-2 border-green-800 rounded-b-sm"
-              style={{
-                width: `${PIPE_WIDTH}px`,
-                height: `${pipe.topHeight}px`,
-                left: `${pipe.x}px`,
-                top: 0,
-              }}
-            >
-              {/* Reborde inferior de la tubería (para darle el look clásico de Mario/Flappy) */}
-              <div className="absolute bottom-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
-            </div>
-
-            {/* Tubería Inferior */}
-            <div
-              className="absolute bg-green-500 border-2 border-green-800 rounded-t-sm"
-              style={{
-                width: `${PIPE_WIDTH}px`,
-                height: `${GAME_HEIGHT - pipe.topHeight - GAP_SIZE}px`,
-                left: `${pipe.x}px`,
-                top: `${pipe.topHeight + GAP_SIZE}px`,
-              }}
-            >
-              {/* Reborde superior de la tubería */}
-              <div className="absolute top-0 -left-1 w-[calc(100%+8px)] h-6 bg-green-500 border-2 border-green-800" />
-            </div>
-          </React.Fragment>
-        ))}
-
-        {/* Suelo (Visual) */}
-        <div className="absolute bottom-0 w-full h-4 bg-amber-200 border-t-4 border-amber-800 z-10" />
-
-        {/* Overlays de Estado (Start / Game Over) */}
-        {gameState.status === "idle" && (
-          <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-center z-30 pointer-events-none">
-            <div className="bg-white px-6 py-3 rounded shadow-lg text-slate-800 font-bold text-lg animate-bounce">
-              Toca para volar
-            </div>
-          </div>
-        )}
-
-        {gameState.status === "gameover" && (
-          <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-30 backdrop-blur-sm">
-            <div className="bg-[#ded895] border-4 border-[#543847] p-6 rounded-lg shadow-2xl text-center transform scale-100 transition-transform">
-              <h2 className="text-4xl font-black text-white mb-2" style={{ WebkitTextStroke: "1px #543847" }}>
-                GAME OVER
-              </h2>
-              <div className="bg-[#bdae58] border-2 border-[#543847] rounded p-4 mb-4 text-center">
-                <p className="text-[#543847] font-bold uppercase text-sm mb-1">Score</p>
-                <p className="text-3xl font-black text-white" style={{ WebkitTextStroke: "1px #543847" }}>
-                  {gameState.score}
-                </p>
-              </div>
-              <button
-                onClick={flap}
-                className="bg-orange-500 border-2 border-white hover:bg-orange-600 text-white font-black uppercase tracking-wider py-2 px-6 rounded-full shadow-lg active:scale-95 transition-all"
-              >
-                Reintentar
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-      
-      <p className="mt-4 text-xs text-slate-500 font-mono">
-        Pulsa Espacio o toca la pantalla
-      </p>
-    </div>
+        
+        <p className="mt-4 text-xs text-slate-500 font-mono">
+            Pulsa Espacio o toca la pantalla
+        </p>
+        </div>
+    </ViewContainer>
   );
-}
+};
+export default FlappyBirdGame;
