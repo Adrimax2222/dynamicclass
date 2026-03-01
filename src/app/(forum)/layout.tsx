@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Users, MessageSquare, Star, GraduationCap, Wrench, HelpCircle, ArrowLeft, BookCopy, Wand2, Eye, EyeOff } from "lucide-react";
+import { Users, MessageSquare, Star, GraduationCap, Wrench, HelpCircle, ArrowLeft, BookCopy, Wand2, Eye, EyeOff, Newspaper } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
 
 const navItems = [
   { href: "/forum/community", label: "Comunidad", icon: Users },
+  { href: "/forum/actualitat", label: "Actualitat", icon: Newspaper },
   { href: "/forum/ia", label: "IA", icon: Wand2 },
   { href: "/forum/valoracion", label: "Valoración", icon: Star },
   { href: "/forum/discussions", label: "Discusiones", icon: MessageSquare },
