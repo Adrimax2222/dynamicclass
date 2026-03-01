@@ -1,108 +1,105 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { GraduationCap, Wand2, User, HelpCircle, BookCopy, MessageSquare, Users, Zap } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { 
+    Users, 
+    Newspaper, 
+    MessageSquare, 
+    BookCopy, 
+    Star, 
+    Wrench, 
+    Sparkles, 
+    HelpCircle 
+} from "lucide-react";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 
-export default function AboutForumPage() {
+const communitySections = [
+    {
+        href: "/forum/actualitat",
+        icon: Newspaper,
+        title: "Actualitat",
+        description: "Notícies de Catalunya en temps real per estar sempre informat.",
+        isWip: false,
+    },
+    {
+        href: "/forum/discussions",
+        icon: MessageSquare,
+        title: "Discussions",
+        description: "Inicia debats, fes preguntes i participa en converses sobre qualsevol tema.",
+        isWip: true,
+    },
+    {
+        href: "/forum/resources",
+        icon: BookCopy,
+        title: "Recursos",
+        description: "Accedeix a la guia completa de recursos públics per a estudiants de la Generalitat.",
+        isWip: false,
+    },
+    {
+        href: "/forum/valoracion",
+        icon: Star,
+        title: "Valoracions",
+        description: "Llegeix les opinions d'altres usuaris i comparteix la teva experiència amb l'app.",
+        isWip: false,
+    },
+    {
+        href: "/forum/recursos-dc",
+        icon: Wrench,
+        title: "Dynamic Class",
+        description: "Reporta errors, suggereix millores i ajuda'ns a construir una millor aplicació per a tots.",
+        isWip: false,
+    },
+    {
+        href: "/forum/ia",
+        icon: Sparkles,
+        title: "Eines IA",
+        description: "Explora el directori més complet d'eines d'Intel·ligència Artificial gratuïtes.",
+        isWip: false,
+    },
+    {
+        href: "/forum/ayuda",
+        icon: HelpCircle,
+        title: "Ajuda",
+        description: "Troba respostes a les teves preguntes o contacta directament amb el nostre equip de suport.",
+        isWip: false,
+    },
+];
+
+export default function CommunityPage() {
     return (
         <div className="p-4 sm:p-6 md:p-8 space-y-8">
             <div className="text-center space-y-2">
                 <Users className="mx-auto h-12 w-12 text-primary" />
-                <h1 className="text-3xl font-bold font-headline tracking-tight">Bienvenido al Foro de la Comunidad</h1>
-                <p className="text-muted-foreground max-w-2xl mx-auto">Un espacio para conectar, aprender y compartir con otros estudiantes de Dynamic Class.</p>
+                <h1 className="text-3xl font-bold font-headline tracking-tight">Fòrum de la Comunitat</h1>
+                <p className="text-muted-foreground max-w-2xl mx-auto">Un espai per connectar, aprendre i compartir amb altres estudiants de Dynamic Class.</p>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>¿Qué es el Foro de la Comunidad?</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 text-muted-foreground">
-                    <p>
-                        El Foro de la Comunidad es un espacio seguro y moderado diseñado para que puedas interactuar con otros estudiantes. Aquí podrás resolver dudas, compartir recursos de estudio y colaborar en proyectos.
-                    </p>
-                    <p>
-                        Creemos que el aprendizaje es más potente cuando se comparte. Este foro es tu lugar para crecer junto a la comunidad de Dynamic Class.
-                    </p>
-                </CardContent>
-            </Card>
-
-            <div className="grid md:grid-cols-2 gap-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Zap className="h-5 w-5 text-green-500" />
-                           Normas de la Comunidad
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-start gap-3">
-                             <User className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-                             <div>
-                                <h4 className="font-semibold text-foreground">Sé Respetuoso</h4>
-                                <p className="text-xs text-muted-foreground">Trata a todos con amabilidad. No se tolerará ningún tipo de acoso o discurso de odio.</p>
-                             </div>
-                        </div>
-                         <div className="flex items-start gap-3">
-                             <GraduationCap className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-                             <div>
-                                <h4 className="font-semibold text-foreground">Aporta y Ayuda</h4>
-                                <p className="text-xs text-muted-foreground">Comparte tus conocimientos y ayuda a otros cuando puedas. Juntos aprendemos más.</p>
-                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Wand2 className="h-5 w-5 text-purple-500" />
-                            Secciones Principales
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-start gap-3">
-                             <MessageSquare className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-                             <div>
-                                <h4 className="font-semibold text-foreground">Discusiones</h4>
-                                <p className="text-xs text-muted-foreground">Inicia debates, haz preguntas y participa en conversaciones sobre cualquier tema académico o de interés.</p>
-                             </div>
-                        </div>
-                         <div className="flex items-start gap-3">
-                             <BookCopy className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-                             <div>
-                                <h4 className="font-semibold text-foreground">Recursos</h4>
-                                <p className="text-xs text-muted-foreground">Comparte y encuentra apuntes, resúmenes, enlaces útiles y otros materiales de estudio.</p>
-                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {communitySections.map((section) => {
+                    const Icon = section.icon;
+                    return (
+                        <Link href={section.href} key={section.title} className="flex">
+                            <Card className="w-full hover:bg-muted/50 hover:border-primary/20 transition-colors cursor-pointer flex flex-col">
+                                <CardHeader className="flex-row items-start gap-4 space-y-0">
+                                    <div className="p-3 bg-primary/10 rounded-lg">
+                                        <Icon className="h-6 w-6 text-primary" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            {section.title}
+                                            {section.isWip && <Badge variant="secondary">Pròximament</Badge>}
+                                        </CardTitle>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex-1">
+                                     <CardDescription>{section.description}</CardDescription>
+                                </CardContent>
+                            </Card>
+                        </Link>
+                    )
+                })}
             </div>
-            
-            <Card>
-                <CardHeader>
-                    <CardTitle>¿Cómo participar?</CardTitle>
-                    <CardDescription>
-                        Navega por las diferentes secciones para empezar a interactuar.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-center">
-                    <div className="p-4 bg-muted/50 rounded-lg">
-                        <MessageSquare className="h-8 w-8 mx-auto text-primary mb-2" />
-                        <p className="font-semibold text-sm">Crea un Tema</p>
-                        <p className="text-xs text-muted-foreground">En la sección de Discusiones, inicia un nuevo debate.</p>
-                    </div>
-                    <div className="p-4 bg-muted/50 rounded-lg">
-                        <HelpCircle className="h-8 w-8 mx-auto text-primary mb-2" />
-                        <p className="font-semibold text-sm">Responde a Dudas</p>
-                        <p className="text-xs text-muted-foreground">Ayuda a otros compañeros con sus preguntas.</p>
-                    </div>
-                     <div className="p-4 bg-muted/50 rounded-lg">
-                        <BookCopy className="h-8 w-8 mx-auto text-primary mb-2" />
-                        <p className="font-semibold text-sm">Sube tus Apuntes</p>
-                        <p className="text-xs text-muted-foreground">Comparte tus recursos en la sección correspondiente.</p>
-                    </div>
-                </CardContent>
-            </Card>
-
         </div>
     );
 }
