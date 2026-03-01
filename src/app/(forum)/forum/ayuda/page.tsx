@@ -9,11 +9,11 @@ import { useToast } from "@/hooks/use-toast";
 export default function AyudaPage() {
     const { toast } = useToast();
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText('info.dynamicclass@gmail.com');
+    const handleCopy = (email: string) => {
+        navigator.clipboard.writeText(email);
         toast({
             title: "Copiado",
-            description: "El correo de soporte ha sido copiado.",
+            description: `El correo ${email} ha sido copiado.`,
         });
     };
 
@@ -81,10 +81,14 @@ export default function AyudaPage() {
                                 <CardDescription>Para consultas urgentes, puedes escribirnos a nuestro correo de soporte.</CardDescription>
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-2">
                              <div className="flex items-center justify-between rounded-md border bg-muted p-3">
                                 <p className="text-sm font-semibold text-muted-foreground">info.dynamicclass@gmail.com</p>
-                                <Button size="sm" onClick={handleCopy}>Copiar</Button>
+                                <Button size="sm" onClick={() => handleCopy('info.dynamicclass@gmail.com')}>Copiar</Button>
+                            </div>
+                            <div className="flex items-center justify-between rounded-md border bg-muted p-3">
+                                <p className="text-sm font-semibold text-muted-foreground">proyecto.adrimax@gmail.com</p>
+                                <Button size="sm" onClick={() => handleCopy('proyecto.adrimax@gmail.com')}>Copiar</Button>
                             </div>
                         </CardContent>
                     </Card>
