@@ -50,12 +50,12 @@ interface BasePost {
 }
 
 interface Post extends BasePost {
-  id: string;
+  uid: string;
   replyCount?: number;
 }
 
 interface Reply extends BasePost {
-  id: string;
+  uid: string;
 }
 
 type Role = "alumne" | "moderador";
@@ -182,7 +182,7 @@ function RepliesList({ postId }: { postId: string }) {
     return (
         <div className="mt-4 pl-4 border-l-2 border-primary/20 space-y-3">
             {replies.map(reply => (
-                <ReplyCard key={reply.id} reply={reply} onLike={() => handleLikeReply(reply.id)} />
+                <ReplyCard key={reply.uid} reply={reply} onLike={() => handleLikeReply(reply.uid)} />
             ))}
         </div>
     );
@@ -203,7 +203,7 @@ function PostCard({ post }: { post: Post }) {
 
   const handleLike = async () => {
     if (!user || !firestore) return;
-    const postRef = doc(firestore, 'discussions', post.id);
+    const postRef = doc(firestore, 'discussions', post.uid);
     await updateDoc(postRef, {
         likedBy: likedByMe ? arrayRemove(user.uid) : arrayUnion(user.uid)
     });
@@ -212,7 +212,7 @@ function PostCard({ post }: { post: Post }) {
   const handleAddReply = async () => {
     if (!user || !firestore || !replyText.trim()) return;
     
-    const newReply: Omit<Reply, 'id'> = {
+    const newReply: Omit<Reply, 'uid'> = {
         authorId: user.uid,
         authorName: user.name,
         authorAvatar: user.avatar,
@@ -222,7 +222,7 @@ function PostCard({ post }: { post: Post }) {
         likedBy: [],
     };
     
-    const postRef = doc(firestore, 'discussions', post.id);
+    const postRef = doc(firestore, 'discussions', post.uid);
     const repliesRef = collection(postRef, 'replies');
 
     await addDoc(repliesRef, newReply);
@@ -323,7 +323,7 @@ function PostCard({ post }: { post: Post }) {
         </div>
       )}
 
-      {showReplies && <RepliesList postId={post.id} />}
+      {showReplies && <RepliesList postId={post.uid} />}
     </article>
   );
 }
@@ -348,7 +348,7 @@ export default function DiscussionsPage() {
     if (!newPostText.trim() || !user || !firestore) return;
     setIsPosting(true);
     
-    const newPost: Omit<Post, 'id'> = {
+    const newPost: Omit<Post, 'uid'> = {
         authorId: user.uid,
         authorName: user.name,
         authorAvatar: user.avatar,
@@ -452,7 +452,7 @@ export default function DiscussionsPage() {
           <div className="space-y-4">
             {posts.map((post) => (
               <PostCard
-                key={post.id}
+                key={post.uid}
                 post={post}
               />
             ))}
