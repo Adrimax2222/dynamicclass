@@ -21,6 +21,7 @@ import { Loader2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const noteColors = ['#FECACA', '#FDE68A', '#A7F3D0', '#BFDBFE', '#C7D2FE', '#E9D5FF'];
 
@@ -127,58 +128,85 @@ export default function RecursosDCPage() {
 const BugReportCard = ({ report, isAuthor, onSave, onDelete, user }: { report: BugReport, isAuthor: boolean, onSave: any, onDelete: any, user: User | null }) => {
     return (
         <div className="break-inside-avoid">
-            <Card className="hover:shadow-lg transition-shadow" style={{ borderTop: `4px solid ${report.color || 'transparent'}`}}>
-                <CardHeader className="flex-row items-start gap-3 space-y-0">
-                    <AvatarDisplay 
-                        user={{
-                            name: report.isAnonymous ? "Anónimo" : report.authorName,
-                            avatar: report.isAnonymous ? "letter_A_737373" : report.authorAvatar,
-                        }} 
-                        className="h-10 w-10 border"
-                    />
-                    <div>
-                        <CardTitle className="text-base">{report.title}</CardTitle>
-                         <p className="text-xs text-muted-foreground">
-                            por {report.isAnonymous ? "Anónimo" : report.authorName}
-                        </p>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <p className="line-clamp-4 text-sm text-muted-foreground">
-                        {report.description}
-                    </p>
-                </CardContent>
-                <CardFooter className="flex justify-between items-center">
-                    <p className="text-xs text-muted-foreground">
-                       {report.createdAt ? formatDistanceToNow(report.createdAt.toDate(), { addSuffix: true, locale: es }) : ''}
-                    </p>
-                    {isAuthor && (
-                        <div className="flex items-center">
-                           <NewBugReportDialog onSave={onSave} user={user} report={report}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground"><Edit className="h-4 w-4"/></Button>
-                           </NewBugReportDialog>
-                           <AlertDialog>
-                               <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                               </AlertDialogTrigger>
-                               <AlertDialogContent>
-                                   <AlertDialogHeader>
-                                       <AlertDialogTitle>¿Eliminar este informe?</AlertDialogTitle>
-                                       <AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription>
-                                   </AlertDialogHeader>
-                                   <AlertDialogFooter>
-                                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                       <AlertDialogAction onClick={() => onDelete(report.uid)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
-                                   </AlertDialogFooter>
-                               </AlertDialogContent>
-                           </AlertDialog>
+            <Dialog>
+                <Card className="hover:shadow-lg transition-shadow flex flex-col" style={{ borderTop: `4px solid ${report.color || 'transparent'}`}}>
+                    <DialogTrigger asChild>
+                        <div className="cursor-pointer flex-1">
+                            <CardHeader className="flex-row items-start gap-3 space-y-0">
+                                <AvatarDisplay 
+                                    user={{
+                                        name: report.isAnonymous ? "Anónimo" : report.authorName,
+                                        avatar: report.isAnonymous ? "letter_A_737373" : report.authorAvatar,
+                                    }} 
+                                    className="h-10 w-10 border"
+                                />
+                                <div>
+                                    <CardTitle className="text-base">{report.title}</CardTitle>
+                                    <p className="text-xs text-muted-foreground">
+                                        por {report.isAnonymous ? "Anónimo" : report.authorName}
+                                    </p>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="line-clamp-4 text-sm text-muted-foreground">
+                                    {report.description}
+                                </p>
+                            </CardContent>
                         </div>
-                    )}
-                </CardFooter>
-            </Card>
+                    </DialogTrigger>
+                    <CardFooter className="flex justify-between items-center mt-auto">
+                        <p className="text-xs text-muted-foreground">
+                           {report.createdAt ? formatDistanceToNow(report.createdAt.toDate(), { addSuffix: true, locale: es }) : ''}
+                        </p>
+                        {isAuthor && (
+                            <div className="flex items-center">
+                               <NewBugReportDialog onSave={onSave} user={user} report={report}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground"><Edit className="h-4 w-4"/></Button>
+                               </NewBugReportDialog>
+                               <AlertDialog>
+                                   <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                   </AlertDialogTrigger>
+                                   <AlertDialogContent>
+                                       <AlertDialogHeader>
+                                           <AlertDialogTitle>¿Eliminar este informe?</AlertDialogTitle>
+                                           <AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription>
+                                       </AlertDialogHeader>
+                                       <AlertDialogFooter>
+                                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                           <AlertDialogAction onClick={() => onDelete(report.uid)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                                       </AlertDialogFooter>
+                                   </AlertDialogContent>
+                               </AlertDialog>
+                            </div>
+                        )}
+                    </CardFooter>
+                </Card>
+
+                <DialogContent className="max-w-lg">
+                    <DialogHeader style={{ borderLeft: `4px solid ${report.color || 'transparent'}`, paddingLeft: '1rem' }}>
+                        <DialogTitle>{report.title}</DialogTitle>
+                        <DialogDescription>
+                            Reportado por {report.isAnonymous ? "Anónimo" : report.authorName}
+                            {' · '}
+                            {report.createdAt ? formatDistanceToNow(report.createdAt.toDate(), { addSuffix: true, locale: es }) : ''}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[60vh] -mx-6 my-4">
+                        <div className="px-6 whitespace-pre-wrap text-sm text-muted-foreground">
+                            {report.description}
+                        </div>
+                    </ScrollArea>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button variant="outline">Cerrar</Button>
+                        </DialogClose>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
-}
+};
 
 function NewBugReportDialog({ onSave, user, report, children }: { onSave: (data: { title: string, description: string, isAnonymous: boolean, color: string }, reportId?: string) => Promise<void>, user: User | null, report?: BugReport, children?: React.ReactNode }) {
     const isEditing = !!report;
