@@ -9,7 +9,10 @@ import {
     Star, 
     Wrench, 
     Sparkles, 
-    HelpCircle 
+    HelpCircle,
+    Heart,
+    Lightbulb,
+    MessageSquareWarning
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +69,24 @@ const communitySections = [
     },
 ];
 
+const communityRules = [
+    {
+        icon: Heart,
+        title: "Sigues Respectuós",
+        description: "Tracta a tothom amb respecte. No s'admeten insults, assetjament ni discurs d'odi."
+    },
+    {
+        icon: Lightbulb,
+        title: "Comparteix Coneixement",
+        description: "Si saps la resposta a una pregunta, no dubtis a ajudar. Aquesta comunitat creix gràcies a la col·laboració."
+    },
+    {
+        icon: MessageSquareWarning,
+        title: "Sense Spam ni Autopromoció",
+        description: "Mantingues les converses rellevants i evita publicar enllaços o contingut no desitjat."
+    }
+]
+
 export default function CommunityPage() {
     return (
         <div className="p-4 sm:p-6 md:p-8 space-y-8">
@@ -74,31 +95,57 @@ export default function CommunityPage() {
                 <h1 className="text-3xl font-bold font-headline tracking-tight">Fòrum de la Comunitat</h1>
                 <p className="text-muted-foreground max-w-2xl mx-auto">Un espai per connectar, aprendre i compartir amb altres estudiants de Dynamic Class.</p>
             </div>
+            
+            <Card className="bg-muted/30">
+                <CardHeader>
+                    <CardTitle>Normes de la Comunitat</CardTitle>
+                    <CardDescription>Per a mantenir un espai segur i constructiu per a tothom.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {communityRules.map((rule) => {
+                        const Icon = rule.icon;
+                        return (
+                            <div key={rule.title} className="flex items-start gap-4">
+                                <div className="p-2 bg-background rounded-lg border">
+                                    <Icon className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                    <h4 className="font-semibold text-sm">{rule.title}</h4>
+                                    <p className="text-xs text-muted-foreground">{rule.description}</p>
+                                </div>
+                            </div>
+                        )
+                    })}
+                </CardContent>
+            </Card>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {communitySections.map((section) => {
-                    const Icon = section.icon;
-                    return (
-                        <Link href={section.href} key={section.title} className="flex">
-                            <Card className="w-full hover:bg-muted/50 hover:border-primary/20 transition-colors cursor-pointer flex flex-col">
-                                <CardHeader className="flex-row items-start gap-4 space-y-0">
-                                    <div className="p-3 bg-primary/10 rounded-lg">
-                                        <Icon className="h-6 w-6 text-primary" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <CardTitle className="text-lg flex items-center gap-2">
-                                            {section.title}
-                                            {section.isWip && <Badge variant="secondary">Pròximament</Badge>}
-                                        </CardTitle>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="flex-1">
-                                     <CardDescription>{section.description}</CardDescription>
-                                </CardContent>
-                            </Card>
-                        </Link>
-                    )
-                })}
+            <div>
+                <h2 className="text-xl font-bold font-headline tracking-tight mb-4 text-center">Explora les Seccions</h2>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {communitySections.map((section) => {
+                        const Icon = section.icon;
+                        return (
+                            <Link href={section.href} key={section.title} className="flex">
+                                <Card className="w-full hover:bg-muted/50 hover:border-primary/20 transition-colors cursor-pointer flex flex-col">
+                                    <CardHeader className="flex-row items-start gap-4 space-y-0">
+                                        <div className="p-3 bg-primary/10 rounded-lg">
+                                            <Icon className="h-6 w-6 text-primary" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <CardTitle className="text-lg flex items-center gap-2">
+                                                {section.title}
+                                                {section.isWip && <Badge variant="secondary">Pròximament</Badge>}
+                                            </CardTitle>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="flex-1">
+                                         <CardDescription>{section.description}</CardDescription>
+                                    </CardContent>
+                                </Card>
+                            </Link>
+                        )
+                    })}
+                </div>
             </div>
         </div>
     );
