@@ -571,12 +571,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (wasStudyTimerActive) {
       setIsActive(true);
     }
-    const cooldownEnd = Date.now() + 10 * 60 * 1000;
-    setCooldownEndTime(cooldownEnd);
-    localStorage.setItem('cooldownEndTime', String(cooldownEnd));
     setBreakEndTime(null);
     localStorage.removeItem('breakEndTime');
-  }, [wasStudyTimerActive, setIsActive]);
+
+    if (user?.role !== 'admin') {
+      const cooldownEnd = Date.now() + 10 * 60 * 1000;
+      setCooldownEndTime(cooldownEnd);
+      localStorage.setItem('cooldownEndTime', String(cooldownEnd));
+    } else {
+        setCooldownEndTime(null);
+        localStorage.removeItem('cooldownEndTime');
+    }
+  }, [wasStudyTimerActive, setIsActive, user]);
 
   useEffect(() => {
     const timerInterval = setInterval(() => {
@@ -636,13 +642,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const startBreak = useCallback(() => {
-    setWasStudyTimerActive(isActive);
-    setIsActive(false);
-    const breakEnd = Date.now() + 5 * 60 * 1000;
-    setBreakEndTime(breakEnd);
-    localStorage.setItem('breakEndTime', String(breakEnd));
-    setIsBreakActive(true);
-  }, [isActive]);
+      if (user?.role === 'admin') {
+          setWasStudyTimerActive(isActive);
+          setIsActive(false);
+          setIsBreakActive(true);
+          setBreakEndTime(null);
+          localStorage.removeItem('breakEndTime');
+      } else {
+          setWasStudyTimerActive(isActive);
+          setIsActive(false);
+          const breakEnd = Date.now() + 5 * 60 * 1000;
+          setBreakEndTime(breakEnd);
+          localStorage.setItem('breakEndTime', String(breakEnd));
+          setIsBreakActive(true);
+      }
+  }, [isActive, user]);
 
   const value: AppContextType = {
     user,

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
@@ -843,7 +844,7 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
     const formatBreakTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
-        return `${'${String(mins).padStart(2, \'0\')}'}:${'${String(secs).padStart(2, \'0\')}'}`;
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     };
 
     return (
@@ -873,12 +874,14 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
                                 <X className="h-5 w-5" />
                             </Button>
                         )}
-                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20">
-                            <div className="flex items-center gap-2 h-9 px-4 rounded-full bg-destructive/10 border border-destructive/20 backdrop-blur-sm">
-                                <Timer className="h-5 w-5 text-destructive" />
-                                <span className="font-mono font-bold text-destructive">{formatBreakTime(breakTimeLeft)}</span>
+                         {user?.role !== 'admin' && breakTimeLeft > 0 && (
+                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20">
+                                <div className="flex items-center gap-2 h-9 px-4 rounded-full bg-destructive/10 border border-destructive/20 backdrop-blur-sm">
+                                    <Timer className="h-5 w-5 text-destructive" />
+                                    <span className="font-mono font-bold text-destructive">{formatBreakTime(breakTimeLeft)}</span>
+                                </div>
                             </div>
-                        </div>
+                        )}
                         <div className="relative h-full w-full overflow-hidden rounded-2xl">
                            <AnimatePresence mode="wait">
                              <motion.div

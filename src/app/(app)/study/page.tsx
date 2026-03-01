@@ -364,6 +364,7 @@ export default function StudyPage() {
     const [plantStage, setPlantStage] = useState(0); 
 
     const isPersonalUser = user?.center === 'personal' || user?.center === 'default';
+    const isAdmin = user?.role === 'admin';
 
     const classmatesQuery = useMemoFirebase(() => {
         if (!firestore || !user || isPersonalUser) return null;
@@ -598,7 +599,7 @@ export default function StudyPage() {
     if (!user) return null;
 
     const streakCount = user.streak || 0;
-    const cooldownActive = cooldownTimeLeft > 0;
+    const cooldownActive = !isAdmin && cooldownTimeLeft > 0;
 
     const phaseColors = phase === 'focus' 
         ? modes[timerMode].colors
@@ -1495,7 +1496,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 onMouseUp={handleCropMouseUp}
                                 onMouseLeave={handleCropMouseUp}
                             >
-                                <img src={activePage.processedSrc} alt={`Page ${activePage.id}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
+                                <img src={activePage.processedSrc} alt={`Page ${'${activePage.id}'}`} className={cn("max-w-full max-h-full h-auto w-auto object-contain", isCropping && "cursor-crosshair border-2 border-primary border-dashed")} />
                                 {isCropping && activePage.crop && (
                                     <div
                                         className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
@@ -1521,7 +1522,7 @@ function ScannerDialog({ children }: { children: React.ReactNode }) {
                                 <div key={p.id} className="relative group shrink-0" onClick={() => setActivePageId(p.id)}>
                                      <img 
                                         src={p.processedSrc} 
-                                        alt={`Thumbnail ${index + 1}`}
+                                        alt={`Thumbnail ${'${index + 1}'}`}
                                         className={cn(
                                             "h-20 w-20 object-cover rounded-md border-2 cursor-pointer transition-all",
                                             activePageId === p.id ? "border-primary shadow-lg scale-105" : "border-transparent hover:border-primary/50"
@@ -1685,7 +1686,7 @@ function PlaylistManagerDialog({ userPlaylists, setUserPlaylists }: { userPlayli
             return;
         }
 
-        const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator`;
+        const embedUrl = `https://open.spotify.com/embed/playlist/${'${playlistId}'}?utm_source=generator`;
         
         const newPlaylist: Playlist = {
             id: `user-${Date.now()}`,
@@ -1820,7 +1821,7 @@ function ScienceCalculatorDialog() {
             const resultString = String(result);
             setDisplay(resultString);
             setExpression(resultString);
-            setHistory(prev => [`${expression} = ${resultString}`, ...prev].slice(0, 10));
+            setHistory(prev => [`${expression} = ${'${resultString}'}`, ...prev].slice(0, 10));
         } catch (e) {
             setDisplay("Error");
             setExpression("");
