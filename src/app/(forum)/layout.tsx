@@ -15,7 +15,8 @@ import {
     ArrowLeft,
     Menu,
     X,
-    LayoutDashboard
+    LayoutDashboard,
+    Wrench
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -27,8 +28,9 @@ const navItems = [
   { href: "/forum/actualitat", label: "Actualitat", icon: Newspaper },
   { href: "/forum/clase", label: "La Meva Classe", icon: GraduationCap },
   { href: "/forum/discussions", label: "Discussions", icon: MessageSquare },
-  { href: "/forum/recursos-dc", label: "Recursos DC", icon: BookCopy },
+  { href: "/forum/resources", label: "Recursos", icon: BookCopy },
   { href: "/forum/valoracion", label: "Valoracions", icon: Star },
+  { href: "/forum/recursos-dc", label: "Dynamic Class", icon: Wrench },
   { href: "/forum/ia", label: "Eines IA", icon: Sparkles },
   { href: "/forum/ayuda", label: "Ajuda", icon: HelpCircle },
 ];
