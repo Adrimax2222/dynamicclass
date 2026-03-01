@@ -1,10 +1,9 @@
-
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { GraduationCap, Wand2, User, Star, Clock, Users, BarChart, Zap, DollarSign } from "lucide-react";
+import { GraduationCap, Wand2, User, Star, Clock, Users, BarChart, Zap, DollarSign, KeyRound } from "lucide-react";
 
 export default function AboutLearningHubPage() {
     return (
@@ -74,6 +73,13 @@ export default function AboutLearningHubPage() {
                              <div>
                                 <h4 className="font-semibold text-foreground">Cursos Premium</h4>
                                 <p className="text-xs text-muted-foreground">Algunos cursos especializados o con contenido muy extenso pueden ser de pago. Estos estarán siempre <strong>claramente indicados</strong> para que no haya sorpresas.</p>
+                             </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                             <KeyRound className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
+                             <div>
+                                <h4 className="font-semibold text-foreground">Llave de Curso</h4>
+                                <p className="text-xs text-muted-foreground">Puedes canjear tus trofeos o plantas en la tienda por una <strong>Llave de Curso Premium</strong>, que te permite desbloquear cualquier curso de pago a tu elección.</p>
                              </div>
                         </div>
                     </CardContent>
