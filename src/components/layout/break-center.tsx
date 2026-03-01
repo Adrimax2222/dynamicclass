@@ -31,6 +31,7 @@ import { ViewContainer } from '@/components/layout/view-container';
 import TicTacToeGame from '@/components/games/TicTacToeGame';
 import Game2048 from '@/components/games/Game2048';
 import FlappyBirdGame from '@/components/games/FlappyBirdGame';
+import DesertRun from '@/components/games/DesertRunGame';
 
 
 // --- Type Definitions ---
@@ -170,7 +171,7 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
                 return;
             } else {
                  console.error('Error detallado Trivia:', data);
-                 throw new Error(`La API de trivia devolvió un error (código: ${data.response_code}).`);
+                 throw new Error(`La API de trivia devolvió un error (código: ${'${data.response_code}'}).`);
             }
         } catch (e: any) {
             console.error('Error detallado Trivia:', e);
@@ -252,7 +253,7 @@ const TriviaView = ({ onBack }: { onBack: () => void }) => {
                             <motion.p 
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
-                                className={`font-bold text-lg ${selectedAnswer === question.correct_answer ? 'text-green-500' : 'text-destructive'}`}
+                                className={`font-bold text-lg ${'${selectedAnswer === question.correct_answer ? \'text-green-500\' : \'text-destructive\'}'}`}
                             >
                                 {selectedAnswer === question.correct_answer ? '¡Correcto!' : 'Incorrecto'}
                             </motion.p>
@@ -380,7 +381,7 @@ const ZenFlightView = ({ onClose }: { onClose: () => void; }) => {
     }, []);
 
     const currentImage = playlist[currentIndex];
-    const imageUrl = currentImage ? `https://www.gstatic.com/prettyearth/assets/full/${currentImage.id}.jpg?t=${Date.now()}` : '';
+    const imageUrl = currentImage ? `https://www.gstatic.com/prettyearth/assets/full/${'${currentImage.id}'}.jpg?t=${'${Date.now()}'}` : '';
 
     useEffect(() => {
         if (isLoadingImage) return;
@@ -468,7 +469,7 @@ const ZenFlightView = ({ onClose }: { onClose: () => void; }) => {
                          {isLoadingImage ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                          ) : (
-                            `Próxima en... ${secondsLeft}s`
+                            `Próxima en... ${'${secondsLeft}'}s`
                          )}
                     </Button>
                 </div>
@@ -518,7 +519,7 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
         setGameState('loading');
         setError(null);
         try {
-            const response = await fetch(`https://api.datamuse.com/words?ml=${encodeURIComponent(currentTheme)}&v=es&max=100`);
+            const response = await fetch(`https://api.datamuse.com/words?ml=${'${encodeURIComponent(currentTheme)}'}&v=es&max=100`);
             if (!response.ok) throw new Error('API request failed');
             const data = await response.json();
             
@@ -702,7 +703,7 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
     }
     
     return (
-        <ViewContainer title={`Wordle: ${theme}`} onBack={() => setGameState('config')}>
+        <ViewContainer title={`Wordle: ${'${theme}'}`} onBack={() => setGameState('config')}>
             <div className="flex flex-col items-center gap-4 h-full">
                 <div className="grid grid-rows-6 gap-1.5">
                     {grid.map((row, rowIndex) => (
@@ -724,7 +725,7 @@ const WordleGame = ({ onBack }: { onBack: () => void }) => {
                                                cell.status === 'absent' ? 'bg-slate-500 border-slate-500 text-white' : 'border-muted-foreground/30')
                                             : 'border-muted-foreground/30'
                                         )}
-                                        style={{ animationDelay: isCurrentSubmittingRow ? `${cellIndex * 150}ms` : '0ms' }}
+                                        style={{ animationDelay: isCurrentSubmittingRow ? `${'${cellIndex * 150}'}ms` : '0ms' }}
                                     >
                                         {cell.char}
                                     </div>
@@ -842,7 +843,7 @@ export const BreakCenter = ({ isOpen, onClose }: BreakCenterProps) => {
     const formatBreakTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
-        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        return `${'${String(mins).padStart(2, \'0\')}'}:${'${String(secs).padStart(2, \'0\')}'}`;
     };
 
     return (
@@ -964,7 +965,7 @@ const MemoryGame = ({ onBack }: { onBack: () => void }) => {
                   <span>Movimientos: {moves}</span>
                   <Button variant="outline" size="sm" onClick={generateCards}>Reiniciar</Button>
               </div>
-              <div className={`grid gap-2 w-full`} style={{ gridTemplateColumns: `repeat(${gameSize === 12 ? 3 : 4}, 1fr)` }}>
+              <div className={`grid gap-2 w-full`} style={{ gridTemplateColumns: `repeat(${'${gameSize === 12 ? 3 : 4}'}, 1fr)` }}>
                   {cards.map(card => (
                       <div key={card.id} className="w-full aspect-square" onClick={() => handleCardClick(card.id)}>
                           <div
@@ -978,7 +979,7 @@ const MemoryGame = ({ onBack }: { onBack: () => void }) => {
                                   className={cn("absolute w-full h-full bg-muted rounded-lg border-2 flex items-center justify-center", card.isMatched && 'border-green-500 bg-green-500/20')}
                                   style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                               >
-                                  <img src={`https://api.dicebear.com/9.x/${DICEBEAR_STYLES[Math.floor(Math.random() * DICEBEAR_STYLES.length)]}/svg?seed=${card.seed}`} alt="avatar" className="w-12 h-12"/>
+                                  <img src={`https://api.dicebear.com/9.x/${'${DICEBEAR_STYLES[Math.floor(Math.random() * DICEBEAR_STYLES.length)]}'}/svg?seed=${'${card.seed}'}`} alt="avatar" className="w-12 h-12"/>
                               </div>
                           </div>
                       </div>
@@ -994,180 +995,6 @@ const MemoryGame = ({ onBack }: { onBack: () => void }) => {
   );
 };
 
-
-const DESERT_GAME_WIDTH = 350;
-const DESERT_GAME_HEIGHT = 200;
-const DESERT_PLAYER_SIZE = 20;
-const DESERT_GRAVITY = 0.6;
-const DESERT_JUMP_VELOCITY = -12;
-const DESERT_OBSTACLE_WIDTH = 20;
-const DESERT_OBSTACLE_HEIGHT = 40;
-const DESERT_SPEED = 4;
-const DESERT_CLOUD_SPEED = 1;
-
-type DesertRunGameState = {
-  y: number;
-  vy: number;
-  obstacles: { id: number; x: number }[];
-  clouds: { id: number; x: number; y: number; scale: number }[];
-  score: number;
-  highScore: number;
-  status: 'idle' | 'playing' | 'gameover';
-  frames: number;
-};
-
-const DesertRun = ({ onBack }: { onBack: () => void }) => {
-    const [gameState, setGameState] = useState<DesertRunGameState>({
-        y: 400 - DESERT_PLAYER_SIZE,
-        vy: 0,
-        obstacles: [],
-        clouds: [],
-        score: 0,
-        highScore: 0,
-        status: 'idle',
-        frames: 0,
-    });
-    
-    const requestRef = useRef<number>();
-
-    const jump = useCallback(() => {
-        setGameState(prev => {
-            if (prev.status === 'gameover') {
-                return {
-                    y: DESERT_GAME_HEIGHT - DESERT_PLAYER_SIZE,
-                    vy: 0,
-                    obstacles: [],
-                    clouds: prev.clouds,
-                    score: 0,
-                    highScore: prev.highScore,
-                    status: 'playing',
-                    frames: 0,
-                };
-            }
-            if (prev.y >= DESERT_GAME_HEIGHT - DESERT_PLAYER_SIZE) {
-                return { ...prev, vy: DESERT_JUMP_VELOCITY, status: 'playing' };
-            }
-            return prev;
-        });
-    }, []);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.code === "Space") {
-                e.preventDefault();
-                jump();
-            }
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [jump]);
-
-    useEffect(() => {
-        const loop = () => {
-            setGameState(prev => {
-                if (prev.status !== 'playing') return prev;
-
-                let { y, vy, obstacles, clouds, score, frames } = { ...prev };
-                
-                vy += DESERT_GRAVITY;
-                y += vy;
-
-                if (y >= DESERT_GAME_HEIGHT - DESERT_PLAYER_SIZE) {
-                    y = DESERT_GAME_HEIGHT - DESERT_PLAYER_SIZE;
-                    vy = 0;
-                }
-
-                let newObstacles = obstacles
-                    .map(o => ({ ...o, x: o.x - DESERT_SPEED }))
-                    .filter(o => o.x + DESERT_OBSTACLE_WIDTH > 0);
-                
-                if (frames % 90 === 0 && Math.random() > 0.5) {
-                    newObstacles.push({ id: Date.now(), x: DESERT_GAME_WIDTH });
-                }
-
-                let newClouds = clouds
-                    .map(c => ({...c, x: c.x - DESERT_CLOUD_SPEED}))
-                    .filter(c => c.x + 50 > 0);
-
-                if (frames % 120 === 0 && Math.random() > 0.3) {
-                    newClouds.push({ id: Date.now(), x: DESERT_GAME_WIDTH, y: 20 + Math.random() * 50, scale: 0.8 + Math.random() * 0.4 });
-                }
-                
-                let newStatus: DesertRunGameState['status'] = 'playing';
-                const playerRect = { x: 50, y, width: DESERT_PLAYER_SIZE, height: DESERT_PLAYER_SIZE };
-                for (const obstacle of newObstacles) {
-                    const obstacleRect = { x: obstacle.x, y: DESERT_GAME_HEIGHT - DESERT_OBSTACLE_HEIGHT, width: DESERT_OBSTACLE_WIDTH, height: DESERT_OBSTACLE_HEIGHT };
-                    if (playerRect.x < obstacleRect.x + obstacleRect.width &&
-                        playerRect.x + playerRect.width > obstacleRect.x &&
-                        playerRect.y < obstacleRect.y + obstacleRect.height &&
-                        playerRect.y + playerRect.height > obstacleRect.y) {
-                        newStatus = 'gameover';
-                    }
-                }
-                
-                const newScore = prev.status === 'playing' ? score + 1 : score;
-                const newHighScore = Math.max(prev.highScore, newScore);
-
-                return {
-                    ...prev,
-                    y, vy,
-                    obstacles: newObstacles,
-                    clouds: newClouds,
-                    score: newScore,
-                    highScore: newHighScore,
-                    status: newStatus,
-                    frames: frames + 1,
-                };
-            });
-            requestRef.current = requestAnimationFrame(loop);
-        };
-        requestRef.current = requestAnimationFrame(loop);
-        return () => {
-          if (requestRef.current) cancelAnimationFrame(requestRef.current);
-        };
-    }, []);
-
-    return (
-        <ViewContainer title="Desert Run" onBack={onBack}>
-            <div
-                className="relative overflow-hidden bg-gradient-to-b from-sky-300 to-sky-100 dark:from-sky-800 dark:to-sky-600 shadow-2xl rounded-lg border-4 border-slate-800 cursor-pointer"
-                style={{ width: `${DESERT_GAME_WIDTH}px`, height: `${DESERT_GAME_HEIGHT}px`, margin: 'auto' }}
-                onClick={jump}
-                onTouchStart={(e) => { e.preventDefault(); jump(); }}
-            >
-                <div className="absolute top-2 left-2 text-slate-600 dark:text-slate-200 font-mono font-bold text-sm">HI {String(gameState.highScore).padStart(5, '0')}</div>
-                <div className="absolute top-2 right-2 text-slate-600 dark:text-slate-200 font-mono font-bold text-sm">{String(gameState.score).padStart(5, '0')}</div>
-
-                {gameState.clouds.map(cloud => (
-                    <div key={cloud.id} className="absolute w-[50px] h-[20px] bg-white/80 rounded-full" style={{ left: `${cloud.x}px`, top: `${cloud.y}px`, transform: `scale(${cloud.scale})` }}/>
-                ))}
-
-                <div className="absolute w-[20px] h-[20px] bg-yellow-400 rounded-sm" style={{ left: '50px', top: `${gameState.y}px` }} />
-
-                {gameState.obstacles.map(obstacle => (
-                    <div key={obstacle.id} className="absolute w-[20px] h-[40px] bg-green-600" style={{ left: `${obstacle.x}px`, top: `${DESERT_GAME_HEIGHT - 40}px` }} />
-                ))}
-
-                <div className="absolute bottom-0 left-0 w-full h-10 bg-gradient-to-t from-amber-300 to-amber-200 dark:from-amber-700 dark:to-amber-600 border-t-2 border-amber-800/20" />
-            
-                {gameState.status !== 'playing' && (
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
-                        <div className="text-center text-white">
-                            {gameState.status === 'idle' && <h2 className="text-2xl font-bold">Toca para empezar</h2>}
-                            {gameState.status === 'gameover' && (
-                                <>
-                                    <h2 className="text-2xl font-bold">GAME OVER</h2>
-                                    <p>Toca para reintentar</p>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
-            <p className="text-center text-xs text-muted-foreground mt-2 font-mono">Pulsa Espacio o toca para saltar</p>
-        </ViewContainer>
-    );
-};
 
 // Constantes del motor del juego
 const SNAKE_GAME_SIZE = 20; // 20x20 grid
