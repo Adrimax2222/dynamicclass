@@ -32,7 +32,7 @@ const ADMIN_EMAILS = ['anavarrod@iestorredelpalau.cat', 'lrotav@iestorredelpalau
 const appItems = [
     { id: 'avatar-pack', name: 'Iconos y Avatares', icon: Gift, description: 'Desbloquea un pack de avatares exclusivos para tu perfil.', costTrophies: 200, costPlants: 100 },
     { id: 'break-time', name: '+10 min de Descanso', icon: Timer, description: 'Añade 10 minutos a tu próximo descanso en el Modo Estudio.', costTrophies: 100, costPlants: 50 },
-    { id: 'ai-ultra', name: 'Adrimax AI Ultra', icon: BrainCircuit, description: 'Activa el modelo de IA más potente durante 24 horas.', costTrophies: 1000, costPlants: 500 },
+    { id: 'ai-ultra', name: 'Adrimax AI Ultra', icon: BrainCircuit, description: 'Activa el modelo de IA más potente durante 1 mes.', costTrophies: 1000, costPlants: 500 },
     { id: 'course-key', name: 'Llave de Curso Premium', icon: KeyRound, description: 'Accede a un curso de pago de tu elección.', costTrophies: 250, costPlants: 125 },
 ];
 
@@ -266,6 +266,14 @@ function ShopTab({ user }: { user: User }) {
                                 item={item}
                             />
                         ))}
+                        {specialItems.map(item => (
+                           <SpecialShopItemCard
+                               key={item.id}
+                               item={item}
+                               userTrophies={user.trophies}
+                               userPlants={user.plantCount || 0}
+                           />
+                        ))}
                     </div>
                 </TabsContent>
                 <TabsContent value="cards" className="mt-4">
@@ -278,14 +286,6 @@ function ShopTab({ user }: { user: User }) {
                                 userTrophies={user.trophies}
                             />
                         ))}
-                         {specialItems.map(item => (
-                            <SpecialShopItemCard
-                                key={item.id}
-                                item={item}
-                                userTrophies={user.trophies}
-                                userPlants={user.plantCount || 0}
-                            />
-                         ))}
                     </div>
                 </TabsContent>
             </Tabs>
@@ -490,4 +490,5 @@ function RankingItem({ user, rank, isCurrentUser, scope }: { user: User; rank: n
         </div>
     );
 }
+    
     
