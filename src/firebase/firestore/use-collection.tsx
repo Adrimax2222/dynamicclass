@@ -1,17 +1,12 @@
-// src/firebase/firestore/use-collection.tsx
 "use client";
 import {
-  collection,
   onSnapshot,
-  query,
-  type CollectionReference,
   type Query,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { useFirestore } from "..";
 
 export const useCollection = <T>(
-  pathOrQuery: string | Query | null,
+  query: Query | null,
   options: {
     listen?: boolean;
   } = { listen: true }
@@ -20,23 +15,18 @@ export const useCollection = <T>(
   isLoading: boolean;
   error: Error | null;
 } => {
-  const firestore = useFirestore();
   const [data, setData] = useState<T[]>([]);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!firestore || !pathOrQuery) {
+    // The query object can be null if firestore is not ready yet in the parent component
+    if (!query) {
       setIsLoading(false);
       return;
     }
     
     setIsLoading(true);
-
-    const isPathString = typeof pathOrQuery === "string";
-    const queryToExecute = isPathString
-      ? query(collection(firestore, pathOrQuery))
-      : pathOrQuery;
 
     if (!options.listen) {
       // Not yet implemented for getDocs
@@ -45,7 +35,7 @@ export const useCollection = <T>(
     }
 
     const unsubscribe = onSnapshot(
-      queryToExecute,
+      query,
       (snapshot) => {
         const docs = snapshot.docs.map((doc) => ({
           uid: doc.id, // Use uid to be consistent with useDoc
@@ -63,9 +53,7 @@ export const useCollection = <T>(
 
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firestore, pathOrQuery, options.listen]);
+  }, [query, options.listen]);
 
   return { data, isLoading, error };
 };
-
-    
