@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Users, MessageSquare, Star, GraduationCap, Zap, HelpCircle, ArrowLeft, BookCopy, Wand2, Eye, EyeOff } from "lucide-react";
+import { Users, MessageSquare, Star, GraduationCap, Wrench, HelpCircle, ArrowLeft, BookCopy, Wand2, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,7 +15,7 @@ const navItems = [
   { href: "/forum/discussions", label: "Discusiones", icon: MessageSquare },
   { href: "/forum/clase", label: "Clase", icon: GraduationCap },
   { href: "/forum/resources", label: "Recursos", icon: BookCopy },
-  { href: "/forum/recursos-dc", label: "Dynamic Class", icon: Zap },
+  { href: "/forum/recursos-dc", label: "Dynamic Class", icon: Wrench },
   { href: "/forum/ayuda", label: "Ayuda", icon: HelpCircle },
 ];
 
