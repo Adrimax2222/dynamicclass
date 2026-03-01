@@ -283,6 +283,24 @@
         "color": { "type": "string" }
       },
       "required": ["authorId", "isAnonymous", "rating", "comment", "createdAt"]
+    },
+    "BugReport": {
+      "title": "Bug Report",
+      "description": "Represents a user-submitted bug report.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorAvatar": { "type": "string", "format": "uri" },
+        "isAnonymous": { "type": "boolean" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "color": { "type": "string" }
+      },
+      "required": ["authorId", "isAnonymous", "title", "description", "createdAt"]
     }
   },
   "auth": {
@@ -344,6 +362,10 @@
     "/reviews/{reviewId}": {
       "schema": { "$ref": "#/entities/Review" },
       "description": "Stores user reviews and ratings for the application."
+    },
+    "/bugReports/{bugId}": {
+        "schema": { "$ref": "#/entities/BugReport" },
+        "description": "Stores user-submitted bug reports for the application."
     }
   }
 }

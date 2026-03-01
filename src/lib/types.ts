@@ -175,6 +175,19 @@ export type Review = {
     color?: string;
 }
 
+export type BugReport = {
+    uid: string;
+    authorId: string;
+    authorName: string;
+    authorAvatar: string;
+    isAnonymous: boolean;
+    title: string;
+    description: string;
+    createdAt: Timestamp;
+    updatedAt?: Timestamp;
+    color?: string;
+}
+
 export type AnnouncementScope = 'general' | 'center' | 'class';
 export type AnnouncementType = 'text' | 'poll' | 'file';
 
