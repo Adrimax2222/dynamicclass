@@ -13,6 +13,8 @@ import {
   MoreHorizontal,
   X,
   Loader2,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import { useApp } from "@/lib/hooks/use-app";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
@@ -29,11 +31,31 @@ import {
   arrayRemove,
   increment,
   deleteDoc,
+  updateDoc,
 } from "firebase/firestore";
 import type { User as AppUser } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { AvatarDisplay } from "@/components/profile/avatar-creator";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
+
 
 // ─────────────────────────────────────────────
 // TYPES
@@ -192,14 +214,17 @@ function RepliesList({ postId }: { postId: string }) {
 // ─────────────────────────────────────────────
 // POST CARD
 // ─────────────────────────────────────────────
-function PostCard({ post }: { post: Post }) {
+function PostCard({ post, onDelete, onUpdate }: { post: Post, onDelete: (id: string) => void, onUpdate: (id: string, content: string) => void }) {
   const { user } = useApp();
   const firestore = useFirestore();
   const [showReplies, setShowReplies] = useState(false);
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedText, setEditedText] = useState(post.content);
 
   const likedByMe = user ? post.likedBy.includes(user.uid) : false;
+  const canManage = user?.uid === post.authorId || user?.role === 'admin';
 
   const handleLike = async () => {
     if (!user || !firestore) return;
@@ -232,6 +257,13 @@ function PostCard({ post }: { post: Post }) {
     setShowReplyInput(false);
     setShowReplies(true);
   };
+  
+  const handleSaveEdit = () => {
+    if (editedText.trim() && editedText !== post.content) {
+        onUpdate(post.uid, editedText);
+    }
+    setIsEditing(false);
+  };
 
   return (
     <article className="group bg-background/80 backdrop-blur-md border border-border/70 rounded-3xl p-5 hover:scale-[1.01] hover:shadow-xl hover:shadow-primary/10 hover:border-primary/20 transition-all duration-300">
@@ -251,14 +283,62 @@ function PostCard({ post }: { post: Post }) {
             <span className="text-xs text-muted-foreground">{formatTimeAgo(post.createdAt)}</span>
           </div>
         </div>
-        <button className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted">
-          <MoreHorizontal size={16} />
-        </button>
+        {canManage && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <button className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted">
+                  <MoreHorizontal size={16} />
+                </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setIsEditing(true)}>
+                    <Edit className="mr-2 h-4 w-4"/>
+                    <span>Editar</span>
+                </DropdownMenuItem>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4"/>
+                            <span>Eliminar</span>
+                        </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>¿Seguro que quieres eliminarlo?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta acción no se puede deshacer. La publicación se eliminará permanentemente.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onDelete(post.uid)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </DropdownMenuContent>
+        </DropdownMenu>
+        )}
       </div>
 
-      <p className="text-secondary-foreground leading-relaxed text-[15px] mb-4">
-        {post.content}
-      </p>
+        {isEditing ? (
+            <div className="space-y-2 my-4">
+                <Textarea
+                    value={editedText}
+                    onChange={(e) => setEditedText(e.target.value)}
+                    className="text-base"
+                    autoFocus
+                    rows={4}
+                />
+                <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancelar</Button>
+                    <Button size="sm" onClick={handleSaveEdit}>Guardar</Button>
+                </div>
+            </div>
+        ) : (
+            <p className="text-secondary-foreground leading-relaxed text-[15px] mb-4">
+                {post.content}
+            </p>
+        )}
 
       <div className="flex items-center gap-1 border-t border-border/50 pt-3">
         <button
@@ -369,6 +449,26 @@ export default function DiscussionsPage() {
     }
   };
 
+  const handleDeletePost = async (postId: string) => {
+    if (!firestore) return;
+    try {
+        await deleteDoc(doc(firestore, 'discussions', postId));
+    } catch (err) {
+        console.error("Error deleting post:", err);
+    }
+  };
+
+  const handleUpdatePost = async (postId: string, newContent: string) => {
+      if (!firestore) return;
+      try {
+          await updateDoc(doc(firestore, 'discussions', postId), {
+              content: newContent
+          });
+      } catch (err) {
+          console.error("Error updating post:", err);
+      }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/30 to-purple-50/20 dark:from-slate-900/50 dark:via-violet-900/20 dark:to-purple-900/20">
       <div className="max-w-2xl mx-auto px-4 py-8 pb-24">
@@ -454,6 +554,8 @@ export default function DiscussionsPage() {
               <PostCard
                 key={post.uid}
                 post={post}
+                onDelete={handleDeletePost}
+                onUpdate={handleUpdatePost}
               />
             ))}
           </div>
