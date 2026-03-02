@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic'; // Evita que Next.js guardi una respuesta en memoria
+
 const TERRITORI_QUERIES: Record<string, string> = {
   // Espanya i Catalunya
   espanya:              'España noticias',
@@ -74,7 +76,8 @@ export async function GET(request: NextRequest) {
 
   try {
     console.log(`[API /news] Cercant: "${query}"`);
-    const res = await fetch(url, { next: { revalidate: 300 } });
+    console.log('[API /news] Cridant URL de NewsAPI:', url); // Debug en producción
+    const res = await fetch(url, { cache: 'no-store' }); // No guardar en caché para datos frescos
     const data = await res.json();
 
     if (data.status !== 'ok' || !data.articles?.length) {
@@ -90,7 +93,8 @@ export async function GET(request: NextRequest) {
         pubDate:  a.publishedAt,
         imageUrl: a.urlToImage ?? '',
       }));
-
+    
+    console.log('[API /news] Resultats trobats:', items.length); // Debug en producción
     console.log(`[API /news] ✅ ${items.length} notícies per "${query}"`);
     return NextResponse.json(items);
 
